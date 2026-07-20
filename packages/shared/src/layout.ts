@@ -1,5 +1,15 @@
 import type { WidgetType } from './enums';
 
+/** Layout new boards start with; admins customize it later. */
+export const DEFAULT_BOARD_LAYOUT: LayoutItem[] = [
+  { widgetType: 'FOCUS', x: 0, y: 0, w: 12, h: 2 },
+  { widgetType: 'TODOS', x: 0, y: 2, w: 8, h: 6 },
+  { widgetType: 'MY_TASKS', x: 8, y: 2, w: 4, h: 6 },
+  { widgetType: 'SHOWS', x: 0, y: 8, w: 4, h: 4 },
+  { widgetType: 'NEXT_REHEARSALS', x: 4, y: 8, w: 4, h: 4 },
+  { widgetType: 'ACTIVITY_FEED', x: 8, y: 8, w: 4, h: 4 },
+];
+
 export interface LayoutItem {
   widgetType: WidgetType;
   x: number;

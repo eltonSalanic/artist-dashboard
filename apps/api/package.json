@@ -29,6 +29,7 @@
     "@prisma/adapter-pg": "^7.9.0",
     "@prisma/client": "^7.9.0",
     "@supabase/supabase-js": "^2.110.7",
+    "jwks-rsa": "^4.1.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "latest",
