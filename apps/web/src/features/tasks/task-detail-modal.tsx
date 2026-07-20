@@ -153,7 +153,7 @@ function TaskDetail({
         {canEdit ? (
           <Input
             aria-label="Task title"
-            className="border-none px-0 text-lg font-semibold shadow-none focus-visible:ring-0"
+            className="border-none pr-8 text-lg font-semibold shadow-none focus-visible:ring-0"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onBlur={saveTitle}
@@ -190,6 +190,11 @@ function TaskDetail({
                   dto: { priority: priority as typeof data.priority },
                 })
               }
+              items={[
+                { value: "HIGH", label: "High" },
+                { value: "MEDIUM", label: "Medium" },
+                { value: "LOW", label: "Low" },
+              ]}
             >
               <SelectTrigger id="task-priority" size="sm">
                 <SelectValue />

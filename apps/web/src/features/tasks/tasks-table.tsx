@@ -99,6 +99,10 @@ export function TasksTable({ boardId }: { boardId: string }) {
               statusId: !v || v === ALL ? undefined : v,
             }))
           }
+          items={[
+            { value: ALL, label: "All statuses" },
+            ...statuses.map((s) => ({ value: s.id, label: s.name })),
+          ]}
         >
           <SelectTrigger className="w-40" aria-label="Filter by status">
             <SelectValue />
@@ -122,6 +126,12 @@ export function TasksTable({ boardId }: { boardId: string }) {
               priority: !v || v === ALL ? undefined : (v as Priority),
             }))
           }
+          items={[
+            { value: ALL, label: "All priorities" },
+            { value: "HIGH", label: "High" },
+            { value: "MEDIUM", label: "Medium" },
+            { value: "LOW", label: "Low" },
+          ]}
         >
           <SelectTrigger className="w-36" aria-label="Filter by priority">
             <SelectValue />
@@ -141,6 +151,12 @@ export function TasksTable({ boardId }: { boardId: string }) {
             v &&
             setFilters((f) => ({ ...f, sort: v as TaskFilters["sort"] }))
           }
+          items={[
+            { value: "order", label: "Board order" },
+            { value: "dueDate", label: "Due date" },
+            { value: "priority", label: "Priority" },
+            { value: "createdAt", label: "Newest" },
+          ]}
         >
           <SelectTrigger className="w-36" aria-label="Sort tasks">
             <SelectValue />

@@ -42,6 +42,15 @@ export function StatusSelect({
       value={value}
       onValueChange={(v) => v && onChange(v)}
       disabled={disabled}
+      items={statuses.map((status) => ({
+        value: status.id,
+        label: (
+          <span className="flex items-center gap-1.5">
+            <StatusDot color={status.color} />
+            {status.name}
+          </span>
+        ),
+      }))}
     >
       <SelectTrigger id={id} size="sm" onClick={(e) => e.stopPropagation()}>
         <SelectValue />
