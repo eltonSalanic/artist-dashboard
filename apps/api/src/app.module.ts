@@ -9,6 +9,8 @@ import { BoardRolesGuard } from './common/board-roles.guard';
 import { UsersModule } from './users/users.module';
 import { BoardsModule } from './boards/boards.module';
 import { InvitesModule } from './invites/invites.module';
+import { TasksModule } from './tasks/tasks.module';
+import { StatusesModule } from './statuses/statuses.module';
 
 @Module({
   imports: [
@@ -18,6 +20,8 @@ import { InvitesModule } from './invites/invites.module';
     UsersModule,
     BoardsModule,
     InvitesModule,
+    TasksModule,
+    StatusesModule,
   ],
   controllers: [HealthController],
   providers: [

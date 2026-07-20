@@ -1,34 +1,24 @@
 "use client";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Suspense } from "react";
 import { useMe } from "@/features/auth/use-me";
-import { usePermissions } from "@/features/auth/permissions";
+import { TasksTable } from "@/features/tasks/tasks-table";
+import { TaskDetailModal } from "@/features/tasks/task-detail-modal";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function HomePage() {
   const me = useMe(true);
-  const { effectiveRole } = usePermissions();
+  const boardId = me.data?.board?.id;
+
+  if (!boardId) return <Skeleton className="m-6 h-64" />;
 
   return (
-    <main className="flex flex-1 items-center justify-center p-8">
-      <Card className="max-w-md">
-        <CardHeader>
-          <CardTitle>{me.data?.board?.name}</CardTitle>
-          <CardDescription>
-            Signed in as {me.data?.user.displayName} (
-            {effectiveRole === "ADMIN" ? "admin" : "member"}). The widget grid
-            arrives in Phase 3.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          Admins can invite bandmates from Settings (avatar menu, top right).
-        </CardContent>
-      </Card>
+    <main className="mx-auto flex w-full max-w-5xl flex-col gap-4 p-6">
+      <h1 className="text-lg font-semibold tracking-tight">To-Do&apos;s</h1>
+      <Suspense>
+        <TasksTable boardId={boardId} />
+        <TaskDetailModal boardId={boardId} />
+      </Suspense>
     </main>
   );
 }
