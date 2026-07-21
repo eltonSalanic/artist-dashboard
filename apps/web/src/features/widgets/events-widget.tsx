@@ -25,6 +25,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -200,12 +201,13 @@ function EventForm({ boardId, type }: { boardId: string; type: EventType }) {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
       />
-      <Input
+      <DateTimePicker
         aria-label="Starts at"
-        type="datetime-local"
+        mode="datetime"
+        placeholder="Starts at"
         className="w-52"
         value={startsAt}
-        onChange={(e) => setStartsAt(e.target.value)}
+        onChange={setStartsAt}
       />
       <Input
         aria-label="Location"

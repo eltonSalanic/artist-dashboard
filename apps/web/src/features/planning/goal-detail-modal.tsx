@@ -21,6 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Field, FieldLabel } from "@/components/ui/field";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -186,17 +187,15 @@ function GoalDetailBody({
         <Field>
           <FieldLabel htmlFor="goal-due">Due date</FieldLabel>
           {canManage ? (
-            <Input
+            <DateTimePicker
               id="goal-due"
-              type="date"
+              placeholder="No due date"
               value={data.dueDate ? data.dueDate.slice(0, 10) : ""}
-              onChange={(e) =>
+              onChange={(value) =>
                 updateGoal.mutate({
                   goalId: data.id,
                   dto: {
-                    dueDate: e.target.value
-                      ? new Date(e.target.value).toISOString()
-                      : null,
+                    dueDate: value ? new Date(value).toISOString() : null,
                   },
                 })
               }

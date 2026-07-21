@@ -23,6 +23,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -165,12 +166,13 @@ function ReminderForm({ boardId }: { boardId: string }) {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
       />
-      <Input
+      <DateTimePicker
         aria-label="Remind at"
-        type="datetime-local"
+        mode="datetime"
+        placeholder="Remind at"
         className="w-52"
         value={remindAt}
-        onChange={(e) => setRemindAt(e.target.value)}
+        onChange={setRemindAt}
       />
       <Button type="submit" disabled={!title.trim() || !remindAt}>
         Add

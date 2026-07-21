@@ -25,6 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Field, FieldLabel } from "@/components/ui/field";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -207,15 +208,16 @@ function EventDetailBody({
         <Field>
           <FieldLabel htmlFor="event-starts">Starts</FieldLabel>
           {canManage ? (
-            <Input
+            <DateTimePicker
               id="event-starts"
-              type="datetime-local"
+              mode="datetime"
+              clearable={false}
               value={toLocalInputValue(data.startsAt)}
-              onChange={(e) =>
-                e.target.value &&
+              onChange={(value) =>
+                value &&
                 updateEvent.mutate({
                   eventId: data.id,
-                  dto: { startsAt: fromLocalInputValue(e.target.value) },
+                  dto: { startsAt: fromLocalInputValue(value) },
                 })
               }
             />
@@ -228,18 +230,15 @@ function EventDetailBody({
         <Field>
           <FieldLabel htmlFor="event-ends">Ends</FieldLabel>
           {canManage ? (
-            <Input
+            <DateTimePicker
               id="event-ends"
-              type="datetime-local"
+              mode="datetime"
+              placeholder="No end time"
               value={data.endsAt ? toLocalInputValue(data.endsAt) : ""}
-              onChange={(e) =>
+              onChange={(value) =>
                 updateEvent.mutate({
                   eventId: data.id,
-                  dto: {
-                    endsAt: e.target.value
-                      ? fromLocalInputValue(e.target.value)
-                      : null,
-                  },
+                  dto: { endsAt: value ? fromLocalInputValue(value) : null },
                 })
               }
             />

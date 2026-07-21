@@ -58,7 +58,7 @@ Sign-off checklist. Phase 4 is complete when every box below is ticked (or consc
 - [x] Optional description and location save and display
 - [x] Edit an event, including changing its **type** — it moves to the other widget
 - [x] Delete an event
-- [ ] Widgets sort by upcoming date; past events don't crowd out future ones
+- [x] Widgets sort by upcoming date; past events don't crowd out future ones
 
 ---
 
@@ -66,10 +66,10 @@ Sign-off checklist. Phase 4 is complete when every box below is ticked (or consc
 
 ## 4. Focus
 
-- [ ] Set a focus pin for **WEEK**, **MONTH**, and **YEAR**
-- [ ] All three display in the full-width Focus strip
-- [ ] Edit an existing pin — it **updates in place**; you never end up with two pins for the same period
-- [ ] Clear a pin's text and confirm the empty state returns
+- [x] Set a focus pin for **WEEK**, **MONTH**, and **YEAR**
+- [x] All three display in the full-width Focus strip
+- [x] Edit an existing pin — it **updates in place**; you never end up with two pins for the same period
+- [x] Clear a pin's text and confirm the empty state returns
 
 ---
 

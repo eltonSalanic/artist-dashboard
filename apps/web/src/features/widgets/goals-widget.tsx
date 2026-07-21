@@ -26,6 +26,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -241,12 +242,12 @@ function GoalForm({
           </SelectGroup>
         </SelectContent>
       </Select>
-      <Input
+      <DateTimePicker
         aria-label="Goal due date"
-        type="date"
+        placeholder="Due date"
         className="w-40"
         value={dueDate}
-        onChange={(e) => setDueDate(e.target.value)}
+        onChange={setDueDate}
       />
       <Button type="submit">Add goal</Button>
     </form>

@@ -44,6 +44,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Field, FieldLabel } from "@/components/ui/field";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -379,17 +380,15 @@ function TaskDetailBody({
         <Field>
           <FieldLabel htmlFor="task-due">Due date</FieldLabel>
           {canEdit ? (
-            <Input
+            <DateTimePicker
               id="task-due"
-              type="date"
+              placeholder="No due date"
               value={data.dueDate ? data.dueDate.slice(0, 10) : ""}
-              onChange={(e) =>
+              onChange={(value) =>
                 updateTask.mutate({
                   taskId,
                   dto: {
-                    dueDate: e.target.value
-                      ? new Date(e.target.value).toISOString()
-                      : null,
+                    dueDate: value ? new Date(value).toISOString() : null,
                   },
                 })
               }
