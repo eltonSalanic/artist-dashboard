@@ -45,12 +45,25 @@ export function formatDateTime(iso: string): string {
   });
 }
 
-/** "Mar 14" — date only, for goals and day cells. */
+/** "Mar 14" — local calendar day for real timestamps (e.g. completedAt). */
+export function formatLocalDate(iso: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+/**
+ * "Mar 14" — calendar day for date-only fields (goal due dates) stored as
+ * UTC midnight. Uses UTC so local TZ doesn't shift the day.
+ */
 export function formatDate(iso: string | null): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
+    timeZone: "UTC",
   });
 }
 

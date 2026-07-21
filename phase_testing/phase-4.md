@@ -20,12 +20,12 @@ Sign-off checklist. Phase 4 is complete when every box below is ticked (or consc
 
 ## 1. Dashboard widgets
 
-- [ ] **Eight** widgets render: Focus, To-Do's, My Tasks, Goals, Shows, Next Rehearsals, Next Meetings, Reminders
-- [ ] Your Phase 3 layout survived — the three new widgets (Goals, Next Meetings, Reminders) are **appended below** your existing arrangement, not reshuffled into it
-- [ ] Each new widget shows a sensible **empty state** before any data exists
-- [ ] Resize each new widget between small and large — both collapsed and expanded forms render correctly
-- [ ] Hide a new widget and show it again; the change persists across a page reload
-- [ ] Drag-reorder still saves (debounced ~800ms) and survives reload
+- [x] **Eight** widgets render: Focus, To-Do's, My Tasks, Goals, Shows, Next Rehearsals, Next Meetings, Reminders
+- [x] Your Phase 3 layout survived — the three new widgets (Goals, Next Meetings, Reminders) are **appended below** your existing arrangement, not reshuffled into it
+- [x] Each new widget shows a sensible **empty state** before any data exists
+- [x] Resize each new widget between small and large — both collapsed and expanded forms render correctly
+- [x] Hide a new widget and show it again; the change persists across a page reload
+- [x] Drag-reorder still saves (debounced ~800ms) and survives reload
 
 ---
 
@@ -33,18 +33,18 @@ Sign-off checklist. Phase 4 is complete when every box below is ticked (or consc
 
 ## 2. Goals
 
-- [ ] Create a goal for each period: **YEARLY**, **MONTHLY**, **DAILY**
-- [ ] Create one with a due date and one without
-- [ ] Optional description saves and displays
-- [ ] Edit title, description, period, and due date
-- [ ] Delete a goal
-- [ ] Goals widget lists them and reflects create/edit/delete without a manual refresh
+- [x] Create a goal for each period: **YEARLY**, **MONTHLY**, **DAILY**
+- [x] Create one with a due date and one without
+- [x] Optional description saves and displays
+- [x] Edit title, description, period, and due date
+- [x] Delete a goal
+- [x] Goals widget lists them and reflects create/edit/delete without a manual refresh
 
 **Completion timestamp — the subtle one:**
 
-- [ ] Mark a goal complete; it displays as completed
-- [ ] Un-complete it, then complete it again — the **original completion timestamp is preserved**, not overwritten
-- [ ] A completed goal no longer appears in the Goal picker inside the task detail modal (that list excludes completed goals by design)
+- [x] Mark a goal complete; it displays as completed
+- [x] Un-complete it, then complete it again — the **original completion timestamp is preserved**, not overwritten
+- [x] A completed goal no longer appears in the Goal picker inside the task detail modal (that list excludes completed goals by design)
 
 ---
 
@@ -52,12 +52,12 @@ Sign-off checklist. Phase 4 is complete when every box below is ticked (or consc
 
 ## 3. Events
 
-- [ ] Create a **SHOW**, a **MEETING**, and a **REHEARSAL**
-- [ ] Each lands in its matching widget only — a SHOW appears in Shows and nowhere else
-- [ ] Create an event with only a start time (no end time) — saves and displays cleanly
-- [ ] Optional description and location save and display
-- [ ] Edit an event, including changing its **type** — it moves to the other widget
-- [ ] Delete an event
+- [x] Create a **SHOW**, a **MEETING**, and a **REHEARSAL**
+- [x] Each lands in its matching widget only — a SHOW appears in Shows and nowhere else
+- [x] Create an event with only a start time (no end time) — saves and displays cleanly
+- [x] Optional description and location save and display
+- [x] Edit an event, including changing its **type** — it moves to the other widget
+- [x] Delete an event
 - [ ] Widgets sort by upcoming date; past events don't crowd out future ones
 
 ---

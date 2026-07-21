@@ -118,10 +118,15 @@ export function AssigneeAvatars({
   );
 }
 
+/**
+ * Due dates are calendar days stored as UTC midnight (from `<input type="date">`).
+ * Format in UTC so local timezones west of UTC don't shift the day back.
+ */
 export function formatDueDate(dueDate: string | null): string {
   if (!dueDate) return "—";
   return new Date(dueDate).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
+    timeZone: "UTC",
   });
 }

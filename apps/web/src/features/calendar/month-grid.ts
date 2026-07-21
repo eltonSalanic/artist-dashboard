@@ -35,8 +35,22 @@ export function monthRange(year: number, month: number): { from: Date; to: Date 
   return { from, to };
 }
 
+function itemDayKey(item: CalendarItemDto): string {
+  const date = new Date(item.date);
+  // Tasks/goals store a calendar day as UTC midnight — bucket by UTC Y/M/D
+  // so western timezones don't place them on the previous local day.
+  if (item.kind === "TASK" || item.kind === "GOAL") {
+    return new Date(
+      date.getUTCFullYear(),
+      date.getUTCMonth(),
+      date.getUTCDate(),
+    ).toDateString();
+  }
+  return startOfDay(date).toDateString();
+}
+
 /**
- * Builds the 6×7 month grid and buckets items into their local day.
+ * Builds the 6×7 month grid and buckets items into their day.
  * Always 42 cells so the grid height doesn't jump between months.
  */
 export function buildMonthGrid(
@@ -49,7 +63,7 @@ export function buildMonthGrid(
 
   const byDay = new Map<string, CalendarItemDto[]>();
   for (const item of items) {
-    const key = startOfDay(new Date(item.date)).toDateString();
+    const key = itemDayKey(item);
     const bucket = byDay.get(key);
     if (bucket) bucket.push(item);
     else byDay.set(key, [item]);

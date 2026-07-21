@@ -7,7 +7,7 @@ import { usePermissions } from "@/features/auth/permissions";
 import { useTasks } from "@/features/tasks/use-tasks";
 import { useDeleteGoal, useGoal, useUpdateGoal } from "./use-goals";
 import { useDetailParams } from "./use-detail-params";
-import { formatDate, goalPeriodLabel } from "./planning-bits";
+import { formatDate, formatLocalDate, goalPeriodLabel } from "./planning-bits";
 import { LinkedTasks } from "./linked-tasks";
 import type { GoalDto } from "./types";
 import { Badge } from "@/components/ui/badge";
@@ -141,7 +141,7 @@ function GoalDetailBody({
         <DialogDescription>
           {goalPeriodLabel[data.period]} goal
           {completed
-            ? ` · completed ${formatDate(data.completedAt)}`
+            ? ` · completed ${formatLocalDate(data.completedAt)}`
             : data.dueDate
               ? ` · due ${formatDate(data.dueDate)}`
               : ""}

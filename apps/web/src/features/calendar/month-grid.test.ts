@@ -74,6 +74,22 @@ describe("buildMonthGrid", () => {
     expect(flagged[0].date.getDate()).toBe(15);
   });
 
+  it("buckets date-only tasks/goals by UTC calendar day", () => {
+    const cells = buildMonthGrid(2026, 6, [
+      item({
+        kind: "TASK",
+        id: "t1",
+        title: "Ship",
+        // Jul 22 UTC midnight — local US evening of Jul 21
+        date: "2026-07-22T00:00:00.000Z",
+      }),
+    ]);
+    const jul22 = cells.find((c) => c.inMonth && c.date.getDate() === 22);
+    const jul21 = cells.find((c) => c.inMonth && c.date.getDate() === 21);
+    expect(jul22?.items.map((i) => i.id)).toEqual(["t1"]);
+    expect(jul21?.items ?? []).toEqual([]);
+  });
+
   it("drops items outside the visible range into no cell", () => {
     const cells = buildMonthGrid(2026, 3, [
       item({ id: "far", date: new Date(2026, 7, 1, 12, 0).toISOString() }),
