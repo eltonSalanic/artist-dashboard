@@ -39,6 +39,14 @@ export class LayoutsService {
     return { layout: dto.layout };
   }
 
+  /** Drop the user's personal layout so they inherit the board default again. */
+  async resetForUser(boardId: string, userId: string) {
+    await this.prisma.userLayout.deleteMany({
+      where: { boardId, userId },
+    });
+    return this.getForUser(boardId, userId);
+  }
+
   async saveDefault(boardId: string, dto: UpdateLayoutDto) {
     await this.prisma.board.update({
       where: { id: boardId },

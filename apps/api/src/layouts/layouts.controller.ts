@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Put } from '@nestjs/common';
 import { updateLayoutSchema, type UpdateLayoutDto } from '@artist/shared';
 import { CurrentUser, type AuthUser } from '../auth/current-user.decorator';
 import { BoardRoles } from '../common/board-roles.decorator';
@@ -23,6 +23,12 @@ export class LayoutsController {
     @Body(new ZodValidationPipe(updateLayoutSchema)) dto: UpdateLayoutDto,
   ) {
     return this.layouts.saveForUser(boardId, user.userId, dto);
+  }
+
+  @Delete('layout')
+  @BoardRoles('USER')
+  reset(@Param('boardId') boardId: string, @CurrentUser() user: AuthUser) {
+    return this.layouts.resetForUser(boardId, user.userId);
   }
 
   @Put('default-layout')

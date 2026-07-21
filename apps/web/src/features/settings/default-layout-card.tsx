@@ -2,8 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
-import type { LayoutItem, WidgetType } from "@artist/shared";
+import { Plus, RotateCcw } from "lucide-react";
+import { toast } from "sonner";
+import {
+  DEFAULT_BOARD_LAYOUT,
+  type LayoutItem,
+  type WidgetType,
+} from "@artist/shared";
 import { apiFetch } from "@/lib/api";
 import type { BoardDetailDto } from "@/features/auth/types";
 import { DashboardGrid } from "@/features/dashboard/dashboard-grid";
@@ -87,6 +92,11 @@ function DefaultLayoutEditor({
     });
   };
 
+  const resetToPreset = () => {
+    setLayout(DEFAULT_BOARD_LAYOUT.map((item) => ({ ...item })));
+    toast.message("Reset to the standard preset — save to apply for the board");
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4">
@@ -112,6 +122,10 @@ function DefaultLayoutEditor({
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+          <Button variant="outline" size="sm" onClick={resetToPreset}>
+            <RotateCcw data-icon="inline-start" />
+            Reset
+          </Button>
           <Button
             size="sm"
             disabled={saveDefault.isPending}

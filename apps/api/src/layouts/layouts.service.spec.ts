@@ -6,7 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 describe('LayoutsService', () => {
   const prisma = {
     board: { findUnique: jest.fn(), update: jest.fn() },
-    userLayout: { findUnique: jest.fn(), upsert: jest.fn() },
+    userLayout: { findUnique: jest.fn(), upsert: jest.fn(), deleteMany: jest.fn() },
   };
   const service = new LayoutsService(prisma as unknown as PrismaService);
 
@@ -87,6 +87,27 @@ describe('LayoutsService', () => {
     expect(prisma.board.update).toHaveBeenCalledWith({
       where: { id: 'b1' },
       data: { defaultLayout: layout },
+    });
+  });
+
+  it("clears the user's layout and returns the board default", async () => {
+    prisma.userLayout.deleteMany.mockResolvedValue({ count: 1 });
+    prisma.board.findUnique.mockResolvedValue({
+      defaultLayout: [{ widgetType: 'TODOS', x: 0, y: 0, w: 8, h: 6 }],
+    });
+    prisma.userLayout.findUnique.mockResolvedValue(null);
+
+    const result = await service.resetForUser('b1', 'u1');
+
+    expect(prisma.userLayout.deleteMany).toHaveBeenCalledWith({
+      where: { boardId: 'b1', userId: 'u1' },
+    });
+    expect(result.layout).toContainEqual({
+      widgetType: 'TODOS',
+      x: 0,
+      y: 0,
+      w: 8,
+      h: 6,
     });
   });
 });

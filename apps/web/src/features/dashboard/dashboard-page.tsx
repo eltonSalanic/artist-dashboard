@@ -3,13 +3,14 @@
 import { useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { Eye } from "lucide-react";
+import { Eye, RotateCcw } from "lucide-react";
 import type { LayoutItem, WidgetType } from "@artist/shared";
 import { widgetRegistry } from "@/features/widgets/registry";
 import { WidgetFrame } from "@/features/widgets/widget-frame";
 import { DashboardGrid } from "./dashboard-grid";
-import { useLayout, useSaveLayout } from "./use-layout";
+import { useLayout, useResetLayout, useSaveLayout } from "./use-layout";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
 
 const SAVE_DEBOUNCE_MS = 800;
 
@@ -26,6 +28,7 @@ export function DashboardPage({ boardId }: { boardId: string }) {
   const queryClient = useQueryClient();
   const layoutQuery = useLayout(boardId);
   const saveLayout = useSaveLayout(boardId);
+  const resetLayout = useResetLayout(boardId);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -49,6 +52,11 @@ export function DashboardPage({ boardId }: { boardId: string }) {
         SAVE_DEBOUNCE_MS,
       );
     }
+  };
+
+  const resetToDefault = () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    resetLayout.mutate();
   };
 
   const toggleHidden = (widgetType: WidgetType) => {
@@ -86,28 +94,49 @@ export function DashboardPage({ boardId }: { boardId: string }) {
 
   return (
     <div className="flex flex-1 flex-col gap-3 p-4">
-      {hiddenItems.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-muted-foreground">Hidden:</span>
-          {hiddenItems.map((item) => {
-            const def = widgetRegistry[item.widgetType];
-            if (!def) return null;
-            return (
-              <Badge key={item.widgetType} variant="secondary" className="gap-1.5">
-                {def.title}
-                <button
-                  type="button"
-                  aria-label={`Show ${def.title}`}
-                  onClick={() => toggleHidden(item.widgetType)}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <Eye className="size-3" />
-                </button>
-              </Badge>
-            );
-          })}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex min-h-7 flex-wrap items-center gap-2">
+          {hiddenItems.length > 0 && (
+            <>
+              <span className="text-xs text-muted-foreground">Hidden:</span>
+              {hiddenItems.map((item) => {
+                const def = widgetRegistry[item.widgetType];
+                if (!def) return null;
+                return (
+                  <Badge
+                    key={item.widgetType}
+                    variant="secondary"
+                    className="gap-1.5"
+                  >
+                    {def.title}
+                    <button
+                      type="button"
+                      aria-label={`Show ${def.title}`}
+                      onClick={() => toggleHidden(item.widgetType)}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <Eye className="size-3" />
+                    </button>
+                  </Badge>
+                );
+              })}
+            </>
+          )}
         </div>
-      )}
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={resetLayout.isPending}
+          onClick={resetToDefault}
+        >
+          {resetLayout.isPending ? (
+            <Spinner data-icon="inline-start" />
+          ) : (
+            <RotateCcw data-icon="inline-start" />
+          )}
+          Reset to default layout
+        </Button>
+      </div>
 
       <DashboardGrid
         layout={visibleLayout}

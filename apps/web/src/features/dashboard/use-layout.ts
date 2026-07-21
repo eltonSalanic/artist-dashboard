@@ -40,6 +40,21 @@ export function useSaveLayout(boardId: string) {
   });
 }
 
+export function useResetLayout(boardId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      apiFetch<LayoutResponse>(`/boards/${boardId}/layout`, {
+        method: "DELETE",
+      }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["layout", boardId], data);
+      toast.success("Layout reset to the board default");
+    },
+    onError: showError,
+  });
+}
+
 export function useSaveDefaultLayout(boardId: string) {
   const queryClient = useQueryClient();
   return useMutation({
