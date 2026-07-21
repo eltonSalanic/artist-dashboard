@@ -47,7 +47,7 @@ export const widgetRegistry: Partial<Record<WidgetType, WidgetDefinition>> = {
     icon: Zap,
     Collapsed: FocusWidget,
     Expanded: FocusWidgetExpanded,
-    defaultSize: { w: 12, h: 2 },
+    defaultSize: { w: 12, h: 3 },
     minSize: { w: 4, h: 2 },
   },
   TODOS: {

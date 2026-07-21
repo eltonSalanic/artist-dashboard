@@ -2,15 +2,15 @@ import type { WidgetType } from './enums';
 
 /** Layout new boards start with; admins customize it later. */
 export const DEFAULT_BOARD_LAYOUT: LayoutItem[] = [
-  { widgetType: 'FOCUS', x: 0, y: 0, w: 12, h: 2 },
-  { widgetType: 'TODOS', x: 0, y: 2, w: 8, h: 6 },
-  { widgetType: 'MY_TASKS', x: 8, y: 2, w: 4, h: 6 },
-  { widgetType: 'GOALS', x: 0, y: 8, w: 4, h: 4 },
-  { widgetType: 'SHOWS', x: 4, y: 8, w: 4, h: 4 },
-  { widgetType: 'NEXT_REHEARSALS', x: 8, y: 8, w: 4, h: 4 },
-  { widgetType: 'NEXT_MEETINGS', x: 0, y: 12, w: 4, h: 4 },
-  { widgetType: 'REMINDERS', x: 4, y: 12, w: 4, h: 4 },
-  { widgetType: 'ACTIVITY_FEED', x: 8, y: 12, w: 4, h: 4 },
+  { widgetType: 'FOCUS', x: 0, y: 0, w: 12, h: 3 },
+  { widgetType: 'TODOS', x: 0, y: 3, w: 8, h: 6 },
+  { widgetType: 'MY_TASKS', x: 8, y: 3, w: 4, h: 6 },
+  { widgetType: 'GOALS', x: 0, y: 9, w: 4, h: 4 },
+  { widgetType: 'SHOWS', x: 4, y: 9, w: 4, h: 4 },
+  { widgetType: 'NEXT_REHEARSALS', x: 8, y: 9, w: 4, h: 4 },
+  { widgetType: 'NEXT_MEETINGS', x: 0, y: 13, w: 4, h: 4 },
+  { widgetType: 'REMINDERS', x: 4, y: 13, w: 4, h: 4 },
+  { widgetType: 'ACTIVITY_FEED', x: 8, y: 13, w: 4, h: 4 },
 ];
 
 export interface LayoutItem {
