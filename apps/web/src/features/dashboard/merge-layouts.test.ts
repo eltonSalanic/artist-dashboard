@@ -1,4 +1,9 @@
-import { mergeLayouts, type LayoutItem } from "@artist/shared";
+import {
+  DEFAULT_BOARD_LAYOUT,
+  mergeLayouts,
+  withShippedWidgets,
+  type LayoutItem,
+} from "@artist/shared";
 
 const item = (
   widgetType: LayoutItem["widgetType"],
@@ -41,5 +46,28 @@ describe("mergeLayouts", () => {
     const user = [item("SHOWS", { hidden: true })];
     const merged = mergeLayouts(defaults, user);
     expect(merged.find((i) => i.widgetType === "SHOWS")?.hidden).toBe(true);
+  });
+});
+
+describe("withShippedWidgets", () => {
+  it("adds widgets shipped after the board stored its default", () => {
+    const stored = [item("TODOS", { w: 8, h: 6 })];
+    const merged = withShippedWidgets(stored);
+
+    expect(merged.map((i) => i.widgetType)).toEqual(
+      DEFAULT_BOARD_LAYOUT.map((i) => i.widgetType),
+    );
+  });
+
+  it("keeps the admin's stored position and hidden flag", () => {
+    const stored = [item("TODOS", { x: 3, y: 7, w: 6, h: 2, hidden: true })];
+    const merged = withShippedWidgets(stored);
+
+    expect(merged.find((i) => i.widgetType === "TODOS")).toEqual(stored[0]);
+  });
+
+  it("falls back to the shipped layout for a board with no stored default", () => {
+    expect(withShippedWidgets(null)).toEqual(DEFAULT_BOARD_LAYOUT);
+    expect(withShippedWidgets([])).toEqual(DEFAULT_BOARD_LAYOUT);
   });
 });

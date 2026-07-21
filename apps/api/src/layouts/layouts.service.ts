@@ -1,5 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { mergeLayouts, type LayoutItem, type UpdateLayoutDto } from '@artist/shared';
+import {
+  mergeLayouts,
+  withShippedWidgets,
+  type LayoutItem,
+  type UpdateLayoutDto,
+} from '@artist/shared';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -19,7 +24,7 @@ export class LayoutsService {
 
     return {
       layout: mergeLayouts(
-        board.defaultLayout as unknown as LayoutItem[],
+        withShippedWidgets(board.defaultLayout as unknown as LayoutItem[]),
         (userLayout?.layout as unknown as LayoutItem[] | undefined) ?? null,
       ),
     };

@@ -1,5 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
-import type { LayoutItem } from '@artist/shared';
+import { DEFAULT_BOARD_LAYOUT, type LayoutItem } from '@artist/shared';
 import { LayoutsService } from './layouts.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -19,16 +19,20 @@ describe('LayoutsService', () => {
     );
   });
 
-  it("returns the default layout when the user hasn't saved one", async () => {
+  it("returns the board default when the user hasn't saved one", async () => {
     prisma.board.findUnique.mockResolvedValue({
       defaultLayout: [{ widgetType: 'TODOS', x: 0, y: 0, w: 8, h: 6 }],
     });
     prisma.userLayout.findUnique.mockResolvedValue(null);
 
     const result = await service.getForUser('b1', 'u1');
-    expect(result.layout).toEqual([
-      { widgetType: 'TODOS', x: 0, y: 0, w: 8, h: 6 },
-    ]);
+    expect(result.layout).toContainEqual({
+      widgetType: 'TODOS',
+      x: 0,
+      y: 0,
+      w: 8,
+      h: 6,
+    });
   });
 
   it("merges the user's saved layout over the board default", async () => {
@@ -40,9 +44,27 @@ describe('LayoutsService', () => {
     });
 
     const result = await service.getForUser('b1', 'u1');
-    expect(result.layout).toEqual([
-      { widgetType: 'TODOS', x: 4, y: 2, w: 4, h: 3 },
-    ]);
+    expect(result.layout).toContainEqual({
+      widgetType: 'TODOS',
+      x: 4,
+      y: 2,
+      w: 4,
+      h: 3,
+    });
+  });
+
+  it('serves widgets shipped after the board stored its default', async () => {
+    prisma.board.findUnique.mockResolvedValue({
+      defaultLayout: [{ widgetType: 'TODOS', x: 0, y: 0, w: 8, h: 6 }],
+    });
+    prisma.userLayout.findUnique.mockResolvedValue({
+      layout: [{ widgetType: 'TODOS', x: 0, y: 0, w: 8, h: 6 }],
+    });
+
+    const result = await service.getForUser('b1', 'u1');
+    expect(result.layout.map((i) => i.widgetType)).toEqual(
+      DEFAULT_BOARD_LAYOUT.map((i) => i.widgetType),
+    );
   });
 
   it('upserts the layout for the current user', async () => {

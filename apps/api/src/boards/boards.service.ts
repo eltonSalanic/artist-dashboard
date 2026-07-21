@@ -1,5 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import type { UpdateBoardDto } from '@artist/shared';
+import {
+  withShippedWidgets,
+  type LayoutItem,
+  type UpdateBoardDto,
+} from '@artist/shared';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -18,7 +22,9 @@ export class BoardsService {
     return {
       id: board.id,
       name: board.name,
-      defaultLayout: board.defaultLayout,
+      defaultLayout: withShippedWidgets(
+        board.defaultLayout as unknown as LayoutItem[],
+      ),
       statuses: board.statuses,
       members: board.memberships.map((m) => ({
         membershipId: m.id,

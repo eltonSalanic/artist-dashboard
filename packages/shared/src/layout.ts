@@ -33,6 +33,27 @@ export function mergeLayouts(
   defaultLayout: LayoutItem[],
   userLayout: LayoutItem[] | null | undefined,
 ): LayoutItem[] {
+  return mergeInto(defaultLayout, userLayout);
+}
+
+/**
+ * Layer the widgets shipped in this build under a board's stored default.
+ *
+ * A board snapshots DEFAULT_BOARD_LAYOUT into `Board.defaultLayout` when it is
+ * created and never looks at the constant again, so widgets added to the
+ * constant in a later release would otherwise stay invisible on every existing
+ * board. Positions and hidden flags the admin already saved still win.
+ */
+export function withShippedWidgets(
+  storedDefault: LayoutItem[] | null | undefined,
+): LayoutItem[] {
+  return mergeInto(DEFAULT_BOARD_LAYOUT, storedDefault);
+}
+
+function mergeInto(
+  defaultLayout: LayoutItem[],
+  userLayout: LayoutItem[] | null | undefined,
+): LayoutItem[] {
   if (!userLayout || userLayout.length === 0) return defaultLayout;
   const userByType = new Map(userLayout.map((i) => [i.widgetType, i]));
   const maxUserY = Math.max(0, ...userLayout.map((i) => i.y + i.h));
