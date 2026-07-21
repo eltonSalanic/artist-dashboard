@@ -9,13 +9,18 @@ export class RemindersService {
   list(boardId: string) {
     return this.prisma.reminder.findMany({
       where: { boardId },
-      orderBy: [{ done: 'asc' }, { remindAt: 'asc' }],
+      // Dated reminders come first, soonest first; undated notes trail them.
+      orderBy: [
+        { done: 'asc' },
+        { remindAt: { sort: 'asc', nulls: 'last' } },
+        { createdAt: 'asc' },
+      ],
     });
   }
 
   create(boardId: string, dto: CreateReminderDto) {
     return this.prisma.reminder.create({
-      data: { boardId, title: dto.title, remindAt: dto.remindAt },
+      data: { boardId, title: dto.title, remindAt: dto.remindAt ?? null },
     });
   }
 

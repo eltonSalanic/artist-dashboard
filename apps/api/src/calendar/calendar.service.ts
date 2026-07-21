@@ -80,7 +80,8 @@ export class CalendarService {
         kind: 'REMINDER',
         id: r.id,
         title: r.title,
-        date: r.remindAt,
+        // The range filter above already drops the undated ones.
+        date: r.remindAt as Date,
         reminder: { done: r.done },
       })),
     ];

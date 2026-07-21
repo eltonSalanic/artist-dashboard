@@ -101,7 +101,10 @@ function ReminderRow({
   const { can } = usePermissions();
   const updateReminder = useUpdateReminder(boardId);
   const deleteReminder = useDeleteReminder(boardId);
-  const overdue = !reminder.done && new Date(reminder.remindAt) < new Date();
+  const overdue =
+    !reminder.done &&
+    reminder.remindAt !== null &&
+    new Date(reminder.remindAt) < new Date();
 
   return (
     <li className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-accent/50">
@@ -121,11 +124,13 @@ function ReminderRow({
       >
         {reminder.title}
       </span>
-      <span
-        className={`shrink-0 text-xs ${overdue ? "text-destructive" : "text-muted-foreground"}`}
-      >
-        {formatDateTime(reminder.remindAt)}
-      </span>
+      {reminder.remindAt && (
+        <span
+          className={`shrink-0 text-xs ${overdue ? "text-destructive" : "text-muted-foreground"}`}
+        >
+          {formatDateTime(reminder.remindAt)}
+        </span>
+      )}
       {deletable && (
         <Button
           variant="ghost"
@@ -150,10 +155,10 @@ function ReminderForm({ boardId }: { boardId: string }) {
       className="flex flex-wrap items-end gap-2"
       onSubmit={(e) => {
         e.preventDefault();
-        if (!title.trim() || !remindAt) return;
+        if (!title.trim()) return;
         createReminder.mutate({
           title: title.trim(),
-          remindAt: fromLocalInputValue(remindAt),
+          remindAt: remindAt ? fromLocalInputValue(remindAt) : null,
         });
         setTitle("");
         setRemindAt("");
@@ -161,7 +166,7 @@ function ReminderForm({ boardId }: { boardId: string }) {
     >
       <Input
         aria-label="New reminder"
-        placeholder="Remind the band to…"
+        placeholder="Heads up for the band…"
         className="min-w-40 flex-1"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
@@ -169,12 +174,12 @@ function ReminderForm({ boardId }: { boardId: string }) {
       <DateTimePicker
         aria-label="Remind at"
         mode="datetime"
-        placeholder="Remind at"
+        placeholder="Any time"
         className="w-52"
         value={remindAt}
         onChange={setRemindAt}
       />
-      <Button type="submit" disabled={!title.trim() || !remindAt}>
+      <Button type="submit" disabled={!title.trim()}>
         Add
       </Button>
     </form>

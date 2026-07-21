@@ -37,7 +37,8 @@ export interface ReminderDto {
   id: string;
   boardId: string;
   title: string;
-  remindAt: string;
+  /** Null for standing notes that aren't tied to a moment. */
+  remindAt: string | null;
   done: boolean;
   createdAt: string;
 }
