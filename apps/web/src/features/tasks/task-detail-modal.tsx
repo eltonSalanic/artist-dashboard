@@ -7,6 +7,10 @@ import { Plus, Trash2 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { usePermissions } from "@/features/auth/permissions";
 import type { BoardDetailDto, BoardMemberDto, TaskStatusDto } from "@/features/auth/types";
+import { useGoals } from "@/features/planning/use-goals";
+import { useEvents } from "@/features/planning/use-events";
+import { useDetailParams } from "@/features/planning/use-detail-params";
+import { eventTypeLabel, formatDateTime } from "@/features/planning/planning-bits";
 import type { TaskDetailDto } from "./types";
 import {
   useChecklist,
@@ -125,6 +129,143 @@ function TaskDetail({
       members={board.data.members}
       onClose={onClose}
     />
+  );
+}
+
+/** Sentinel for "no goal/event" — Base UI selects need a non-empty value. */
+const NO_LINK = "__none__";
+
+function TaskLinks({
+  boardId,
+  taskId,
+  data,
+}: {
+  boardId: string;
+  taskId: string;
+  data: TaskDetailDto;
+}) {
+  const { can } = usePermissions();
+  const { swap } = useDetailParams();
+  const updateTask = useUpdateTask(boardId);
+  const goals = useGoals(boardId, { includeCompleted: false });
+  const events = useEvents(boardId);
+  const canEdit = can("task.editFields");
+
+  const goalItems = [
+    { value: NO_LINK, label: "No goal" },
+    ...(goals.data ?? []).map((goal) => ({
+      value: goal.id,
+      label: goal.title,
+    })),
+  ];
+  const eventItems = [
+    { value: NO_LINK, label: "No event" },
+    ...(events.data ?? []).map((event) => ({
+      value: event.id,
+      label: `${eventTypeLabel[event.type]} · ${event.title}`,
+    })),
+  ];
+
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <Field>
+        <FieldLabel htmlFor="task-goal">Goal</FieldLabel>
+        {canEdit ? (
+          <Select
+            value={data.goal?.id ?? NO_LINK}
+            onValueChange={(value) =>
+              value &&
+              updateTask.mutate({
+                taskId,
+                dto: { goalId: value === NO_LINK ? null : value },
+              })
+            }
+            items={goalItems}
+          >
+            <SelectTrigger id="task-goal" size="sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {goalItems.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        ) : data.goal ? (
+          <button
+            type="button"
+            className="truncate text-left text-sm underline-offset-4 hover:underline"
+            onClick={() => swap("task", "goal", data.goal!.id)}
+          >
+            {data.goal.title}
+          </button>
+        ) : (
+          <span className="text-sm text-muted-foreground">—</span>
+        )}
+        {canEdit && data.goal && (
+          <button
+            type="button"
+            className="self-start text-xs text-muted-foreground underline-offset-4 hover:underline"
+            onClick={() => swap("task", "goal", data.goal!.id)}
+          >
+            Open goal
+          </button>
+        )}
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="task-event">Event</FieldLabel>
+        {canEdit ? (
+          <Select
+            value={data.event?.id ?? NO_LINK}
+            onValueChange={(value) =>
+              value &&
+              updateTask.mutate({
+                taskId,
+                dto: { eventId: value === NO_LINK ? null : value },
+              })
+            }
+            items={eventItems}
+          >
+            <SelectTrigger id="task-event" size="sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {eventItems.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        ) : data.event ? (
+          <button
+            type="button"
+            className="truncate text-left text-sm underline-offset-4 hover:underline"
+            onClick={() => swap("task", "event", data.event!.id)}
+          >
+            {data.event.title} · {formatDateTime(data.event.startsAt)}
+          </button>
+        ) : (
+          <span className="text-sm text-muted-foreground">—</span>
+        )}
+        {canEdit && data.event && (
+          <button
+            type="button"
+            className="self-start text-xs text-muted-foreground underline-offset-4 hover:underline"
+            onClick={() => swap("task", "event", data.event!.id)}
+          >
+            Open event
+          </button>
+        )}
+      </Field>
+    </div>
   );
 }
 
@@ -300,6 +441,8 @@ function TaskDetailBody({
           )}
         </Field>
       </div>
+
+      <TaskLinks boardId={boardId} taskId={taskId} data={data} />
 
       <Field>
         <FieldLabel htmlFor="task-description">Description</FieldLabel>

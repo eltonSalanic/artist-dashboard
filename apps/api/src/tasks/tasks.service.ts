@@ -25,6 +25,8 @@ const taskInclude = {
   assignees: { include: { user: true } },
   _count: { select: { subtasks: true, checklist: true } },
   checklist: { orderBy: { sortOrder: 'asc' as const } },
+  goal: { select: { id: true, title: true } },
+  event: { select: { id: true, title: true, type: true, startsAt: true } },
 } satisfies Prisma.TaskInclude;
 
 /** Fields a regular member may change on someone else's task. */
@@ -57,6 +59,8 @@ export class TasksService {
         ...(query.assigneeId
           ? { assignees: { some: { userId: query.assigneeId } } }
           : {}),
+        ...(query.goalId ? { goalId: query.goalId } : {}),
+        ...(query.eventId ? { eventId: query.eventId } : {}),
       },
       include: taskInclude,
       orderBy,
@@ -109,6 +113,8 @@ export class TasksService {
 
     const statusId = dto.statusId ?? (await this.defaultStatusId(boardId));
     await this.assertStatusInBoard(boardId, statusId);
+    if (dto.goalId) await this.assertGoalInBoard(boardId, dto.goalId);
+    if (dto.eventId) await this.assertEventInBoard(boardId, dto.eventId);
 
     const last = await this.prisma.task.aggregate({
       where: { boardId, parentTaskId: dto.parentTaskId ?? null },
@@ -124,6 +130,8 @@ export class TasksService {
         statusId,
         dueDate: dto.dueDate ?? null,
         parentTaskId: dto.parentTaskId ?? null,
+        goalId: dto.goalId ?? null,
+        eventId: dto.eventId ?? null,
         createdById: userId,
         sortOrder: (last._max.sortOrder ?? 0) + SORT_GAP,
         assignees: {
@@ -153,6 +161,8 @@ export class TasksService {
       }
     }
     if (dto.statusId) await this.assertStatusInBoard(boardId, dto.statusId);
+    if (dto.goalId) await this.assertGoalInBoard(boardId, dto.goalId);
+    if (dto.eventId) await this.assertEventInBoard(boardId, dto.eventId);
 
     const task = await this.prisma.task.update({
       where: { id: taskId },
@@ -175,7 +185,11 @@ export class TasksService {
     let newOrder: number;
     if (dto.afterTaskId === null) {
       const first = await this.prisma.task.findFirst({
-        where: { boardId, parentTaskId: task.parentTaskId, id: { not: taskId } },
+        where: {
+          boardId,
+          parentTaskId: task.parentTaskId,
+          id: { not: taskId },
+        },
         orderBy: { sortOrder: 'asc' },
         select: { sortOrder: true },
       });
@@ -291,6 +305,20 @@ export class TasksService {
     if (!item) throw new NotFoundException('Checklist item not found');
   }
 
+  private async assertGoalInBoard(boardId: string, goalId: string) {
+    const goal = await this.prisma.goal.findFirst({
+      where: { id: goalId, boardId },
+    });
+    if (!goal) throw new BadRequestException('Unknown goal for this board');
+  }
+
+  private async assertEventInBoard(boardId: string, eventId: string) {
+    const event = await this.prisma.event.findFirst({
+      where: { id: eventId, boardId },
+    });
+    if (!event) throw new BadRequestException('Unknown event for this board');
+  }
+
   private async assertStatusInBoard(boardId: string, statusId: string) {
     const status = await this.prisma.taskStatus.findFirst({
       where: { id: statusId, boardId },
@@ -320,6 +348,13 @@ export class TasksService {
     createdAt: Date;
     updatedAt: Date;
     status: { id: string; name: string; color: string; isDone: boolean };
+    goal: { id: string; title: string } | null;
+    event: {
+      id: string;
+      title: string;
+      type: string;
+      startsAt: Date;
+    } | null;
     assignees: {
       user: { id: string; displayName: string; avatarUrl: string | null };
     }[];
@@ -341,6 +376,8 @@ export class TasksService {
     dueDate: task.dueDate,
     sortOrder: task.sortOrder,
     parentTaskId: task.parentTaskId,
+    goal: task.goal,
+    event: task.event,
     createdAt: task.createdAt,
     updatedAt: task.updatedAt,
     assignees: task.assignees.map((a) => ({

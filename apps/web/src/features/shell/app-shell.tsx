@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye, LogOut, Settings } from "lucide-react";
+import { CalendarDays, Eye, LayoutGrid, LogOut, Settings } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/features/auth/use-session";
 import { useMe } from "@/features/auth/use-me";
@@ -84,6 +84,17 @@ function Header({ me }: { me: MeResponse }) {
           </Badge>
         )}
       </Link>
+
+      <nav className="flex items-center gap-1">
+        <Button variant="ghost" size="sm" render={<Link href="/" />}>
+          <LayoutGrid data-icon="inline-start" />
+          Dashboard
+        </Button>
+        <Button variant="ghost" size="sm" render={<Link href="/calendar" />}>
+          <CalendarDays data-icon="inline-start" />
+          Calendar
+        </Button>
+      </nav>
 
       <div className="flex items-center gap-4">
         {role === "ADMIN" && (

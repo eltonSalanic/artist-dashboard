@@ -8,6 +8,8 @@ export const createTaskSchema = z.object({
   statusId: z.uuid().optional(),
   dueDate: z.iso.datetime().nullish(),
   parentTaskId: z.uuid().optional(),
+  goalId: z.uuid().nullish(),
+  eventId: z.uuid().nullish(),
   assigneeIds: z.array(z.uuid()).max(20).default([]),
 });
 export type CreateTaskDto = z.infer<typeof createTaskSchema>;
@@ -19,6 +21,8 @@ export const updateTaskSchema = z
     priority: z.enum(Priorities),
     statusId: z.uuid(),
     dueDate: z.iso.datetime().nullable(),
+    goalId: z.uuid().nullable(),
+    eventId: z.uuid().nullable(),
   })
   .partial();
 export type UpdateTaskDto = z.infer<typeof updateTaskSchema>;
@@ -28,6 +32,8 @@ export const taskQuerySchema = z.object({
   statusId: z.uuid().optional(),
   assigneeId: z.uuid().optional(),
   priority: z.enum(Priorities).optional(),
+  goalId: z.uuid().optional(),
+  eventId: z.uuid().optional(),
   sort: z.enum(['order', 'dueDate', 'priority', 'createdAt']).default('order'),
 });
 export type TaskQueryDto = z.infer<typeof taskQuerySchema>;

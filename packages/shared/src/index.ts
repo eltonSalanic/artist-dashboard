@@ -7,3 +7,8 @@ export * from './dto/board.dto';
 export * from './dto/task.dto';
 export * from './dto/status.dto';
 export * from './dto/layout.dto';
+export * from './dto/goal.dto';
+export * from './dto/event.dto';
+export * from './dto/focus.dto';
+export * from './dto/reminder.dto';
+export * from './dto/calendar.dto';

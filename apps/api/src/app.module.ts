@@ -12,6 +12,11 @@ import { InvitesModule } from './invites/invites.module';
 import { TasksModule } from './tasks/tasks.module';
 import { StatusesModule } from './statuses/statuses.module';
 import { LayoutsModule } from './layouts/layouts.module';
+import { GoalsModule } from './goals/goals.module';
+import { EventsModule } from './events/events.module';
+import { FocusModule } from './focus/focus.module';
+import { RemindersModule } from './reminders/reminders.module';
+import { CalendarModule } from './calendar/calendar.module';
 
 @Module({
   imports: [
@@ -24,6 +29,11 @@ import { LayoutsModule } from './layouts/layouts.module';
     TasksModule,
     StatusesModule,
     LayoutsModule,
+    GoalsModule,
+    EventsModule,
+    FocusModule,
+    RemindersModule,
+    CalendarModule,
   ],
   controllers: [HealthController],
   providers: [

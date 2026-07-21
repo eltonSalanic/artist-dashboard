@@ -46,6 +46,10 @@ model Board {
   statuses      TaskStatus[]
   tasks         Task[]
   userLayouts   UserLayout[]
+  goals         Goal[]
+  events        Event[]
+  focusPins     FocusPin[]
+  reminders     Reminder[]
 }
 
 model Membership {
@@ -106,11 +110,15 @@ model Task {
   dueDate      DateTime?
   sortOrder    Float
   parentTaskId String?         @db.Uuid
+  goalId       String?         @db.Uuid
+  eventId      String?         @db.Uuid
   createdById  String          @db.Uuid
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
   board        Board           @relation(fields: [boardId], references: [id], onDelete: Cascade)
   status       TaskStatus      @relation(fields: [statusId], references: [id])
+  goal         Goal?           @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  event        Event?          @relation(fields: [eventId], references: [id], onDelete: SetNull)
   parentTask   Task?           @relation("Subtasks", fields: [parentTaskId], references: [id], onDelete: Cascade)
   subtasks     Task[]          @relation("Subtasks")
   createdBy    User            @relation("TaskCreatedBy", fields: [createdById], references: [id])
@@ -120,6 +128,82 @@ model Task {
   @@index([boardId, sortOrder])
   @@index([parentTaskId])
   @@index([statusId])
+  @@index([goalId])
+  @@index([eventId])
+}
+
+enum EventType {
+  SHOW
+  MEETING
+  REHEARSAL
+}
+
+enum GoalPeriod {
+  YEARLY
+  MONTHLY
+  DAILY
+}
+
+enum FocusPeriod {
+  WEEK
+  MONTH
+  YEAR
+}
+
+model Goal {
+  id          String     @id @default(uuid()) @db.Uuid
+  boardId     String     @db.Uuid
+  title       String
+  description String?
+  period      GoalPeriod @default(MONTHLY)
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  board       Board      @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+
+  @@index([boardId, period])
+}
+
+model Event {
+  id          String    @id @default(uuid()) @db.Uuid
+  boardId     String    @db.Uuid
+  type        EventType
+  title       String
+  description String?
+  location    String?
+  startsAt    DateTime
+  endsAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  board       Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+
+  @@index([boardId, startsAt])
+}
+
+model FocusPin {
+  id        String      @id @default(uuid()) @db.Uuid
+  boardId   String      @db.Uuid
+  period    FocusPeriod
+  text      String
+  updatedAt DateTime    @updatedAt
+  board     Board       @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId, period])
+}
+
+model Reminder {
+  id        String   @id @default(uuid()) @db.Uuid
+  boardId   String   @db.Uuid
+  title     String
+  remindAt  DateTime
+  done      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  @@index([boardId, remindAt])
 }
 
 model TaskAssignee {
