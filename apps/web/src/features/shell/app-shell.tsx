@@ -86,11 +86,21 @@ function Header({ me }: { me: MeResponse }) {
       </Link>
 
       <nav className="flex items-center gap-1">
-        <Button variant="ghost" size="sm" render={<Link href="/" />}>
+        <Button
+          variant="ghost"
+          size="sm"
+          nativeButton={false}
+          render={<Link href="/" />}
+        >
           <LayoutGrid data-icon="inline-start" />
           Dashboard
         </Button>
-        <Button variant="ghost" size="sm" render={<Link href="/calendar" />}>
+        <Button
+          variant="ghost"
+          size="sm"
+          nativeButton={false}
+          render={<Link href="/calendar" />}
+        >
           <CalendarDays data-icon="inline-start" />
           Calendar
         </Button>
