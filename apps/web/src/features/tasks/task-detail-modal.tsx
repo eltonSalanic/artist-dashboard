@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { usePermissions } from "@/features/auth/permissions";
-import type { BoardDetailDto } from "@/features/auth/types";
+import type { BoardDetailDto, BoardMemberDto, TaskStatusDto } from "@/features/auth/types";
+import type { TaskDetailDto } from "./types";
 import {
   useChecklist,
   useCreateTask,
@@ -67,7 +68,12 @@ export function TaskDetailModal({ boardId }: { boardId: string }) {
     <Dialog open={!!taskId} onOpenChange={(open) => !open && close()}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
         {taskId && (
-          <TaskDetail boardId={boardId} taskId={taskId} onClose={close} />
+          <TaskDetail
+            key={taskId}
+            boardId={boardId}
+            taskId={taskId}
+            onClose={close}
+          />
         )}
       </DialogContent>
     </Dialog>
@@ -83,29 +89,11 @@ function TaskDetail({
   taskId: string;
   onClose: () => void;
 }) {
-  const { can } = usePermissions();
   const task = useTask(boardId, taskId);
   const board = useQuery({
     queryKey: ["board", boardId],
     queryFn: () => apiFetch<BoardDetailDto>(`/boards/${boardId}`),
   });
-  const updateTask = useUpdateTask(boardId);
-  const deleteTask = useDeleteTask(boardId);
-  const setAssignees = useSetAssignees(boardId);
-  const createSubtask = useCreateTask(boardId);
-  const checklist = useChecklist(boardId, taskId);
-
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [subtaskTitle, setSubtaskTitle] = useState("");
-  const [checklistText, setChecklistText] = useState("");
-
-  useEffect(() => {
-    if (task.data) {
-      setTitle(task.data.title);
-      setDescription(task.data.description ?? "");
-    }
-  }, [task.data]);
 
   if (task.isPending || !board.data) {
     return (
@@ -128,9 +116,45 @@ function TaskDetail({
     );
   }
 
-  const data = task.data;
-  const statuses = board.data.statuses;
-  const members = board.data.members;
+  return (
+    <TaskDetailBody
+      boardId={boardId}
+      taskId={taskId}
+      data={task.data}
+      statuses={board.data.statuses}
+      members={board.data.members}
+      onClose={onClose}
+    />
+  );
+}
+
+function TaskDetailBody({
+  boardId,
+  taskId,
+  data,
+  statuses,
+  members,
+  onClose,
+}: {
+  boardId: string;
+  taskId: string;
+  data: TaskDetailDto;
+  statuses: TaskStatusDto[];
+  members: BoardMemberDto[];
+  onClose: () => void;
+}) {
+  const { can } = usePermissions();
+  const updateTask = useUpdateTask(boardId);
+  const deleteTask = useDeleteTask(boardId);
+  const setAssignees = useSetAssignees(boardId);
+  const createSubtask = useCreateTask(boardId);
+  const checklist = useChecklist(boardId, taskId);
+
+  const [title, setTitle] = useState(data.title);
+  const [description, setDescription] = useState(data.description ?? "");
+  const [subtaskTitle, setSubtaskTitle] = useState("");
+  const [checklistText, setChecklistText] = useState("");
+
   const canEdit = can("task.editFields");
   const assigneeIds = new Set(data.assignees.map((a) => a.id));
 

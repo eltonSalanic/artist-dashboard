@@ -11,6 +11,7 @@ import { BoardsModule } from './boards/boards.module';
 import { InvitesModule } from './invites/invites.module';
 import { TasksModule } from './tasks/tasks.module';
 import { StatusesModule } from './statuses/statuses.module';
+import { LayoutsModule } from './layouts/layouts.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { StatusesModule } from './statuses/statuses.module';
     InvitesModule,
     TasksModule,
     StatusesModule,
+    LayoutsModule,
   ],
   controllers: [HealthController],
   providers: [

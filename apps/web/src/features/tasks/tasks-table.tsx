@@ -45,11 +45,17 @@ import {
 
 const ALL = "__all__";
 
-export function TasksTable({ boardId }: { boardId: string }) {
+export function TasksTable({
+  boardId,
+  initialFilters,
+}: {
+  boardId: string;
+  initialFilters?: TaskFilters;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { can } = usePermissions();
-  const [filters, setFilters] = useState<TaskFilters>({});
+  const [filters, setFilters] = useState<TaskFilters>(initialFilters ?? {});
   const [newTitle, setNewTitle] = useState("");
 
   const board = useQuery({

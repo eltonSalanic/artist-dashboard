@@ -9,6 +9,7 @@ import { apiFetch, ApiError } from "@/lib/api";
 import { useMe } from "@/features/auth/use-me";
 import { usePermissions } from "@/features/auth/permissions";
 import type { BoardDetailDto, InviteDto } from "@/features/auth/types";
+import { DefaultLayoutCard } from "./default-layout-card";
 import { StatusesCard } from "./statuses-card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -54,6 +55,7 @@ export function SettingsPage() {
       <MembersCard boardId={boardId} />
       <InvitesCard boardId={boardId} />
       <StatusesCard boardId={boardId} />
+      <DefaultLayoutCard boardId={boardId} />
     </main>
   );
 }

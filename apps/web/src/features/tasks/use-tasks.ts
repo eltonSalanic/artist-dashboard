@@ -76,6 +76,25 @@ export function useUpdateTask(boardId: string) {
   });
 }
 
+export function useReorderTask(boardId: string) {
+  const invalidate = useInvalidateTasks(boardId);
+  return useMutation({
+    mutationFn: ({
+      taskId,
+      afterTaskId,
+    }: {
+      taskId: string;
+      afterTaskId: string | null;
+    }) =>
+      apiFetch(`/boards/${boardId}/tasks/${taskId}/reorder`, {
+        method: "PATCH",
+        body: { afterTaskId },
+      }),
+    onSuccess: () => invalidate(),
+    onError: showError,
+  });
+}
+
 export function useDeleteTask(boardId: string) {
   const invalidate = useInvalidateTasks(boardId);
   return useMutation({
