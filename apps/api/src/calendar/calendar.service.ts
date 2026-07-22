@@ -12,13 +12,12 @@ export interface CalendarItemDto {
   event?: { type: EventType; endsAt: Date | null; location: string | null };
   task?: { statusColor: string; statusName: string; isDone: boolean };
   goal?: { period: string; completed: boolean };
-  reminder?: { done: boolean };
 }
 
 /**
  * Aggregates everything datable on a board into one range query for the
  * month grid: events (startsAt), tasks (dueDate), goals (dueDate) and
- * reminders (remindAt). Range is [from, to).
+ * open reminders (remindAt). Range is [from, to).
  */
 @Injectable()
 export class CalendarService {
@@ -45,7 +44,8 @@ export class CalendarService {
         orderBy: { dueDate: 'asc' },
       }),
       this.prisma.reminder.findMany({
-        where: { boardId, remindAt: window },
+        // Once a reminder is done it has nothing left to say about the day.
+        where: { boardId, remindAt: window, done: false },
         orderBy: { remindAt: 'asc' },
       }),
     ]);
@@ -82,7 +82,6 @@ export class CalendarService {
         title: r.title,
         // The range filter above already drops the undated ones.
         date: r.remindAt as Date,
-        reminder: { done: r.done },
       })),
     ];
 

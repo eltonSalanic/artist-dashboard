@@ -93,27 +93,27 @@ Linking works from both directions — verify both.
 
 **From the task detail modal:**
 
-- [ ] Open a task, set its **Goal** via the picker; the link saves
-- [ ] Set its **Event** via the picker; the link saves
-- [ ] Clear each back to "no link"
+- [x] Open a task, set its **Goal** via the picker; the link saves
+- [x] Set its **Event** via the picker; the link saves
+- [x] Clear each back to "no link"
 
 **From the goal / event detail modal (**`LinkedTasks`**):**
 
-- [ ] Linked tasks list shows the task, its status dot, and status name
-- [ ] **Create** a new task directly from the goal modal — it appears already linked
-- [ ] **Attach** an existing task via the picker
-- [ ] **Unlink** a task — it disappears from the list but still exists on the board
-- [ ] Click a linked task — the goal/event modal **swaps** to the task modal rather than stacking two modals on top of each other
+- [x] Linked tasks list shows the task, its status dot, and status name
+- [x] **Create** a new task directly from the goal modal — it appears already linked
+- [x] **Attach** an existing task via the picker
+- [x] **Unlink** a task — it disappears from the list but still exists on the board
+- [x] Click a linked task — the goal/event modal **swaps** to the task modal rather than stacking two modals on top of each other
 
 **Data safety — do not skip:**
 
-- [ ] Delete a goal that has linked tasks → the tasks **survive** with their goal link cleared
-- [ ] Delete an event that has linked tasks → the tasks **survive** with their event link cleared
+- [x] Delete a goal that has linked tasks → the tasks **survive** with their goal link cleared
+- [x] Delete an event that has linked tasks → the tasks **survive** with their event link cleared
 
 **Deep links:**
 
-- [ ] `?task=<id>`, `?goal=<id>`, `?event=<id>` each open the right modal on a fresh page load
-- [ ] Closing a modal removes only its own param and leaves any others intact
+- [x] `?task=<id>`, `?goal=<id>`, `?event=<id>` each open the right modal on a fresh page load
+- [x] Closing a modal removes only its own param and leaves any others intact
 
 ---
 
@@ -121,19 +121,19 @@ Linking works from both directions — verify both.
 
 ## 7. Calendar
 
-- [ ] Calendar link appears in the sidebar and routes to `/calendar`
-- [ ] Month grid renders a fixed **42 cells, Sunday-first**, with leading/trailing days greyed
-- [ ] Month navigation moves forward and back correctly, including across a year boundary
-- [ ] **Events** appear on their start day
-- [ ] **Goal due dates** appear on the right day
-- [ ] **Reminders** appear on their `remindAt` day as non-clickable chips
-- [ ] **Local-time bucketing:** an event at ~11pm sits on that day, not the next. Repeat for one at ~12:30am — it must not land on the previous day.
-- [ ] Clicking an event chip opens the event modal; clicking a goal chip opens the goal modal
-- [ ] A day with many items degrades gracefully (no overflow past the cell)
+- [x] Calendar link appears in the sidebar and routes to `/calendar`
+- [x] Month grid renders a fixed **42 cells, Sunday-first**, with leading/trailing days greyed
+- [x] Month navigation moves forward and back correctly, including across a year boundary
+- [x] **Events** appear on their start day
+- [x] **Goal due dates** appear on the right day
+- [x] **Reminders** appear on their `remindAt` day as non-clickable chips
+- [x] **Local-time bucketing:** an event at ~11pm sits on that day, not the next. Repeat for one at ~12:30am — it must not land on the previous day.
+- [x] Clicking an event chip opens the event modal; clicking a goal chip opens the goal modal
+- [x] A day with many items degrades gracefully (no overflow past the cell)
 
 **Plan acceptance criterion:**
 
-- [ ] A **SHOW with an attached task** is visible on the calendar, and the attached task is reachable from it
+- [x] A **SHOW with an attached task** is visible on the calendar, and the attached task is reachable from it
 
 ---
 

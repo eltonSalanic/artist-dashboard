@@ -36,8 +36,12 @@ describe('CalendarService', () => {
     expect(prisma.goal.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { boardId: 'b1', dueDate: window } }),
     );
+    // Done reminders are filtered out here — a finished note tells you
+    // nothing about the day it was pinned to.
     expect(prisma.reminder.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { boardId: 'b1', remindAt: window } }),
+      expect.objectContaining({
+        where: { boardId: 'b1', remindAt: window, done: false },
+      }),
     );
   });
 

@@ -54,5 +54,4 @@ export interface CalendarItemDto {
   event?: { type: EventType; endsAt: string | null; location: string | null };
   task?: { statusColor: string; statusName: string; isDone: boolean };
   goal?: { period: GoalPeriod; completed: boolean };
-  reminder?: { done: boolean };
 }
