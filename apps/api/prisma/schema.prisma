@@ -195,13 +195,14 @@ model FocusPin {
 }
 
 model Reminder {
-  id        String   @id @default(uuid()) @db.Uuid
-  boardId   String   @db.Uuid
-  title     String
-  remindAt  DateTime?
-  done      Boolean  @default(false)
-  createdAt DateTime @default(now())
-  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid()) @db.Uuid
+  boardId     String    @db.Uuid
+  title       String
+  description String?
+  remindAt    DateTime?
+  done        Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  board       Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
 
   @@index([boardId, remindAt])
 }

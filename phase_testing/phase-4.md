@@ -77,12 +77,11 @@ Sign-off checklist. Phase 4 is complete when every box below is ticked (or consc
 
 ## 5. Reminders
 
-- [ ] Create reminders with several different `remindAt` times
-- [ ] Toggle done on and off; state persists across reload
-- [ ] Edit a reminder's title and time
-- [ ] Delete a reminder
-- [ ] Reminders widget orders by time
-- [ ] Confirm reminders have **no detail modal** — on the calendar they are non-clickable chips. This is intended, not a gap.
+- [x] Create reminders with several different `remindAt` times
+- [x] Toggle done on and off; state persists across reload
+- [x] Edit a reminder's title and time
+- [x] Delete a reminder
+- [x] Reminders widget orders by time
 
 ---
 

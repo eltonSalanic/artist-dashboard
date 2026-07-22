@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 
 /** Detail modals are driven by search params so they stay linkable. */
-export type DetailParam = "task" | "goal" | "event";
+export type DetailParam = "task" | "goal" | "event" | "reminder";
 
 export function useDetailParams() {
   const router = useRouter();

@@ -8,6 +8,7 @@ import { useDetailParams } from "@/features/planning/use-detail-params";
 import { formatTime } from "@/features/planning/planning-bits";
 import { GoalDetailModal } from "@/features/planning/goal-detail-modal";
 import { EventDetailModal } from "@/features/planning/event-detail-modal";
+import { ReminderDetailModal } from "@/features/planning/reminder-detail-modal";
 import { TaskDetailModal } from "@/features/tasks/task-detail-modal";
 import type { CalendarItemDto } from "@/features/planning/types";
 import {
@@ -30,6 +31,7 @@ export function CalendarPage() {
       <TaskDetailModal boardId={boardId} />
       <GoalDetailModal boardId={boardId} />
       <EventDetailModal boardId={boardId} />
+      <ReminderDetailModal boardId={boardId} />
     </Suspense>
   );
 }
@@ -133,7 +135,6 @@ function MonthView({ boardId }: { boardId: string }) {
 function CalendarChip({ item }: { item: CalendarItemDto }) {
   const { open } = useDetailParams();
 
-  // Reminders have no detail modal of their own — they live in the widget.
   const target =
     item.kind === "EVENT"
       ? "event"
@@ -141,7 +142,7 @@ function CalendarChip({ item }: { item: CalendarItemDto }) {
         ? "goal"
         : item.kind === "TASK"
           ? "task"
-          : null;
+          : "reminder";
 
   const accent =
     item.kind === "EVENT"
@@ -170,14 +171,6 @@ function CalendarChip({ item }: { item: CalendarItemDto }) {
       ? ""
       : "text-muted-foreground"
   }`;
-
-  if (!target) {
-    return (
-      <span className={className} title={item.title}>
-        {label}
-      </span>
-    );
-  }
 
   return (
     <button

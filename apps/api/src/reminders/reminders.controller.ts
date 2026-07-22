@@ -27,6 +27,14 @@ export class RemindersController {
     return this.reminders.list(boardId);
   }
 
+  @Get(':reminderId')
+  findOne(
+    @Param('boardId') boardId: string,
+    @Param('reminderId') reminderId: string,
+  ) {
+    return this.reminders.findOne(boardId, reminderId);
+  }
+
   @Post()
   @BoardRoles('ADMIN')
   create(

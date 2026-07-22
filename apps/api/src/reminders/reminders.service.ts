@@ -18,9 +18,22 @@ export class RemindersService {
     });
   }
 
+  async findOne(boardId: string, reminderId: string) {
+    const reminder = await this.prisma.reminder.findFirst({
+      where: { id: reminderId, boardId },
+    });
+    if (!reminder) throw new NotFoundException('Reminder not found');
+    return reminder;
+  }
+
   create(boardId: string, dto: CreateReminderDto) {
     return this.prisma.reminder.create({
-      data: { boardId, title: dto.title, remindAt: dto.remindAt ?? null },
+      data: {
+        boardId,
+        title: dto.title,
+        description: dto.description ?? null,
+        remindAt: dto.remindAt ?? null,
+      },
     });
   }
 

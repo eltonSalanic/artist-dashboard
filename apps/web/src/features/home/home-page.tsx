@@ -6,6 +6,7 @@ import { DashboardPage } from "@/features/dashboard/dashboard-page";
 import { TaskDetailModal } from "@/features/tasks/task-detail-modal";
 import { GoalDetailModal } from "@/features/planning/goal-detail-modal";
 import { EventDetailModal } from "@/features/planning/event-detail-modal";
+import { ReminderDetailModal } from "@/features/planning/reminder-detail-modal";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function HomePage() {
@@ -20,6 +21,7 @@ export function HomePage() {
       <TaskDetailModal boardId={boardId} />
       <GoalDetailModal boardId={boardId} />
       <EventDetailModal boardId={boardId} />
+      <ReminderDetailModal boardId={boardId} />
     </Suspense>
   );
 }

@@ -16,10 +16,20 @@ export function useReminders(boardId: string) {
   });
 }
 
+export function useReminder(boardId: string, reminderId: string | null) {
+  return useQuery({
+    queryKey: ["reminder", boardId, reminderId],
+    queryFn: () =>
+      apiFetch<ReminderDto>(`/boards/${boardId}/reminders/${reminderId}`),
+    enabled: !!reminderId,
+  });
+}
+
 function useInvalidateReminders(boardId: string) {
   const queryClient = useQueryClient();
   return () => {
     queryClient.invalidateQueries({ queryKey: ["reminders", boardId] });
+    queryClient.invalidateQueries({ queryKey: ["reminder", boardId] });
     queryClient.invalidateQueries({ queryKey: ["calendar", boardId] });
   };
 }

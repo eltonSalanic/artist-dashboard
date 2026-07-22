@@ -13,6 +13,7 @@ import {
   formatDateTime,
   fromLocalInputValue,
 } from "@/features/planning/planning-bits";
+import { useDetailParams } from "@/features/planning/use-detail-params";
 import type { ReminderDto } from "@/features/planning/types";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -99,6 +100,7 @@ function ReminderRow({
   deletable?: boolean;
 }) {
   const { can } = usePermissions();
+  const { open } = useDetailParams();
   const updateReminder = useUpdateReminder(boardId);
   const deleteReminder = useDeleteReminder(boardId);
   const overdue =
@@ -119,11 +121,13 @@ function ReminderRow({
           })
         }
       />
-      <span
-        className={`min-w-0 flex-1 truncate text-sm ${reminder.done ? "text-muted-foreground line-through" : ""}`}
+      <button
+        type="button"
+        className={`min-w-0 flex-1 truncate text-left text-sm ${reminder.done ? "text-muted-foreground line-through" : ""}`}
+        onClick={() => open("reminder", reminder.id)}
       >
         {reminder.title}
-      </span>
+      </button>
       {reminder.remindAt && (
         <span
           className={`shrink-0 text-xs ${overdue ? "text-destructive" : "text-muted-foreground"}`}

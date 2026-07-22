@@ -1,3 +1,4 @@
+import { NotFoundException } from '@nestjs/common';
 import { RemindersService } from './reminders.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -5,6 +6,7 @@ describe('RemindersService', () => {
   const prisma = {
     reminder: {
       findMany: jest.fn(),
+      findFirst: jest.fn(),
       create: jest.fn(),
     },
   };
@@ -28,6 +30,17 @@ describe('RemindersService', () => {
     );
   });
 
+  it('will not fetch a reminder from another board', async () => {
+    prisma.reminder.findFirst.mockResolvedValue(null);
+
+    await expect(service.findOne('b1', 'r-elsewhere')).rejects.toThrow(
+      NotFoundException,
+    );
+    expect(prisma.reminder.findFirst).toHaveBeenCalledWith({
+      where: { id: 'r-elsewhere', boardId: 'b1' },
+    });
+  });
+
   it('creates a reminder with no time when none is given', async () => {
     prisma.reminder.create.mockResolvedValue({});
 
@@ -37,6 +50,7 @@ describe('RemindersService', () => {
       data: {
         boardId: 'b1',
         title: 'Rehearsal might be cancelled',
+        description: null,
         remindAt: null,
       },
     });
@@ -54,6 +68,7 @@ describe('RemindersService', () => {
       data: {
         boardId: 'b1',
         title: 'Load in',
+        description: null,
         remindAt: '2026-03-10T18:00:00.000Z',
       },
     });
