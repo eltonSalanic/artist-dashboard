@@ -1,18 +1,27 @@
 import { UsersService } from './users.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ActivityService } from '../activity/activity.service';
 
 describe('UsersService.bootstrap', () => {
   const tx = {
     user: { upsert: jest.fn() },
     invite: { findMany: jest.fn(), update: jest.fn() },
-    membership: { upsert: jest.fn(), findFirst: jest.fn() },
+    membership: {
+      upsert: jest.fn(),
+      findFirst: jest.fn(),
+      findUnique: jest.fn(),
+    },
     board: { create: jest.fn() },
+    activity: { create: jest.fn() },
   };
   const prisma = {
     $transaction: jest.fn((fn: (t: typeof tx) => Promise<void>) => fn(tx)),
     user: { findUnique: jest.fn() },
   };
-  const service = new UsersService(prisma as unknown as PrismaService);
+  const service = new UsersService(
+    prisma as unknown as PrismaService,
+    new ActivityService(prisma as unknown as PrismaService),
+  );
   const auth = { userId: 'u1', email: 'sam@band.com' };
 
   beforeEach(() => {

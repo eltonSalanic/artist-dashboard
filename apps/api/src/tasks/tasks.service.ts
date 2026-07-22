@@ -17,6 +17,8 @@ import type {
 import { can } from '@artist/shared';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { ActivityService } from '../activity/activity.service';
+import { StorageService } from '../attachments/storage.service';
 
 const SORT_GAP = 1024;
 
@@ -36,7 +38,11 @@ const USER_EDITABLE_FIELDS: ReadonlySet<keyof UpdateTaskDto> = new Set([
 
 @Injectable()
 export class TasksService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly activity: ActivityService,
+    private readonly storage: StorageService,
+  ) {}
 
   async list(boardId: string, query: TaskQueryDto) {
     const orderBy: Prisma.TaskOrderByWithRelationInput[] =
@@ -121,24 +127,53 @@ export class TasksService {
       _max: { sortOrder: true },
     });
 
-    const task = await this.prisma.task.create({
-      data: {
-        boardId,
-        title: dto.title,
-        description: dto.description,
-        priority: dto.priority,
-        statusId,
-        dueDate: dto.dueDate ?? null,
-        parentTaskId: dto.parentTaskId ?? null,
-        goalId: dto.goalId ?? null,
-        eventId: dto.eventId ?? null,
-        createdById: userId,
-        sortOrder: (last._max.sortOrder ?? 0) + SORT_GAP,
-        assignees: {
-          create: dto.assigneeIds.map((assigneeId) => ({ userId: assigneeId })),
+    const task = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.task.create({
+        data: {
+          boardId,
+          title: dto.title,
+          description: dto.description,
+          priority: dto.priority,
+          statusId,
+          dueDate: dto.dueDate ?? null,
+          parentTaskId: dto.parentTaskId ?? null,
+          goalId: dto.goalId ?? null,
+          eventId: dto.eventId ?? null,
+          createdById: userId,
+          sortOrder: (last._max.sortOrder ?? 0) + SORT_GAP,
+          assignees: {
+            create: dto.assigneeIds.map((assigneeId) => ({
+              userId: assigneeId,
+            })),
+          },
         },
-      },
-      include: taskInclude,
+        include: taskInclude,
+      });
+
+      await this.activity.log(tx, {
+        boardId,
+        type: 'TASK_CREATED',
+        actorId: userId,
+        meta: {
+          taskId: created.id,
+          taskTitle: created.title,
+          isSubtask: created.parentTaskId !== null,
+        },
+      });
+      for (const assignee of created.assignees) {
+        await this.activity.log(tx, {
+          boardId,
+          type: 'MEMBER_ASSIGNED',
+          actorId: userId,
+          meta: {
+            taskId: created.id,
+            taskTitle: created.title,
+            memberId: assignee.user.id,
+            memberName: assignee.user.displayName,
+          },
+        });
+      }
+      return created;
     });
     return this.toDto(task);
   }
@@ -146,10 +181,15 @@ export class TasksService {
   async update(
     boardId: string,
     taskId: string,
+    userId: string,
     role: BoardRole,
     dto: UpdateTaskDto,
   ) {
-    await this.getOwned(boardId, taskId);
+    const existing = await this.prisma.task.findFirst({
+      where: { id: taskId, boardId },
+      include: { status: true },
+    });
+    if (!existing) throw new NotFoundException('Task not found');
 
     const fields = Object.keys(dto) as (keyof UpdateTaskDto)[];
     if (!can(role, 'task.editFields')) {
@@ -164,18 +204,78 @@ export class TasksService {
     if (dto.goalId) await this.assertGoalInBoard(boardId, dto.goalId);
     if (dto.eventId) await this.assertEventInBoard(boardId, dto.eventId);
 
-    const task = await this.prisma.task.update({
-      where: { id: taskId },
-      data: dto,
-      include: taskInclude,
+    const task = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.task.update({
+        where: { id: taskId },
+        data: dto,
+        include: taskInclude,
+      });
+
+      if (dto.statusId && dto.statusId !== existing.statusId) {
+        await this.activity.log(tx, {
+          boardId,
+          type: 'STATUS_CHANGED',
+          actorId: userId,
+          meta: {
+            taskId,
+            taskTitle: updated.title,
+            fromStatus: existing.status.name,
+            toStatus: updated.status.name,
+          },
+        });
+        // Only the crossing into a done column counts as completion — moving
+        // between two done columns isn't news.
+        if (updated.status.isDone && !existing.status.isDone) {
+          await this.activity.log(tx, {
+            boardId,
+            type: 'TASK_COMPLETED',
+            actorId: userId,
+            meta: { taskId, taskTitle: updated.title },
+          });
+        }
+      }
+      return updated;
     });
     return this.toDto(task);
   }
 
   async remove(boardId: string, taskId: string) {
     await this.getOwned(boardId, taskId);
+
+    // Subtasks, comments and attachment rows all cascade in the database, but
+    // the stored objects don't — collect their paths before the row is gone.
+    const taskIds = await this.collectTaskTree(taskId);
+    const attachments = await this.prisma.attachment.findMany({
+      where: {
+        OR: [
+          { taskId: { in: taskIds } },
+          { comment: { taskId: { in: taskIds } } },
+        ],
+      },
+      select: { storagePath: true },
+    });
+
     await this.prisma.task.delete({ where: { id: taskId } });
+    await this.storage.remove(attachments.map((a) => a.storagePath));
     return { deleted: true };
+  }
+
+  /** The task plus its descendants — nesting is capped at two levels. */
+  private async collectTaskTree(taskId: string): Promise<string[]> {
+    const children = await this.prisma.task.findMany({
+      where: { parentTaskId: taskId },
+      select: { id: true },
+    });
+    if (children.length === 0) return [taskId];
+    const grandchildren = await this.prisma.task.findMany({
+      where: { parentTaskId: { in: children.map((c) => c.id) } },
+      select: { id: true },
+    });
+    return [
+      taskId,
+      ...children.map((c) => c.id),
+      ...grandchildren.map((g) => g.id),
+    ];
   }
 
   /** Fractional reordering among siblings (same parent, same board). */
@@ -223,8 +323,18 @@ export class TasksService {
     return { id: taskId, sortOrder: newOrder };
   }
 
-  async setAssignees(boardId: string, taskId: string, dto: SetAssigneesDto) {
-    await this.getOwned(boardId, taskId);
+  async setAssignees(
+    boardId: string,
+    taskId: string,
+    actorId: string,
+    dto: SetAssigneesDto,
+  ) {
+    const task = await this.prisma.task.findFirst({
+      where: { id: taskId, boardId },
+      include: { assignees: { include: { user: true } } },
+    });
+    if (!task) throw new NotFoundException('Task not found');
+
     const members = await this.prisma.membership.findMany({
       where: { boardId, userId: { in: dto.assigneeIds } },
       select: { userId: true },
@@ -233,17 +343,54 @@ export class TasksService {
       throw new BadRequestException('All assignees must be board members');
     }
 
-    const task = await this.prisma.$transaction(async (tx) => {
+    // The endpoint replaces the whole set, so who actually joined or left is a
+    // diff against the previous one — that's what the feed reports.
+    const before = new Map(
+      task.assignees.map((a) => [a.userId, a.user.displayName]),
+    );
+    const after = new Set(dto.assigneeIds);
+    const added = dto.assigneeIds.filter((id) => !before.has(id));
+    const removed = [...before.keys()].filter((id) => !after.has(id));
+
+    const updated = await this.prisma.$transaction(async (tx) => {
       await tx.taskAssignee.deleteMany({ where: { taskId } });
       await tx.taskAssignee.createMany({
         data: dto.assigneeIds.map((userId) => ({ taskId, userId })),
       });
+
+      const names = new Map(before);
+      if (added.length > 0) {
+        const users = await tx.user.findMany({
+          where: { id: { in: added } },
+          select: { id: true, displayName: true },
+        });
+        for (const user of users) names.set(user.id, user.displayName);
+      }
+      for (const [type, ids] of [
+        ['MEMBER_ASSIGNED', added],
+        ['MEMBER_REMOVED', removed],
+      ] as const) {
+        for (const memberId of ids) {
+          await this.activity.log(tx, {
+            boardId,
+            type,
+            actorId,
+            meta: {
+              taskId,
+              taskTitle: task.title,
+              memberId,
+              memberName: names.get(memberId) ?? 'Someone',
+            },
+          });
+        }
+      }
+
       return tx.task.findUniqueOrThrow({
         where: { id: taskId },
         include: taskInclude,
       });
     });
-    return this.toDto(task);
+    return this.toDto(updated);
   }
 
   async addChecklistItem(

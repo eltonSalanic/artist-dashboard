@@ -11,6 +11,8 @@ import { useGoals } from "@/features/planning/use-goals";
 import { useEvents } from "@/features/planning/use-events";
 import { useDetailParams } from "@/features/planning/use-detail-params";
 import { eventTypeLabel, formatDateTime } from "@/features/planning/planning-bits";
+import { CommentsSection } from "@/features/comments/comments-section";
+import { TaskAttachments } from "@/features/comments/task-attachments";
 import type { TaskDetailDto } from "./types";
 import {
   useChecklist,
@@ -574,6 +576,12 @@ function TaskDetailBody({
           </section>
         </>
       )}
+
+      <Separator />
+      <TaskAttachments boardId={boardId} taskId={taskId} />
+
+      <Separator />
+      <CommentsSection boardId={boardId} taskId={taskId} members={members} />
 
       {can("task.delete") && (
         <>

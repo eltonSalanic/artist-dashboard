@@ -12,3 +12,7 @@ export * from './dto/event.dto';
 export * from './dto/focus.dto';
 export * from './dto/reminder.dto';
 export * from './dto/calendar.dto';
+export * from './dto/comment.dto';
+export * from './dto/attachment.dto';
+export * from './dto/activity.dto';
+export * from './dto/custom-widget.dto';

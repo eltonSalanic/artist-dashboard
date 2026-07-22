@@ -48,10 +48,7 @@ export class TasksController {
   }
 
   @Get(':taskId')
-  findOne(
-    @Param('boardId') boardId: string,
-    @Param('taskId') taskId: string,
-  ) {
+  findOne(@Param('boardId') boardId: string, @Param('taskId') taskId: string) {
     return this.tasks.findOne(boardId, taskId);
   }
 
@@ -69,10 +66,17 @@ export class TasksController {
   update(
     @Param('boardId') boardId: string,
     @Param('taskId') taskId: string,
+    @CurrentUser() user: AuthUser,
     @Req() req: RequestWithMembership,
     @Body(new ZodValidationPipe(updateTaskSchema)) dto: UpdateTaskDto,
   ) {
-    return this.tasks.update(boardId, taskId, req.membership.role, dto);
+    return this.tasks.update(
+      boardId,
+      taskId,
+      user.userId,
+      req.membership.role,
+      dto,
+    );
   }
 
   @Delete(':taskId')
@@ -96,9 +100,10 @@ export class TasksController {
   setAssignees(
     @Param('boardId') boardId: string,
     @Param('taskId') taskId: string,
+    @CurrentUser() user: AuthUser,
     @Body(new ZodValidationPipe(setAssigneesSchema)) dto: SetAssigneesDto,
   ) {
-    return this.tasks.setAssignees(boardId, taskId, dto);
+    return this.tasks.setAssignees(boardId, taskId, user.userId, dto);
   }
 
   @Post(':taskId/checklist')

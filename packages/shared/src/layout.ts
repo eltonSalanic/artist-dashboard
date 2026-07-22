@@ -11,6 +11,7 @@ export const DEFAULT_BOARD_LAYOUT: LayoutItem[] = [
   { widgetType: 'NEXT_MEETINGS', x: 0, y: 13, w: 4, h: 4 },
   { widgetType: 'REMINDERS', x: 4, y: 13, w: 4, h: 4 },
   { widgetType: 'ACTIVITY_FEED', x: 8, y: 13, w: 4, h: 4 },
+  { widgetType: 'CUSTOM', x: 0, y: 17, w: 4, h: 4 },
 ];
 
 export interface LayoutItem {

@@ -34,6 +34,9 @@ model User {
   createdTasks  Task[]         @relation("TaskCreatedBy")
   taskAssignees TaskAssignee[]
   layouts       UserLayout[]
+  comments      Comment[]
+  attachments   Attachment[]
+  activities    Activity[]
 }
 
 model Board {
@@ -50,6 +53,10 @@ model Board {
   events        Event[]
   focusPins     FocusPin[]
   reminders     Reminder[]
+  comments      Comment[]
+  attachments   Attachment[]
+  activities    Activity[]
+  customWidget  CustomWidgetContent?
 }
 
 model Membership {
@@ -124,6 +131,8 @@ model Task {
   createdBy    User            @relation("TaskCreatedBy", fields: [createdById], references: [id])
   assignees    TaskAssignee[]
   checklist    ChecklistItem[]
+  comments     Comment[]
+  attachments  Attachment[]
 
   @@index([boardId, sortOrder])
   @@index([parentTaskId])
@@ -226,6 +235,84 @@ model ChecklistItem {
   task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
   @@index([taskId])
+}
+
+model Comment {
+  id          String       @id @default(uuid()) @db.Uuid
+  boardId     String       @db.Uuid
+  taskId      String       @db.Uuid
+  authorId    String       @db.Uuid
+  /// Markdown source; rendered client-side.
+  body        String
+  /// User ids referenced by an @mention in the body.
+  mentions    String[]     @db.Uuid
+  editedAt    DateTime?
+  createdAt   DateTime     @default(now())
+  board       Board        @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  task        Task         @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author      User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  attachments Attachment[]
+
+  @@index([taskId, createdAt])
+  @@index([boardId])
+}
+
+model Attachment {
+  id           String   @id @default(uuid()) @db.Uuid
+  boardId      String   @db.Uuid
+  /// Object key inside the private `attachments` bucket.
+  storagePath  String   @unique
+  fileName     String
+  mimeType     String
+  size         Int
+  taskId       String?  @db.Uuid
+  commentId    String?  @db.Uuid
+  uploadedById String   @db.Uuid
+  createdAt    DateTime @default(now())
+  board        Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  task         Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  comment      Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([commentId])
+  @@index([boardId, createdAt])
+}
+
+enum ActivityType {
+  TASK_CREATED
+  TASK_COMPLETED
+  STATUS_CHANGED
+  MEMBER_ASSIGNED
+  MEMBER_REMOVED
+  GOAL_COMPLETED
+  FILE_UPLOADED
+  COMMENT_ADDED
+}
+
+model Activity {
+  id        String       @id @default(uuid()) @db.Uuid
+  boardId   String       @db.Uuid
+  type      ActivityType
+  /// Null once the actor's account is gone — the feed entry outlives them.
+  actorId   String?      @db.Uuid
+  /// Denormalized snapshot (titles, names, ids) so the feed never joins.
+  meta      Json         @default("{}")
+  createdAt DateTime     @default(now())
+  board     Board        @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  actor     User?        @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([boardId, createdAt])
+}
+
+model CustomWidgetContent {
+  id        String   @id @default(uuid()) @db.Uuid
+  boardId   String   @unique @db.Uuid
+  title     String   @default("Notes")
+  /// TipTap document, stored verbatim.
+  content   Json     @default("{}")
+  updatedAt DateTime @updatedAt
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
 }
 
 model UserLayout {

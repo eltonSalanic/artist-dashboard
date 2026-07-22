@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type { CreateInviteDto } from '@artist/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { SupabaseAdminService } from './supabase-admin.service';

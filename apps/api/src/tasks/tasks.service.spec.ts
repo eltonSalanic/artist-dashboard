@@ -1,9 +1,8 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ActivityService } from '../activity/activity.service';
+import { StorageService } from '../attachments/storage.service';
 
 describe('TasksService', () => {
   const prisma = {
@@ -18,14 +17,31 @@ describe('TasksService', () => {
     taskStatus: { findFirst: jest.fn() },
     membership: { findMany: jest.fn() },
     checklistItem: { aggregate: jest.fn(), create: jest.fn() },
+    attachment: { findMany: jest.fn().mockResolvedValue([]) },
+    user: { findMany: jest.fn().mockResolvedValue([]) },
+    activity: { create: jest.fn() },
+    $transaction: jest.fn(),
   };
-  const service = new TasksService(prisma as unknown as PrismaService);
+  // Transactions run against the same mock, so assertions on `prisma.<model>`
+  // still see writes made inside one.
+  prisma.$transaction.mockImplementation((fn: (tx: unknown) => unknown) =>
+    fn(prisma),
+  );
+  const storage = { remove: jest.fn() };
+  const service = new TasksService(
+    prisma as unknown as PrismaService,
+    new ActivityService(prisma as unknown as PrismaService),
+    storage as unknown as StorageService,
+  );
 
   const baseTask = {
     id: 't1',
     boardId: 'b1',
     parentTaskId: null,
     sortOrder: 1024,
+    statusId: 's1',
+    title: 'T',
+    status: { id: 's1', name: 'Not Started', color: '#888888', isDone: false },
   };
 
   beforeEach(() => jest.clearAllMocks());
@@ -58,7 +74,12 @@ describe('TasksService', () => {
         dueDate: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-        status: { id: 's1', name: 'Not Started', color: '#888888', isDone: false },
+        status: {
+          id: 's1',
+          name: 'Not Started',
+          color: '#888888',
+          isDone: false,
+        },
         assignees: [],
         checklist: [],
         _count: { subtasks: 0, checklist: 0 },
@@ -111,7 +132,7 @@ describe('TasksService', () => {
         _count: { subtasks: 0, checklist: 0 },
       });
 
-      const result = await service.update('b1', 't1', 'USER', {
+      const result = await service.update('b1', 't1', 'u1', 'USER', {
         statusId: 's2',
       });
       expect(result.statusId).toBe('s2');
@@ -120,7 +141,10 @@ describe('TasksService', () => {
     it('blocks USER from editing the title', async () => {
       prisma.task.findFirst.mockResolvedValue(baseTask);
       await expect(
-        service.update('b1', 't1', 'USER', { title: 'Renamed', statusId: 's2' }),
+        service.update('b1', 't1', 'u1', 'USER', {
+          title: 'Renamed',
+          statusId: 's2',
+        }),
       ).rejects.toBeInstanceOf(ForbiddenException);
       expect(prisma.task.update).not.toHaveBeenCalled();
     });
@@ -129,7 +153,7 @@ describe('TasksService', () => {
       prisma.task.findFirst.mockResolvedValue(baseTask);
       prisma.taskStatus.findFirst.mockResolvedValue(null);
       await expect(
-        service.update('b1', 't1', 'ADMIN', { statusId: 'foreign' }),
+        service.update('b1', 't1', 'u1', 'ADMIN', { statusId: 'foreign' }),
       ).rejects.toBeInstanceOf(BadRequestException);
     });
   });
@@ -142,7 +166,9 @@ describe('TasksService', () => {
         .mockResolvedValueOnce({ sortOrder: 3072 }); // next sibling
       prisma.task.update.mockResolvedValue({});
 
-      const result = await service.reorder('b1', 't1', { afterTaskId: 'after' });
+      const result = await service.reorder('b1', 't1', {
+        afterTaskId: 'after',
+      });
       expect(result.sortOrder).toBe(2560);
     });
 
@@ -175,7 +201,9 @@ describe('TasksService', () => {
       prisma.task.findFirst.mockResolvedValue(baseTask);
       prisma.membership.findMany.mockResolvedValue([{ userId: 'u1' }]);
       await expect(
-        service.setAssignees('b1', 't1', { assigneeIds: ['u1', 'stranger'] }),
+        service.setAssignees('b1', 't1', 'u1', {
+          assigneeIds: ['u1', 'stranger'],
+        }),
       ).rejects.toBeInstanceOf(BadRequestException);
     });
   });

@@ -6,7 +6,11 @@ import { PrismaService } from '../prisma/prisma.service';
 describe('LayoutsService', () => {
   const prisma = {
     board: { findUnique: jest.fn(), update: jest.fn() },
-    userLayout: { findUnique: jest.fn(), upsert: jest.fn(), deleteMany: jest.fn() },
+    userLayout: {
+      findUnique: jest.fn(),
+      upsert: jest.fn(),
+      deleteMany: jest.fn(),
+    },
   };
   const service = new LayoutsService(prisma as unknown as PrismaService);
 

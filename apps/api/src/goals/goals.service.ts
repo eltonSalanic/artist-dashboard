@@ -6,6 +6,7 @@ import type {
 } from '@artist/shared';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { ActivityService } from '../activity/activity.service';
 
 const goalInclude = {
   _count: { select: { tasks: true } },
@@ -13,7 +14,10 @@ const goalInclude = {
 
 @Injectable()
 export class GoalsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly activity: ActivityService,
+  ) {}
 
   async list(boardId: string, query: GoalQueryDto) {
     const goals = await this.prisma.goal.findMany({
@@ -55,26 +59,48 @@ export class GoalsService {
     return this.toDto(goal);
   }
 
-  async update(boardId: string, goalId: string, dto: UpdateGoalDto) {
+  async update(
+    boardId: string,
+    goalId: string,
+    actorId: string,
+    dto: UpdateGoalDto,
+  ) {
     const existing = await this.prisma.goal.findFirst({
       where: { id: goalId, boardId },
     });
     if (!existing) throw new NotFoundException('Goal not found');
 
     const { completed, ...fields } = dto;
-    const goal = await this.prisma.goal.update({
-      where: { id: goalId },
-      data: {
-        ...fields,
-        ...(completed === undefined
-          ? {}
-          : {
-              completedAt: completed
-                ? (existing.completedAt ?? new Date())
-                : null,
-            }),
-      },
-      include: goalInclude,
+    const goal = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.goal.update({
+        where: { id: goalId },
+        data: {
+          ...fields,
+          ...(completed === undefined
+            ? {}
+            : {
+                completedAt: completed
+                  ? (existing.completedAt ?? new Date())
+                  : null,
+              }),
+        },
+        include: goalInclude,
+      });
+      // Only the first completion is news; re-completing keeps the original
+      // timestamp and doesn't repeat itself in the feed.
+      if (completed && existing.completedAt === null) {
+        await this.activity.log(tx, {
+          boardId,
+          type: 'GOAL_COMPLETED',
+          actorId,
+          meta: {
+            goalId,
+            goalTitle: updated.title,
+            period: updated.period,
+          },
+        });
+      }
+      return updated;
     });
     return this.toDto(goal);
   }

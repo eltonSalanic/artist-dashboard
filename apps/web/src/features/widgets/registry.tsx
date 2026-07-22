@@ -1,9 +1,11 @@
 import type { ComponentType } from "react";
 import {
+  Activity,
   BellRing,
   CalendarDays,
   CheckSquare2,
   Mic2,
+  NotebookPen,
   Target,
   UserCheck,
   Users,
@@ -19,6 +21,14 @@ import {
   RemindersWidget,
   RemindersWidgetExpanded,
 } from "./reminders-widget";
+import {
+  ActivityWidget,
+  ActivityWidgetExpanded,
+} from "./activity-widget";
+import {
+  CustomWidget,
+  CustomWidgetExpanded,
+} from "@/features/custom-widget/custom-widget";
 
 export interface WidgetProps {
   boardId: string;
@@ -38,8 +48,8 @@ const rehearsals = makeEventsWidget("REHEARSAL");
 const meetings = makeEventsWidget("MEETING");
 
 /**
- * Widgets not yet built (CUSTOM, ACTIVITY_FEED — later phases) are simply
- * absent here; DashboardGrid skips any layout entry with no registry match.
+ * Every widget type that ships is registered here; DashboardGrid skips any
+ * layout entry with no registry match (CALENDAR is a full page, not a widget).
  */
 export const widgetRegistry: Partial<Record<WidgetType, WidgetDefinition>> = {
   FOCUS: {
@@ -103,6 +113,22 @@ export const widgetRegistry: Partial<Record<WidgetType, WidgetDefinition>> = {
     icon: BellRing,
     Collapsed: RemindersWidget,
     Expanded: RemindersWidgetExpanded,
+    defaultSize: { w: 4, h: 4 },
+    minSize: { w: 3, h: 3 },
+  },
+  ACTIVITY_FEED: {
+    title: "Activity",
+    icon: Activity,
+    Collapsed: ActivityWidget,
+    Expanded: ActivityWidgetExpanded,
+    defaultSize: { w: 4, h: 4 },
+    minSize: { w: 3, h: 3 },
+  },
+  CUSTOM: {
+    title: "Notes",
+    icon: NotebookPen,
+    Collapsed: CustomWidget,
+    Expanded: CustomWidgetExpanded,
     defaultSize: { w: 4, h: 4 },
     minSize: { w: 3, h: 3 },
   },

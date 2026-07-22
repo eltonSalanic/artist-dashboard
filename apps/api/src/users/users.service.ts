@@ -1,11 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DEFAULT_BOARD_LAYOUT, DEFAULT_TASK_STATUSES } from '@artist/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { ActivityService } from '../activity/activity.service';
 import type { AuthUser } from '../auth/current-user.decorator';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly activity: ActivityService,
+  ) {}
 
   /**
    * Idempotent first-call setup for an authenticated Supabase user:
@@ -27,6 +31,11 @@ export class UsersService {
         where: { email: auth.email, status: 'PENDING' },
       });
       for (const invite of pendingInvites) {
+        const existingMembership = await tx.membership.findUnique({
+          where: {
+            boardId_userId: { boardId: invite.boardId, userId: auth.userId },
+          },
+        });
         await tx.membership.upsert({
           where: {
             boardId_userId: { boardId: invite.boardId, userId: auth.userId },
@@ -42,6 +51,21 @@ export class UsersService {
           where: { id: invite.id },
           data: { status: 'ACCEPTED' },
         });
+        // The board gains a member the first time an invite converts; the
+        // actor is the person joining.
+        if (!existingMembership) {
+          await this.activity.log(tx, {
+            boardId: invite.boardId,
+            type: 'MEMBER_ASSIGNED',
+            actorId: auth.userId,
+            meta: {
+              memberId: auth.userId,
+              memberName: displayName,
+              role: invite.role,
+              joinedBoard: true,
+            },
+          });
+        }
       }
 
       const membership = await tx.membership.findFirst({

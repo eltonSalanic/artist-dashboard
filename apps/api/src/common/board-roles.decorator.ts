@@ -8,4 +8,5 @@ export const BOARD_ROLE_KEY = 'boardRole';
  * board; 'ADMIN' means an admin membership. The route must expose the board
  * id as the `:boardId` param (or `:id` on /boards routes).
  */
-export const BoardRoles = (role: BoardRole) => SetMetadata(BOARD_ROLE_KEY, role);
+export const BoardRoles = (role: BoardRole) =>
+  SetMetadata(BOARD_ROLE_KEY, role);

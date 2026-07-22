@@ -16,6 +16,7 @@ import {
   type GoalQueryDto,
   type UpdateGoalDto,
 } from '@artist/shared';
+import { CurrentUser, type AuthUser } from '../auth/current-user.decorator';
 import { BoardRoles } from '../common/board-roles.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { GoalsService } from './goals.service';
@@ -52,9 +53,10 @@ export class GoalsController {
   update(
     @Param('boardId') boardId: string,
     @Param('goalId') goalId: string,
+    @CurrentUser() user: AuthUser,
     @Body(new ZodValidationPipe(updateGoalSchema)) dto: UpdateGoalDto,
   ) {
-    return this.goals.update(boardId, goalId, dto);
+    return this.goals.update(boardId, goalId, user.userId, dto);
   }
 
   @Delete(':goalId')

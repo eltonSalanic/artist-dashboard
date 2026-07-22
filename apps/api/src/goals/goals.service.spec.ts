@@ -1,6 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { GoalsService } from './goals.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ActivityService } from '../activity/activity.service';
 
 describe('GoalsService', () => {
   const prisma = {
@@ -11,8 +12,18 @@ describe('GoalsService', () => {
       update: jest.fn(),
       delete: jest.fn(),
     },
+    activity: { create: jest.fn() },
+    $transaction: jest.fn(),
   };
-  const service = new GoalsService(prisma as unknown as PrismaService);
+  // Transactions run against the same mock, so assertions on `prisma.goal`
+  // still see writes made inside one.
+  prisma.$transaction.mockImplementation((fn: (tx: unknown) => unknown) =>
+    fn(prisma),
+  );
+  const service = new GoalsService(
+    prisma as unknown as PrismaService,
+    new ActivityService(prisma as unknown as PrismaService),
+  );
 
   /** The `data` Prisma was asked to write on the most recent update. */
   const lastUpdateData = (): {
@@ -40,7 +51,7 @@ describe('GoalsService', () => {
     prisma.goal.findFirst.mockResolvedValue({ id: 'g1', completedAt: null });
     prisma.goal.update.mockResolvedValue({ _count: { tasks: 0 } });
 
-    await service.update('b1', 'g1', { completed: true });
+    await service.update('b1', 'g1', 'u1', { completed: true });
 
     expect(lastUpdateData().completedAt).toBeInstanceOf(Date);
     expect(lastUpdateData()).not.toHaveProperty('completed');
@@ -51,7 +62,7 @@ describe('GoalsService', () => {
     prisma.goal.findFirst.mockResolvedValue({ id: 'g1', completedAt });
     prisma.goal.update.mockResolvedValue({ _count: { tasks: 0 } });
 
-    await service.update('b1', 'g1', { completed: true });
+    await service.update('b1', 'g1', 'u1', { completed: true });
 
     expect(lastUpdateData().completedAt).toBe(completedAt);
   });
@@ -63,7 +74,7 @@ describe('GoalsService', () => {
     });
     prisma.goal.update.mockResolvedValue({ _count: { tasks: 0 } });
 
-    await service.update('b1', 'g1', { completed: false });
+    await service.update('b1', 'g1', 'u1', { completed: false });
 
     expect(lastUpdateData().completedAt).toBeNull();
   });
@@ -72,14 +83,14 @@ describe('GoalsService', () => {
     prisma.goal.findFirst.mockResolvedValue({ id: 'g1', completedAt: null });
     prisma.goal.update.mockResolvedValue({ _count: { tasks: 0 } });
 
-    await service.update('b1', 'g1', { title: 'New title' });
+    await service.update('b1', 'g1', 'u1', { title: 'New title' });
 
     expect(lastUpdateData()).not.toHaveProperty('completedAt');
   });
 
   it('refuses to touch a goal on another board', async () => {
     prisma.goal.findFirst.mockResolvedValue(null);
-    await expect(service.update('b1', 'g1', {})).rejects.toBeInstanceOf(
+    await expect(service.update('b1', 'g1', 'u1', {})).rejects.toBeInstanceOf(
       NotFoundException,
     );
   });

@@ -31,7 +31,10 @@ describe('InvitesService', () => {
 
   it('normalizes the email, upserts the invite, and sends the email', async () => {
     prisma.membership.findFirst.mockResolvedValue(null);
-    prisma.invite.upsert.mockResolvedValue({ id: 'i1', email: 'mike@band.com' });
+    prisma.invite.upsert.mockResolvedValue({
+      id: 'i1',
+      email: 'mike@band.com',
+    });
     supabaseAdmin.inviteByEmail.mockResolvedValue('sent');
 
     const result = await service.create('b1', 'admin1', {

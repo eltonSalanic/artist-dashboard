@@ -17,11 +17,17 @@ import { EventsModule } from './events/events.module';
 import { FocusModule } from './focus/focus.module';
 import { RemindersModule } from './reminders/reminders.module';
 import { CalendarModule } from './calendar/calendar.module';
+import { ActivityModule } from './activity/activity.module';
+import { CommentsModule } from './comments/comments.module';
+import { AttachmentsModule } from './attachments/attachments.module';
+import { CustomWidgetModule } from './custom-widget/custom-widget.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    // Global, and imported early so every domain module can log to the feed.
+    ActivityModule,
     AuthModule,
     UsersModule,
     BoardsModule,
@@ -34,6 +40,9 @@ import { CalendarModule } from './calendar/calendar.module';
     FocusModule,
     RemindersModule,
     CalendarModule,
+    CommentsModule,
+    AttachmentsModule,
+    CustomWidgetModule,
   ],
   controllers: [HealthController],
   providers: [
