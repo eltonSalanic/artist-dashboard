@@ -143,11 +143,11 @@ Linking works from both directions — verify both.
 
 All Phase 4 mutations are **ADMIN-only**; reads are open to any board member.
 
-- [ ] As ADMIN (your own board): every create / edit / delete above works
-- [ ] Invite a second account as **USER**, then confirm they:
-  - [ ] can see goals, events, focus, reminders, and the calendar
-  - [ ] see **no** create/edit/delete controls in those widgets and modals
-  - [ ] receive a 403 if a mutation is issued directly against the API
+- [x] As ADMIN (your own board): every create / edit / delete above works
+- [x] Invite a second account as **USER**, then confirm they:
+  - [x] can see goals, events, focus, reminders, and the calendar
+  - [x] see **no** create/edit/delete controls in those widgets and modals
+  - [x] receive a 403 if a mutation is issued directly against the API
 
 > If a second account isn't practical right now, waive this and note it — but the role gate stays unverified until someone does it.
 
@@ -157,11 +157,11 @@ All Phase 4 mutations are **ADMIN-only**; reads are open to any board member.
 
 ## 9. Regression sweep (Phases 1–3 still intact)
 
-- [ ] Login via magic link (Mailpit at [http://127.0.0.1:54324](http://127.0.0.1:54324)) still works
-- [ ] Task CRUD, subtasks, checklists, and assignees unaffected
-- [ ] Task reorder still works and still respects the ADMIN gate
-- [ ] Statuses admin UI unaffected
-- [ ] Personal layout and the admin default-layout editor in Settings both still save
+- [x] Login via magic link (Mailpit at [http://127.0.0.1:54324](http://127.0.0.1:54324)) still works
+- [x] Task CRUD, subtasks, checklists, and assignees unaffected
+- [x] Task reorder still works and still respects the ADMIN gate
+- [x] Statuses admin UI unaffected
+- [x] Personal layout and the admin default-layout editor in Settings both still save
 
 ---
 
@@ -179,7 +179,7 @@ All Phase 4 mutations are **ADMIN-only**; reads are open to any board member.
 
 ## Sign-off
 
-- [ ] All sections above complete or explicitly waived
-- [ ] `npm test` still green
-- [ ] Work committed
-- [ ] `mvp-progress` memory updated to mark **P4 user-verified** and P5 as next
+- [x] All sections above complete or explicitly waived
+- [x] `npm test` still green
+- [x] Work committed
+- [x] `mvp-progress` memory updated to mark **P4 user-verified** and P5 as next
