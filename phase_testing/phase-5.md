@@ -50,13 +50,13 @@ Open any task's detail modal; the **Comments** section sits below Attachments.
 
 ## 3. Comments — @mentions (the headline)
 
-- [ ] Type `@` in the composer — a suggestion popup lists board members
-- [ ] Keep typing to filter; **↑/↓** move the selection, **Enter/Tab** accepts, **Esc** dismisses
-- [ ] Accepting inserts `@Name`  and drops the popup
-- [ ] An email address (`sam@band.com`) in the body does **not** trigger the popup and is **not** turned into a mention
-- [ ] A posted mention renders as a highlighted **chip**, not a plain link
-- [ ] Two members whose names share a prefix (e.g. `sam` and `sam.jones`) each resolve to the right person — `@sam.jones` never collapses to `@sam`
-- [ ] Server rejects a mention of a non-member (can't be produced from the UI; verify via direct API `POST` with a stranger's id → 400)
+- [x] Type `@` in the composer — a suggestion popup lists board members
+- [x] Keep typing to filter; **↑/↓** move the selection, **Enter/Tab** accepts, **Esc** dismisses
+- [x] Accepting inserts `@Name`  and drops the popup
+- [x] An email address (`sam@band.com`) in the body does **not** trigger the popup and is **not** turned into a mention
+- [x] A posted mention renders as a highlighted **chip**, not a plain link
+- [x] Two members whose names share a prefix (e.g. `sam` and `sam.jones`) each resolve to the right person — `@sam.jones` never collapses to `@sam`
+- [x] Server rejects a mention of a non-member (can't be produced from the UI; verify via direct API `POST` with a stranger's id → 400)
 
 ---
 
