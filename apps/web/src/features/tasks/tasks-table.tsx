@@ -9,6 +9,7 @@ import { apiFetch } from "@/lib/api";
 import { usePermissions } from "@/features/auth/permissions";
 import type { BoardDetailDto } from "@/features/auth/types";
 import { useCreateTask, useTasks, useUpdateTask } from "./use-tasks";
+import { useCanChangeStatus } from "./use-can-change-status";
 import type { TaskFilters } from "./types";
 import {
   AssigneeAvatars,
@@ -58,6 +59,7 @@ export function TasksTable({
   const router = useRouter();
   const searchParams = useSearchParams();
   const { can } = usePermissions();
+  const canChangeStatus = useCanChangeStatus();
   const [filters, setFilters] = useState<TaskFilters>(initialFilters ?? {});
   const [newTitle, setNewTitle] = useState("");
 
@@ -251,7 +253,7 @@ export function TasksTable({
                     <StatusSelect
                       value={task.statusId}
                       statuses={statuses}
-                      disabled={!can("task.changeStatus")}
+                      disabled={!canChangeStatus(task.assignees)}
                       onChange={(statusId) =>
                         updateTask.mutate({
                           taskId: task.id,

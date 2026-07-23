@@ -113,9 +113,10 @@ describe('TasksService', () => {
 
   describe('update', () => {
     it('lets USER change only statusId', async () => {
-      prisma.task.findFirst
-        .mockResolvedValueOnce(baseTask) // getOwned
-        .mockResolvedValueOnce({ id: 's2' }); // (not used) safety
+      prisma.task.findFirst.mockResolvedValue({
+        ...baseTask,
+        assignees: [{ userId: 'u1' }],
+      });
       prisma.taskStatus.findFirst.mockResolvedValue({ id: 's2' });
       prisma.task.update.mockResolvedValue({
         ...baseTask,
@@ -133,6 +134,34 @@ describe('TasksService', () => {
       });
 
       const result = await service.update('b1', 't1', 'u1', 'USER', {
+        statusId: 's2',
+      });
+      expect(result.statusId).toBe('s2');
+    });
+
+    it('blocks USER from restatusing a task they are not assigned to', async () => {
+      prisma.task.findFirst.mockResolvedValue({ ...baseTask, assignees: [] });
+      await expect(
+        service.update('b1', 't1', 'u1', 'USER', { statusId: 's2' }),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+      expect(prisma.task.update).not.toHaveBeenCalled();
+    });
+
+    it('lets ADMIN restatus a task they are not assigned to', async () => {
+      prisma.task.findFirst
+        .mockResolvedValueOnce({ ...baseTask, assignees: [] })
+        .mockResolvedValueOnce({ id: 's2' });
+      prisma.taskStatus.findFirst.mockResolvedValue({ id: 's2' });
+      prisma.task.update.mockResolvedValue({
+        ...baseTask,
+        statusId: 's2',
+        status: { id: 's2', name: 'Done', color: '#22cc88', isDone: true },
+        assignees: [],
+        checklist: [],
+        _count: { subtasks: 0, checklist: 0 },
+      });
+
+      const result = await service.update('b1', 't1', 'admin', 'ADMIN', {
         statusId: 's2',
       });
       expect(result.statusId).toBe('s2');

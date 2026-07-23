@@ -187,7 +187,7 @@ export class TasksService {
   ) {
     const existing = await this.prisma.task.findFirst({
       where: { id: taskId, boardId },
-      include: { status: true },
+      include: { status: true, assignees: { select: { userId: true } } },
     });
     if (!existing) throw new NotFoundException('Task not found');
 
@@ -197,6 +197,13 @@ export class TasksService {
       if (blocked.length > 0) {
         throw new ForbiddenException(
           `Members can only change a task's status (attempted: ${blocked.join(', ')})`,
+        );
+      }
+      // Members may only restatus tasks they're assigned to.
+      const isAssignee = existing.assignees.some((a) => a.userId === userId);
+      if (!isAssignee) {
+        throw new ForbiddenException(
+          'You can only change the status of tasks assigned to you',
         );
       }
     }

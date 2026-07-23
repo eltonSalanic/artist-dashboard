@@ -22,6 +22,7 @@ import {
   useTask,
   useUpdateTask,
 } from "./use-tasks";
+import { useCanChangeStatus } from "./use-can-change-status";
 import {
   AssigneeAvatars,
   formatDueDate,
@@ -288,6 +289,7 @@ function TaskDetailBody({
   onClose: () => void;
 }) {
   const { can } = usePermissions();
+  const canChangeStatus = useCanChangeStatus();
   const updateTask = useUpdateTask(boardId);
   const deleteTask = useDeleteTask(boardId);
   const setAssignees = useSetAssignees(boardId);
@@ -343,7 +345,7 @@ function TaskDetailBody({
             id="task-status"
             value={data.statusId}
             statuses={statuses}
-            disabled={!can("task.changeStatus")}
+            disabled={!canChangeStatus(data.assignees)}
             onChange={(statusId) => updateTask.mutate({ taskId, dto: { statusId } })}
           />
         </Field>
@@ -527,7 +529,7 @@ function TaskDetailBody({
                 <StatusSelect
                   value={subtask.statusId}
                   statuses={statuses}
-                  disabled={!can("task.changeStatus")}
+                  disabled={!canChangeStatus(subtask.assignees)}
                   onChange={(statusId) =>
                     updateTask.mutate({ taskId: subtask.id, dto: { statusId } })
                   }
