@@ -21,6 +21,7 @@ import { ActivityModule } from './activity/activity.module';
 import { CommentsModule } from './comments/comments.module';
 import { AttachmentsModule } from './attachments/attachments.module';
 import { CustomWidgetModule } from './custom-widget/custom-widget.module';
+import { MentionsModule } from './mentions/mentions.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { CustomWidgetModule } from './custom-widget/custom-widget.module';
     CommentsModule,
     AttachmentsModule,
     CustomWidgetModule,
+    MentionsModule,
   ],
   controllers: [HealthController],
   providers: [

@@ -72,7 +72,46 @@ export class CommentsService {
           mentions: dto.mentions,
         },
       });
+      await this.notifyMentions(tx, {
+        boardId,
+        taskId,
+        taskTitle: task.title,
+        actorName: comment.author.displayName,
+        actorId: userId,
+        excerpt: excerpt(comment.body),
+        mentions: dto.mentions,
+      });
       return toDto(comment);
+    });
+  }
+
+  /**
+   * Drops a "you were mentioned" notification for each mentioned member other
+   * than the author. Fields are snapshotted so the row outlives the comment.
+   */
+  private async notifyMentions(
+    tx: Prisma.TransactionClient,
+    input: {
+      boardId: string;
+      taskId: string;
+      taskTitle: string;
+      actorName: string;
+      actorId: string;
+      excerpt: string;
+      mentions: string[];
+    },
+  ) {
+    const recipients = input.mentions.filter((id) => id !== input.actorId);
+    if (recipients.length === 0) return;
+    await tx.mentionNotification.createMany({
+      data: recipients.map((userId) => ({
+        boardId: input.boardId,
+        userId,
+        taskId: input.taskId,
+        taskTitle: input.taskTitle,
+        actorName: input.actorName,
+        excerpt: input.excerpt,
+      })),
     });
   }
 

@@ -21,6 +21,7 @@ describe('CommentsService', () => {
     membership: { findMany: jest.fn() },
     attachment: { findMany: jest.fn().mockResolvedValue([]) },
     activity: { create: jest.fn() },
+    mentionNotification: { createMany: jest.fn() },
     $transaction: jest.fn(),
   };
   prisma.$transaction.mockImplementation((fn: (tx: unknown) => unknown) =>
@@ -67,6 +68,29 @@ describe('CommentsService', () => {
           }),
         }),
       );
+    });
+
+    it('notifies mentioned members but never the author', async () => {
+      prisma.task.findFirst.mockResolvedValue({ id: 't1', title: 'Mix' });
+      prisma.membership.findMany.mockResolvedValue([
+        { userId: 'u1' },
+        { userId: 'u2' },
+      ]);
+      prisma.comment.create.mockResolvedValue({
+        ...stored,
+        mentions: ['u1', 'u2'],
+      });
+
+      await service.create('b1', 't1', 'u1', {
+        body: 'yo @u1 @u2',
+        mentions: ['u1', 'u2'],
+      });
+
+      expect(prisma.mentionNotification.createMany).toHaveBeenCalledWith({
+        data: [
+          expect.objectContaining({ userId: 'u2', taskId: 't1' }),
+        ],
+      });
     });
 
     it('rejects a mention of someone outside the board', async () => {

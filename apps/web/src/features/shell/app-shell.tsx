@@ -26,6 +26,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { MentionsIndicator } from "@/features/mentions/mentions-indicator";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -107,6 +108,7 @@ function Header({ me }: { me: MeResponse }) {
       </nav>
 
       <div className="flex items-center gap-4">
+        {me.board && <MentionsIndicator boardId={me.board.id} />}
         {role === "ADMIN" && (
           <label className="flex items-center gap-2 text-xs text-muted-foreground">
             User view
