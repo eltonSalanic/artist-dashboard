@@ -30,8 +30,9 @@ export function MentionsIndicator({ boardId }: { boardId: string }) {
   // The indicator only "comes up" once there's something to show.
   if (items.length === 0) return null;
 
-  const open = (taskId: string, id: string) => {
-    dismiss.mutate(id);
+  // Opening the task leaves the notification in place — it stays until the user
+  // clears it with the X or "Clear all".
+  const open = (taskId: string) => {
     router.push(`/?task=${taskId}`);
   };
 
@@ -73,7 +74,7 @@ export function MentionsIndicator({ boardId }: { boardId: string }) {
               <button
                 type="button"
                 className="min-w-0 flex-1 text-left"
-                onClick={() => open(item.taskId, item.id)}
+                onClick={() => open(item.taskId)}
               >
                 <p className="text-sm">
                   <span className="font-medium">{item.actorName}</span> mentioned
