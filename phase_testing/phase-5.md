@@ -141,9 +141,9 @@ Reads are open to any member; the mutation gates differ by resource — verify w
 
 ## 9. Data safety
 
-- [ ] Delete a **task** that has comments and attachments → comments and attachment rows cascade away, and their **Storage objects are purged** (no orphaned files)
-- [ ] Delete a task with **subtasks** that themselves have attachments → those are cleaned up too
-- [ ] An actor's feed entries survive that actor being removed (actor shows as gone/"Someone", entry text intact)
+- [x] Delete a **task** that has comments and attachments → comments and attachment rows cascade away, and their **Storage objects are purged** (no orphaned files)
+- [x] Delete a task with **subtasks** that themselves have attachments → those are cleaned up too
+- [x] An actor's feed entries survive that actor being removed (actor shows as gone/"Someone", entry text intact)
 
 ---
 
@@ -151,12 +151,12 @@ Reads are open to any member; the mutation gates differ by resource — verify w
 
 ## 10. Regression sweep (Phases 1–4 still intact)
 
-- [ ] Login via magic link (Mailpit) still works
-- [ ] Task CRUD, subtasks, checklists, assignees, reorder unaffected
-- [ ] Goals / Events / Focus / Reminders CRUD and their widgets unaffected
-- [ ] Calendar still aggregates events, goal due dates, and reminders
-- [ ] Task ↔ goal/event linking and deep links (`?task=`, `?goal=`, `?event=`) still work
-- [ ] Personal layout and the admin default-layout editor both still save
+- [x] Login via magic link (Mailpit) still works
+- [x] Task CRUD, subtasks, checklists, assignees, reorder unaffected
+- [x] Goals / Events / Focus / Reminders CRUD and their widgets unaffected
+- [x] Calendar still aggregates events, goal due dates, and reminders
+- [x] Task ↔ goal/event linking and deep links (`?task=`, `?goal=`, `?event=`) still work
+- [x] Personal layout and the admin default-layout editor both still save
 
 ---
 
@@ -175,7 +175,7 @@ Reads are open to any member; the mutation gates differ by resource — verify w
 
 ## Sign-off
 
-- [ ] All sections above complete or explicitly waived
-- [ ] `npm test` still green (61 API + 41 web)
-- [ ] Work committed
-- [ ] `mvp-progress` memory updated to mark **P5 user-verified** and P6 as next
+- [x] All sections above complete or explicitly waived
+- [x] `npm test` still green (61 API + 41 web)
+- [x] Work committed
+- [x] `mvp-progress` memory updated to mark **P5 user-verified** and P6 as next
