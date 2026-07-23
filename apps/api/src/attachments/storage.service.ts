@@ -53,6 +53,21 @@ export class StorageService {
     return { url: data.signedUrl, expiresIn: DOWNLOAD_URL_TTL_SECONDS };
   }
 
+  /**
+   * Same short-lived signed URL as the download, minus the `download`
+   * disposition — the object serves inline under its stored content-type so
+   * the browser previews it (image/pdf/audio/video) instead of saving it.
+   */
+  async createViewUrl(storagePath: string) {
+    const { data, error } = await this.client.storage
+      .from(BUCKET)
+      .createSignedUrl(storagePath, DOWNLOAD_URL_TTL_SECONDS);
+    if (error || !data) {
+      throw new InternalServerErrorException('Could not sign the preview');
+    }
+    return { url: data.signedUrl, expiresIn: DOWNLOAD_URL_TTL_SECONDS };
+  }
+
   /** Best-effort object cleanup; the DB row is the source of truth. */
   async remove(storagePaths: string[]) {
     if (storagePaths.length === 0) return;

@@ -1,11 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Download, FileAudio, FileText, Paperclip, Trash2 } from "lucide-react";
+import {
+  Download,
+  Eye,
+  FileAudio,
+  FileText,
+  Paperclip,
+  Trash2,
+} from "lucide-react";
 import { MENTION_HREF } from "./mentions";
 import type { AttachmentDto } from "./types";
-import { downloadAttachment } from "./use-attachments";
+import { AttachmentViewer } from "./attachment-viewer";
+import { downloadAttachment, isPreviewable } from "./use-attachments";
 import { Button } from "@/components/ui/button";
 
 /** "just now" / "5m" / "3h" / "2d", then a plain date once it's old. */
@@ -88,6 +97,13 @@ export function AttachmentRow({
   attachment: AttachmentDto;
   onDelete?: () => void;
 }) {
+  const [viewing, setViewing] = useState(false);
+  const canPreview = isPreviewable(attachment.mimeType);
+
+  // Clicking the name previews when we can render the type, else downloads.
+  const primaryAction = () =>
+    canPreview ? setViewing(true) : downloadAttachment(boardId, attachment.id);
+
   return (
     <div className="flex items-center gap-2 rounded-md border bg-background px-2 py-1.5">
       <AttachmentIcon
@@ -97,14 +113,28 @@ export function AttachmentRow({
       <button
         type="button"
         className="min-w-0 flex-1 truncate text-left text-sm hover:underline"
-        onClick={() => downloadAttachment(boardId, attachment.id)}
-        title={`Download ${attachment.fileName}`}
+        onClick={primaryAction}
+        title={
+          canPreview
+            ? `View ${attachment.fileName}`
+            : `Download ${attachment.fileName}`
+        }
       >
         {attachment.fileName}
       </button>
       <span className="shrink-0 text-xs text-muted-foreground">
         {formatBytes(attachment.size)}
       </span>
+      {canPreview && (
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label={`View ${attachment.fileName}`}
+          onClick={() => setViewing(true)}
+        >
+          <Eye />
+        </Button>
+      )}
       <Button
         variant="ghost"
         size="icon-sm"
@@ -122,6 +152,15 @@ export function AttachmentRow({
         >
           <Trash2 />
         </Button>
+      )}
+
+      {canPreview && (
+        <AttachmentViewer
+          boardId={boardId}
+          attachment={attachment}
+          open={viewing}
+          onOpenChange={setViewing}
+        />
       )}
     </div>
   );

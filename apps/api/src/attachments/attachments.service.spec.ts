@@ -27,6 +27,7 @@ describe('AttachmentsService', () => {
   const storage = {
     createUploadUrl: jest.fn(),
     createDownloadUrl: jest.fn(),
+    createViewUrl: jest.fn(),
     remove: jest.fn(),
   };
   const service = new AttachmentsService(
@@ -123,6 +124,37 @@ describe('AttachmentsService', () => {
       await expect(service.remove('b1', 'a1', 'u1', 'ADMIN')).resolves.toEqual({
         deleted: true,
       });
+    });
+  });
+
+  describe('viewUrl', () => {
+    it('signs an inline URL and echoes the stored mime type', async () => {
+      prisma.attachment.findFirst.mockResolvedValue({
+        id: 'a1',
+        storagePath: 'b1/abc/mix.wav',
+        fileName: 'mix.wav',
+        mimeType: 'audio/wav',
+      });
+      storage.createViewUrl.mockResolvedValue({
+        url: 'https://signed/inline',
+        expiresIn: 60,
+      });
+
+      const result = await service.viewUrl('b1', 'a1');
+
+      expect(storage.createViewUrl).toHaveBeenCalledWith('b1/abc/mix.wav');
+      expect(result).toEqual({
+        url: 'https://signed/inline',
+        expiresIn: 60,
+        mimeType: 'audio/wav',
+      });
+    });
+
+    it('404s for an attachment on another board', async () => {
+      prisma.attachment.findFirst.mockResolvedValue(null);
+      await expect(service.viewUrl('b1', 'nope')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
   });
 

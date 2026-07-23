@@ -127,3 +127,33 @@ export async function downloadAttachment(
     showError(error);
   }
 }
+
+/**
+ * Fresh inline-serving signed URL for previewing an attachment in a modal
+ * (no download disposition). Surfaces errors as a toast and resolves null so
+ * the caller can fall back.
+ */
+export async function fetchViewUrl(
+  boardId: string,
+  attachmentId: string,
+): Promise<string | null> {
+  try {
+    const { url } = await apiFetch<{ url: string }>(
+      `/boards/${boardId}/attachments/${attachmentId}/view-url`,
+    );
+    return url;
+  } catch (error) {
+    showError(error);
+    return null;
+  }
+}
+
+/** Which mime types the in-app viewer can render inline. */
+export function isPreviewable(mimeType: string): boolean {
+  return (
+    mimeType.startsWith("image/") ||
+    mimeType.startsWith("audio/") ||
+    mimeType.startsWith("video/") ||
+    mimeType === "application/pdf"
+  );
+}

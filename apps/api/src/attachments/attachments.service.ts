@@ -97,6 +97,15 @@ export class AttachmentsService {
     );
   }
 
+  async viewUrl(boardId: string, attachmentId: string) {
+    const attachment = await this.getOwned(boardId, attachmentId);
+    const { url, expiresIn } = await this.storage.createViewUrl(
+      attachment.storagePath,
+    );
+    // The client renders by type, so it needs the stored content-type back.
+    return { url, expiresIn, mimeType: attachment.mimeType };
+  }
+
   async remove(
     boardId: string,
     attachmentId: string,

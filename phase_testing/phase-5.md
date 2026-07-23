@@ -66,11 +66,15 @@ Open any task's detail modal; the **Comments** section sits below Attachments.
 
 The **Attachments** section sits above Comments in the task modal.
 
-- [ ] Upload a **PDF** — it lists with a file icon and human-readable size
-- [ ] Upload an **MP3 or WAV** — shows an audio icon
-- [ ] **Download** it (click the name or the download button) — a fresh file opens/saves; the download URL is short-lived (~60s) and freshly signed each click
-- [ ] Delete your own upload; it disappears from the list **and** from Storage
-- [ ] A file over **50 MB** is refused before any network call, with a clear message
+- [x] Upload a **PDF** — it lists with a file icon and human-readable size
+- [x] Upload an **MP3 or WAV** — shows an audio icon
+- [ ] **View** it inline: for a previewable type (image / PDF / audio / video) clicking the name — or the **eye** button — opens a modal that renders it in-app **without** downloading; the modal also has a Download button
+- [ ] A **non-previewable** type (e.g. `.zip`, `.docx`) has **no eye button**, and clicking its name downloads directly
+- [x] **Download** it (click the name or the download button) — a fresh file opens/saves; the download URL is short-lived (~60s) and freshly signed each click
+- [x] Delete your own upload; it disappears from the list **and** from Storage
+- [x] A file over **50 MB** is refused before any network call, with a clear message
+
+> The inline viewer applies everywhere `AttachmentRow` appears — task attachments **and** comment attachments.
 
 ---
 

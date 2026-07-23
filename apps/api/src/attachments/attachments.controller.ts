@@ -67,6 +67,14 @@ export class AttachmentsController {
     return this.attachments.downloadUrl(boardId, attachmentId);
   }
 
+  @Get(':attachmentId/view-url')
+  viewUrl(
+    @Param('boardId') boardId: string,
+    @Param('attachmentId') attachmentId: string,
+  ) {
+    return this.attachments.viewUrl(boardId, attachmentId);
+  }
+
   @Delete(':attachmentId')
   remove(
     @Param('boardId') boardId: string,
