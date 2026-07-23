@@ -37,12 +37,12 @@ Sign-off checklist. Phase 5 is complete when every box below is ticked (or consc
 
 Open any task's detail modal; the **Comments** section sits below Attachments.
 
-- [ ] Post a comment; it appears immediately with your name and a relative time ("just now")
-- [ ] **Markdown renders:** try `**bold`**, `_italic_`, a `- bullet` list, ``code``, and a plain URL (autolinked)
-- [ ] `Cmd/Ctrl+Enter` in the composer submits
-- [ ] Edit your own comment; it shows an **"· edited"** marker afterward and the body updates
-- [ ] Delete your own comment; it disappears
-- [ ] Comment count in the section header tracks create/delete
+- [x] Post a comment; it appears immediately with your name and a relative time ("just now")
+- [x] **Markdown renders:** try `**bold`**, `_italic_`, a `- bullet` list, ``code``, and a plain URL (autolinked)
+- [x] `Cmd/Ctrl+Enter` in the composer submits
+- [x] Edit your own comment; it shows an **"· edited"** marker afterward and the body updates
+- [x] Delete your own comment; it disappears
+- [x] Comment count in the section header tracks create/delete
 
 ---
 
