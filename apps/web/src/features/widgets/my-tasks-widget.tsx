@@ -100,6 +100,7 @@ export function MyTasksWidgetExpanded({ boardId }: { boardId: string }) {
     <TasksTable
       boardId={boardId}
       initialFilters={{ assigneeId: me.data.user.id, sort: "dueDate" }}
+      defaultAssigneeIds={[me.data.user.id]}
     />
   );
 }

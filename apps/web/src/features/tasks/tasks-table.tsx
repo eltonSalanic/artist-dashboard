@@ -48,9 +48,12 @@ const ALL = "__all__";
 export function TasksTable({
   boardId,
   initialFilters,
+  defaultAssigneeIds,
 }: {
   boardId: string;
   initialFilters?: TaskFilters;
+  /** Assignees applied to tasks created from this table (e.g. "My Tasks"). */
+  defaultAssigneeIds?: string[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -78,7 +81,12 @@ export function TasksTable({
   const submitNewTask = (event: React.FormEvent) => {
     event.preventDefault();
     if (!newTitle.trim()) return;
-    createTask.mutate({ title: newTitle.trim() });
+    createTask.mutate({
+      title: newTitle.trim(),
+      ...(defaultAssigneeIds?.length
+        ? { assigneeIds: defaultAssigneeIds }
+        : {}),
+    });
     setNewTitle("");
   };
 
