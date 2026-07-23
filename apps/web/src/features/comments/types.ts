@@ -12,7 +12,7 @@ export interface AttachmentDto {
 export interface CommentDto {
   id: string;
   taskId: string;
-  /** Markdown source. */
+  /** Plain-text body; `@mentions` are highlighted on render. */
   body: string;
   /** User ids the body mentions. */
   mentions: string[];

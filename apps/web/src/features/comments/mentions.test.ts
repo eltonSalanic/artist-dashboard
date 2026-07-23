@@ -2,9 +2,8 @@ import {
   applyMention,
   collectMentionIds,
   findMentionQuery,
-  linkifyMentions,
   matchMembers,
-  MENTION_HREF,
+  splitMentions,
 } from "./mentions";
 
 const members = [
@@ -81,16 +80,24 @@ describe("collectMentionIds", () => {
   });
 });
 
-describe("linkifyMentions", () => {
-  it("rewrites a mention into a mention-href markdown link", () => {
-    expect(linkifyMentions("hi @sam", members)).toBe(
-      `hi [@sam](${MENTION_HREF}u1)`,
-    );
+describe("splitMentions", () => {
+  it("splits a body into text runs and mention chips", () => {
+    expect(splitMentions("hi @sam", members)).toEqual([
+      { type: "text", value: "hi " },
+      { type: "mention", value: "@sam", id: "u1" },
+    ]);
   });
 
-  it("leaves ordinary text untouched", () => {
-    expect(linkifyMentions("no mentions here", members)).toBe(
-      "no mentions here",
-    );
+  it("keeps trailing text after a mention", () => {
+    expect(splitMentions("@alex ping", members)).toEqual([
+      { type: "mention", value: "@alex", id: "u3" },
+      { type: "text", value: " ping" },
+    ]);
+  });
+
+  it("returns a single text run when there are no mentions", () => {
+    expect(splitMentions("no mentions here", members)).toEqual([
+      { type: "text", value: "no mentions here" },
+    ]);
   });
 });

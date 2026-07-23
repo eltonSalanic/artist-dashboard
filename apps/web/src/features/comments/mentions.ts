@@ -3,8 +3,10 @@ export interface MentionTarget {
   displayName: string;
 }
 
-/** Href prefix the markdown renderer uses to spot a mention link. */
-export const MENTION_HREF = "#mention-";
+/** A run of a comment body: either plain text or a resolved `@mention`. */
+export type CommentSegment =
+  | { type: "text"; value: string }
+  | { type: "mention"; value: string; id: string };
 
 /**
  * The `@…` token being typed at the caret, if there is one.
@@ -65,23 +67,26 @@ export function collectMentionIds(
 }
 
 /**
- * Rewrites `@name` into a markdown link the renderer styles as a mention chip.
- * Doing it before parsing keeps react-markdown as the only thing that ever
- * touches raw comment text.
+ * Splits a comment body into plain-text runs and mention chips so it can be
+ * rendered as plain text — no markdown parsing — with mentions highlighted.
  */
-export function linkifyMentions(
+export function splitMentions(
   body: string,
   members: MentionTarget[],
-): string {
-  let result = "";
+): CommentSegment[] {
+  const segments: CommentSegment[] = [];
   let cursor = 0;
   for (const { id, match, index } of eachMention(body, members)) {
-    const name = match.slice(1); // drop the '@'
-    result += body.slice(cursor, index);
-    result += `[@${name}](${MENTION_HREF}${id})`;
+    if (index > cursor) {
+      segments.push({ type: "text", value: body.slice(cursor, index) });
+    }
+    segments.push({ type: "mention", value: match, id });
     cursor = index + match.length;
   }
-  return result + body.slice(cursor);
+  if (cursor < body.length) {
+    segments.push({ type: "text", value: body.slice(cursor) });
+  }
+  return segments;
 }
 
 /**

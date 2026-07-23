@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Markdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import {
   Download,
   Eye,
@@ -11,7 +9,7 @@ import {
   Paperclip,
   Trash2,
 } from "lucide-react";
-import { MENTION_HREF } from "./mentions";
+import { splitMentions, type MentionTarget } from "./mentions";
 import type { AttachmentDto } from "./types";
 import { AttachmentViewer } from "./attachment-viewer";
 import { downloadAttachment, isPreviewable } from "./use-attachments";
@@ -42,34 +40,30 @@ export function formatBytes(bytes: number): string {
 }
 
 /**
- * Comment markdown. Mentions arrive pre-linkified as `#mention-<id>` hrefs
- * (see linkifyMentions) and render as inert chips; every other link opens in a
- * new tab. GFM covers the practical bits — lists, bold, code, autolinks.
+ * Comment body rendered as plain text — no markdown. Newlines are preserved
+ * and `@mentions` are highlighted as inert chips.
  */
-export function CommentMarkdown({ body }: { body: string }) {
+export function CommentBody({
+  body,
+  members,
+}: {
+  body: string;
+  members: MentionTarget[];
+}) {
   return (
-    <div className="space-y-1 text-sm leading-relaxed wrap-break-word [&_a]:text-primary [&_a]:underline-offset-2 [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-xs [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4">
-      <Markdown
-        remarkPlugins={[remarkGfm]}
-        components={{
-          a({ href, children }) {
-            if (href?.startsWith(MENTION_HREF)) {
-              return (
-                <span className="rounded bg-primary/10 px-1 font-medium text-primary">
-                  {children}
-                </span>
-              );
-            }
-            return (
-              <a href={href} target="_blank" rel="noopener noreferrer">
-                {children}
-              </a>
-            );
-          },
-        }}
-      >
-        {body}
-      </Markdown>
+    <div className="text-sm leading-relaxed whitespace-pre-wrap wrap-break-word">
+      {splitMentions(body, members).map((seg, i) =>
+        seg.type === "mention" ? (
+          <span
+            key={i}
+            className="rounded bg-primary/10 px-1 font-medium text-primary"
+          >
+            {seg.value}
+          </span>
+        ) : (
+          <span key={i}>{seg.value}</span>
+        ),
+      )}
     </div>
   );
 }

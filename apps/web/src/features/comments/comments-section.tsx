@@ -11,10 +11,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CommentComposer } from "./comment-composer";
 import {
   AttachmentRow,
-  CommentMarkdown,
+  CommentBody,
   relativeTime,
 } from "./comment-bits";
-import { collectMentionIds, linkifyMentions } from "./mentions";
+import { collectMentionIds } from "./mentions";
 import type { CommentDto } from "./types";
 import {
   useComments,
@@ -212,7 +212,7 @@ function CommentItem({
             </Button>
           </div>
         ) : (
-          <CommentMarkdown body={linkifyMentions(comment.body, members)} />
+          <CommentBody body={comment.body} members={members} />
         )}
 
         {comment.attachments.length > 0 && (

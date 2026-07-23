@@ -21,7 +21,7 @@ export function CommentComposer({
   members,
   onSubmit,
   submitLabel = "Comment",
-  placeholder = "Write a comment…  @ to mention, **markdown** supported",
+  placeholder = "Write a comment…  @ to mention",
   autoFocus,
   busy,
 }: {

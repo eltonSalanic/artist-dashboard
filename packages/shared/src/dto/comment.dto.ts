@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const createCommentSchema = z.object({
-  /** Markdown source, rendered on the web side. */
+  /** Plain-text body; `@mentions` are highlighted on the web side. */
   body: z.string().trim().min(1).max(10_000),
   /**
    * User ids referenced by `@name` in the body. Sent by the client rather than
