@@ -92,14 +92,14 @@ Every mutation below should produce a feed entry **newest-first**. Watch the Act
 
 Trigger and confirm each of the **eight** activity types:
 
-- [ ] **TASK_CREATED** — create a task
-- [ ] **STATUS_CHANGED** — move a task to a different status ("moved X from A to B")
-- [ ] **TASK_COMPLETED** — move a task into a **done** status (fires once, alongside the status change; moving between two done columns does **not** re-fire it)
-- [ ] **MEMBER_ASSIGNED** — assign someone to a task (and: a newly-invited user logging in for the first time shows "joined the board")
-- [ ] **MEMBER_REMOVED** — unassign someone from a task
-- [ ] **GOAL_COMPLETED** — complete a goal (re-completing an already-done goal does **not** add a second entry)
-- [ ] **FILE_UPLOADED** — upload an attachment
-- [ ] **COMMENT_ADDED** — post a comment
+- [x] **TASK_CREATED** — create a task
+- [x] **STATUS_CHANGED** — move a task to a different status ("moved X from A to B")
+- [x] **TASK_COMPLETED** — move a task into a **done** status (fires once, alongside the status change; moving between two done columns does **not** re-fire it)
+- [x] **MEMBER_ASSIGNED** — assign someone to a task (and: a newly-invited user logging in for the first time shows "joined the board")
+- [x] **MEMBER_REMOVED** — unassign someone from a task
+- [x] **GOAL_COMPLETED** — complete a goal (re-completing an already-done goal does **not** add a second entry)
+- [x] **FILE_UPLOADED** — upload an attachment
+- [x] **COMMENT_ADDED** — post a comment
 
 Then:
 
