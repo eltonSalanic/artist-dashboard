@@ -8,33 +8,37 @@ Sign-off checklist. Phase 5 is complete when every box below is ticked (or consc
 
 ## 0. Environment
 
-- [ ] Docker Desktop running, then `supabase start`
-- [ ] `npm run dev` — API on 3001, web on 3000
-- [ ] `cd apps/api && npx prisma migrate status` reports up to date (7 migrations, latest `p5_comments_attachments_activity`)
-- [ ] `npm test` passes (baseline: **61 API + 41 web**)
+- [x] Docker Desktop running, then `supabase start`
+- [x] `npm run dev` — API on 3001, web on 3000
+- [x] `cd apps/api && npx prisma migrate status` reports up to date (7 migrations, latest `p5_comments_attachments_activity`)
+- [x] `npm test` passes (baseline: **61 API + 41 web**)
 - [ ] Logged in, dashboard renders with no red errors in the browser console
 
 > **Storage note:** attachments live in the private `attachments` bucket seeded in `supabase/seed.sql`. If uploads 400/403 at the Storage step, confirm the bucket exists (Studio → Storage) — a stack started before that seed existed won't have it until `supabase db reset` or a manual bucket create.
 
 ---
 
+
+
 ## 1. Dashboard widgets
 
-- [ ] **Ten** widgets render now: the eight from P4 plus **Activity** and **Notes** (Custom)
-- [ ] Your existing layout survived — Activity and Notes are **appended below** your arrangement, not reshuffled into it
-- [ ] Both new widgets show a sensible **empty state** before any data exists
-- [ ] Resize each between small and large; collapsed and expanded forms both render
-- [ ] Hide each and show it again; the change persists across a reload
-- [ ] Drag-reorder still saves (debounced ~800ms) and survives reload
+- [x] **Ten** widgets render now: the eight from P4 plus **Activity** and **Notes** (Custom)
+- [x] Your existing layout survived — Activity and Notes are **appended below** your arrangement, not reshuffled into it
+- [x] Both new widgets show a sensible **empty state** before any data exists
+- [x] Resize each between small and large; collapsed and expanded forms both render
+- [x] Hide each and show it again; the change persists across a reload
+- [x] Drag-reorder still saves (debounced ~800ms) and survives reload
 
 ---
+
+
 
 ## 2. Comments — basics
 
 Open any task's detail modal; the **Comments** section sits below Attachments.
 
 - [ ] Post a comment; it appears immediately with your name and a relative time ("just now")
-- [ ] **Markdown renders:** try `**bold**`, `_italic_`, a `- bullet` list, `` `code` ``, and a plain URL (autolinked)
+- [ ] **Markdown renders:** try `**bold`**, `_italic_`, a `- bullet` list, ``code``, and a plain URL (autolinked)
 - [ ] `Cmd/Ctrl+Enter` in the composer submits
 - [ ] Edit your own comment; it shows an **"· edited"** marker afterward and the body updates
 - [ ] Delete your own comment; it disappears
@@ -42,17 +46,21 @@ Open any task's detail modal; the **Comments** section sits below Attachments.
 
 ---
 
+
+
 ## 3. Comments — @mentions (the headline)
 
 - [ ] Type `@` in the composer — a suggestion popup lists board members
 - [ ] Keep typing to filter; **↑/↓** move the selection, **Enter/Tab** accepts, **Esc** dismisses
-- [ ] Accepting inserts `@Name ` and drops the popup
+- [ ] Accepting inserts `@Name`  and drops the popup
 - [ ] An email address (`sam@band.com`) in the body does **not** trigger the popup and is **not** turned into a mention
 - [ ] A posted mention renders as a highlighted **chip**, not a plain link
 - [ ] Two members whose names share a prefix (e.g. `sam` and `sam.jones`) each resolve to the right person — `@sam.jones` never collapses to `@sam`
 - [ ] Server rejects a mention of a non-member (can't be produced from the UI; verify via direct API `POST` with a stranger's id → 400)
 
 ---
+
+
 
 ## 4. Attachments — on a task
 
@@ -66,6 +74,8 @@ The **Attachments** section sits above Comments in the task modal.
 
 ---
 
+
+
 ## 5. Attachments — on a comment
 
 - [ ] Click the **paperclip** on a comment to attach a file to that specific comment
@@ -73,6 +83,8 @@ The **Attachments** section sits above Comments in the task modal.
 - [ ] Deleting the comment removes its attachments too (list is empty if you re-open; Storage objects are purged)
 
 ---
+
+
 
 ## 6. Activity Feed
 
@@ -98,6 +110,8 @@ Then:
 
 ---
 
+
+
 ## 7. Custom "Notes" widget
 
 - [ ] As **ADMIN**, open the expanded Notes widget — a toolbar (bold, italic, strike, bullet, numbered, undo/redo) sits above the editor
@@ -106,6 +120,8 @@ Then:
 - [ ] The empty state shows the note's title before anything is typed
 
 ---
+
+
 
 ## 8. Permissions
 
@@ -121,6 +137,8 @@ Reads are open to any member; the mutation gates differ by resource — verify w
 
 ---
 
+
+
 ## 9. Data safety
 
 - [ ] Delete a **task** that has comments and attachments → comments and attachment rows cascade away, and their **Storage objects are purged** (no orphaned files)
@@ -128,6 +146,8 @@ Reads are open to any member; the mutation gates differ by resource — verify w
 - [ ] An actor's feed entries survive that actor being removed (actor shows as gone/"Someone", entry text intact)
 
 ---
+
+
 
 ## 10. Regression sweep (Phases 1–4 still intact)
 
@@ -140,14 +160,18 @@ Reads are open to any member; the mutation gates differ by resource — verify w
 
 ---
 
+
+
 ## Known gaps / notes — expected, not bugs
 
-- **`CALENDAR` widget type** remains unimplemented as a *widget* (the calendar is a full page at `/calendar`); DashboardGrid still silently skips it if present in a layout.
-- **API `npm run lint` is red**, but it was already red on `main` before Phase 5: the strict `no-unsafe-*` rules flag the untyped Express `getRequest()` in the auth guard/decorator and the Supabase client's generics, and the ruleset even flags the `as object[]` cast that the build **requires**. This is a pre-existing project baseline, not a Phase 5 regression. `npm test` and both `build`s are green.
+- `CALENDAR` **widget type** remains unimplemented as a *widget* (the calendar is a full page at `/calendar`); DashboardGrid still silently skips it if present in a layout.
+- **API** `npm run lint` **is red**, but it was already red on `main` before Phase 5: the strict `no-unsafe-`* rules flag the untyped Express `getRequest()` in the auth guard/decorator and the Supabase client's generics, and the ruleset even flags the `as object[]` cast that the build **requires**. This is a pre-existing project baseline, not a Phase 5 regression. `npm test` and both `build`s are green.
 - **No optimistic UI** on comments/attachments — they refetch on success (consistent with the rest of the app). A brief round-trip delay on post/upload is expected.
 - **Mentions don't notify** — an `@mention` highlights the person and is stored, but there's no notification/inbox system in the MVP.
 
 ---
+
+
 
 ## Sign-off
 
