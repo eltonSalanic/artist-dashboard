@@ -127,11 +127,11 @@ Then:
 
 Reads are open to any member; the mutation gates differ by resource — verify with a second **USER** account (or waive and note it).
 
-- [ ] **Comments:** a USER **can** post and can edit/delete **their own**; they **cannot** edit anyone else's; an ADMIN **can delete** any comment but **cannot edit** someone else's (edit is author-only, even for admins)
-- [ ] **Attachments:** a USER **can** upload (it's a member-level `file.upload` action) and delete **their own**; an ADMIN can delete any
-- [ ] **Custom widget:** a USER sees the note **read-only** (no toolbar, no Save); only ADMIN can edit → direct `PUT` as USER returns **403**
-- [ ] **Activity feed:** a USER can **read** it
-- [ ] Direct API spot-check: a USER editing another member's comment → **403**; a USER `PUT`ing the custom widget → **403**
+- [x] **Comments:** a USER **can** post and can edit/delete **their own**; they **cannot** edit anyone else's; an ADMIN **can delete** any comment but **cannot edit** someone else's (edit is author-only, even for admins)
+- [x] **Attachments:** a USER **can** upload (it's a member-level `file.upload` action) and delete **their own**; an ADMIN can delete any
+- [x] **Custom widget:** a USER sees the note **read-only** (no toolbar, no Save); only ADMIN can edit → direct `PUT` as USER returns **403**
+- [x] **Activity feed:** a USER can **read** it
+- [x] Direct API spot-check: a USER editing another member's comment → **403**; a USER `PUT`ing the custom widget → **403**
 
 > If a second account isn't practical right now, waive this and note it — the role gates stay unverified until someone does it.
 
