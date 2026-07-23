@@ -259,7 +259,7 @@ export function TasksTable({
                     {formatDueDate(task.dueDate)}
                   </TableCell>
                   <TableCell>
-                    <AssigneeAvatars assignees={task.assignees} />
+                    <AssigneeAvatars assignees={task.assignees} size="size-5" />
                   </TableCell>
                 </TableRow>
               ))}

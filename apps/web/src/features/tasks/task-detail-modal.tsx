@@ -409,7 +409,7 @@ function TaskDetailBody({
                 render={<Button variant="outline" size="sm" />}
               >
                 {data.assignees.length > 0 ? (
-                  <AssigneeAvatars assignees={data.assignees} />
+                  <AssigneeAvatars assignees={data.assignees} size="size-5" />
                 ) : (
                   "Assign"
                 )}

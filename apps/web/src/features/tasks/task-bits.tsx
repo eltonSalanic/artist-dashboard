@@ -5,6 +5,7 @@ import type { TaskStatusDto } from "@/features/auth/types";
 import type { TaskAssigneeDto } from "./types";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -94,23 +95,25 @@ export function PriorityBadge({ priority }: { priority: Priority }) {
 export function AssigneeAvatars({
   assignees,
   max = 3,
+  size = "size-6",
 }: {
   assignees: TaskAssigneeDto[];
   max?: number;
+  size?: string;
 }) {
   const shown = assignees.slice(0, max);
   const extra = assignees.length - shown.length;
   return (
     <div className="flex -space-x-2">
       {shown.map((assignee) => (
-        <Avatar key={assignee.id} className="size-6 ring-2 ring-background">
+        <Avatar key={assignee.id} className={cn(size, "ring-2 ring-background")}>
           <AvatarFallback className="text-[10px]">
             {assignee.displayName.slice(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
       ))}
       {extra > 0 && (
-        <Avatar className="size-6 ring-2 ring-background">
+        <Avatar className={cn(size, "ring-2 ring-background")}>
           <AvatarFallback className="text-[10px]">+{extra}</AvatarFallback>
         </Avatar>
       )}
