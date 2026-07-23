@@ -103,10 +103,10 @@ Trigger and confirm each of the **eight** activity types:
 
 Then:
 
-- [ ] Each entry shows the **actor's name**, an icon, and a relative time
-- [ ] Clicking an entry that references a task **opens that task's modal**
-- [ ] Expanded view shows **"Load more"**; it fetches the next page and the boundary between pages has **no duplicates and no gaps**
-- [ ] An entry still reads correctly after its subject is renamed or deleted (the feed uses a snapshot, never a live join)
+- [x] Each entry shows the **actor's name**, an icon, and a relative time
+- [x] Clicking an entry that references a task **opens that task's modal**
+- [x] Expanded view shows **"Load more"**; it fetches the next page and the boundary between pages has **no duplicates and no gaps**
+- [x] An entry still reads correctly after its subject is renamed or deleted (the feed uses a snapshot, never a live join)
 
 ---
 
@@ -114,10 +114,10 @@ Then:
 
 ## 7. Custom "Notes" widget
 
-- [ ] As **ADMIN**, open the expanded Notes widget — a toolbar (bold, italic, strike, bullet, numbered, undo/redo) sits above the editor
-- [ ] Type and format text; **"Unsaved changes"** appears, then **Save** persists it
-- [ ] Reload — the content is still there; the collapsed widget renders it read-only
-- [ ] The empty state shows the note's title before anything is typed
+- [x] As **ADMIN**, open the expanded Notes widget — a toolbar (bold, italic, strike, bullet, numbered, undo/redo) sits above the editor
+- [x] Type and format text; **"Unsaved changes"** appears, then **Save** persists it
+- [x] Reload — the content is still there; the collapsed widget renders it read-only
+- [x] The empty state shows the note's title before anything is typed
 
 ---
 
