@@ -100,7 +100,10 @@ export function useDeleteTask(boardId: string) {
   return useMutation({
     mutationFn: (taskId: string) =>
       apiFetch(`/boards/${boardId}/tasks/${taskId}`, { method: "DELETE" }),
-    onSuccess: () => invalidate(),
+    onSuccess: () => {
+      invalidate();
+      toast.success("Task deleted");
+    },
     onError: showError,
   });
 }
