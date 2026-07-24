@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { CalendarDays, Eye, LayoutGrid, LogOut, Settings } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/features/auth/use-session";
@@ -64,6 +64,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
 function Header({ me }: { me: MeResponse }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { role, viewAsUser, setViewAsUser } = usePermissions();
   const initials = me.user.displayName.slice(0, 2).toUpperCase();
 
@@ -72,24 +73,28 @@ function Header({ me }: { me: MeResponse }) {
     router.replace("/login");
   };
 
+  const onDashboard = pathname === "/";
+  const onCalendar = pathname.startsWith("/calendar");
+
   return (
-    <header className="flex items-center justify-between border-b px-6 py-3">
+    <header className="flex items-center justify-between gap-4 border-b px-6 py-3">
       <Link href="/" className="flex items-center gap-3">
-        <span className="text-sm font-semibold tracking-tight">
+        <span className="font-heading text-sm font-semibold tracking-tight">
           {me.board?.name}
         </span>
         {viewAsUser && (
-          <Badge variant="secondary">
+          <Badge variant="secondary" className="rounded-full">
             <Eye data-icon="inline-start" />
             User view
           </Badge>
         )}
       </Link>
 
-      <nav className="flex items-center gap-1">
+      <nav className="flex items-center gap-1 rounded-full bg-muted/60 p-1">
         <Button
-          variant="ghost"
+          variant={onDashboard ? "default" : "ghost"}
           size="sm"
+          className="rounded-full"
           nativeButton={false}
           render={<Link href="/" />}
         >
@@ -97,8 +102,9 @@ function Header({ me }: { me: MeResponse }) {
           Dashboard
         </Button>
         <Button
-          variant="ghost"
+          variant={onCalendar ? "default" : "ghost"}
           size="sm"
+          className="rounded-full"
           nativeButton={false}
           render={<Link href="/calendar" />}
         >

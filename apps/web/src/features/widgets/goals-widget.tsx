@@ -90,7 +90,10 @@ export function GoalsWidget({ boardId }: { boardId: string }) {
           >
             {goal.title}
           </button>
-          <Badge variant="outline" className="shrink-0">
+          <Badge
+            variant="secondary"
+            className="shrink-0 rounded-full uppercase tracking-wide"
+          >
             {goalPeriodLabel[goal.period]}
           </Badge>
           <span className="shrink-0 text-xs text-muted-foreground">

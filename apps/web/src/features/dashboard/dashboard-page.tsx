@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Eye, RotateCcw } from "lucide-react";
 import type { LayoutItem, WidgetType } from "@artist/shared";
+import { useMe } from "@/features/auth/use-me";
+import { useEvents } from "@/features/planning/use-events";
 import { widgetRegistry } from "@/features/widgets/registry";
 import { WidgetFrame } from "@/features/widgets/widget-frame";
 import { DashboardGrid } from "./dashboard-grid";
@@ -93,12 +95,15 @@ export function DashboardPage({ boardId }: { boardId: string }) {
   const hiddenItems = knownItems.filter((item) => item.hidden);
 
   return (
-    <div className="flex flex-1 flex-col gap-3 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex min-h-7 flex-wrap items-center gap-2">
+    <div className="flex flex-1 flex-col gap-5 p-4 sm:p-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <Greeting boardId={boardId} />
+        <div className="flex flex-wrap items-center gap-2">
           {hiddenItems.length > 0 && (
-            <>
-              <span className="text-xs text-muted-foreground">Hidden:</span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Hidden
+              </span>
               {hiddenItems.map((item) => {
                 const def = widgetRegistry[item.widgetType];
                 if (!def) return null;
@@ -106,36 +111,37 @@ export function DashboardPage({ boardId }: { boardId: string }) {
                   <Badge
                     key={item.widgetType}
                     variant="secondary"
-                    className="gap-1.5"
+                    className="gap-1.5 rounded-full py-1 pr-1"
                   >
                     {def.title}
                     <button
                       type="button"
                       aria-label={`Show ${def.title}`}
                       onClick={() => toggleHidden(item.widgetType)}
-                      className="text-muted-foreground hover:text-foreground"
+                      className="flex size-4 items-center justify-center rounded-full text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
                     >
                       <Eye className="size-3" />
                     </button>
                   </Badge>
                 );
               })}
-            </>
+            </div>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full"
+            disabled={resetLayout.isPending}
+            onClick={resetToDefault}
+          >
+            {resetLayout.isPending ? (
+              <Spinner data-icon="inline-start" />
+            ) : (
+              <RotateCcw data-icon="inline-start" />
+            )}
+            Reset layout
+          </Button>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={resetLayout.isPending}
-          onClick={resetToDefault}
-        >
-          {resetLayout.isPending ? (
-            <Spinner data-icon="inline-start" />
-          ) : (
-            <RotateCcw data-icon="inline-start" />
-          )}
-          Reset to default layout
-        </Button>
       </div>
 
       <DashboardGrid
@@ -150,6 +156,7 @@ export function DashboardPage({ boardId }: { boardId: string }) {
             <WidgetFrame
               title={def.title}
               icon={def.icon}
+              accent={def.accent}
               editable
               hidden={item.hidden}
               onToggleHidden={() => toggleHidden(item.widgetType)}
@@ -173,6 +180,49 @@ export function DashboardPage({ boardId }: { boardId: string }) {
           )}
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function timeGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+/** Big friendly greeting + a next-show glance line — the "read it in a second" header. */
+function Greeting({ boardId }: { boardId: string }) {
+  const me = useMe(true);
+  const from = useMemo(() => new Date().toISOString(), []);
+  const shows = useEvents(boardId, { type: "SHOW", from, limit: 1 });
+
+  const firstName = me.data?.user.displayName.split(" ")[0] ?? "there";
+  const nextShow = shows.data?.[0];
+
+  let subtitle = "Everything your band's working on, at a glance.";
+  if (nextShow) {
+    const days = Math.ceil(
+      (new Date(nextShow.startsAt).getTime() - Date.now()) / 86_400_000,
+    );
+    const when =
+      days <= 0 ? "Today" : days === 1 ? "Tomorrow" : `In ${days} days`;
+    subtitle = `${when} · ${nextShow.title}`;
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      <h1 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
+        {timeGreeting()}, {firstName}
+      </h1>
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        {nextShow && (
+          <Badge variant="lime" className="rounded-full font-semibold">
+            Next show
+          </Badge>
+        )}
+        <span>{subtitle}</span>
+      </div>
     </div>
   );
 }
