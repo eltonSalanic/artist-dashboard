@@ -31,28 +31,7 @@ supabase/       local stack config (config.toml)
 npm install
 ```
 
-Env files are gitignored, so create both by hand.
-
-`apps/api/.env`:
-
-```
-DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
-SUPABASE_URL=http://127.0.0.1:54321
-SUPABASE_SERVICE_ROLE_KEY=<SERVICE_ROLE_KEY from `supabase start`>
-SUPABASE_JWT_SECRET=super-secret-jwt-token-with-at-least-32-characters-long
-PORT=3001
-WEB_URL=http://localhost:3000
-```
-
-`apps/web/.env.local`:
-
-```
-NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<ANON_KEY from `supabase start`>
-NEXT_PUBLIC_API_URL=http://localhost:3001
-```
-
-The keys are the fixed local demo keys — `supabase start` reprints them any time, and `supabase status` shows them for a running stack.
+Ensure env variables are in place. See the example files — copy `apps/api/.env.example` to `apps/api/.env` and `apps/web/.env.example` to `apps/web/.env.local`, then fill in the values.
 
 Then apply the schema:
 
@@ -69,19 +48,6 @@ Start Docker Desktop first, then:
 supabase start     # idempotent; safe to run when already up
 npm run dev        # concurrently runs api (3001) and web (3000)
 ```
-
-`npm run dev` from the root starts both apps with watch mode. To run just one: `npm run dev -w apps/api` or `-w apps/web`.
-
-| Service | URL |
-| --- | --- |
-| Web app | http://localhost:3000 |
-| API | http://localhost:3001 |
-| Supabase API / Auth | http://127.0.0.1:54321 |
-| Postgres | `postgresql://postgres:postgres@127.0.0.1:54322/postgres` |
-| Supabase Studio | http://127.0.0.1:54323 |
-| Mailpit (magic-link inbox) | http://127.0.0.1:54324 |
-
-Stop the stack with `supabase stop`. Data persists between restarts; `supabase stop --no-backup` wipes it.
 
 ### Logging in
 
