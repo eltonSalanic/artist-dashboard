@@ -61,10 +61,27 @@ export function SettingsPage() {
 }
 
 function MembersCard({ boardId }: { boardId: string }) {
+  const me = useMe(true);
+  const queryClient = useQueryClient();
   const board = useQuery({
     queryKey: ["board", boardId],
     queryFn: () => apiFetch<BoardDetailDto>(`/boards/${boardId}`),
   });
+
+  const removeMember = useMutation({
+    mutationFn: (userId: string) =>
+      apiFetch<{ removed: true }>(`/boards/${boardId}/members/${userId}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["board", boardId] });
+      toast.success("Member removed");
+    },
+    onError: (error) =>
+      toast.error(error instanceof ApiError ? error.message : "Remove failed"),
+  });
+
+  const myUserId = me.data?.user.id;
 
   return (
     <Card>
@@ -90,6 +107,25 @@ function MembersCard({ boardId }: { boardId: string }) {
             <Badge variant={member.role === "ADMIN" ? "default" : "secondary"}>
               {member.role === "ADMIN" ? "Admin" : "Member"}
             </Badge>
+            {member.userId !== myUserId && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={`Remove ${member.displayName} from board`}
+                disabled={removeMember.isPending}
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      `Remove ${member.displayName} from this board? They'll lose access and be unassigned from all tasks.`,
+                    )
+                  ) {
+                    removeMember.mutate(member.userId);
+                  }
+                }}
+              >
+                <Trash2 />
+              </Button>
+            )}
           </div>
         ))}
       </CardContent>

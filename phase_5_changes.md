@@ -11,4 +11,4 @@ Tracking list for post-P5 change requests. Work through top-to-bottom, hard stop
 - [x] **5. Status-edit restricted to assignees** — users can only change task status on tasks assigned to them
 - [ ] **6. Filter tasks by status**
   - [ ] 6a. Show filtered tasks on the calendar (with the filter applied)?
-- [ ] **7. Remove users from board** — allow admins to remove members from a board
+- [x] **7. Remove users from board** — allow admins to remove members from a board

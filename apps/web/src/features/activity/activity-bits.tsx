@@ -49,10 +49,15 @@ export function renderActivity(item: ActivityItemDto): Rendered {
             text: `assigned ${str(m.memberName, "someone")} to “${str(m.taskTitle, "a task")}”`,
           };
     case "MEMBER_REMOVED":
-      return {
-        icon: UserMinus,
-        text: `removed ${str(m.memberName, "someone")} from “${str(m.taskTitle, "a task")}”`,
-      };
+      return m.removedFromBoard
+        ? {
+            icon: UserMinus,
+            text: `removed ${str(m.memberName, "someone")} from the board`,
+          }
+        : {
+            icon: UserMinus,
+            text: `removed ${str(m.memberName, "someone")} from “${str(m.taskTitle, "a task")}”`,
+          };
     case "GOAL_COMPLETED":
       return { icon: Target, text: `completed goal “${str(m.goalTitle, "a goal")}”` };
     case "FILE_UPLOADED":
