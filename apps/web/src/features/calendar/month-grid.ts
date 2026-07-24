@@ -81,3 +81,29 @@ export function buildMonthGrid(
 }
 
 export const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/** The togglable filter buckets on the calendar. */
+export type CalendarCategory =
+  | "SHOW"
+  | "MEETING"
+  | "REHEARSAL"
+  | "TASK"
+  | "REMINDER"
+  | "GOAL";
+
+export const CALENDAR_CATEGORIES: { key: CalendarCategory; label: string }[] = [
+  { key: "SHOW", label: "Shows" },
+  { key: "MEETING", label: "Meetings" },
+  { key: "REHEARSAL", label: "Rehearsals" },
+  { key: "TASK", label: "Tasks" },
+  { key: "REMINDER", label: "Reminders" },
+  { key: "GOAL", label: "Goals" },
+];
+
+/** Which filter bucket a calendar item belongs to — events split by their type. */
+export function calendarCategory(item: CalendarItemDto): CalendarCategory {
+  if (item.kind === "EVENT") return item.event?.type ?? "SHOW";
+  if (item.kind === "TASK") return "TASK";
+  if (item.kind === "REMINDER") return "REMINDER";
+  return "GOAL";
+}

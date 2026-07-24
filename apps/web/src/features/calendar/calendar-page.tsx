@@ -13,11 +13,32 @@ import { TaskDetailModal } from "@/features/tasks/task-detail-modal";
 import type { CalendarItemDto } from "@/features/planning/types";
 import {
   buildMonthGrid,
+  calendarCategory,
+  CALENDAR_CATEGORIES,
   monthRange,
   WEEKDAY_LABELS,
+  type CalendarCategory,
 } from "./month-grid";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+
+/**
+ * One color per calendar category. Events are split by type; the same map
+ * drives both the day chips' left accent and the filter chips' legend dot,
+ * so they can never drift apart. (Tailwind needs whole class names, hence the
+ * static strings.)
+ */
+const CATEGORY_ACCENT: Record<
+  CalendarCategory,
+  { border: string; dot: string }
+> = {
+  SHOW: { border: "border-l-violet-500", dot: "bg-violet-500" },
+  MEETING: { border: "border-l-sky-500", dot: "bg-sky-500" },
+  REHEARSAL: { border: "border-l-rose-500", dot: "bg-rose-500" },
+  TASK: { border: "border-l-slate-500", dot: "bg-slate-500" },
+  REMINDER: { border: "border-l-amber-500", dot: "bg-amber-500" },
+  GOAL: { border: "border-l-emerald-500", dot: "bg-emerald-500" },
+};
 
 export function CalendarPage() {
   const me = useMe(true);
@@ -44,9 +65,22 @@ function MonthView({ boardId }: { boardId: string }) {
   const year = cursor.getFullYear();
   const month = cursor.getMonth();
 
+  // All categories visible by default; clicking a chip toggles its bucket.
+  const [hidden, setHidden] = useState<Set<CalendarCategory>>(new Set());
+  const toggle = (key: CalendarCategory) =>
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
   const { from, to } = monthRange(year, month);
   const calendar = useCalendar(boardId, from.toISOString(), to.toISOString());
-  const cells = buildMonthGrid(year, month, calendar.data ?? [], today);
+  const visibleItems = (calendar.data ?? []).filter(
+    (item) => !hidden.has(calendarCategory(item)),
+  );
+  const cells = buildMonthGrid(year, month, visibleItems, today);
 
   const shiftMonth = (delta: number) =>
     setCursor(new Date(year, month + delta, 1));
@@ -87,6 +121,31 @@ function MonthView({ boardId }: { boardId: string }) {
             <ChevronRight />
           </Button>
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-1.5">
+        {CALENDAR_CATEGORIES.map(({ key, label }) => {
+          const active = !hidden.has(key);
+          return (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={active}
+              onClick={() => toggle(key)}
+              className={`flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
+                active
+                  ? "border-transparent bg-accent text-foreground"
+                  : "border-border text-muted-foreground line-through opacity-60 hover:opacity-100"
+              }`}
+            >
+              <span
+                aria-hidden
+                className={`size-2 rounded-full ${CATEGORY_ACCENT[key].dot}`}
+              />
+              {label}
+            </button>
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-7 gap-px text-center text-xs font-medium text-muted-foreground">
@@ -144,24 +203,10 @@ function CalendarChip({ item }: { item: CalendarItemDto }) {
           ? "task"
           : "reminder";
 
-  const accent =
-    item.kind === "EVENT"
-      ? "border-l-primary"
-      : item.kind === "GOAL"
-        ? "border-l-emerald-500"
-        : item.kind === "REMINDER"
-          ? "border-l-amber-500"
-          : "border-l-transparent";
+  const accent = CATEGORY_ACCENT[calendarCategory(item)].border;
 
   const label = (
     <span className="flex min-w-0 items-center gap-1">
-      {item.kind === "TASK" && item.task && (
-        <span
-          aria-hidden
-          className="size-1.5 shrink-0 rounded-full"
-          style={{ backgroundColor: item.task.statusColor }}
-        />
-      )}
       <span className="truncate">{item.title}</span>
     </span>
   );

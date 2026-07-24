@@ -9,6 +9,7 @@ Tracking list for post-P5 change requests. Work through top-to-bottom, hard stop
   - Note: only *newly created* comments notify; editing a comment to add a mention does not (kept scope tight).
 - [x] **4. Auto-assign on "My Tasks" create** — adding a new task through "My Tasks" should auto-assign the current user's account
 - [x] **5. Status-edit restricted to assignees** — users can only change task status on tasks assigned to them
-- [ ] **6. Filter tasks by status**
-  - [ ] 6a. Show filtered tasks on the calendar (with the filter applied)?
+- [~] **6. Filter tasks by status**
+  - [x] 6a. Calendar filter by item type — Shows / Meetings / Rehearsals / Tasks / Reminders (+ Goals for completeness); client-side toggle chips.
+  - [ ] 6b. Filter tasks by status (in the tasks table / widget) — still to do.
 - [x] **7. Remove users from board** — allow admins to remove members from a board

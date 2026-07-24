@@ -1,4 +1,4 @@
-import { buildMonthGrid, monthRange } from "./month-grid";
+import { buildMonthGrid, calendarCategory, monthRange } from "./month-grid";
 import type { CalendarItemDto } from "@/features/planning/types";
 
 const item = (
@@ -95,5 +95,26 @@ describe("buildMonthGrid", () => {
       item({ id: "far", date: new Date(2026, 7, 1, 12, 0).toISOString() }),
     ]);
     expect(cells.every((c) => c.items.length === 0)).toBe(true);
+  });
+});
+
+describe("calendarCategory", () => {
+  const at = "2026-07-10T18:00:00.000Z";
+
+  it("splits events by their type", () => {
+    expect(
+      calendarCategory(item({ date: at, event: { type: "SHOW", endsAt: null, location: null } })),
+    ).toBe("SHOW");
+    expect(
+      calendarCategory(item({ date: at, event: { type: "REHEARSAL", endsAt: null, location: null } })),
+    ).toBe("REHEARSAL");
+  });
+
+  it("maps tasks, reminders and goals to their own buckets", () => {
+    expect(calendarCategory(item({ kind: "TASK", date: at }))).toBe("TASK");
+    expect(calendarCategory(item({ kind: "REMINDER", date: at }))).toBe(
+      "REMINDER",
+    );
+    expect(calendarCategory(item({ kind: "GOAL", date: at }))).toBe("GOAL");
   });
 });
