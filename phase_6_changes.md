@@ -9,5 +9,6 @@ Work top-to-bottom, hard stop for user verification after each.
 - [x] **5. Demo seed** — `apps/api/prisma/seed.ts` builds a rich, idempotent "Neon Harbor" board (synthetic bandmates, 9 tasks across statuses w/ checklists+subtask, 3 goals, 4 events, reminders, comments+mention, custom widget, 10-entry feed across all 8 activity types). Owner resolves to a real account via `DEMO_OWNER_EMAIL` (defaults to smoke-test account). Run: `npm run db:seed -w apps/api`. Needed a ts-node ts-ext require hook (`prisma/ts-ext-loader.js`) + `prisma/tsconfig.seed.json` since the generated Prisma client uses `.js` specifiers.
 - [x] **6. README** — added "What it does" feature overview + "Demo data" section documenting the seed.
 - [ ] Install skills, project scoped for future devs
+- [ ] Add [claude.md](http://claude.md) to root
 
 Deferred (not this phase): P5 item 6b — status filter on tasks/widget view.
