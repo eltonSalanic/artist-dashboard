@@ -434,12 +434,7 @@ async function main() {
 
   // Activity feed — a spread across all eight types, backdated so it reads as
   // history. meta shapes mirror what the feed renderer expects.
-  const feed: {
-    type: ActivityType;
-    actorId: string | null;
-    meta: Record<string, unknown>;
-    createdAt: Date;
-  }[] = [
+  const feed = [
     {
       type: ActivityType.MEMBER_ASSIGNED,
       actorId: BAND.mia.id,
