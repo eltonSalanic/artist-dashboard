@@ -1,7 +1,8 @@
 "use client";
 
 import type { ComponentType, CSSProperties, ReactNode } from "react";
-import { Expand, Eye, EyeOff } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronDown, ChevronUp, Expand, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -142,7 +143,71 @@ export function WidgetFrame({
           )}
         </div>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">{children}</div>
+      <ScrollFade>{children}</ScrollFade>
+    </div>
+  );
+}
+
+/**
+ * Wraps the widget body's scroll area and paints a soft gradient at the top
+ * and/or bottom edge whenever there is more content in that direction — a hint
+ * that the list keeps going. Each fade fades in only when it applies, so a
+ * short (non-scrolling) list shows none. The gradient uses `--card`, so it
+ * inherits whatever accent the frame is currently painted in.
+ */
+function ScrollFade({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [atTop, setAtTop] = useState(true);
+  const [atBottom, setAtBottom] = useState(true);
+
+  const update = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    const { scrollTop, scrollHeight, clientHeight } = el;
+    setAtTop(scrollTop <= 1);
+    // 1px slack absorbs sub-pixel rounding at the very bottom.
+    setAtBottom(scrollTop + clientHeight >= scrollHeight - 1);
+  }, []);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    update();
+    // Content growing/shrinking (async data, expanding rows) also changes
+    // whether the fades apply, so watch the size as well as scroll.
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    for (const child of el.children) observer.observe(child);
+    return () => observer.disconnect();
+  }, [update]);
+
+  return (
+    <div className="relative min-h-0 flex-1">
+      <div
+        ref={ref}
+        onScroll={update}
+        className="h-full overflow-y-auto px-4 pb-4"
+      >
+        {children}
+      </div>
+      <div
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-x-0 top-0 flex h-9 items-start justify-center bg-linear-to-b from-card to-transparent transition-opacity duration-200",
+          atTop && "opacity-0",
+        )}
+      >
+        <ChevronUp className="mt-1 size-4 text-muted-foreground" />
+      </div>
+      <div
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-x-0 bottom-0 flex h-9 items-end justify-center bg-linear-to-t from-card to-transparent transition-opacity duration-200",
+          atBottom && "opacity-0",
+        )}
+      >
+        <ChevronDown className="mb-1 size-4 animate-bounce text-muted-foreground" />
+      </div>
     </div>
   );
 }
