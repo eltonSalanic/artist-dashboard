@@ -64,12 +64,12 @@ export function makeEventsWidget(type: EventType) {
     }
 
     return (
-      <ul className="flex flex-col gap-1">
+      <ul className="flex flex-col divide-y divide-border/60">
         {items.map((event) => (
           <li key={event.id}>
             <button
               type="button"
-              className="flex w-full flex-col gap-0.5 rounded-md px-1.5 py-1 text-left hover:bg-accent/50"
+              className="flex w-full flex-col gap-0.5 px-1.5 py-2 text-left hover:bg-accent/50"
               onClick={() => open("event", event.id)}
             >
               <span className="truncate text-sm">{event.title}</span>
