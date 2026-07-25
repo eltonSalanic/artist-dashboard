@@ -109,12 +109,12 @@ export function WidgetFrame({
         hidden && "opacity-50",
       )}
     >
-      <div className="widget-drag-handle flex shrink-0 cursor-grab items-center justify-between gap-2 px-4 pt-4 pb-2 active:cursor-grabbing">
+      <div className="widget-drag-handle mb-1 flex shrink-0 cursor-grab items-center justify-between gap-2 border-b-2 border-foreground/10 px-4 pt-4 pb-3 active:cursor-grabbing">
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-foreground/8">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
             <Icon className="size-4 shrink-0" />
           </span>
-          <span className="truncate font-heading text-[15px] font-semibold tracking-tight">
+          <span className="truncate font-heading text-lg font-bold tracking-tight">
             {title}
           </span>
         </div>
@@ -186,7 +186,7 @@ function ScrollFade({ children }: { children: ReactNode }) {
       <div
         ref={ref}
         onScroll={update}
-        className="h-full overflow-y-auto px-4 pb-4"
+        className="h-full overflow-y-auto px-4 pt-2 pb-4"
       >
         {children}
       </div>
