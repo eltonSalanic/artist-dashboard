@@ -4,7 +4,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  resolveBoardTheme,
   withShippedWidgets,
+  type BoardThemeDto,
   type LayoutItem,
   type UpdateBoardDto,
 } from '@artist/shared';
@@ -33,6 +35,7 @@ export class BoardsService {
       defaultLayout: withShippedWidgets(
         board.defaultLayout as unknown as LayoutItem[],
       ),
+      theme: resolveBoardTheme(board.theme),
       statuses: board.statuses,
       members: board.memberships.map((m) => ({
         membershipId: m.id,
@@ -50,6 +53,15 @@ export class BoardsService {
       where: { id: boardId },
       data: { name: dto.name },
       select: { id: true, name: true },
+    });
+  }
+
+  /** Board-wide appearance. Whole-object write: the client always sends a full theme. */
+  saveTheme(boardId: string, dto: BoardThemeDto) {
+    return this.prisma.board.update({
+      where: { id: boardId },
+      data: { theme: dto },
+      select: { id: true, theme: true },
     });
   }
 

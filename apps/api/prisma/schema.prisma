@@ -44,6 +44,9 @@ model Board {
   id            String       @id @default(uuid()) @db.Uuid
   name          String
   defaultLayout Json         @default("[]")
+  /// Board-wide appearance (palette + per-widget color slots). Starts empty and
+  /// is normalized by `resolveBoardTheme` on read, so no backfill is needed.
+  theme         Json         @default("{}")
   createdAt     DateTime     @default(now())
   memberships   Membership[]
   invites       Invite[]

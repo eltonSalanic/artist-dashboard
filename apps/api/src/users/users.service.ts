@@ -1,5 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { DEFAULT_BOARD_LAYOUT, DEFAULT_TASK_STATUSES } from '@artist/shared';
+import {
+  DEFAULT_BOARD_LAYOUT,
+  DEFAULT_TASK_STATUSES,
+  resolveBoardTheme,
+} from '@artist/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
 import type { AuthUser } from '../auth/current-user.decorator';
@@ -101,6 +105,7 @@ export class UsersService {
     if (!user) throw new NotFoundException('User not bootstrapped');
 
     const membership = user.memberships[0] ?? null;
+    const board = membership?.board ?? null;
     return {
       user: {
         id: user.id,
@@ -111,7 +116,9 @@ export class UsersService {
       membership: membership
         ? { id: membership.id, role: membership.role }
         : null,
-      board: membership?.board ?? null,
+      // The theme rides along on /me so the dashboard paints the board's colors
+      // on first render, without a second round-trip to GET /boards/:id.
+      board: board ? { ...board, theme: resolveBoardTheme(board.theme) } : null,
     };
   }
 }

@@ -1,4 +1,5 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { DEFAULT_BOARD_THEME, type BoardThemeDto } from '@artist/shared';
 import { BoardsService } from './boards.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
@@ -61,5 +62,77 @@ describe('BoardsService.removeMember', () => {
       }),
     );
     expect(result).toEqual({ removed: true });
+  });
+});
+
+describe('BoardsService board theme', () => {
+  const prisma = {
+    board: { findUnique: jest.fn(), update: jest.fn() },
+  };
+  const service = new BoardsService(
+    prisma as unknown as PrismaService,
+    new ActivityService(prisma as unknown as PrismaService),
+  );
+
+  beforeEach(() => jest.clearAllMocks());
+
+  const board = (theme: unknown) => ({
+    id: 'b1',
+    name: 'Neon Harbor',
+    defaultLayout: [],
+    theme,
+    statuses: [],
+    memberships: [],
+  });
+
+  it('normalizes an untouched theme column to the default theme', async () => {
+    prisma.board.findUnique.mockResolvedValue(board({}));
+
+    const result = await service.findOne('b1');
+
+    expect(result.theme).toEqual(DEFAULT_BOARD_THEME);
+  });
+
+  it('returns the stored palette and widget colors', async () => {
+    prisma.board.findUnique.mockResolvedValue(
+      board({ palette: 'ocean', widgets: { FOCUS: 'c2' } }),
+    );
+
+    const result = await service.findOne('b1');
+
+    expect(result.theme).toEqual({
+      palette: 'ocean',
+      widgets: { FOCUS: 'c2' },
+    });
+  });
+
+  it('drops values it does not recognize instead of failing the board', async () => {
+    prisma.board.findUnique.mockResolvedValue(
+      board({ palette: 'neon', widgets: { GOALS: 'c1', BOGUS: 'c3' } }),
+    );
+
+    const result = await service.findOne('b1');
+
+    expect(result.theme).toEqual({
+      palette: 'playful',
+      widgets: { GOALS: 'c1' },
+    });
+  });
+
+  it('writes the whole theme through on save', async () => {
+    const dto: BoardThemeDto = {
+      palette: 'forest',
+      widgets: { SHOWS: 'c4', REMINDERS: 'base' },
+    };
+    prisma.board.update.mockResolvedValue({ id: 'b1', theme: dto });
+
+    const result = await service.saveTheme('b1', dto);
+
+    expect(prisma.board.update).toHaveBeenCalledWith({
+      where: { id: 'b1' },
+      data: { theme: dto },
+      select: { id: true, theme: true },
+    });
+    expect(result).toEqual({ id: 'b1', theme: dto });
   });
 });

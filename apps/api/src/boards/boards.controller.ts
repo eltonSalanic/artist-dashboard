@@ -5,8 +5,14 @@ import {
   Get,
   Param,
   Patch,
+  Put,
 } from '@nestjs/common';
-import { updateBoardSchema, type UpdateBoardDto } from '@artist/shared';
+import {
+  boardThemeSchema,
+  updateBoardSchema,
+  type BoardThemeDto,
+  type UpdateBoardDto,
+} from '@artist/shared';
 import { CurrentUser, type AuthUser } from '../auth/current-user.decorator';
 import { BoardRoles } from '../common/board-roles.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
@@ -29,6 +35,15 @@ export class BoardsController {
     @Body(new ZodValidationPipe(updateBoardSchema)) dto: UpdateBoardDto,
   ) {
     return this.boards.update(id, dto);
+  }
+
+  @Put(':id/theme')
+  @BoardRoles('ADMIN')
+  saveTheme(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(boardThemeSchema)) dto: BoardThemeDto,
+  ) {
+    return this.boards.saveTheme(id, dto);
   }
 
   @Delete(':id/members/:userId')
