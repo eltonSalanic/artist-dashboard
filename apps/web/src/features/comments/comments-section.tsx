@@ -5,6 +5,7 @@ import { Paperclip, Pencil, Trash2, X } from "lucide-react";
 import type { BoardMemberDto } from "@/features/auth/types";
 import { usePermissions } from "@/features/auth/permissions";
 import { useMe } from "@/features/auth/use-me";
+import { labelStyle } from "@/lib/label-style";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -57,7 +58,7 @@ export function CommentsSection({
 
   return (
     <section className="flex flex-col gap-3">
-      <h3 className="text-sm font-medium">
+      <h3 className={labelStyle}>
         Comments
         {comments.data && comments.data.length > 0 && (
           <span className="ml-1 text-muted-foreground">

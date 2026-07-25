@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { Paperclip, Upload } from "lucide-react";
 import { usePermissions } from "@/features/auth/permissions";
 import { useMe } from "@/features/auth/use-me";
+import { labelStyle } from "@/lib/label-style";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AttachmentRow } from "./comment-bits";
@@ -33,7 +34,7 @@ export function TaskAttachments({
   return (
     <section className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium">Attachments</h3>
+        <h3 className={labelStyle}>Attachments</h3>
         {canUpload && (
           <Button
             variant="outline"

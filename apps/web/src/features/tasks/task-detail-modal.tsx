@@ -29,6 +29,7 @@ import {
   PriorityBadge,
   StatusSelect,
 } from "./task-bits";
+import { labelStyle } from "@/lib/label-style";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -139,6 +140,9 @@ function TaskDetail({
 /** Sentinel for "no goal/event" — Base UI selects need a non-empty value. */
 const NO_LINK = "__none__";
 
+/** Every caption/heading in this view uses the shared label token. */
+const metaLabel = labelStyle;
+
 function TaskLinks({
   boardId,
   taskId,
@@ -173,7 +177,9 @@ function TaskLinks({
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <Field>
-        <FieldLabel htmlFor="task-goal">Goal</FieldLabel>
+        <FieldLabel htmlFor="task-goal" className={metaLabel}>
+          Goal
+        </FieldLabel>
         {canEdit ? (
           <Select
             value={data.goal?.id ?? NO_LINK}
@@ -222,7 +228,9 @@ function TaskLinks({
       </Field>
 
       <Field>
-        <FieldLabel htmlFor="task-event">Event</FieldLabel>
+        <FieldLabel htmlFor="task-event" className={metaLabel}>
+          Event
+        </FieldLabel>
         {canEdit ? (
           <Select
             value={data.event?.id ?? NO_LINK}
@@ -340,7 +348,9 @@ function TaskDetailBody({
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Field>
-          <FieldLabel htmlFor="task-status">Status</FieldLabel>
+          <FieldLabel htmlFor="task-status" className={metaLabel}>
+            Status
+          </FieldLabel>
           <StatusSelect
             id="task-status"
             value={data.statusId}
@@ -350,7 +360,9 @@ function TaskDetailBody({
           />
         </Field>
         <Field>
-          <FieldLabel htmlFor="task-priority">Priority</FieldLabel>
+          <FieldLabel htmlFor="task-priority" className={metaLabel}>
+            Priority
+          </FieldLabel>
           {canEdit ? (
             <Select
               value={data.priority}
@@ -382,7 +394,9 @@ function TaskDetailBody({
           )}
         </Field>
         <Field>
-          <FieldLabel htmlFor="task-due">Due date</FieldLabel>
+          <FieldLabel htmlFor="task-due" className={metaLabel}>
+            Due date
+          </FieldLabel>
           {canEdit ? (
             <DateTimePicker
               id="task-due"
@@ -404,7 +418,7 @@ function TaskDetailBody({
           )}
         </Field>
         <Field>
-          <FieldLabel>Assignees</FieldLabel>
+          <FieldLabel className={metaLabel}>Assignees</FieldLabel>
           {canEdit ? (
             <DropdownMenu>
               <DropdownMenuTrigger
@@ -448,7 +462,9 @@ function TaskDetailBody({
       <TaskLinks boardId={boardId} taskId={taskId} data={data} />
 
       <Field>
-        <FieldLabel htmlFor="task-description">Description</FieldLabel>
+        <FieldLabel htmlFor="task-description" className={metaLabel}>
+          Description
+        </FieldLabel>
         {canEdit ? (
           <Textarea
             id="task-description"
@@ -468,7 +484,7 @@ function TaskDetailBody({
       <Separator />
 
       <section className="flex flex-col gap-2">
-        <h3 className="text-sm font-medium">Checklist</h3>
+        <h3 className={metaLabel}>Checklist</h3>
         {data.checklist.map((item) => (
           <div key={item.id} className="flex items-center gap-2">
             <Checkbox
@@ -523,7 +539,7 @@ function TaskDetailBody({
         <>
           <Separator />
           <section className="flex flex-col gap-2">
-            <h3 className="text-sm font-medium">Subtasks</h3>
+            <h3 className={metaLabel}>Subtasks</h3>
             {data.subtasks.map((subtask) => (
               <div key={subtask.id} className="flex items-center gap-2">
                 <StatusSelect
