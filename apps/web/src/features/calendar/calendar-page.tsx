@@ -124,6 +124,7 @@ function MonthView({ boardId }: { boardId: string }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5">
+        <p>Filter By: </p>
         {CALENDAR_CATEGORIES.map(({ key, label }) => {
           const active = !hidden.has(key);
           return (
