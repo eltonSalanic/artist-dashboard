@@ -11,8 +11,7 @@ import {
   Users,
   Zap,
 } from "lucide-react";
-import type { WidgetType } from "@artist/shared";
-import type { WidgetAccent } from "./widget-frame";
+import type { WidgetColor, WidgetType } from "@artist/shared";
 import { MyTasksWidget, MyTasksWidgetExpanded } from "./my-tasks-widget";
 import { TodosWidget, TodosWidgetExpanded } from "./todos-widget";
 import { GoalsWidget, GoalsWidgetExpanded } from "./goals-widget";
@@ -38,8 +37,8 @@ export interface WidgetProps {
 export interface WidgetDefinition {
   title: string;
   icon: ComponentType<{ className?: string }>;
-  /** Bento card color; defaults to the cream card when omitted. */
-  accent?: WidgetAccent;
+  /** Palette slot this widget ships in; a board can reassign it. Omitted = neutral card. */
+  defaultColor?: WidgetColor;
   Collapsed: ComponentType<WidgetProps>;
   Expanded: ComponentType<WidgetProps>;
   defaultSize: { w: number; h: number };
@@ -58,7 +57,7 @@ export const widgetRegistry: Partial<Record<WidgetType, WidgetDefinition>> = {
   FOCUS: {
     title: "Focus",
     icon: Zap,
-    accent: "coral",
+    defaultColor: "c1",
     Collapsed: FocusWidget,
     Expanded: FocusWidgetExpanded,
     defaultSize: { w: 12, h: 3 },
@@ -83,7 +82,7 @@ export const widgetRegistry: Partial<Record<WidgetType, WidgetDefinition>> = {
   GOALS: {
     title: "Goals",
     icon: Target,
-    accent: "lilac",
+    defaultColor: "c2",
     Collapsed: GoalsWidget,
     Expanded: GoalsWidgetExpanded,
     defaultSize: { w: 4, h: 4 },
@@ -92,7 +91,7 @@ export const widgetRegistry: Partial<Record<WidgetType, WidgetDefinition>> = {
   SHOWS: {
     title: "Shows",
     icon: Mic2,
-    accent: "ink",
+    defaultColor: "c4",
     Collapsed: shows.Collapsed,
     Expanded: shows.Expanded,
     defaultSize: { w: 4, h: 4 },
@@ -117,7 +116,7 @@ export const widgetRegistry: Partial<Record<WidgetType, WidgetDefinition>> = {
   REMINDERS: {
     title: "Reminders",
     icon: BellRing,
-    accent: "lime",
+    defaultColor: "c3",
     Collapsed: RemindersWidget,
     Expanded: RemindersWidgetExpanded,
     defaultSize: { w: 4, h: 4 },

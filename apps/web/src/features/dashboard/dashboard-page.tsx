@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Eye, RotateCcw } from "lucide-react";
-import type { LayoutItem, WidgetType } from "@artist/shared";
+import { DEFAULT_BOARD_THEME, type LayoutItem, type WidgetType } from "@artist/shared";
 import { useMe } from "@/features/auth/use-me";
 import { useEvents } from "@/features/planning/use-events";
 import { widgetRegistry } from "@/features/widgets/registry";
@@ -144,29 +144,31 @@ export function DashboardPage({ boardId }: { boardId: string }) {
         </div>
       </div>
 
-      <DashboardGrid
-        layout={visibleLayout}
-        editable
-        onLayoutChange={(next) => persist(mergeHidden(layout, next))}
-        renderItem={(item) => {
-          const def = widgetRegistry[item.widgetType];
-          if (!def) return null;
-          const Collapsed = def.Collapsed;
-          return (
-            <WidgetFrame
-              title={def.title}
-              icon={def.icon}
-              accent={def.accent}
-              editable
-              hidden={item.hidden}
-              onToggleHidden={() => toggleHidden(item.widgetType)}
-              onExpand={() => openWidget(item.widgetType)}
-            >
-              <Collapsed boardId={boardId} />
-            </WidgetFrame>
-          );
-        }}
-      />
+      <div data-palette={DEFAULT_BOARD_THEME.palette}>
+        <DashboardGrid
+          layout={visibleLayout}
+          editable
+          onLayoutChange={(next) => persist(mergeHidden(layout, next))}
+          renderItem={(item) => {
+            const def = widgetRegistry[item.widgetType];
+            if (!def) return null;
+            const Collapsed = def.Collapsed;
+            return (
+              <WidgetFrame
+                title={def.title}
+                icon={def.icon}
+                color={def.defaultColor}
+                editable
+                hidden={item.hidden}
+                onToggleHidden={() => toggleHidden(item.widgetType)}
+                onExpand={() => openWidget(item.widgetType)}
+              >
+                <Collapsed boardId={boardId} />
+              </WidgetFrame>
+            );
+          }}
+        />
+      </div>
 
       <Dialog open={!!openDef} onOpenChange={(open) => !open && closeWidget()}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
