@@ -5,4 +5,4 @@
  * Swap this one string to try a different treatment across the whole view.
  */
 export const labelStyle =
-  "inline-flex w-fit items-center text-xs font-semibold uppercase tracking-wide text-primary";
+  "inline-flex w-fit items-center gap-2 text-xs font-semibold uppercase tracking-wide text-foreground before:h-3.5 before:w-1 before:rounded-full before:bg-primary before:content-['']";
