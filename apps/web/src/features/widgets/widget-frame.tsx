@@ -109,7 +109,7 @@ export function WidgetFrame({
         hidden && "opacity-50",
       )}
     >
-      <div className="widget-drag-handle mb-1 flex shrink-0 cursor-grab items-center justify-between gap-2 border-b-2 border-foreground/10 px-4 pt-4 pb-3 active:cursor-grabbing">
+      <div className="widget-drag-handle relative mb-1 flex shrink-0 cursor-grab items-center justify-center gap-2 border-b-2 border-foreground/10 px-12 pt-4 pb-3 active:cursor-grabbing">
         <div className="flex min-w-0 items-center gap-2.5">
           <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
             <Icon className="size-4 shrink-0" />
@@ -118,7 +118,7 @@ export function WidgetFrame({
             {title}
           </span>
         </div>
-        <div className="flex shrink-0 items-center gap-0.5">
+        <div className="absolute top-1/2 right-2 flex -translate-y-1/2 items-center gap-0.5">
           {editable && onToggleHidden && (
             <Button
               variant="ghost"
