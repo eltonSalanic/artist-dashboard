@@ -1,4 +1,4 @@
-import type { BoardRole, LayoutItem } from "@artist/shared";
+import type { BoardRole, BoardTheme, LayoutItem } from "@artist/shared";
 
 export interface TaskStatusDto {
   id: string;
@@ -20,6 +20,7 @@ export interface MeResponse {
     id: string;
     name: string;
     defaultLayout: LayoutItem[];
+    theme: BoardTheme;
   } | null;
 }
 
@@ -36,6 +37,7 @@ export interface BoardDetailDto {
   id: string;
   name: string;
   defaultLayout: LayoutItem[];
+  theme: BoardTheme;
   statuses: TaskStatusDto[];
   members: BoardMemberDto[];
 }

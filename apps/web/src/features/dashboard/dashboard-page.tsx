@@ -4,8 +4,19 @@ import { useEffect, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Eye, RotateCcw } from "lucide-react";
-import { DEFAULT_BOARD_THEME, type LayoutItem, type WidgetType } from "@artist/shared";
+import {
+  resolveWidgetColor,
+  type LayoutItem,
+  type WidgetColor,
+  type WidgetType,
+} from "@artist/shared";
 import { useMe } from "@/features/auth/use-me";
+import { usePermissions } from "@/features/auth/permissions";
+import {
+  useBoardTheme,
+  useSaveBoardTheme,
+} from "@/features/appearance/use-board-theme";
+import { WidgetColorMenu } from "@/features/appearance/widget-color-menu";
 import { useEvents } from "@/features/planning/use-events";
 import { widgetRegistry } from "@/features/widgets/registry";
 import { WidgetFrame } from "@/features/widgets/widget-frame";
@@ -31,6 +42,9 @@ export function DashboardPage({ boardId }: { boardId: string }) {
   const layoutQuery = useLayout(boardId);
   const saveLayout = useSaveLayout(boardId);
   const resetLayout = useResetLayout(boardId);
+  const theme = useBoardTheme();
+  const saveTheme = useSaveBoardTheme(boardId);
+  const { can } = usePermissions();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -71,6 +85,14 @@ export function DashboardPage({ boardId }: { boardId: string }) {
       ),
       true,
     );
+  };
+
+  /** Recoloring is one discrete click, so it saves right away — no debounce. */
+  const setWidgetColor = (widgetType: WidgetType, color: WidgetColor) => {
+    saveTheme.mutate({
+      ...theme,
+      widgets: { ...theme.widgets, [widgetType]: color },
+    });
   };
 
   const openWidget = (type: WidgetType) => {
@@ -144,7 +166,7 @@ export function DashboardPage({ boardId }: { boardId: string }) {
         </div>
       </div>
 
-      <div data-palette={DEFAULT_BOARD_THEME.palette}>
+      <div data-palette={theme.palette}>
         <DashboardGrid
           layout={visibleLayout}
           editable
@@ -153,15 +175,30 @@ export function DashboardPage({ boardId }: { boardId: string }) {
             const def = widgetRegistry[item.widgetType];
             if (!def) return null;
             const Collapsed = def.Collapsed;
+            const color = resolveWidgetColor(
+              theme,
+              item.widgetType,
+              def.defaultColor,
+            );
             return (
               <WidgetFrame
                 title={def.title}
                 icon={def.icon}
-                color={def.defaultColor}
+                color={color}
                 editable
                 hidden={item.hidden}
                 onToggleHidden={() => toggleHidden(item.widgetType)}
                 onExpand={() => openWidget(item.widgetType)}
+                colorMenu={
+                  can("board.appearance") && (
+                    <WidgetColorMenu
+                      palette={theme.palette}
+                      value={color}
+                      widgetTitle={def.title}
+                      onSelect={(next) => setWidgetColor(item.widgetType, next)}
+                    />
+                  )
+                }
               >
                 <Collapsed boardId={boardId} />
               </WidgetFrame>

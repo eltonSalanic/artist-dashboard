@@ -9,6 +9,7 @@ import { apiFetch, ApiError } from "@/lib/api";
 import { useMe } from "@/features/auth/use-me";
 import { usePermissions } from "@/features/auth/permissions";
 import type { BoardDetailDto, InviteDto } from "@/features/auth/types";
+import { AppearanceCard } from "./appearance-card";
 import { DefaultLayoutCard } from "./default-layout-card";
 import { StatusesCard } from "./statuses-card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -55,6 +56,7 @@ export function SettingsPage() {
       <MembersCard boardId={boardId} />
       <InvitesCard boardId={boardId} />
       <StatusesCard boardId={boardId} />
+      {can("board.appearance") && <AppearanceCard boardId={boardId} />}
       <DefaultLayoutCard boardId={boardId} />
     </main>
   );

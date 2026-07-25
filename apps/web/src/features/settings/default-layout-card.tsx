@@ -6,6 +6,8 @@ import { Plus, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import {
   DEFAULT_BOARD_LAYOUT,
+  resolveWidgetColor,
+  type BoardTheme,
   type LayoutItem,
   type WidgetType,
 } from "@artist/shared";
@@ -44,6 +46,7 @@ export function DefaultLayoutCard({ boardId }: { boardId: string }) {
     <DefaultLayoutEditor
       boardId={boardId}
       initialLayout={board.data.defaultLayout}
+      theme={board.data.theme}
     />
   );
 }
@@ -51,9 +54,11 @@ export function DefaultLayoutCard({ boardId }: { boardId: string }) {
 function DefaultLayoutEditor({
   boardId,
   initialLayout,
+  theme,
 }: {
   boardId: string;
   initialLayout: LayoutItem[];
+  theme: BoardTheme;
 }) {
   const saveDefault = useSaveDefaultLayout(boardId);
   const [layout, setLayout] = useState<LayoutItem[]>(initialLayout);
@@ -142,27 +147,34 @@ function DefaultLayoutEditor({
             No widgets yet — add one above.
           </p>
         ) : (
-          <DashboardGrid
-            layout={knownItems}
-            editable
-            onLayoutChange={setLayout}
-            renderItem={(item) => {
-              const def = widgetRegistry[item.widgetType];
-              if (!def) return null;
-              const Collapsed = def.Collapsed;
-              return (
-                <WidgetFrame
-                  title={def.title}
-                  icon={def.icon}
-                  editable
-                  hidden={item.hidden}
-                  onToggleHidden={() => toggleHidden(item.widgetType)}
-                >
-                  <Collapsed boardId={boardId} />
-                </WidgetFrame>
-              );
-            }}
-          />
+          <div data-palette={theme.palette}>
+            <DashboardGrid
+              layout={knownItems}
+              editable
+              onLayoutChange={setLayout}
+              renderItem={(item) => {
+                const def = widgetRegistry[item.widgetType];
+                if (!def) return null;
+                const Collapsed = def.Collapsed;
+                return (
+                  <WidgetFrame
+                    title={def.title}
+                    icon={def.icon}
+                    color={resolveWidgetColor(
+                      theme,
+                      item.widgetType,
+                      def.defaultColor,
+                    )}
+                    editable
+                    hidden={item.hidden}
+                    onToggleHidden={() => toggleHidden(item.widgetType)}
+                  >
+                    <Collapsed boardId={boardId} />
+                  </WidgetFrame>
+                );
+              }}
+            />
+          </div>
         )}
       </CardContent>
     </Card>
