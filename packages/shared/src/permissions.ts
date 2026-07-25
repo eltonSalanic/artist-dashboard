@@ -11,6 +11,7 @@ export const Actions = [
   'file.upload',
   'member.invite',
   'widget.manage',
+  'board.appearance',
   'status.manage',
   'event.manage',
   'goal.manage',
