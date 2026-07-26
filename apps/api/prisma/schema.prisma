@@ -24,14 +24,14 @@ enum InviteStatus {
 }
 
 model User {
-  id            String         @id @db.Uuid // = Supabase auth user id
-  email         String         @unique
+  id            String                @id @db.Uuid // = Supabase auth user id
+  email         String                @unique
   displayName   String
   avatarUrl     String?
-  createdAt     DateTime       @default(now())
+  createdAt     DateTime              @default(now())
   memberships   Membership[]
-  sentInvites   Invite[]       @relation("InvitedBy")
-  createdTasks  Task[]         @relation("TaskCreatedBy")
+  sentInvites   Invite[]              @relation("InvitedBy")
+  createdTasks  Task[]                @relation("TaskCreatedBy")
   taskAssignees TaskAssignee[]
   layouts       UserLayout[]
   comments      Comment[]
@@ -41,13 +41,13 @@ model User {
 }
 
 model Board {
-  id            String       @id @default(uuid()) @db.Uuid
+  id            String                @id @default(uuid()) @db.Uuid
   name          String
-  defaultLayout Json         @default("[]")
+  defaultLayout Json                  @default("[]")
   /// Board-wide appearance (palette + per-widget color slots). Starts empty and
   /// is normalized by `resolveBoardTheme` on read, so no backfill is needed.
-  theme         Json         @default("{}")
-  createdAt     DateTime     @default(now())
+  theme         Json                  @default("{}")
+  createdAt     DateTime              @default(now())
   memberships   Membership[]
   invites       Invite[]
   statuses      TaskStatus[]
@@ -113,37 +113,44 @@ enum Priority {
 }
 
 model Task {
-  id           String          @id @default(uuid()) @db.Uuid
-  boardId      String          @db.Uuid
-  title        String
-  description  String?
-  priority     Priority        @default(MEDIUM)
-  statusId     String          @db.Uuid
-  dueDate      DateTime?
-  sortOrder    Float
-  parentTaskId String?         @db.Uuid
-  goalId       String?         @db.Uuid
-  eventId      String?         @db.Uuid
-  createdById  String          @db.Uuid
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-  board        Board           @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  status       TaskStatus      @relation(fields: [statusId], references: [id])
-  goal         Goal?           @relation(fields: [goalId], references: [id], onDelete: SetNull)
-  event        Event?          @relation(fields: [eventId], references: [id], onDelete: SetNull)
-  parentTask   Task?           @relation("Subtasks", fields: [parentTaskId], references: [id], onDelete: Cascade)
-  subtasks     Task[]          @relation("Subtasks")
-  createdBy    User            @relation("TaskCreatedBy", fields: [createdById], references: [id])
-  assignees    TaskAssignee[]
-  checklist    ChecklistItem[]
-  comments     Comment[]
-  attachments  Attachment[]
+  id             String          @id @default(uuid()) @db.Uuid
+  boardId        String          @db.Uuid
+  title          String
+  description    String?
+  priority       Priority        @default(MEDIUM)
+  statusId       String          @db.Uuid
+  dueDate        DateTime?
+  sortOrder      Float
+  parentTaskId   String?         @db.Uuid
+  goalId         String?         @db.Uuid
+  eventId        String?         @db.Uuid
+  createdById    String          @db.Uuid
+  archivedAt     DateTime?
+  /// Id of the event, goal or parent task this was archived as part of. Null
+  /// when archived on its own — drives the "also restore" prompt. Deliberately
+  /// no FK: it points at three different tables.
+  archivedWithId String?         @db.Uuid
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  board          Board           @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  status         TaskStatus      @relation(fields: [statusId], references: [id])
+  goal           Goal?           @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  event          Event?          @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  parentTask     Task?           @relation("Subtasks", fields: [parentTaskId], references: [id], onDelete: Cascade)
+  subtasks       Task[]          @relation("Subtasks")
+  createdBy      User            @relation("TaskCreatedBy", fields: [createdById], references: [id])
+  assignees      TaskAssignee[]
+  checklist      ChecklistItem[]
+  comments       Comment[]
+  attachments    Attachment[]
 
   @@index([boardId, sortOrder])
   @@index([parentTaskId])
   @@index([statusId])
   @@index([goalId])
   @@index([eventId])
+  @@index([boardId, archivedAt])
+  @@index([archivedWithId])
 }
 
 enum EventType {
@@ -172,12 +179,14 @@ model Goal {
   period      GoalPeriod @default(MONTHLY)
   dueDate     DateTime?
   completedAt DateTime?
+  archivedAt  DateTime?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   board       Board      @relation(fields: [boardId], references: [id], onDelete: Cascade)
   tasks       Task[]
 
   @@index([boardId, period])
+  @@index([boardId, archivedAt])
 }
 
 model Event {
@@ -189,12 +198,14 @@ model Event {
   location    String?
   startsAt    DateTime
   endsAt      DateTime?
+  archivedAt  DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   board       Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
   tasks       Task[]
 
   @@index([boardId, startsAt])
+  @@index([boardId, archivedAt])
 }
 
 model FocusPin {
@@ -215,10 +226,12 @@ model Reminder {
   description String?
   remindAt    DateTime?
   done        Boolean   @default(false)
+  archivedAt  DateTime?
   createdAt   DateTime  @default(now())
   board       Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
 
   @@index([boardId, remindAt])
+  @@index([boardId, archivedAt])
 }
 
 model TaskAssignee {
