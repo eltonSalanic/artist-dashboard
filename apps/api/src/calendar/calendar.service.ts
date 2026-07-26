@@ -10,7 +10,13 @@ export interface CalendarItemDto {
   /** The instant the item appears at on the calendar. */
   date: Date;
   event?: { type: EventType; endsAt: Date | null; location: string | null };
-  task?: { statusColor: string; statusName: string; isDone: boolean };
+  task?: {
+    statusColor: string;
+    statusName: string;
+    isDone: boolean;
+    /** True when the requesting user is one of the task's assignees. */
+    assignedToMe: boolean;
+  };
   goal?: { period: string; completed: boolean };
 }
 
@@ -25,6 +31,7 @@ export class CalendarService {
 
   async range(
     boardId: string,
+    userId: string,
     query: CalendarQueryDto,
   ): Promise<CalendarItemDto[]> {
     const window = { gte: query.from, lt: query.to };
@@ -36,7 +43,12 @@ export class CalendarService {
       }),
       this.prisma.task.findMany({
         where: { boardId, dueDate: window },
-        include: { status: true },
+        // Pull only the requesting user's assignee row, if any, so we can flag
+        // "assigned to me" without loading every assignee.
+        include: {
+          status: true,
+          assignees: { where: { userId }, select: { userId: true } },
+        },
         orderBy: { dueDate: 'asc' },
       }),
       this.prisma.goal.findMany({
@@ -67,6 +79,7 @@ export class CalendarService {
           statusColor: t.status.color,
           statusName: t.status.name,
           isDone: t.status.isDone,
+          assignedToMe: t.assignees.length > 0,
         },
       })),
       ...goals.map((g): CalendarItemDto => ({

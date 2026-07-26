@@ -24,7 +24,7 @@ describe('CalendarService', () => {
   });
 
   it('scopes every source query to the board and the half-open range', async () => {
-    await service.range('b1', query);
+    await service.range('b1', 'u1', query);
 
     const window = { gte: query.from, lt: query.to };
     expect(prisma.event.findMany).toHaveBeenCalledWith(
@@ -62,6 +62,7 @@ describe('CalendarService', () => {
         title: 'Print posters',
         dueDate: new Date('2026-03-05T12:00:00Z'),
         status: { color: '#abc', name: 'Doing', isDone: false },
+        assignees: [],
       },
     ]);
     prisma.goal.findMany.mockResolvedValue([
@@ -82,7 +83,7 @@ describe('CalendarService', () => {
       },
     ]);
 
-    const items = await service.range('b1', query);
+    const items = await service.range('b1', 'u1', query);
 
     expect(items.map((i) => [i.kind, i.id])).toEqual([
       ['REMINDER', 'r1'],
@@ -109,6 +110,9 @@ describe('CalendarService', () => {
         title: 'Print posters',
         dueDate: new Date('2026-03-05T12:00:00Z'),
         status: { color: '#abc', name: 'Done', isDone: true },
+        // The service pre-filters assignees to the requesting user, so a
+        // non-empty array here means "assigned to me".
+        assignees: [{ userId: 'u1' }],
       },
     ]);
     prisma.goal.findMany.mockResolvedValue([
@@ -121,7 +125,7 @@ describe('CalendarService', () => {
       },
     ]);
 
-    const items = await service.range('b1', query);
+    const items = await service.range('b1', 'u1', query);
     const byKind = Object.fromEntries(items.map((i) => [i.kind, i]));
 
     expect(byKind.EVENT.event).toEqual({
@@ -133,6 +137,7 @@ describe('CalendarService', () => {
       statusColor: '#abc',
       statusName: 'Done',
       isDone: true,
+      assignedToMe: true,
     });
     expect(byKind.GOAL.goal).toEqual({ period: 'MONTHLY', completed: true });
   });

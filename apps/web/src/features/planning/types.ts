@@ -52,6 +52,12 @@ export interface CalendarItemDto {
   title: string;
   date: string;
   event?: { type: EventType; endsAt: string | null; location: string | null };
-  task?: { statusColor: string; statusName: string; isDone: boolean };
+  task?: {
+    statusColor: string;
+    statusName: string;
+    isDone: boolean;
+    /** True when the signed-in user is one of the task's assignees. */
+    assignedToMe: boolean;
+  };
   goal?: { period: GoalPeriod; completed: boolean };
 }

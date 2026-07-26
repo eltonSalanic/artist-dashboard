@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, UserRound } from "lucide-react";
 import { useMe } from "@/features/auth/use-me";
 import { useCalendar } from "@/features/planning/use-calendar";
 import { useDetailParams } from "@/features/planning/use-detail-params";
@@ -205,24 +205,34 @@ function CalendarChip({ item }: { item: CalendarItemDto }) {
           : "reminder";
 
   const accent = CATEGORY_ACCENT[calendarCategory(item)].border;
+  const assignedToMe = item.kind === "TASK" && Boolean(item.task?.assignedToMe);
 
   const label = (
     <span className="flex min-w-0 items-center gap-1">
+      {assignedToMe && (
+        <UserRound
+          aria-label="Assigned to you"
+          className="size-3 shrink-0 text-primary"
+        />
+      )}
       <span className="truncate">{item.title}</span>
     </span>
   );
 
+  // Tasks/goals read as muted by default; a task assigned to the signed-in user
+  // is pulled back to full-strength text so it stands out on the grid.
+  const muted =
+    item.kind !== "EVENT" && item.kind !== "REMINDER" && !assignedToMe;
+
   const className = `flex flex-col rounded-sm border-l-2 bg-accent/40 px-1 py-0.5 text-left text-[11px] leading-tight ${accent} ${
-    item.kind === "EVENT" || item.kind === "REMINDER"
-      ? ""
-      : "text-muted-foreground"
-  }`;
+    muted ? "text-muted-foreground" : ""
+  } ${assignedToMe ? "font-medium" : ""}`;
 
   return (
     <button
       type="button"
       className={`${className} hover:bg-accent`}
-      title={item.title}
+      title={assignedToMe ? `${item.title} · Assigned to you` : item.title}
       onClick={() => open(target, item.id)}
     >
       {label}
