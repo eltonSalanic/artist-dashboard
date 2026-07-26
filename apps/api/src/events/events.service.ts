@@ -50,11 +50,13 @@ export class EventsService {
       include: eventInclude,
     });
     if (!event) throw new NotFoundException('Event not found');
-    // How many tasks went down with this event — the "also restore" prompt.
-    const archivedTaskCount = await this.prisma.task.count({
-      where: { boardId, archivedWithId: eventId },
-    });
-    return { ...this.toDto(event), archivedTaskCount };
+    const [archivedTaskCount, linkedTaskCount] = await Promise.all([
+      // What went down with this event — the "also restore" prompt.
+      this.prisma.task.count({ where: { boardId, archivedWithId: eventId } }),
+      // Everything a cascading delete would take, archived or not.
+      this.prisma.task.count({ where: { boardId, eventId } }),
+    ]);
+    return { ...this.toDto(event), archivedTaskCount, linkedTaskCount };
   }
 
   async create(boardId: string, dto: CreateEventDto) {

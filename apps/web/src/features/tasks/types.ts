@@ -31,6 +31,8 @@ export interface TaskDto {
     type: EventType;
     startsAt: string;
   } | null;
+  /** Set once the task has been archived off the dashboard. */
+  archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
   assignees: TaskAssigneeDto[];

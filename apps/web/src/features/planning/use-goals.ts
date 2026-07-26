@@ -44,6 +44,8 @@ function useInvalidateGoals(boardId: string) {
     queryClient.invalidateQueries({ queryKey: ["goals", boardId] });
     queryClient.invalidateQueries({ queryKey: ["goal", boardId] });
     queryClient.invalidateQueries({ queryKey: ["calendar", boardId] });
+    // A goal can be deleted from the archive page, so that list moves too.
+    queryClient.invalidateQueries({ queryKey: ["archive", boardId] });
   };
 }
 
@@ -73,8 +75,18 @@ export function useUpdateGoal(boardId: string) {
 export function useDeleteGoal(boardId: string) {
   const invalidate = useInvalidateGoals(boardId);
   return useMutation({
-    mutationFn: (goalId: string) =>
-      apiFetch(`/boards/${boardId}/goals/${goalId}`, { method: "DELETE" }),
+    mutationFn: ({
+      goalId,
+      cascadeTasks = false,
+    }: {
+      goalId: string;
+      /** Delete the tasks linked to this goal along with it. */
+      cascadeTasks?: boolean;
+    }) =>
+      apiFetch(
+        `/boards/${boardId}/goals/${goalId}?cascadeTasks=${cascadeTasks}`,
+        { method: "DELETE" },
+      ),
     onSuccess: invalidate,
     onError: showError,
   });

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
 import { usePermissions } from "@/features/auth/permissions";
+import { ItemActions } from "@/features/archive/item-actions";
 import {
   useDeleteReminder,
   useReminder,
@@ -15,7 +15,6 @@ import {
   toLocalInputValue,
 } from "./planning-bits";
 import type { ReminderDto } from "./types";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -211,18 +210,18 @@ function ReminderDetailBody({
       {canManage && (
         <>
           <Separator />
-          <div className="flex justify-end">
-            <Button
-              variant="destructive"
-              disabled={deleteReminder.isPending}
-              onClick={() =>
-                deleteReminder.mutate(data.id, { onSuccess: onClose })
-              }
-            >
-              <Trash2 data-icon="inline-start" />
-              Delete reminder
-            </Button>
-          </div>
+          <ItemActions
+            boardId={boardId}
+            kind="REMINDER"
+            id={data.id}
+            itemLabel="reminder"
+            archivedAt={data.archivedAt}
+            deletePending={deleteReminder.isPending}
+            onDelete={() =>
+              deleteReminder.mutate(data.id, { onSuccess: onClose })
+            }
+            onDone={onClose}
+          />
         </>
       )}
     </div>

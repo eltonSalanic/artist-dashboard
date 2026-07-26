@@ -2,13 +2,9 @@
 
 import { useMemo, useState } from "react";
 import type { EventType } from "@artist/shared";
-import { CalendarPlus, MapPin, Trash2 } from "lucide-react";
+import { CalendarPlus, MapPin } from "lucide-react";
 import { usePermissions } from "@/features/auth/permissions";
-import {
-  useCreateEvent,
-  useDeleteEvent,
-  useEvents,
-} from "@/features/planning/use-events";
+import { useCreateEvent, useEvents } from "@/features/planning/use-events";
 import { useDetailParams } from "@/features/planning/use-detail-params";
 import {
   eventTypeIcon,
@@ -106,12 +102,7 @@ export function makeEventsWidget(type: EventType) {
         ) : (
           <ul className="flex flex-col divide-y">
             {(events.data ?? []).map((event) => (
-              <EventRow
-                key={event.id}
-                boardId={boardId}
-                event={event}
-                canManage={canManage}
-              />
+              <EventRow key={event.id} event={event} />
             ))}
           </ul>
         )}
@@ -124,16 +115,7 @@ export function makeEventsWidget(type: EventType) {
   return { Collapsed, Expanded };
 }
 
-function EventRow({
-  boardId,
-  event,
-  canManage,
-}: {
-  boardId: string;
-  event: EventDto;
-  canManage: boolean;
-}) {
-  const deleteEvent = useDeleteEvent(boardId);
+function EventRow({ event }: { event: EventDto }) {
   const { open } = useDetailParams();
   const past = new Date(event.startsAt) < new Date();
 
@@ -157,16 +139,6 @@ function EventRow({
       <span className="w-16 shrink-0 text-right text-xs text-muted-foreground">
         {event.taskCount} {event.taskCount === 1 ? "task" : "tasks"}
       </span>
-      {canManage && (
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label={`Delete ${event.title}`}
-          onClick={() => deleteEvent.mutate(event.id)}
-        >
-          <Trash2 />
-        </Button>
-      )}
     </li>
   );
 }

@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { EventTypes, type EventType } from "@artist/shared";
-import { Trash2 } from "lucide-react";
 import { usePermissions } from "@/features/auth/permissions";
+import { ItemActions } from "@/features/archive/item-actions";
 import { useTasks } from "@/features/tasks/use-tasks";
 import { useDeleteEvent, useEvent, useUpdateEvent } from "./use-events";
 import { useDetailParams } from "./use-detail-params";
@@ -16,7 +16,6 @@ import {
 } from "./planning-bits";
 import { LinkedTasks } from "./linked-tasks";
 import type { EventDto } from "./types";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -281,18 +280,24 @@ function EventDetailBody({
       {canManage && (
         <>
           <Separator />
-          <div className="flex justify-end">
-            <Button
-              variant="destructive"
-              disabled={deleteEvent.isPending}
-              onClick={() =>
-                deleteEvent.mutate(data.id, { onSuccess: onClose })
-              }
-            >
-              <Trash2 data-icon="inline-start" />
-              Delete event
-            </Button>
-          </div>
+          <ItemActions
+            boardId={boardId}
+            kind="EVENT"
+            id={data.id}
+            itemLabel={eventTypeLabel[data.type].toLowerCase()}
+            archivedAt={data.archivedAt}
+            liveTaskCount={data.taskCount}
+            archivedTaskCount={data.archivedTaskCount ?? 0}
+            linkedTaskCount={data.linkedTaskCount ?? 0}
+            deletePending={deleteEvent.isPending}
+            onDelete={(cascadeTasks) =>
+              deleteEvent.mutate(
+                { eventId: data.id, cascadeTasks },
+                { onSuccess: onClose },
+              )
+            }
+            onDone={onClose}
+          />
         </>
       )}
     </div>

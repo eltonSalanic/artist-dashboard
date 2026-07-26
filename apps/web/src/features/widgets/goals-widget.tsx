@@ -2,11 +2,10 @@
 
 import { useState } from "react";
 import { GoalPeriods, type GoalPeriod } from "@artist/shared";
-import { Target, Trash2 } from "lucide-react";
+import { Target } from "lucide-react";
 import { usePermissions } from "@/features/auth/permissions";
 import {
   useCreateGoal,
-  useDeleteGoal,
   useGoals,
   useUpdateGoal,
 } from "@/features/planning/use-goals";
@@ -144,7 +143,6 @@ function GoalRow({
   canManage: boolean;
 }) {
   const updateGoal = useUpdateGoal(boardId);
-  const deleteGoal = useDeleteGoal(boardId);
   const { open } = useDetailParams();
   const completed = goal.completedAt !== null;
 
@@ -175,16 +173,6 @@ function GoalRow({
       <span className="w-16 shrink-0 text-right text-xs text-muted-foreground">
         {goal.taskCount} {goal.taskCount === 1 ? "task" : "tasks"}
       </span>
-      {canManage && (
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label={`Delete ${goal.title}`}
-          onClick={() => deleteGoal.mutate(goal.id)}
-        >
-          <Trash2 />
-        </Button>
-      )}
     </li>
   );
 }

@@ -31,6 +31,8 @@ function useInvalidateReminders(boardId: string) {
     queryClient.invalidateQueries({ queryKey: ["reminders", boardId] });
     queryClient.invalidateQueries({ queryKey: ["reminder", boardId] });
     queryClient.invalidateQueries({ queryKey: ["calendar", boardId] });
+    // A reminder can be deleted from the archive page, so that list moves too.
+    queryClient.invalidateQueries({ queryKey: ["archive", boardId] });
   };
 }
 

@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { GoalPeriods, type GoalPeriod } from "@artist/shared";
-import { Trash2 } from "lucide-react";
 import { usePermissions } from "@/features/auth/permissions";
+import { ItemActions } from "@/features/archive/item-actions";
 import { useTasks } from "@/features/tasks/use-tasks";
 import { useDeleteGoal, useGoal, useUpdateGoal } from "./use-goals";
 import { useDetailParams } from "./use-detail-params";
@@ -11,7 +11,6 @@ import { formatDate, formatLocalDate, goalPeriodLabel } from "./planning-bits";
 import { LinkedTasks } from "./linked-tasks";
 import type { GoalDto } from "./types";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -255,16 +254,24 @@ function GoalDetailBody({
       {canManage && (
         <>
           <Separator />
-          <div className="flex justify-end">
-            <Button
-              variant="destructive"
-              disabled={deleteGoal.isPending}
-              onClick={() => deleteGoal.mutate(data.id, { onSuccess: onClose })}
-            >
-              <Trash2 data-icon="inline-start" />
-              Delete goal
-            </Button>
-          </div>
+          <ItemActions
+            boardId={boardId}
+            kind="GOAL"
+            id={data.id}
+            itemLabel="goal"
+            archivedAt={data.archivedAt}
+            liveTaskCount={data.taskCount}
+            archivedTaskCount={data.archivedTaskCount ?? 0}
+            linkedTaskCount={data.linkedTaskCount ?? 0}
+            deletePending={deleteGoal.isPending}
+            onDelete={(cascadeTasks) =>
+              deleteGoal.mutate(
+                { goalId: data.id, cascadeTasks },
+                { onSuccess: onClose },
+              )
+            }
+            onDone={onClose}
+          />
         </>
       )}
     </div>

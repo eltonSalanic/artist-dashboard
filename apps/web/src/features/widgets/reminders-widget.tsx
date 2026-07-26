@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { BellRing, Trash2 } from "lucide-react";
+import { BellRing } from "lucide-react";
 import { usePermissions } from "@/features/auth/permissions";
 import {
   useCreateReminder,
-  useDeleteReminder,
   useReminders,
   useUpdateReminder,
 } from "@/features/planning/use-reminders";
@@ -81,7 +80,6 @@ export function RemindersWidgetExpanded({ boardId }: { boardId: string }) {
               key={reminder.id}
               boardId={boardId}
               reminder={reminder}
-              deletable={canManage}
             />
           ))}
         </ul>
@@ -93,16 +91,13 @@ export function RemindersWidgetExpanded({ boardId }: { boardId: string }) {
 function ReminderRow({
   boardId,
   reminder,
-  deletable,
 }: {
   boardId: string;
   reminder: ReminderDto;
-  deletable?: boolean;
 }) {
   const { can } = usePermissions();
   const { open } = useDetailParams();
   const updateReminder = useUpdateReminder(boardId);
-  const deleteReminder = useDeleteReminder(boardId);
   const overdue =
     !reminder.done &&
     reminder.remindAt !== null &&
@@ -134,16 +129,6 @@ function ReminderRow({
         >
           {formatDateTime(reminder.remindAt)}
         </span>
-      )}
-      {deletable && (
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label={`Delete ${reminder.title}`}
-          onClick={() => deleteReminder.mutate(reminder.id)}
-        >
-          <Trash2 />
-        </Button>
       )}
     </li>
   );

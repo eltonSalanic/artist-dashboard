@@ -47,6 +47,8 @@ function useInvalidateTasks(boardId: string) {
     } else {
       queryClient.invalidateQueries({ queryKey: ["task", boardId] });
     }
+    // A task can be deleted from the archive page, so that list moves too.
+    queryClient.invalidateQueries({ queryKey: ["archive", boardId] });
   };
 }
 

@@ -50,6 +50,8 @@ function useInvalidateEvents(boardId: string) {
     queryClient.invalidateQueries({ queryKey: ["events", boardId] });
     queryClient.invalidateQueries({ queryKey: ["event", boardId] });
     queryClient.invalidateQueries({ queryKey: ["calendar", boardId] });
+    // An event can be deleted from the archive page, so that list moves too.
+    queryClient.invalidateQueries({ queryKey: ["archive", boardId] });
   };
 }
 
@@ -82,8 +84,18 @@ export function useUpdateEvent(boardId: string) {
 export function useDeleteEvent(boardId: string) {
   const invalidate = useInvalidateEvents(boardId);
   return useMutation({
-    mutationFn: (eventId: string) =>
-      apiFetch(`/boards/${boardId}/events/${eventId}`, { method: "DELETE" }),
+    mutationFn: ({
+      eventId,
+      cascadeTasks = false,
+    }: {
+      eventId: string;
+      /** Delete the tasks linked to this event along with it. */
+      cascadeTasks?: boolean;
+    }) =>
+      apiFetch(
+        `/boards/${boardId}/events/${eventId}?cascadeTasks=${cascadeTasks}`,
+        { method: "DELETE" },
+      ),
     onSuccess: invalidate,
     onError: showError,
   });

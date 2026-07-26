@@ -14,6 +14,7 @@ import { useDetailParams } from "@/features/planning/use-detail-params";
 import { eventTypeLabel, formatDateTime } from "@/features/planning/planning-bits";
 import { CommentsSection } from "@/features/comments/comments-section";
 import { TaskAttachments } from "@/features/comments/task-attachments";
+import { ItemActions } from "@/features/archive/item-actions";
 import type { TaskDetailDto } from "./types";
 import {
   useChecklist,
@@ -563,16 +564,6 @@ function TaskDetailBody({
                 <span className="min-w-0 flex-1 truncate text-sm">
                   {subtask.title}
                 </span>
-                {canEdit && (
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={`Delete ${subtask.title}`}
-                    onClick={() => deleteTask.mutate(subtask.id)}
-                  >
-                    <Trash2 />
-                  </Button>
-                )}
               </div>
             ))}
             {can("task.createSubtask") && (
@@ -614,18 +605,16 @@ function TaskDetailBody({
       {can("task.delete") && (
         <>
           <Separator />
-          <div className="flex justify-end">
-            <Button
-              variant="destructive"
-              disabled={deleteTask.isPending}
-              onClick={() => {
-                deleteTask.mutate(taskId, { onSuccess: onClose });
-              }}
-            >
-              <Trash2 data-icon="inline-start" />
-              Delete task
-            </Button>
-          </div>
+          <ItemActions
+            boardId={boardId}
+            kind="TASK"
+            id={taskId}
+            itemLabel={data.parentTaskId ? "subtask" : "task"}
+            archivedAt={data.archivedAt}
+            deletePending={deleteTask.isPending}
+            onDelete={() => deleteTask.mutate(taskId, { onSuccess: onClose })}
+            onDone={onClose}
+          />
         </>
       )}
     </div>

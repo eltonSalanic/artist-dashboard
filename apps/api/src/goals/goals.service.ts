@@ -48,11 +48,13 @@ export class GoalsService {
       include: goalInclude,
     });
     if (!goal) throw new NotFoundException('Goal not found');
-    // How many tasks went down with this goal — the "also restore" prompt.
-    const archivedTaskCount = await this.prisma.task.count({
-      where: { boardId, archivedWithId: goalId },
-    });
-    return { ...this.toDto(goal), archivedTaskCount };
+    const [archivedTaskCount, linkedTaskCount] = await Promise.all([
+      // What went down with this goal — the "also restore" prompt.
+      this.prisma.task.count({ where: { boardId, archivedWithId: goalId } }),
+      // Everything a cascading delete would take, archived or not.
+      this.prisma.task.count({ where: { boardId, goalId } }),
+    ]);
+    return { ...this.toDto(goal), archivedTaskCount, linkedTaskCount };
   }
 
   async create(boardId: string, dto: CreateGoalDto) {

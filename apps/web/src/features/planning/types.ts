@@ -8,9 +8,16 @@ export interface GoalDto {
   period: GoalPeriod;
   dueDate: string | null;
   completedAt: string | null;
+  /** Set once the goal has been archived off the dashboard. */
+  archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Live tasks only — the number the "also archive N tasks" prompt shows. */
   taskCount: number;
+  /** Tasks archived as part of this goal. Detail responses only. */
+  archivedTaskCount?: number;
+  /** Every linked task, archived or not — what a cascading delete takes. */
+  linkedTaskCount?: number;
 }
 
 export interface EventDto {
@@ -22,9 +29,16 @@ export interface EventDto {
   location: string | null;
   startsAt: string;
   endsAt: string | null;
+  /** Set once the event has been archived off the dashboard. */
+  archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Live tasks only — the number the "also archive N tasks" prompt shows. */
   taskCount: number;
+  /** Tasks archived as part of this event. Detail responses only. */
+  archivedTaskCount?: number;
+  /** Every linked task, archived or not — what a cascading delete takes. */
+  linkedTaskCount?: number;
 }
 
 export interface FocusPinDto {
@@ -41,6 +55,8 @@ export interface ReminderDto {
   /** Null for standing notes that aren't tied to a moment. */
   remindAt: string | null;
   done: boolean;
+  /** Set once the reminder has been archived off the dashboard. */
+  archivedAt: string | null;
   createdAt: string;
 }
 
