@@ -8,7 +8,9 @@ import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 const eventInclude = {
-  _count: { select: { tasks: true } },
+  // Archived tasks belong to the archive page, not to their event's count —
+  // this is also the number the "also archive N tasks" prompt shows.
+  _count: { select: { tasks: { where: { archivedAt: null } } } },
 } satisfies Prisma.EventInclude;
 
 @Injectable()
@@ -19,6 +21,7 @@ export class EventsService {
     const events = await this.prisma.event.findMany({
       where: {
         boardId,
+        archivedAt: null,
         ...(query.type ? { type: query.type } : {}),
         ...(query.from || query.to
           ? {
@@ -36,13 +39,18 @@ export class EventsService {
     return events.map(this.toDto);
   }
 
+  /** Archived events stay fetchable — the archive page opens this same detail. */
   async findOne(boardId: string, eventId: string) {
     const event = await this.prisma.event.findFirst({
       where: { id: eventId, boardId },
       include: eventInclude,
     });
     if (!event) throw new NotFoundException('Event not found');
-    return this.toDto(event);
+    // How many tasks went down with this event — the "also restore" prompt.
+    const archivedTaskCount = await this.prisma.task.count({
+      where: { boardId, archivedWithId: eventId },
+    });
+    return { ...this.toDto(event), archivedTaskCount };
   }
 
   async create(boardId: string, dto: CreateEventDto) {
@@ -86,6 +94,7 @@ export class EventsService {
     location: string | null;
     startsAt: Date;
     endsAt: Date | null;
+    archivedAt: Date | null;
     createdAt: Date;
     updatedAt: Date;
     _count: { tasks: number };
@@ -98,6 +107,7 @@ export class EventsService {
     location: event.location,
     startsAt: event.startsAt,
     endsAt: event.endsAt,
+    archivedAt: event.archivedAt,
     createdAt: event.createdAt,
     updatedAt: event.updatedAt,
     taskCount: event._count.tasks,

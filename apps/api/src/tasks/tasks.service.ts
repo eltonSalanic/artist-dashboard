@@ -25,7 +25,9 @@ const SORT_GAP = 1024;
 const taskInclude = {
   status: true,
   assignees: { include: { user: true } },
-  _count: { select: { subtasks: true, checklist: true } },
+  _count: {
+    select: { subtasks: { where: { archivedAt: null } }, checklist: true },
+  },
   checklist: { orderBy: { sortOrder: 'asc' as const } },
   goal: { select: { id: true, title: true } },
   event: { select: { id: true, title: true, type: true, startsAt: true } },
@@ -57,6 +59,7 @@ export class TasksService {
     const tasks = await this.prisma.task.findMany({
       where: {
         boardId,
+        archivedAt: null,
         ...(query.search
           ? { title: { contains: query.search, mode: 'insensitive' } }
           : {}),
@@ -79,7 +82,14 @@ export class TasksService {
       where: { id: taskId, boardId },
       include: {
         ...taskInclude,
-        subtasks: { include: taskInclude, orderBy: { sortOrder: 'asc' } },
+        // Archived subtasks live on the archive page, not in their parent's
+        // list — but the parent itself is still fetchable when archived, so
+        // the archive page can open it.
+        subtasks: {
+          where: { archivedAt: null },
+          include: taskInclude,
+          orderBy: { sortOrder: 'asc' },
+        },
         createdBy: true,
       },
     });
@@ -107,7 +117,7 @@ export class TasksService {
 
     if (dto.parentTaskId) {
       const parent = await this.prisma.task.findFirst({
-        where: { id: dto.parentTaskId, boardId },
+        where: { id: dto.parentTaskId, boardId, archivedAt: null },
         include: { parentTask: { select: { parentTaskId: true } } },
       });
       if (!parent) throw new NotFoundException('Task not found');
@@ -295,6 +305,7 @@ export class TasksService {
         where: {
           boardId,
           parentTaskId: task.parentTaskId,
+          archivedAt: null,
           id: { not: taskId },
         },
         orderBy: { sortOrder: 'asc' },
@@ -312,6 +323,7 @@ export class TasksService {
         where: {
           boardId,
           parentTaskId: task.parentTaskId,
+          archivedAt: null,
           sortOrder: { gt: after.sortOrder },
           id: { not: taskId },
         },
@@ -461,14 +473,14 @@ export class TasksService {
 
   private async assertGoalInBoard(boardId: string, goalId: string) {
     const goal = await this.prisma.goal.findFirst({
-      where: { id: goalId, boardId },
+      where: { id: goalId, boardId, archivedAt: null },
     });
     if (!goal) throw new BadRequestException('Unknown goal for this board');
   }
 
   private async assertEventInBoard(boardId: string, eventId: string) {
     const event = await this.prisma.event.findFirst({
-      where: { id: eventId, boardId },
+      where: { id: eventId, boardId, archivedAt: null },
     });
     if (!event) throw new BadRequestException('Unknown event for this board');
   }
@@ -499,6 +511,7 @@ export class TasksService {
     dueDate: Date | null;
     sortOrder: number;
     parentTaskId: string | null;
+    archivedAt: Date | null;
     createdAt: Date;
     updatedAt: Date;
     status: { id: string; name: string; color: string; isDone: boolean };
@@ -532,6 +545,7 @@ export class TasksService {
     parentTaskId: task.parentTaskId,
     goal: task.goal,
     event: task.event,
+    archivedAt: task.archivedAt,
     createdAt: task.createdAt,
     updatedAt: task.updatedAt,
     assignees: task.assignees.map((a) => ({

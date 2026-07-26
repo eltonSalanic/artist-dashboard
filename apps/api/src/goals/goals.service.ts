@@ -9,7 +9,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
 
 const goalInclude = {
-  _count: { select: { tasks: true } },
+  // Archived tasks belong to the archive page, not to their goal's count —
+  // this is also the number the "also archive N tasks" prompt shows.
+  _count: { select: { tasks: { where: { archivedAt: null } } } },
 } satisfies Prisma.GoalInclude;
 
 @Injectable()
@@ -23,6 +25,7 @@ export class GoalsService {
     const goals = await this.prisma.goal.findMany({
       where: {
         boardId,
+        archivedAt: null,
         ...(query.period ? { period: query.period } : {}),
         ...(query.includeCompleted ? {} : { completedAt: null }),
       },
@@ -36,13 +39,18 @@ export class GoalsService {
     return goals.map(this.toDto);
   }
 
+  /** Archived goals stay fetchable — the archive page opens this same detail. */
   async findOne(boardId: string, goalId: string) {
     const goal = await this.prisma.goal.findFirst({
       where: { id: goalId, boardId },
       include: goalInclude,
     });
     if (!goal) throw new NotFoundException('Goal not found');
-    return this.toDto(goal);
+    // How many tasks went down with this goal — the "also restore" prompt.
+    const archivedTaskCount = await this.prisma.task.count({
+      where: { boardId, archivedWithId: goalId },
+    });
+    return { ...this.toDto(goal), archivedTaskCount };
   }
 
   async create(boardId: string, dto: CreateGoalDto) {
@@ -119,6 +127,7 @@ export class GoalsService {
     period: string;
     dueDate: Date | null;
     completedAt: Date | null;
+    archivedAt: Date | null;
     createdAt: Date;
     updatedAt: Date;
     _count: { tasks: number };
@@ -130,6 +139,7 @@ export class GoalsService {
     period: goal.period,
     dueDate: goal.dueDate,
     completedAt: goal.completedAt,
+    archivedAt: goal.archivedAt,
     createdAt: goal.createdAt,
     updatedAt: goal.updatedAt,
     taskCount: goal._count.tasks,

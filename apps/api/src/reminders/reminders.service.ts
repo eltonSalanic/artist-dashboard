@@ -8,7 +8,7 @@ export class RemindersService {
 
   list(boardId: string) {
     return this.prisma.reminder.findMany({
-      where: { boardId },
+      where: { boardId, archivedAt: null },
       // Dated reminders come first, soonest first; undated notes trail them.
       orderBy: [
         { done: 'asc' },

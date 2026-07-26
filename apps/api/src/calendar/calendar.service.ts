@@ -23,7 +23,8 @@ export interface CalendarItemDto {
 /**
  * Aggregates everything datable on a board into one range query for the
  * month grid: events (startsAt), tasks (dueDate), goals (dueDate) and
- * open reminders (remindAt). Range is [from, to).
+ * open reminders (remindAt). Range is [from, to). Archived items are
+ * excluded everywhere — the calendar is part of the dashboard they left.
  */
 @Injectable()
 export class CalendarService {
@@ -38,11 +39,11 @@ export class CalendarService {
 
     const [events, tasks, goals, reminders] = await Promise.all([
       this.prisma.event.findMany({
-        where: { boardId, startsAt: window },
+        where: { boardId, startsAt: window, archivedAt: null },
         orderBy: { startsAt: 'asc' },
       }),
       this.prisma.task.findMany({
-        where: { boardId, dueDate: window },
+        where: { boardId, dueDate: window, archivedAt: null },
         // Pull only the requesting user's assignee row, if any, so we can flag
         // "assigned to me" without loading every assignee.
         include: {
@@ -52,12 +53,12 @@ export class CalendarService {
         orderBy: { dueDate: 'asc' },
       }),
       this.prisma.goal.findMany({
-        where: { boardId, dueDate: window },
+        where: { boardId, dueDate: window, archivedAt: null },
         orderBy: { dueDate: 'asc' },
       }),
       this.prisma.reminder.findMany({
         // Once a reminder is done it has nothing left to say about the day.
-        where: { boardId, remindAt: window, done: false },
+        where: { boardId, remindAt: window, done: false, archivedAt: null },
         orderBy: { remindAt: 'asc' },
       }),
     ]);
