@@ -2,6 +2,7 @@
 
 import { LandingHeader } from "@/features/landing/landing-header";
 import { Hero } from "@/features/landing/hero";
+import { IntroSection } from "@/features/landing/intro-section";
 
 export function LandingPage() {
   return (
@@ -9,6 +10,7 @@ export function LandingPage() {
       <LandingHeader />
       <main className="flex-1">
         <Hero />
+        <IntroSection />
       </main>
     </div>
   );
