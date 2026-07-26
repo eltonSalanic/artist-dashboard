@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, UserRound } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { usePermissions } from "@/features/auth/permissions";
+import { useMe } from "@/features/auth/use-me";
 import type { BoardDetailDto, BoardMemberDto, TaskStatusDto } from "@/features/auth/types";
 import { useGoals } from "@/features/planning/use-goals";
 import { useEvents } from "@/features/planning/use-events";
@@ -30,6 +31,7 @@ import {
   StatusSelect,
 } from "./task-bits";
 import { labelStyle } from "@/lib/label-style";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -298,6 +300,7 @@ function TaskDetailBody({
 }) {
   const { can } = usePermissions();
   const canChangeStatus = useCanChangeStatus();
+  const myId = useMe(true).data?.user.id;
   const updateTask = useUpdateTask(boardId);
   const deleteTask = useDeleteTask(boardId);
   const setAssignees = useSetAssignees(boardId);
@@ -311,6 +314,7 @@ function TaskDetailBody({
 
   const canEdit = can("task.editFields");
   const assigneeIds = new Set(data.assignees.map((a) => a.id));
+  const assignedToMe = !!myId && assigneeIds.has(myId);
 
   const saveTitle = () => {
     const trimmed = title.trim();
@@ -344,6 +348,12 @@ function TaskDetailBody({
           Created by {data.createdBy.displayName} ·{" "}
           {new Date(data.createdAt).toLocaleDateString()}
         </DialogDescription>
+        {assignedToMe && (
+          <Badge className="mt-1 gap-1">
+            <UserRound aria-hidden />
+            Assigned to you
+          </Badge>
+        )}
       </DialogHeader>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
