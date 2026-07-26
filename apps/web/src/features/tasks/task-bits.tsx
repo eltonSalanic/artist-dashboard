@@ -60,8 +60,10 @@ export function StatusSelect({
         <SelectGroup>
           {statuses.map((status) => (
             <SelectItem key={status.id} value={status.id}>
-              <StatusDot color={status.color} />
-              {status.name}
+              <span className="flex items-center gap-1.5">
+                <StatusDot color={status.color} />
+                {status.name}
+              </span>
             </SelectItem>
           ))}
         </SelectGroup>
