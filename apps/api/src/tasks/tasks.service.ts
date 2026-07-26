@@ -294,7 +294,7 @@ export class TasksService {
   }
 
   /** The task plus its descendants — nesting is capped at two levels. */
-  private async collectTaskTree(taskId: string): Promise<string[]> {
+  async collectTaskTree(taskId: string): Promise<string[]> {
     const children = await this.prisma.task.findMany({
       where: { parentTaskId: taskId },
       select: { id: true },

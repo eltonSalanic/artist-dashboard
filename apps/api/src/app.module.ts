@@ -17,6 +17,7 @@ import { EventsModule } from './events/events.module';
 import { FocusModule } from './focus/focus.module';
 import { RemindersModule } from './reminders/reminders.module';
 import { CalendarModule } from './calendar/calendar.module';
+import { ArchiveModule } from './archive/archive.module';
 import { ActivityModule } from './activity/activity.module';
 import { CommentsModule } from './comments/comments.module';
 import { AttachmentsModule } from './attachments/attachments.module';
@@ -41,6 +42,7 @@ import { MentionsModule } from './mentions/mentions.module';
     FocusModule,
     RemindersModule,
     CalendarModule,
+    ArchiveModule,
     CommentsModule,
     AttachmentsModule,
     CustomWidgetModule,
