@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { GoalsService } from './goals.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
+import { TasksService } from '../tasks/tasks.service';
 
 describe('GoalsService', () => {
   const prisma = {
@@ -12,6 +13,7 @@ describe('GoalsService', () => {
       update: jest.fn(),
       delete: jest.fn(),
     },
+    task: { findMany: jest.fn(), count: jest.fn() },
     activity: { create: jest.fn() },
     $transaction: jest.fn(),
   };
@@ -20,9 +22,11 @@ describe('GoalsService', () => {
   prisma.$transaction.mockImplementation((fn: (tx: unknown) => unknown) =>
     fn(prisma),
   );
+  const tasks = { removeMany: jest.fn() };
   const service = new GoalsService(
     prisma as unknown as PrismaService,
     new ActivityService(prisma as unknown as PrismaService),
+    tasks as unknown as TasksService,
   );
 
   /** The `data` Prisma was asked to write on the most recent update. */
@@ -43,8 +47,41 @@ describe('GoalsService', () => {
     await service.list('b1', { includeCompleted: false });
 
     expect(prisma.goal.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { boardId: 'b1', completedAt: null } }),
+      expect.objectContaining({
+        where: { boardId: 'b1', archivedAt: null, completedAt: null },
+      }),
     );
+  });
+
+  it('always hides archived goals from the list', async () => {
+    prisma.goal.findMany.mockResolvedValue([]);
+    await service.list('b1', { includeCompleted: true });
+
+    expect(prisma.goal.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ archivedAt: null }),
+      }),
+    );
+  });
+
+  it('leaves linked tasks alone when deleting a goal without cascade', async () => {
+    prisma.goal.findFirst.mockResolvedValue({ id: 'g1' });
+    await service.remove('b1', 'g1');
+
+    expect(tasks.removeMany).not.toHaveBeenCalled();
+    expect(prisma.goal.delete).toHaveBeenCalledWith({ where: { id: 'g1' } });
+  });
+
+  it('deletes linked tasks at any depth when cascade is asked for', async () => {
+    prisma.goal.findFirst.mockResolvedValue({ id: 'g1' });
+    prisma.task.findMany.mockResolvedValue([{ id: 't1' }, { id: 't2' }]);
+
+    await service.remove('b1', 'g1', true);
+
+    expect(prisma.task.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { boardId: 'b1', goalId: 'g1' } }),
+    );
+    expect(tasks.removeMany).toHaveBeenCalledWith('b1', ['t1', 't2']);
   });
 
   it('stamps completedAt when a goal is marked complete', async () => {

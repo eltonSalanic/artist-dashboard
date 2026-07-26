@@ -17,6 +17,8 @@ export const Actions = [
   'goal.manage',
   'reminder.manage',
   'focus.manage',
+  'archive.view',
+  'item.archive',
 ] as const;
 export type Action = (typeof Actions)[number];
 
@@ -26,6 +28,9 @@ const USER_ACTIONS: ReadonlySet<Action> = new Set<Action>([
   'task.createSubtask',
   'task.comment',
   'file.upload',
+  // Everyone can browse the archive; only admins can move things in and out
+  // of it ('item.archive') or delete them for good.
+  'archive.view',
 ]);
 
 export function can(role: BoardRole, action: Action): boolean {

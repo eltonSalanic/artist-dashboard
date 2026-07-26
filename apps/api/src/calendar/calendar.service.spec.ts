@@ -28,21 +28,49 @@ describe('CalendarService', () => {
 
     const window = { gte: query.from, lt: query.to };
     expect(prisma.event.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { boardId: 'b1', startsAt: window } }),
+      expect.objectContaining({
+        where: { boardId: 'b1', startsAt: window, archivedAt: null },
+      }),
     );
     expect(prisma.task.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { boardId: 'b1', dueDate: window } }),
+      expect.objectContaining({
+        where: { boardId: 'b1', dueDate: window, archivedAt: null },
+      }),
     );
     expect(prisma.goal.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { boardId: 'b1', dueDate: window } }),
+      expect.objectContaining({
+        where: { boardId: 'b1', dueDate: window, archivedAt: null },
+      }),
     );
     // Done reminders are filtered out here — a finished note tells you
     // nothing about the day it was pinned to.
     expect(prisma.reminder.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { boardId: 'b1', remindAt: window, done: false },
+        where: {
+          boardId: 'b1',
+          remindAt: window,
+          done: false,
+          archivedAt: null,
+        },
       }),
     );
+  });
+
+  it('keeps archived items off the calendar entirely', async () => {
+    await service.range('b1', 'u1', query);
+
+    for (const source of [
+      prisma.event.findMany,
+      prisma.task.findMany,
+      prisma.goal.findMany,
+      prisma.reminder.findMany,
+    ]) {
+      expect(source).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ archivedAt: null }),
+        }),
+      );
+    }
   });
 
   it('merges all four sources into one chronological list', async () => {

@@ -9,9 +9,11 @@ import {
   Query,
 } from '@nestjs/common';
 import {
+  cascadeQuerySchema,
   createEventSchema,
   eventQuerySchema,
   updateEventSchema,
+  type CascadeQueryDto,
   type CreateEventDto,
   type EventQueryDto,
   type UpdateEventDto,
@@ -62,7 +64,11 @@ export class EventsController {
 
   @Delete(':eventId')
   @BoardRoles('ADMIN')
-  remove(@Param('boardId') boardId: string, @Param('eventId') eventId: string) {
-    return this.events.remove(boardId, eventId);
+  remove(
+    @Param('boardId') boardId: string,
+    @Param('eventId') eventId: string,
+    @Query(new ZodValidationPipe(cascadeQuerySchema)) query: CascadeQueryDto,
+  ) {
+    return this.events.remove(boardId, eventId, query.cascadeTasks);
   }
 }

@@ -25,6 +25,10 @@ export const ActivityTypes = [
 ] as const;
 export type ActivityType = (typeof ActivityTypes)[number];
 
+/** The four things that can be archived. Shows/meetings/rehearsals are EVENT. */
+export const ArchiveKinds = ['TASK', 'GOAL', 'EVENT', 'REMINDER'] as const;
+export type ArchiveKind = (typeof ArchiveKinds)[number];
+
 export const WidgetTypes = [
   'GOALS',
   'FOCUS',

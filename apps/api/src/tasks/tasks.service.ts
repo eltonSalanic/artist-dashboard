@@ -258,10 +258,25 @@ export class TasksService {
 
   async remove(boardId: string, taskId: string) {
     await this.getOwned(boardId, taskId);
+    await this.removeMany(boardId, [taskId]);
+    return { deleted: true };
+  }
 
-    // Subtasks, comments and attachment rows all cascade in the database, but
-    // the stored objects don't — collect their paths before the row is gone.
-    const taskIds = await this.collectTaskTree(taskId);
+  /**
+   * Permanently delete whole task subtrees. Subtasks, comments and attachment
+   * rows all cascade in the database, but the stored objects don't — their
+   * paths are collected before the rows are gone.
+   *
+   * Ids may overlap (a root and its own subtask): deleting the root cascades
+   * the child, and `deleteMany` simply doesn't match what's already gone.
+   */
+  async removeMany(boardId: string, rootTaskIds: string[]) {
+    if (rootTaskIds.length === 0) return;
+
+    const trees = await Promise.all(
+      rootTaskIds.map((id) => this.collectTaskTree(id)),
+    );
+    const taskIds = [...new Set(trees.flat())];
     const attachments = await this.prisma.attachment.findMany({
       where: {
         OR: [
@@ -272,9 +287,10 @@ export class TasksService {
       select: { storagePath: true },
     });
 
-    await this.prisma.task.delete({ where: { id: taskId } });
+    await this.prisma.task.deleteMany({
+      where: { id: { in: rootTaskIds }, boardId },
+    });
     await this.storage.remove(attachments.map((a) => a.storagePath));
-    return { deleted: true };
   }
 
   /** The task plus its descendants — nesting is capped at two levels. */

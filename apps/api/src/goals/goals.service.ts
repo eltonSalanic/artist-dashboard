@@ -7,6 +7,7 @@ import type {
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
+import { TasksService } from '../tasks/tasks.service';
 
 const goalInclude = {
   // Archived tasks belong to the archive page, not to their goal's count —
@@ -19,6 +20,7 @@ export class GoalsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly activity: ActivityService,
+    private readonly tasks: TasksService,
   ) {}
 
   async list(boardId: string, query: GoalQueryDto) {
@@ -113,8 +115,28 @@ export class GoalsService {
     return this.toDto(goal);
   }
 
-  async remove(boardId: string, goalId: string) {
-    await this.findOne(boardId, goalId);
+  /**
+   * With `cascadeTasks`, the goal's tasks are deleted with it (attachments and
+   * all). Without it they survive and `Task.goalId` is nulled by the database.
+   */
+  async remove(boardId: string, goalId: string, cascadeTasks = false) {
+    const goal = await this.prisma.goal.findFirst({
+      where: { id: goalId, boardId },
+    });
+    if (!goal) throw new NotFoundException('Goal not found');
+
+    if (cascadeTasks) {
+      // Every linked task at any depth — a subtask can carry its own goalId.
+      const linked = await this.prisma.task.findMany({
+        where: { boardId, goalId },
+        select: { id: true },
+      });
+      await this.tasks.removeMany(
+        boardId,
+        linked.map((t) => t.id),
+      );
+    }
+
     await this.prisma.goal.delete({ where: { id: goalId } });
     return { deleted: true };
   }

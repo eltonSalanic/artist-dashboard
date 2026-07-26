@@ -8,5 +8,7 @@ import { TasksService } from './tasks.service';
   imports: [AttachmentsModule],
   controllers: [TasksController],
   providers: [TasksService],
+  // Goals, events and the archive delete their linked tasks through it.
+  exports: [TasksService],
 })
 export class TasksModule {}

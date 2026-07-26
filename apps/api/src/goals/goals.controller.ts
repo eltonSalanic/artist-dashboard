@@ -9,9 +9,11 @@ import {
   Query,
 } from '@nestjs/common';
 import {
+  cascadeQuerySchema,
   createGoalSchema,
   goalQuerySchema,
   updateGoalSchema,
+  type CascadeQueryDto,
   type CreateGoalDto,
   type GoalQueryDto,
   type UpdateGoalDto,
@@ -61,7 +63,11 @@ export class GoalsController {
 
   @Delete(':goalId')
   @BoardRoles('ADMIN')
-  remove(@Param('boardId') boardId: string, @Param('goalId') goalId: string) {
-    return this.goals.remove(boardId, goalId);
+  remove(
+    @Param('boardId') boardId: string,
+    @Param('goalId') goalId: string,
+    @Query(new ZodValidationPipe(cascadeQuerySchema)) query: CascadeQueryDto,
+  ) {
+    return this.goals.remove(boardId, goalId, query.cascadeTasks);
   }
 }

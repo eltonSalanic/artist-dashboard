@@ -6,6 +6,7 @@ import type {
 } from '@artist/shared';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { TasksService } from '../tasks/tasks.service';
 
 const eventInclude = {
   // Archived tasks belong to the archive page, not to their event's count —
@@ -15,7 +16,10 @@ const eventInclude = {
 
 @Injectable()
 export class EventsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly tasks: TasksService,
+  ) {}
 
   async list(boardId: string, query: EventQueryDto) {
     const events = await this.prisma.event.findMany({
@@ -79,8 +83,28 @@ export class EventsService {
     return this.toDto(event);
   }
 
-  async remove(boardId: string, eventId: string) {
-    await this.findOne(boardId, eventId);
+  /**
+   * With `cascadeTasks`, the event's tasks are deleted with it (attachments and
+   * all). Without it they survive and `Task.eventId` is nulled by the database.
+   */
+  async remove(boardId: string, eventId: string, cascadeTasks = false) {
+    const event = await this.prisma.event.findFirst({
+      where: { id: eventId, boardId },
+    });
+    if (!event) throw new NotFoundException('Event not found');
+
+    if (cascadeTasks) {
+      // Every linked task at any depth — a subtask can carry its own eventId.
+      const linked = await this.prisma.task.findMany({
+        where: { boardId, eventId },
+        select: { id: true },
+      });
+      await this.tasks.removeMany(
+        boardId,
+        linked.map((t) => t.id),
+      );
+    }
+
     await this.prisma.event.delete({ where: { id: eventId } });
     return { deleted: true };
   }
