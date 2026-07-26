@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ComponentType } from "react";
 import {
   Activity,
@@ -8,6 +8,8 @@ import {
   CalendarDays,
   CheckCircle2,
   MousePointer2,
+  Pause,
+  Play,
   Target,
 } from "lucide-react";
 import { FauxRow, MiniWidget } from "@/features/landing/mini-widget";
@@ -123,30 +125,38 @@ function cornerStyle(box: Box): React.CSSProperties {
   };
 }
 
-function usePrefersReducedMotion() {
-  const [reduced, setReduced] = useState(false);
+export function WidgetShowcase() {
+  const [phase, setPhase] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  // Once someone presses play/pause, their choice wins over the OS preference.
+  const userChose = useRef(false);
+
+  // Default to playing — unless the visitor asked their OS to reduce motion, in
+  // which case we stay put and let them start it themselves.
   useEffect(() => {
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const update = () => setReduced(query.matches);
-    update();
-    query.addEventListener("change", update);
-    return () => query.removeEventListener("change", update);
+    const apply = () => {
+      if (!userChose.current) setPlaying(!query.matches);
+    };
+    apply();
+    query.addEventListener("change", apply);
+    return () => query.removeEventListener("change", apply);
   }, []);
-  return reduced;
-}
 
-export function WidgetShowcase() {
-  const reduced = usePrefersReducedMotion();
-  const [phase, setPhase] = useState(0);
-
+  // The loop only turns while playing, so a paused demo costs nothing.
   useEffect(() => {
-    if (reduced) return;
+    if (!playing) return;
     const id = setInterval(
       () => setPhase((p) => (p + 1) % LAYOUTS.length),
       3200,
     );
     return () => clearInterval(id);
-  }, [reduced]);
+  }, [playing]);
+
+  const toggle = () => {
+    userChose.current = true;
+    setPlaying((p) => !p);
+  };
 
   const layout = LAYOUTS[phase];
   const heldId = HELD[phase];
@@ -170,15 +180,25 @@ export function WidgetShowcase() {
               <span className="size-2.5 rounded-full bg-coral/70" />
               <span className="size-2.5 rounded-full bg-lilac/70" />
               <span className="size-2.5 rounded-full bg-lime/70" />
-              <span className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-muted/70 px-2.5 py-0.5 text-xs text-muted-foreground">
-                <span
-                  className={cn(
-                    "size-1.5 rounded-full bg-coral",
-                    !reduced && "animate-pulse",
-                  )}
-                />
-                {reduced ? "Editing layout" : "Arranging…"}
-              </span>
+              <button
+                type="button"
+                onClick={toggle}
+                aria-label={playing ? "Pause the demo" : "Play the demo"}
+                className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-muted/70 px-2.5 py-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {playing ? (
+                  <>
+                    <span className="size-1.5 animate-pulse rounded-full bg-coral" />
+                    Arranging…
+                    <Pause className="size-3" />
+                  </>
+                ) : (
+                  <>
+                    <Play className="size-3" />
+                    Play demo
+                  </>
+                )}
+              </button>
             </div>
 
             <div
@@ -201,7 +221,7 @@ export function WidgetShowcase() {
                       className={cn(
                         "relative h-full transition-[transform,box-shadow] duration-500",
                         held &&
-                          !reduced &&
+                          playing &&
                           "scale-[1.02] rounded-2xl shadow-[0_18px_40px_-12px_rgba(20,16,10,0.35)] outline-2 outline-offset-2 outline-primary/40",
                       )}
                     >
@@ -229,7 +249,7 @@ export function WidgetShowcase() {
               })}
 
               {/* The ghost cursor, parked on the held widget's resize corner. */}
-              {!reduced && heldBox && (
+              {playing && heldBox && (
                 <div
                   aria-hidden
                   style={cornerStyle(heldBox)}
@@ -237,6 +257,25 @@ export function WidgetShowcase() {
                 >
                   <MousePointer2 className="size-5 fill-primary text-primary drop-shadow-[0_2px_3px_rgba(20,16,10,0.35)]" />
                 </div>
+              )}
+
+              {/* Poster overlay while paused — the way in for anyone whose
+                  system asked us not to move things without being told to. */}
+              {!playing && (
+                <button
+                  type="button"
+                  onClick={toggle}
+                  className="group absolute inset-0 z-40 grid place-items-center rounded-2xl bg-background/25 backdrop-blur-[1px] transition-colors hover:bg-background/10"
+                >
+                  <span className="flex flex-col items-center gap-2">
+                    <span className="flex size-14 items-center justify-center rounded-full bg-coral text-coral-foreground shadow-lg transition-transform group-hover:scale-105">
+                      <Play className="size-6 translate-x-0.5 fill-current" />
+                    </span>
+                    <span className="rounded-full bg-background/80 px-3 py-1 text-sm font-medium">
+                      Watch it rearrange
+                    </span>
+                  </span>
+                </button>
               )}
             </div>
           </div>
