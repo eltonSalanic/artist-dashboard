@@ -15,30 +15,13 @@ import {
   buildMonthGrid,
   calendarCategory,
   CALENDAR_CATEGORIES,
+  CATEGORY_ACCENT,
   monthRange,
   WEEKDAY_LABELS,
   type CalendarCategory,
 } from "./month-grid";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-
-/**
- * One color per calendar category. Events are split by type; the same map
- * drives both the day chips' left accent and the filter chips' legend dot,
- * so they can never drift apart. (Tailwind needs whole class names, hence the
- * static strings.)
- */
-const CATEGORY_ACCENT: Record<
-  CalendarCategory,
-  { border: string; dot: string }
-> = {
-  SHOW: { border: "border-l-violet-500", dot: "bg-violet-500" },
-  MEETING: { border: "border-l-sky-500", dot: "bg-sky-500" },
-  REHEARSAL: { border: "border-l-rose-500", dot: "bg-rose-500" },
-  TASK: { border: "border-l-slate-500", dot: "bg-slate-500" },
-  REMINDER: { border: "border-l-amber-500", dot: "bg-amber-500" },
-  GOAL: { border: "border-l-emerald-500", dot: "bg-emerald-500" },
-};
 
 export function CalendarPage() {
   const me = useMe(true);

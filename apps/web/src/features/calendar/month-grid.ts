@@ -100,6 +100,24 @@ export const CALENDAR_CATEGORIES: { key: CalendarCategory; label: string }[] = [
   { key: "GOAL", label: "Goals" },
 ];
 
+/**
+ * One color per category, shared by the calendar grid and the archive list —
+ * the day chips' left accent and every legend dot come from here, so they
+ * can't drift apart. (Tailwind needs whole class names, hence the static
+ * strings.)
+ */
+export const CATEGORY_ACCENT: Record<
+  CalendarCategory,
+  { border: string; dot: string }
+> = {
+  SHOW: { border: "border-l-violet-500", dot: "bg-violet-500" },
+  MEETING: { border: "border-l-sky-500", dot: "bg-sky-500" },
+  REHEARSAL: { border: "border-l-rose-500", dot: "bg-rose-500" },
+  TASK: { border: "border-l-slate-500", dot: "bg-slate-500" },
+  REMINDER: { border: "border-l-amber-500", dot: "bg-amber-500" },
+  GOAL: { border: "border-l-emerald-500", dot: "bg-emerald-500" },
+};
+
 /** Which filter bucket a calendar item belongs to — events split by their type. */
 export function calendarCategory(item: CalendarItemDto): CalendarCategory {
   if (item.kind === "EVENT") return item.event?.type ?? "SHOW";

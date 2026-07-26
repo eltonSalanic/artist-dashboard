@@ -3,7 +3,14 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CalendarDays, Eye, LayoutGrid, LogOut, Settings } from "lucide-react";
+import {
+  Archive,
+  CalendarDays,
+  Eye,
+  LayoutGrid,
+  LogOut,
+  Settings,
+} from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/features/auth/use-session";
 import { useMe } from "@/features/auth/use-me";
@@ -76,6 +83,7 @@ function Header({ me }: { me: MeResponse }) {
 
   const onDashboard = pathname === "/";
   const onCalendar = pathname.startsWith("/calendar");
+  const onArchive = pathname.startsWith("/archive");
 
   return (
     <header className="flex items-center justify-between gap-4 border-b px-6 py-3">
@@ -111,6 +119,16 @@ function Header({ me }: { me: MeResponse }) {
         >
           <CalendarDays data-icon="inline-start" />
           Calendar
+        </Button>
+        <Button
+          variant={onArchive ? "default" : "ghost"}
+          size="sm"
+          className="rounded-full"
+          nativeButton={false}
+          render={<Link href="/archive" />}
+        >
+          <Archive data-icon="inline-start" />
+          Archive
         </Button>
       </nav>
 
