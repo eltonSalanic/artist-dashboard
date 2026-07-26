@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { usePermissions } from "@/features/auth/permissions";
+import { ArchivedBanner } from "@/features/archive/archived-banner";
 import { ItemActions } from "@/features/archive/item-actions";
 import {
   useDeleteReminder,
@@ -129,6 +130,7 @@ function ReminderDetailBody({
 
   return (
     <div className="flex flex-col gap-5">
+      <ArchivedBanner archivedAt={data.archivedAt} />
       <DialogHeader>
         {canManage ? (
           <Input

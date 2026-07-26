@@ -14,6 +14,7 @@ import { useDetailParams } from "@/features/planning/use-detail-params";
 import { eventTypeLabel, formatDateTime } from "@/features/planning/planning-bits";
 import { CommentsSection } from "@/features/comments/comments-section";
 import { TaskAttachments } from "@/features/comments/task-attachments";
+import { ArchivedBanner } from "@/features/archive/archived-banner";
 import { ItemActions } from "@/features/archive/item-actions";
 import type { TaskDetailDto } from "./types";
 import {
@@ -332,6 +333,7 @@ function TaskDetailBody({
 
   return (
     <div className="flex flex-col gap-5">
+      <ArchivedBanner archivedAt={data.archivedAt} />
       <DialogHeader>
         {canEdit ? (
           <Input

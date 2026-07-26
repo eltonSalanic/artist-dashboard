@@ -70,8 +70,8 @@ export function ItemActions({
   return (
     <div className="flex justify-end gap-2">
       {archived ? (
+        // Getting it back is the main thing you came here to do.
         <Button
-          variant="outline"
           disabled={restoreItem.isPending}
           onClick={() => setMode("restore")}
         >

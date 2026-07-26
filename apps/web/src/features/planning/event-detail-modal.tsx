@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { EventTypes, type EventType } from "@artist/shared";
 import { usePermissions } from "@/features/auth/permissions";
+import { ArchivedBanner } from "@/features/archive/archived-banner";
 import { ItemActions } from "@/features/archive/item-actions";
 import { useTasks } from "@/features/tasks/use-tasks";
 import { useDeleteEvent, useEvent, useUpdateEvent } from "./use-events";
@@ -140,6 +141,7 @@ function EventDetailBody({
 
   return (
     <div className="flex flex-col gap-5">
+      <ArchivedBanner archivedAt={data.archivedAt} />
       <DialogHeader>
         {canManage ? (
           <Input

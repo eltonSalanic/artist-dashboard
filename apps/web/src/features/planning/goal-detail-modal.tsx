@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { GoalPeriods, type GoalPeriod } from "@artist/shared";
 import { usePermissions } from "@/features/auth/permissions";
+import { ArchivedBanner } from "@/features/archive/archived-banner";
 import { ItemActions } from "@/features/archive/item-actions";
 import { useTasks } from "@/features/tasks/use-tasks";
 import { useDeleteGoal, useGoal, useUpdateGoal } from "./use-goals";
@@ -130,6 +131,7 @@ function GoalDetailBody({
 
   return (
     <div className="flex flex-col gap-5">
+      <ArchivedBanner archivedAt={data.archivedAt} />
       <DialogHeader>
         {canManage ? (
           <Input
