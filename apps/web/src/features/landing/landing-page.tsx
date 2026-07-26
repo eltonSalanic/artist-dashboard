@@ -6,6 +6,7 @@ import { IntroSection } from "@/features/landing/intro-section";
 import { WidgetShowcase } from "@/features/landing/widget-showcase";
 import { FeaturesSection } from "@/features/landing/features-section";
 import { CtaSection } from "@/features/landing/cta-section";
+import { LandingFooter } from "@/features/landing/landing-footer";
 
 export function LandingPage() {
   return (
@@ -18,6 +19,7 @@ export function LandingPage() {
         <FeaturesSection />
         <CtaSection />
       </main>
+      <LandingFooter />
     </div>
   );
 }
