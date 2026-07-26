@@ -46,6 +46,59 @@ describe('TasksService', () => {
 
   beforeEach(() => jest.clearAllMocks());
 
+  describe('findOne subtask visibility', () => {
+    /** A task row shaped enough for `toDto`, with the given subtasks. */
+    const withSubtasks = (
+      archivedAt: Date | null,
+      subtasks: { id: string; archivedAt: Date | null }[],
+    ) => ({
+      ...baseTask,
+      archivedAt,
+      assignees: [],
+      goal: null,
+      event: null,
+      createdBy: { id: 'u1', displayName: 'Elton' },
+      _count: { checklist: 0 },
+      subtasks: subtasks.map((s) => ({
+        ...baseTask,
+        ...s,
+        assignees: [],
+        goal: null,
+        event: null,
+        subtasks: [],
+        _count: { checklist: 0 },
+      })),
+    });
+
+    it('hides a subtask archived on its own from a live parent', async () => {
+      prisma.task.findFirst.mockResolvedValue(
+        withSubtasks(null, [
+          { id: 'live', archivedAt: null },
+          { id: 'gone', archivedAt: new Date() },
+        ]),
+      );
+
+      const task = await service.findOne('b1', 't1');
+
+      expect(task.subtasks.map((s) => s.id)).toEqual(['live']);
+      expect(task.subtaskCount).toBe(1);
+    });
+
+    it('keeps the whole subtree on an archived parent — the only way back to it', async () => {
+      prisma.task.findFirst.mockResolvedValue(
+        withSubtasks(new Date(), [
+          { id: 'a', archivedAt: new Date() },
+          { id: 'b', archivedAt: new Date() },
+        ]),
+      );
+
+      const task = await service.findOne('b1', 't1');
+
+      expect(task.subtasks.map((s) => s.id)).toEqual(['a', 'b']);
+      expect(task.subtaskCount).toBe(2);
+    });
+  });
+
   describe('create', () => {
     it('blocks USER from creating top-level tasks', async () => {
       await expect(

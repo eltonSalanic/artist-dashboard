@@ -8,7 +8,11 @@ import { useMe } from "@/features/auth/use-me";
 import { usePermissions } from "@/features/auth/permissions";
 import type { BoardDetailDto } from "@/features/auth/types";
 import { TasksTable } from "@/features/tasks/tasks-table";
-import { formatDueDate, StatusSelect } from "@/features/tasks/task-bits";
+import {
+  formatDueDate,
+  StatusSelect,
+  SubtaskCount,
+} from "@/features/tasks/task-bits";
 import { useTasks, useUpdateTask } from "@/features/tasks/use-tasks";
 import {
   Empty,
@@ -76,6 +80,7 @@ export function MyTasksWidget({ boardId }: { boardId: string }) {
           >
             {task.title}
           </button>
+          <SubtaskCount count={task.subtaskCount} />
           <span className="shrink-0 text-xs text-muted-foreground">
             {formatDueDate(task.dueDate)}
           </span>

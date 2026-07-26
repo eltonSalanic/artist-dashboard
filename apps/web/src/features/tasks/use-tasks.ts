@@ -19,7 +19,9 @@ const showError = (error: unknown) =>
 export function useTasks(boardId: string, filters: TaskFilters = {}) {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(filters)) {
-    if (value) params.set(key, value);
+    // Skip empty and false — an unset flag shouldn't reach the query string.
+    if (value === undefined || value === "" || value === false) continue;
+    params.set(key, String(value));
   }
   const qs = params.toString();
   return useQuery({

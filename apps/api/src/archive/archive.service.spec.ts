@@ -186,12 +186,25 @@ describe('ArchiveService', () => {
         prisma.event.findMany,
         prisma.reminder.findMany,
       ]) {
-        expect(source).toHaveBeenCalledWith(
-          expect.objectContaining({
-            where: { boardId: 'b1', archivedAt: { not: null } },
-          }),
-        );
+        const calls = source.mock.calls as [
+          { where: Record<string, unknown> },
+        ][];
+        expect(calls[0][0].where).toMatchObject({
+          boardId: 'b1',
+          archivedAt: { not: null },
+        });
       }
+    });
+
+    it('lists roots and orphaned subtasks, but not subtasks of an archived parent', async () => {
+      await service.list('b1', { limit: 500 });
+
+      const calls = prisma.task.findMany.mock.calls as [
+        { where: Record<string, unknown> },
+      ][];
+      expect(calls[0][0].where).toMatchObject({
+        OR: [{ parentTaskId: null }, { parentTask: { archivedAt: null } }],
+      });
     });
 
     it('merges the four sources newest-archived first', async () => {

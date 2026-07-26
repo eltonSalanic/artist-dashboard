@@ -103,7 +103,12 @@ function GoalDetailBody({
   const { can } = usePermissions();
   const updateGoal = useUpdateGoal(boardId);
   const deleteGoal = useDeleteGoal(boardId);
-  const tasks = useTasks(boardId, { goalId: data.id });
+  // An archived goal keeps its tasks — showing them is the whole point of
+  // looking one up in the archive.
+  const tasks = useTasks(boardId, {
+    goalId: data.id,
+    includeArchived: data.archivedAt !== null,
+  });
 
   const [title, setTitle] = useState(data.title);
   const [description, setDescription] = useState(data.description ?? "");

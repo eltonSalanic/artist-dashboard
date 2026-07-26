@@ -35,6 +35,14 @@ export const taskQuerySchema = z.object({
   goalId: z.uuid().optional(),
   eventId: z.uuid().optional(),
   sort: z.enum(['order', 'dueDate', 'priority', 'createdAt']).default('order'),
+  /**
+   * Include archived tasks. Used when listing the tasks of a goal or event
+   * that is itself archived — there, the archived ones are the point.
+   */
+  includeArchived: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
 });
 export type TaskQueryDto = z.infer<typeof taskQuerySchema>;
 

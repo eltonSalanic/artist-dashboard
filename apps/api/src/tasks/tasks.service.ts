@@ -25,13 +25,30 @@ const SORT_GAP = 1024;
 const taskInclude = {
   status: true,
   assignees: { include: { user: true } },
-  _count: {
-    select: { subtasks: { where: { archivedAt: null } }, checklist: true },
-  },
+  // Subtask ids and their archived state, rather than a `_count`: which
+  // subtasks are visible depends on whether the *parent* is archived, and
+  // `_count` can't express a filter that reads the parent row.
+  subtasks: { select: { id: true, archivedAt: true } },
+  _count: { select: { checklist: true } },
   checklist: { orderBy: { sortOrder: 'asc' as const } },
   goal: { select: { id: true, title: true } },
   event: { select: { id: true, title: true, type: true, startsAt: true } },
 } satisfies Prisma.TaskInclude;
+
+/**
+ * A task's subtasks are shown in the same state as the task itself: a live
+ * task lists its live subtasks, and an archived one lists its whole subtree.
+ * Archiving cascades, so those are the subtasks that went down with it — and
+ * since the archive lists only roots, the parent is the one place they can
+ * still be reached.
+ */
+function visibleSubtasks<T extends { archivedAt: Date | null }>(
+  parent: { archivedAt: Date | null },
+  subtasks: T[],
+): T[] {
+  if (parent.archivedAt !== null) return subtasks;
+  return subtasks.filter((subtask) => subtask.archivedAt === null);
+}
 
 /** Fields a regular member may change on someone else's task. */
 const USER_EDITABLE_FIELDS: ReadonlySet<keyof UpdateTaskDto> = new Set([
@@ -59,7 +76,7 @@ export class TasksService {
     const tasks = await this.prisma.task.findMany({
       where: {
         boardId,
-        archivedAt: null,
+        ...(query.includeArchived ? {} : { archivedAt: null }),
         ...(query.search
           ? { title: { contains: query.search, mode: 'insensitive' } }
           : {}),
@@ -82,14 +99,7 @@ export class TasksService {
       where: { id: taskId, boardId },
       include: {
         ...taskInclude,
-        // Archived subtasks live on the archive page, not in their parent's
-        // list — but the parent itself is still fetchable when archived, so
-        // the archive page can open it.
-        subtasks: {
-          where: { archivedAt: null },
-          include: taskInclude,
-          orderBy: { sortOrder: 'asc' },
-        },
+        subtasks: { include: taskInclude, orderBy: { sortOrder: 'asc' } },
         createdBy: true,
       },
     });
@@ -100,7 +110,7 @@ export class TasksService {
         id: task.createdBy.id,
         displayName: task.createdBy.displayName,
       },
-      subtasks: task.subtasks.map(this.toDto),
+      subtasks: visibleSubtasks(task, task.subtasks).map(this.toDto),
     };
   }
 
@@ -542,7 +552,8 @@ export class TasksService {
       user: { id: string; displayName: string; avatarUrl: string | null };
     }[];
     checklist?: { id: string; text: string; done: boolean }[];
-    _count: { subtasks: number; checklist: number };
+    subtasks?: { id: string; archivedAt: Date | null }[];
+    _count: { checklist: number };
   }) => ({
     id: task.id,
     boardId: task.boardId,
@@ -570,7 +581,7 @@ export class TasksService {
       avatarUrl: a.user.avatarUrl,
     })),
     checklist: task.checklist ?? [],
-    subtaskCount: task._count.subtasks,
+    subtaskCount: visibleSubtasks(task, task.subtasks ?? []).length,
     checklistCount: task._count.checklist,
   });
 }

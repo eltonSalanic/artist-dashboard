@@ -54,4 +54,6 @@ export interface TaskFilters {
   goalId?: string;
   eventId?: string;
   sort?: "order" | "dueDate" | "priority" | "createdAt";
+  /** Include archived tasks — for the task list of an archived goal or event. */
+  includeArchived?: boolean;
 }

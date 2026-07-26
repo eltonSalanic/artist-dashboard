@@ -22,7 +22,11 @@ import { apiFetch } from "@/lib/api";
 import { usePermissions } from "@/features/auth/permissions";
 import type { BoardDetailDto, TaskStatusDto } from "@/features/auth/types";
 import { TasksTable } from "@/features/tasks/tasks-table";
-import { formatDueDate, StatusSelect } from "@/features/tasks/task-bits";
+import {
+  formatDueDate,
+  StatusSelect,
+  SubtaskCount,
+} from "@/features/tasks/task-bits";
 import {
   useReorderTask,
   useTasks,
@@ -182,6 +186,7 @@ function TodoRow({
       >
         {task.title}
       </button>
+      <SubtaskCount count={task.subtaskCount} />
       <span className="w-14 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
         {task.dueDate ? formatDueDate(task.dueDate) : ""}
       </span>

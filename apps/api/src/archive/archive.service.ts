@@ -47,7 +47,14 @@ export class ArchiveService {
 
     const [tasks, goals, events, reminders] = await Promise.all([
       this.prisma.task.findMany({
-        where: { boardId, archivedAt: archived },
+        where: {
+          boardId,
+          archivedAt: archived,
+          // A subtask whose parent is archived isn't a loose item — you reach
+          // it by opening the parent, the same way you would on the board.
+          // Only subtasks that outlived their parent stand on their own here.
+          OR: [{ parentTaskId: null }, { parentTask: { archivedAt: null } }],
+        },
         include: { status: true },
         orderBy: newestFirst,
         take,

@@ -16,6 +16,7 @@ import {
   formatDueDate,
   PriorityBadge,
   StatusSelect,
+  SubtaskCount,
 } from "./task-bits";
 import { Button } from "@/components/ui/button";
 import {
@@ -241,12 +242,7 @@ export function TasksTable({
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <span className="truncate font-medium">{task.title}</span>
-                      {task.subtaskCount > 0 && (
-                        <span className="text-xs text-muted-foreground">
-                          {task.subtaskCount} subtask
-                          {task.subtaskCount > 1 ? "s" : ""}
-                        </span>
-                      )}
+                      <SubtaskCount count={task.subtaskCount} />
                     </div>
                   </TableCell>
                   <TableCell>

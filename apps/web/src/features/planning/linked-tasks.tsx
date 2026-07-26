@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Link2Off, Plus } from "lucide-react";
+import { Archive, Link2Off, Plus } from "lucide-react";
 import { usePermissions } from "@/features/auth/permissions";
-import { StatusDot } from "@/features/tasks/task-bits";
+import { StatusDot, SubtaskCount } from "@/features/tasks/task-bits";
 import { useCreateTask, useTasks, useUpdateTask } from "@/features/tasks/use-tasks";
 import type { TaskDto } from "@/features/tasks/types";
 import { useDetailParams } from "./use-detail-params";
@@ -73,6 +73,16 @@ export function LinkedTasks({
               >
                 {task.title}
               </button>
+              <SubtaskCount count={task.subtaskCount} />
+              {task.archivedAt && (
+                <span
+                  className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground"
+                  title="Archived"
+                >
+                  <Archive aria-hidden className="size-3" />
+                  <span className="sr-only">Archived</span>
+                </span>
+              )}
               <span className="shrink-0 text-xs text-muted-foreground">
                 {task.status.name}
               </span>

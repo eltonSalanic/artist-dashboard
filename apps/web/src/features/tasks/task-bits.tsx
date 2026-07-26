@@ -1,6 +1,7 @@
 "use client";
 
 import type { Priority } from "@artist/shared";
+import { ListTree } from "lucide-react";
 import type { TaskStatusDto } from "@/features/auth/types";
 import type { TaskAssigneeDto } from "./types";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -22,6 +23,32 @@ export function StatusDot({ color }: { color: string }) {
       className="inline-block size-2 shrink-0 rounded-full"
       style={{ backgroundColor: color }}
     />
+  );
+}
+
+/**
+ * "2 subtasks" on a task row, so a parent reads as a parent everywhere it's
+ * listed — not just in the expanded table. Renders nothing at zero.
+ */
+export function SubtaskCount({
+  count,
+  className,
+}: {
+  count: number;
+  className?: string;
+}) {
+  if (count === 0) return null;
+  return (
+    <span
+      className={cn(
+        "flex shrink-0 items-center gap-1 text-xs text-muted-foreground",
+        className,
+      )}
+    >
+      <ListTree aria-hidden className="size-3" />
+      {count}
+      <span className="sr-only">{count === 1 ? "subtask" : "subtasks"}</span>
+    </span>
   );
 }
 

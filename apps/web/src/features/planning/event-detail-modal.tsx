@@ -107,7 +107,12 @@ function EventDetailBody({
   const { can } = usePermissions();
   const updateEvent = useUpdateEvent(boardId);
   const deleteEvent = useDeleteEvent(boardId);
-  const tasks = useTasks(boardId, { eventId: data.id });
+  // An archived event keeps its tasks — showing them is the whole point of
+  // looking one up in the archive.
+  const tasks = useTasks(boardId, {
+    eventId: data.id,
+    includeArchived: data.archivedAt !== null,
+  });
 
   const [title, setTitle] = useState(data.title);
   const [description, setDescription] = useState(data.description ?? "");
