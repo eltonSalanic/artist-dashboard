@@ -5,6 +5,7 @@ import { Hero } from "@/features/landing/hero";
 import { IntroSection } from "@/features/landing/intro-section";
 import { WidgetShowcase } from "@/features/landing/widget-showcase";
 import { FeaturesSection } from "@/features/landing/features-section";
+import { CtaSection } from "@/features/landing/cta-section";
 
 export function LandingPage() {
   return (
@@ -15,6 +16,7 @@ export function LandingPage() {
         <IntroSection />
         <WidgetShowcase />
         <FeaturesSection />
+        <CtaSection />
       </main>
     </div>
   );
