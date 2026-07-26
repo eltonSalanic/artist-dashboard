@@ -335,7 +335,7 @@ function TaskDetailBody({
         {canEdit ? (
           <Input
             aria-label="Task title"
-            className="border-none pr-8 text-lg font-semibold shadow-none focus-visible:ring-0"
+            className="mr-8 border-none pr-2 text-lg font-semibold shadow-none focus-visible:ring-0"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onBlur={saveTitle}

@@ -31,12 +31,14 @@ export function StatusSelect({
   onChange,
   disabled,
   id,
+  className,
 }: {
   value: string;
   statuses: Pick<TaskStatusDto, "id" | "name" | "color">[];
   onChange: (statusId: string) => void;
   disabled?: boolean;
   id?: string;
+  className?: string;
 }) {
   return (
     <Select
@@ -53,7 +55,12 @@ export function StatusSelect({
         ),
       }))}
     >
-      <SelectTrigger id={id} size="sm" onClick={(e) => e.stopPropagation()}>
+      <SelectTrigger
+        id={id}
+        size="sm"
+        className={className}
+        onClick={(e) => e.stopPropagation()}
+      >
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
