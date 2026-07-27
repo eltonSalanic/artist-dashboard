@@ -301,6 +301,26 @@
   opacity: 0.2;
 }
 
+/* Swap react-resizable's default sprite for a clean corner grip that reads on
+   the colored cards, and only firm up on hover so it stays quiet at rest. */
+.landing-board .react-resizable-handle {
+  padding: 0;
+  background: none;
+}
+.landing-board .react-resizable-handle-se {
+  right: 7px;
+  bottom: 7px;
+  width: 11px;
+  height: 11px;
+  border-right: 2px solid color-mix(in oklab, var(--foreground) 35%, transparent);
+  border-bottom: 2px solid color-mix(in oklab, var(--foreground) 35%, transparent);
+  border-bottom-right-radius: 4px;
+  transition: border-color 150ms;
+}
+.landing-board .react-grid-item:hover .react-resizable-handle-se {
+  border-color: color-mix(in oklab, var(--foreground) 65%, transparent);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

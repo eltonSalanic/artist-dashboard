@@ -15,11 +15,11 @@ export function InteractiveSection() {
           <SectionHeading
             eyebrow="Make it yours"
             title="Your dashboard, arranged your way."
-            lede="Every member keeps their own layout — the same board, seen the way each person works. Drag a widget wherever it makes sense to you."
+            lede="Every member keeps their own layout — the same board, seen the way each person works. Drag a widget to move it, pull the corner to resize, hide what you don't need."
           />
           <p className="mt-6 inline-flex items-center gap-2 rounded-full bg-muted/70 px-3 py-1.5 text-sm text-muted-foreground">
             <Hand className="size-4 text-coral" />
-            Go on — drag a widget around the board.
+            Go on — try it. Drag, resize, or hide a widget.
           </p>
         </div>
       </div>

@@ -6,11 +6,19 @@ import { getCompactor, Responsive, useContainerWidth } from "react-grid-layout";
 import type { Layout } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { CalendarDays, CheckCircle2, RotateCcw, Target } from "lucide-react";
+import {
+  CalendarDays,
+  CheckCircle2,
+  EyeOff,
+  Plus,
+  RotateCcw,
+  Target,
+} from "lucide-react";
 import { FauxRow, MiniWidget } from "@/features/landing/mini-widget";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-type Box = { i: string; x: number; y: number; w: number; h: number };
+type Box = { x: number; y: number; w: number; h: number };
 
 type WidgetMeta = {
   i: string;
@@ -46,33 +54,58 @@ const WIDGETS: WidgetMeta[] = [
   },
 ];
 
-const INITIAL: Box[] = [
-  { i: "tasks", x: 0, y: 0, w: 2, h: 2 },
-  { i: "shows", x: 2, y: 0, w: 2, h: 2 },
-  { i: "goals", x: 0, y: 2, w: 2, h: 2 },
-];
+const INITIAL: Record<string, Box> = {
+  tasks: { x: 0, y: 0, w: 2, h: 2 },
+  shows: { x: 2, y: 0, w: 2, h: 2 },
+  goals: { x: 0, y: 2, w: 2, h: 2 },
+};
 
 // No vertical gravity: widgets stay where they're dropped (they just can't
 // overlap), so the 4×4 really behaves like a board you arrange freely.
 const FREE_COMPACTOR = getCompactor(null, false, false);
 
-const signature = (boxes: Box[]) =>
-  [...boxes]
-    .sort((a, b) => a.i.localeCompare(b.i))
-    .map((b) => `${b.i}:${b.x},${b.y},${b.w},${b.h}`)
+const boxesSignature = (boxes: Record<string, Box>) =>
+  Object.keys(boxes)
+    .sort()
+    .map((i) => `${i}:${boxes[i].x},${boxes[i].y},${boxes[i].w},${boxes[i].h}`)
     .join("|");
 
 export function BoardDemoInner() {
   const { width, containerRef, mounted } = useContainerWidth();
-  const [layout, setLayout] = useState<Box[]>(INITIAL);
+  const [boxes, setBoxes] = useState<Record<string, Box>>(INITIAL);
+  const [hidden, setHidden] = useState<Record<string, boolean>>({});
 
-  const moved = useMemo(
-    () => signature(layout) !== signature(INITIAL),
-    [layout],
+  const visible = WIDGETS.filter((w) => !hidden[w.i]);
+  const hiddenWidgets = WIDGETS.filter((w) => hidden[w.i]);
+
+  const rglLayout = useMemo(
+    () =>
+      visible.map((w) => ({
+        i: w.i,
+        ...boxes[w.i],
+        minW: 1,
+        minH: 1,
+        maxW: 4,
+        maxH: 4,
+      })),
+    [visible, boxes],
   );
 
+  const dirty =
+    boxesSignature(boxes) !== boxesSignature(INITIAL) ||
+    hiddenWidgets.length > 0;
+
   const handleChange = (next: Layout) => {
-    setLayout(next.map(({ i, x, y, w, h }) => ({ i, x, y, w, h })));
+    setBoxes((prev) => {
+      const merged = { ...prev };
+      for (const { i, x, y, w, h } of next) merged[i] = { x, y, w, h };
+      return merged;
+    });
+  };
+
+  const reset = () => {
+    setBoxes(INITIAL);
+    setHidden({});
   };
 
   return (
@@ -85,8 +118,8 @@ export function BoardDemoInner() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setLayout(INITIAL)}
-          disabled={!moved}
+          onClick={reset}
+          disabled={!dirty}
           className="ml-auto h-6 rounded-full px-2.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
         >
           <RotateCcw data-icon="inline-start" />
@@ -97,11 +130,11 @@ export function BoardDemoInner() {
       <div
         ref={containerRef}
         data-palette="playful"
-        className="landing-board [&_.react-grid-item]:cursor-grab [&_.react-grid-item.react-draggable-dragging]:cursor-grabbing"
+        className="landing-board [&_.react-grid-item.react-draggable-dragging]:cursor-grabbing"
       >
         {mounted && width > 0 && (
           <Responsive
-            layouts={{ lg: layout }}
+            layouts={{ lg: rglLayout }}
             breakpoints={{ lg: 0 }}
             cols={{ lg: 4 }}
             width={width}
@@ -110,12 +143,12 @@ export function BoardDemoInner() {
             margin={[12, 12]}
             containerPadding={[0, 0]}
             compactor={FREE_COMPACTOR}
-            dragConfig={{ enabled: true, bounded: true }}
-            resizeConfig={{ enabled: false }}
+            dragConfig={{ enabled: true, bounded: true, cancel: ".no-drag" }}
+            resizeConfig={{ enabled: true }}
             onLayoutChange={handleChange}
           >
-            {WIDGETS.map((widget) => (
-              <div key={widget.i} className="h-full">
+            {visible.map((widget) => (
+              <div key={widget.i} className="group relative h-full cursor-grab">
                 <MiniWidget
                   title={widget.title}
                   icon={widget.icon}
@@ -129,11 +162,45 @@ export function BoardDemoInner() {
                     />
                   ))}
                 </MiniWidget>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setHidden((prev) => ({ ...prev, [widget.i]: true }))
+                  }
+                  aria-label={`Hide ${widget.title}`}
+                  className={cn(
+                    "no-drag absolute top-2.5 right-2.5 flex size-6 items-center justify-center rounded-full bg-background/70 text-foreground/70 opacity-0 backdrop-blur-sm transition hover:bg-background hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100",
+                  )}
+                >
+                  <EyeOff className="size-3.5" />
+                </button>
               </div>
             ))}
           </Responsive>
         )}
       </div>
+
+      {/* Tray for widgets you've hidden — click one to bring it back. */}
+      {hiddenWidgets.length > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 px-1">
+          <span className="text-xs text-muted-foreground">Hidden:</span>
+          {hiddenWidgets.map((widget) => (
+            <Button
+              key={widget.i}
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setHidden((prev) => ({ ...prev, [widget.i]: false }))
+              }
+              className="h-7 rounded-full"
+            >
+              <widget.icon data-icon="inline-start" />
+              {widget.title}
+              <Plus data-icon="inline-end" />
+            </Button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
