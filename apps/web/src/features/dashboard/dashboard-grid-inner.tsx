@@ -53,7 +53,7 @@ export function DashboardGrid({
   };
 
   return (
-    <div ref={containerRef}>
+    <div ref={containerRef} className="resizable-grid">
       {mounted && width > 0 && (
         <Responsive
           layouts={{ lg: rglLayout }}

@@ -130,7 +130,7 @@ export function BoardDemoInner() {
       <div
         ref={containerRef}
         data-palette="playful"
-        className="landing-board [&_.react-grid-item.react-draggable-dragging]:cursor-grabbing"
+        className="landing-board resizable-grid [&_.react-grid-item.react-draggable-dragging]:cursor-grabbing"
       >
         {mounted && width > 0 && (
           <Responsive
