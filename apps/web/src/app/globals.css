@@ -293,6 +293,14 @@
   --ring: color-mix(in oklab, var(--wc-fg) 40%, transparent);
 }
 
+/* The drop-target ghost in the landing page's interactive board — recolor the
+   react-grid-layout default to a soft coral so it reads as part of the brand. */
+.landing-board .react-grid-placeholder {
+  background: var(--coral);
+  border-radius: 1rem;
+  opacity: 0.2;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

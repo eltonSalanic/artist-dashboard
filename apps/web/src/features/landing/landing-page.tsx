@@ -3,7 +3,7 @@
 import { LandingHeader } from "@/features/landing/landing-header";
 import { Hero } from "@/features/landing/hero";
 import { IntroSection } from "@/features/landing/intro-section";
-import { WidgetShowcase } from "@/features/landing/widget-showcase";
+import { InteractiveSection } from "@/features/landing/interactive-section";
 import { FeaturesSection } from "@/features/landing/features-section";
 import { CtaSection } from "@/features/landing/cta-section";
 import { LandingFooter } from "@/features/landing/landing-footer";
@@ -15,7 +15,7 @@ export function LandingPage() {
       <main className="flex-1">
         <Hero />
         <IntroSection />
-        <WidgetShowcase />
+        <InteractiveSection />
         <FeaturesSection />
         <CtaSection />
       </main>
