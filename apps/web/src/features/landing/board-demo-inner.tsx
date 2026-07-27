@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { FauxRow, MiniWidget } from "@/features/landing/mini-widget";
 import { Button } from "@/components/ui/button";
+import { useGridResizeGuard } from "@/lib/use-grid-resize-guard";
 import { cn } from "@/lib/utils";
 
 type Box = { x: number; y: number; w: number; h: number };
@@ -72,6 +73,7 @@ const boxesSignature = (boxes: Record<string, Box>) =>
 
 export function BoardDemoInner() {
   const { width, containerRef, mounted } = useContainerWidth();
+  const { resizing, onResizeStart, onResizeStop } = useGridResizeGuard();
   const [boxes, setBoxes] = useState<Record<string, Box>>(INITIAL);
   const [hidden, setHidden] = useState<Record<string, boolean>>({});
 
@@ -130,7 +132,10 @@ export function BoardDemoInner() {
       <div
         ref={containerRef}
         data-palette="playful"
-        className="landing-board resizable-grid [&_.react-grid-item.react-draggable-dragging]:cursor-grabbing"
+        className={cn(
+          "landing-board resizable-grid [&_.react-grid-item.react-draggable-dragging]:cursor-grabbing",
+          resizing && "select-none",
+        )}
       >
         {mounted && width > 0 && (
           <Responsive
@@ -145,6 +150,8 @@ export function BoardDemoInner() {
             compactor={FREE_COMPACTOR}
             dragConfig={{ enabled: true, bounded: true, cancel: ".no-drag" }}
             resizeConfig={{ enabled: true }}
+            onResizeStart={onResizeStart}
+            onResizeStop={onResizeStop}
             onLayoutChange={handleChange}
           >
             {visible.map((widget) => (

@@ -5,6 +5,8 @@ import { Responsive, useContainerWidth } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import type { LayoutItem } from "@artist/shared";
+import { useGridResizeGuard } from "@/lib/use-grid-resize-guard";
+import { cn } from "@/lib/utils";
 
 export interface DashboardGridProps {
   layout: LayoutItem[];
@@ -20,6 +22,7 @@ export function DashboardGrid({
   renderItem,
 }: DashboardGridProps) {
   const { width, containerRef, mounted } = useContainerWidth();
+  const { resizing, onResizeStart, onResizeStop } = useGridResizeGuard();
 
   const rglLayout = useMemo(
     () =>
@@ -53,7 +56,10 @@ export function DashboardGrid({
   };
 
   return (
-    <div ref={containerRef} className="resizable-grid">
+    <div
+      ref={containerRef}
+      className={cn("resizable-grid", resizing && "select-none")}
+    >
       {mounted && width > 0 && (
         <Responsive
           layouts={{ lg: rglLayout }}
@@ -65,6 +71,8 @@ export function DashboardGrid({
           containerPadding={[0, 0]}
           dragConfig={{ enabled: editable, handle: ".widget-drag-handle" }}
           resizeConfig={{ enabled: editable }}
+          onResizeStart={onResizeStart}
+          onResizeStop={onResizeStop}
           onLayoutChange={handleLayoutChange}
         >
           {layout.map((item) => (
