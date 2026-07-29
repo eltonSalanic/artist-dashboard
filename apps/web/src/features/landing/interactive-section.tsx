@@ -15,11 +15,11 @@ export function InteractiveSection() {
           <SectionHeading
             eyebrow="Make it yours"
             title="Your board, your way."
-            lede="Everyone gets their own layout — same board, set up how you like to work. Drag a widget to move it, grab a corner to resize, hide whatever you're not using."
+            lede="Everyone gets to customize their board so no one get's to say it's too confusing"
           />
           <p className="mt-6 inline-flex items-center gap-2 rounded-full bg-muted/70 px-3 py-1.5 text-sm text-muted-foreground">
             <Hand className="size-4 text-coral" />
-            Go on, mess with it — drag, resize, or hide a widget.
+            Go on brochacho, test it out.
           </p>
         </div>
       </div>

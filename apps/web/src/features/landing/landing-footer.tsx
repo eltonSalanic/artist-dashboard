@@ -1,10 +1,5 @@
 import { AudioLines } from "lucide-react";
 
-const LINKS = [
-  { href: "#top", label: "Overview" },
-  { href: "#demo", label: "Make it yours" },
-];
-
 export function LandingFooter() {
   return (
     <footer className="border-t border-border/60 px-6 py-10">
@@ -17,18 +12,6 @@ export function LandingFooter() {
             Artist Dashboard
           </span>
         </div>
-
-        <nav className="flex items-center gap-5 text-sm text-muted-foreground">
-          {LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="transition-colors hover:text-foreground"
-            >
-              {link.label}
-            </a>
-          ))}
-        </nav>
 
         <p className="text-xs text-muted-foreground">
           © {new Date().getFullYear()} Artist Dashboard · Built for bands.

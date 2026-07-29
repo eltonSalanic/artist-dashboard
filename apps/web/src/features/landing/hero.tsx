@@ -38,9 +38,9 @@ export function Hero() {
           </h1>
 
           <p className="mt-5 max-w-xl text-lg text-muted-foreground text-pretty">
-            Shows, rehearsals, setlists, and all your to-dos on one board
-            the whole band can see. No more “what time&apos;s load-in?” texts
-            the morning of.
+            Shows, rehearsals, setlists, and all your to-dos on one board the
+            whole band can see. None of that &quot;I didn&apos;t know
+            bruh!&quot; bull
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
