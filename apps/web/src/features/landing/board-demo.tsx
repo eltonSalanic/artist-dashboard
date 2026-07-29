@@ -11,7 +11,8 @@ export const BoardDemo = dynamic(
     ssr: false,
     loading: () => (
       <div className="rounded-[32px] border border-foreground/10 bg-card/40 p-4">
-        <Skeleton className="h-[392px] w-full rounded-2xl" />
+        {/* Matches the settled grid: two 4-row cards plus the row margin. */}
+        <Skeleton className="h-[436px] w-full rounded-2xl" />
       </div>
     ),
   },

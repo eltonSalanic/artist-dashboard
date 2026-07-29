@@ -8,6 +8,18 @@ import type { LayoutItem } from "@artist/shared";
 import { useGridResizeGuard } from "@/lib/use-grid-resize-guard";
 import { cn } from "@/lib/utils";
 
+/**
+ * DashboardGrid is only ever handed the visible items, so a layout change
+ * reports just those — carry the hidden ones through untouched.
+ */
+export function mergeHidden(
+  full: LayoutItem[],
+  visible: LayoutItem[],
+): LayoutItem[] {
+  const byType = new Map(visible.map((item) => [item.widgetType, item]));
+  return full.map((item) => byType.get(item.widgetType) ?? item);
+}
+
 export interface DashboardGridProps {
   layout: LayoutItem[];
   editable?: boolean;

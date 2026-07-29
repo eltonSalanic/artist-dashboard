@@ -21,6 +21,7 @@ import { useEvents } from "@/features/planning/use-events";
 import { widgetRegistry } from "@/features/widgets/registry";
 import { WidgetFrame } from "@/features/widgets/widget-frame";
 import { DashboardGrid } from "./dashboard-grid";
+import { mergeHidden } from "./dashboard-grid-inner";
 import { useLayout, useResetLayout, useSaveLayout } from "./use-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -266,8 +267,3 @@ function Greeting({ boardId }: { boardId: string }) {
   );
 }
 
-/** DashboardGrid only reports visible items — carry hidden ones through untouched. */
-function mergeHidden(full: LayoutItem[], visible: LayoutItem[]): LayoutItem[] {
-  const byType = new Map(visible.map((item) => [item.widgetType, item]));
-  return full.map((item) => byType.get(item.widgetType) ?? item);
-}
