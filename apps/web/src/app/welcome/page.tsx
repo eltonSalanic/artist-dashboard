@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { LandingPage } from "@/features/landing/landing-page";
 
 export const metadata: Metadata = {
-  title: "Run the business side of your band, together",
+  title: "Your band isn't a group chat",
   description:
-    "A shared dashboard for bands and artists — tasks, goals, shows, and rehearsals in one place, so everyone knows what's next.",
+    "A shared board for bands and artists. Put a name and a date on every job, keep shows and rehearsals on one calendar, and see what everyone's actually done.",
 };
 
 export default function Page() {

@@ -14,12 +14,12 @@ export function InteractiveSection() {
         <div className="lg:order-2">
           <SectionHeading
             eyebrow="Make it yours"
-            title="Your dashboard, arranged your way."
-            lede="Every member keeps their own layout — the same board, seen the way each person works. Drag a widget to move it, pull the corner to resize, hide what you don't need."
+            title="Your board, your way."
+            lede="Everyone gets their own layout — same board, set up how you like to work. Drag a widget to move it, grab a corner to resize, hide whatever you're not using."
           />
           <p className="mt-6 inline-flex items-center gap-2 rounded-full bg-muted/70 px-3 py-1.5 text-sm text-muted-foreground">
             <Hand className="size-4 text-coral" />
-            Go on — try it. Drag, resize, or hide a widget.
+            Go on, mess with it — drag, resize, or hide a widget.
           </p>
         </div>
       </div>

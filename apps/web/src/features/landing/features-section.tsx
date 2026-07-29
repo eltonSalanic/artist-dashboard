@@ -1,11 +1,11 @@
 import type { ComponentType } from "react";
 import {
   Activity,
+  Archive,
   AtSign,
-  Bell,
   CalendarDays,
-  ListChecks,
   Target,
+  Ticket,
 } from "lucide-react";
 import { SectionHeading } from "@/features/landing/section-heading";
 
@@ -18,40 +18,40 @@ const FEATURES: {
   body: string;
 }[] = [
   {
-    icon: ListChecks,
-    accent: "coral",
-    title: "Tasks that don't slip",
-    body: "Statuses, priorities, due dates, subtasks, and checklists. Assign anyone; each person restatuses their own.",
-  },
-  {
     icon: CalendarDays,
     accent: "lilac",
-    title: "One calendar for the band",
-    body: "Shows, rehearsals, and meetings on a shared month view, with filters for the kind you're after.",
+    title: "Calendar View",
+    body: "Shows, rehearsals, meetings and every due date on a calendar. Filter it to only show what you care about.",
   },
   {
-    icon: Target,
-    accent: "lime",
-    title: "Goals, and what to focus on",
-    body: "Set goals by year, month, and day — then pin the one thing that matters this week.",
-  },
-  {
-    icon: Bell,
-    accent: "ink",
-    title: "Reminders for the rest",
-    body: "The things that aren't quite tasks — renewals, deadlines, a bandmate's birthday — surfaced before they pass.",
+    icon: Ticket,
+    accent: "coral",
+    title: "Every task knows its purpose",
+    body: "Attach tasks to shows, meetings, and goals so you can track what needs to be done for them.",
   },
   {
     icon: AtSign,
-    accent: "coral",
-    title: "Talk it out in place",
-    body: "Comments with @mentions and file attachments, right on the task — not scattered across three apps.",
+    accent: "lime",
+    title: "Talk it out on the task",
+    body: "Comments, @mentions and file drops sit on the thing they're about. The setlist lives on the show, not four hundred messages up.",
+  },
+  {
+    icon: Archive,
+    accent: "ink",
+    title: "See what you've pulled off",
+    body: "Clear finished work off the board without deleting it. Everything you've done stays in one list you can page back through by year.",
   },
   {
     icon: Activity,
     accent: "lilac",
-    title: "Everything's on the record",
-    body: "A boardwide activity feed logs every meaningful change, so you can always see what moved and who moved it.",
+    title: "Who did what, without asking",
+    body: "A running feed of every change that counts, who took the task, who finished it, who finally uploaded the contract.",
+  },
+  {
+    icon: Target,
+    accent: "coral",
+    title: "Goals, big and small",
+    body: "Set the year, the month, the day , then pin the one thing to nail this week, so the day-to-day doesn't eat it.",
   },
 ];
 
@@ -67,9 +67,9 @@ export function FeaturesSection() {
     <section className="px-6 py-20 md:py-28">
       <div className="mx-auto max-w-6xl">
         <SectionHeading
-          eyebrow="The whole business side"
-          title="More than a pretty dashboard."
-          lede="Everything the working side of a band needs — planning, follow-through, and a record of it all — in one shared place."
+          eyebrow="The offstage stuff"
+          title="Your one tool to get your band shit together"
+          lede="Planning, follow-through, and a record of it all."
           align="center"
           className="mx-auto"
         />

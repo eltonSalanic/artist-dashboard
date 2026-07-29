@@ -22,11 +22,10 @@ export function CtaSection() {
 
         <div className="relative flex flex-col items-center">
           <h2 className="max-w-2xl font-heading text-3xl leading-[1.1] font-bold tracking-tight text-balance sm:text-4xl md:text-5xl">
-            Get the band on the same page.
+            Lowkenuinely what are you waiting for?
           </h2>
           <p className="mt-4 max-w-lg text-base text-coral-foreground/85 text-pretty sm:text-lg">
-            Create a board, invite your bandmates, and make it yours in an
-            afternoon.
+            This tool is made with love to make your musician life easier, try it out!
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Button className="h-11 rounded-full bg-coral-foreground px-6 text-base text-coral hover:bg-coral-foreground/90">

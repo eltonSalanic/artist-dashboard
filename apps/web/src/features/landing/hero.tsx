@@ -30,16 +30,17 @@ export function Hero() {
         <div className="flex flex-col items-start">
           <span className="inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-card/70 px-3 py-1 text-xs font-medium text-muted-foreground">
             <span className="size-1.5 rounded-full bg-coral" />
-            For bands &amp; artists
+            Made for working musicians
           </span>
 
           <h1 className="mt-5 font-heading text-4xl leading-[1.05] font-bold tracking-tight text-balance sm:text-5xl md:text-6xl">
-            Run the business side of your band, together.
+            Your band isn&apos;t a group chat.
           </h1>
 
           <p className="mt-5 max-w-xl text-lg text-muted-foreground text-pretty">
-            Tasks, goals, shows, and rehearsals in one shared dashboard — so
-            everyone knows what&apos;s next without chasing the group chat.
+            Shows, rehearsals, setlists, and all your to-dos on one board
+            the whole band can see. No more “what time&apos;s load-in?” texts
+            the morning of.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
