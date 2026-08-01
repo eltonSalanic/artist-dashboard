@@ -91,13 +91,14 @@ function ArchiveList({ boardId }: { boardId: string }) {
   const archive = useArchive(boardId);
   const items = useMemo(() => archive.data ?? [], [archive.data]);
 
-  // All categories visible by default; clicking a chip toggles its bucket.
-  const [hidden, setHidden] = useState<Set<CalendarCategory>>(new Set());
+  // Additive: no chips picked means no type filter at all, so everything
+  // shows. Once any chip is picked the list narrows to just those buckets.
+  const [selected, setSelected] = useState<Set<CalendarCategory>>(new Set());
   const [year, setYear] = useState(ALL_YEARS);
   const [day, setDay] = useState("");
 
   const toggle = (key: CalendarCategory) =>
-    setHidden((prev) => {
+    setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
@@ -113,7 +114,7 @@ function ArchiveList({ boardId }: { boardId: string }) {
   }, [items]);
 
   const visible = items.filter((item) => {
-    if (hidden.has(itemCategory(item))) return false;
+    if (selected.size > 0 && !selected.has(itemCategory(item))) return false;
     const archivedAt = new Date(item.archivedAt);
     if (year !== ALL_YEARS && archivedAt.getFullYear() !== Number(year)) {
       return false;
@@ -132,7 +133,7 @@ function ArchiveList({ boardId }: { boardId: string }) {
     return true;
   });
 
-  const filtered = hidden.size > 0 || year !== ALL_YEARS || day !== "";
+  const filtered = selected.size > 0 || year !== ALL_YEARS || day !== "";
 
   return (
     <div className="flex flex-1 flex-col gap-3 p-4">
@@ -147,7 +148,7 @@ function ArchiveList({ boardId }: { boardId: string }) {
       <div className="flex flex-wrap items-center gap-1.5">
         <p className="text-sm">Filter By: </p>
         {CALENDAR_CATEGORIES.map(({ key, label }) => {
-          const active = !hidden.has(key);
+          const active = selected.has(key);
           return (
             <button
               key={key}
@@ -156,8 +157,8 @@ function ArchiveList({ boardId }: { boardId: string }) {
               onClick={() => toggle(key)}
               className={`flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
                 active
-                  ? "border-transparent bg-accent text-foreground"
-                  : "border-border text-muted-foreground line-through opacity-60 hover:opacity-100"
+                  ? "border-transparent bg-accent font-medium text-foreground"
+                  : "border-border text-muted-foreground hover:bg-accent/50 hover:text-foreground"
               }`}
             >
               <span
@@ -225,7 +226,7 @@ function ArchiveList({ boardId }: { boardId: string }) {
               variant="outline"
               size="sm"
               onClick={() => {
-                setHidden(new Set());
+                setSelected(new Set());
                 setYear(ALL_YEARS);
                 setDay("");
               }}
