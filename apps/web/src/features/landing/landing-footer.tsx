@@ -14,7 +14,8 @@ export function LandingFooter() {
         </div>
 
         <p className="text-xs text-muted-foreground">
-          © {new Date().getFullYear()} Artist Dashboard · Built for bands.
+          © {new Date().getFullYear()} Artist Dashboard · made by the lame ah
+          guitarist from american woman.
         </p>
       </div>
     </footer>

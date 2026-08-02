@@ -21,13 +21,13 @@ const FEATURES: {
     icon: CalendarDays,
     accent: "lilac",
     title: "Calendar View",
-    body: "Shows, rehearsals, meetings and every due date on a calendar. Filter it to only show what you care about.",
+    body: "Shows, rehearsals, meetings and every due date on a calendar. Filter it down to what you actually care about, which is rarely all of it.",
   },
   {
     icon: Ticket,
     accent: "coral",
     title: "Every task knows its purpose",
-    body: "Attach tasks to shows, meetings, and goals so you can track what needs to be done for them.",
+    body: "Attach tasks to shows, meetings and goals, so “why are we doing this” has an answer that isn't vibes.",
   },
   {
     icon: AtSign,
@@ -39,7 +39,7 @@ const FEATURES: {
     icon: Archive,
     accent: "ink",
     title: "See what you've pulled off",
-    body: "Clear finished work off the board without deleting it. Everything you've done stays in one list you can page back through by year.",
+    body: "Clear finished work off the board without deleting it. One list, sorted by year, for the next time someone swears the band never does anything.",
   },
   {
     icon: Activity,
@@ -51,7 +51,7 @@ const FEATURES: {
     icon: Target,
     accent: "coral",
     title: "Goals, big and small",
-    body: "Set the year, the month, the day , then pin the one thing to nail this week, so the day-to-day doesn't eat it.",
+    body: "Set the year, the month, the day, then pin the one thing to nail this week, so “we should really record something” doesn't stay a group chat idea forever.",
   },
 ];
 
@@ -69,7 +69,7 @@ export function FeaturesSection() {
         <SectionHeading
           eyebrow="The offstage stuff"
           title="Your one tool to get your band shit together"
-          lede="Planning, follow-through, and a record of it all."
+          lede="Planning, follow-through, and receipts for both."
           align="center"
           className="mx-auto"
         />

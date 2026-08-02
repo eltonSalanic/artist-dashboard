@@ -7,15 +7,15 @@ import { SectionHeading } from "@/features/landing/section-heading";
 const POINTS = [
   {
     title: "Create tasks and assign them to members",
-    body: "Subtasks, checklists, priorities and due dates for tasks",
+    body: "Subtasks, checklists, priorities and due dates. Now the job has a name on it, and that name isn't always yours.",
   },
   {
     title: "Get updates without asking",
-    body: "Stay updated with status labels, message threads, and attachments",
+    body: "Status labels, message threads and attachments, so no more embarrassment rituals of having to ask 'any update on that?'",
   },
   {
     title: "Calendar View",
-    body: "See upcoming due dates, shows, and more",
+    body: "Due dates, shows, rehearsals. Turns out stuff was happening this week.",
   },
 ];
 
@@ -89,7 +89,7 @@ function AssignmentCard() {
           Who&apos;s on what
         </p>
         <p className="text-xs text-muted-foreground">
-          Before the Los Angeles show
+          Before the Los Angeles show, allegedly
         </p>
 
         <div className="mt-5 flex flex-col gap-1">

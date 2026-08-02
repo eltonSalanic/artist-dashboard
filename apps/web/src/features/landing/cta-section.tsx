@@ -25,7 +25,8 @@ export function CtaSection() {
             Lowkenuinely what are you waiting for?
           </h2>
           <p className="mt-4 max-w-lg text-base text-coral-foreground/85 text-pretty sm:text-lg">
-            This tool is made with love to make your musician life easier, try it out!
+            Made with love to make the musician life easier. The group chat sure
+            isn&apos;t going to organize itself.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Button className="h-11 rounded-full bg-coral-foreground px-6 text-base text-coral hover:bg-coral-foreground/90">
