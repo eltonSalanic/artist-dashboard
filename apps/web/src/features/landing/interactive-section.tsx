@@ -15,11 +15,11 @@ export function InteractiveSection() {
           <SectionHeading
             eyebrow="Make it yours"
             title="Your board, your way."
-            lede="Everyone gets to customize their board so no one get's to say it's too confusing"
+            lede="Everyone can customize their board so no one can say it's too confusing"
           />
           <p className="mt-6 inline-flex items-center gap-2 rounded-full bg-muted/70 px-3 py-1.5 text-sm text-muted-foreground">
             <Hand className="size-4 text-coral" />
-            Go on brochacho, test it out.
+            Go on brochacho, drag and resize some of these widgets
           </p>
         </div>
       </div>
