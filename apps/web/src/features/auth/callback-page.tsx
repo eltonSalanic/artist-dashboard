@@ -66,7 +66,7 @@ export function CallbackPage() {
       toast.error(error.message);
       return;
     }
-    router.replace("/");
+    router.replace("/dashboard");
   };
 
   return (
@@ -100,7 +100,7 @@ export function CallbackPage() {
               <Button
                 type="button"
                 variant="ghost"
-                onClick={() => router.replace("/")}
+                onClick={() => router.replace("/dashboard")}
               >
                 Skip for now
               </Button>

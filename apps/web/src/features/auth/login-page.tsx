@@ -35,7 +35,7 @@ export function LoginPage() {
       toast.error(error.message);
       return;
     }
-    router.replace("/");
+    router.replace("/dashboard");
   };
 
   return (

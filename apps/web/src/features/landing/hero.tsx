@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { CalendarDays, CheckCircle2, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FauxRow, MiniWidget } from "@/features/landing/mini-widget";
@@ -44,7 +45,11 @@ export function Hero() {
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Button className="h-11 rounded-full bg-coral px-6 text-base text-coral-foreground hover:bg-coral/90">
+            <Button
+              className="h-11 rounded-full bg-coral px-6 text-base text-coral-foreground hover:bg-coral/90"
+              nativeButton={false}
+              render={<Link href="/login" />}
+            >
               Create account
             </Button>
             <Button

@@ -81,13 +81,13 @@ function Header({ me }: { me: MeResponse }) {
     router.replace("/login");
   };
 
-  const onDashboard = pathname === "/";
+  const onDashboard = pathname === "/dashboard";
   const onCalendar = pathname.startsWith("/calendar");
   const onArchive = pathname.startsWith("/archive");
 
   return (
     <header className="flex items-center justify-between gap-4 border-b px-6 py-3">
-      <Link href="/" className="flex items-center gap-3">
+      <Link href="/dashboard" className="flex items-center gap-3">
         <span className="font-heading text-sm font-semibold tracking-tight">
           {me.board?.name}
         </span>
@@ -105,7 +105,7 @@ function Header({ me }: { me: MeResponse }) {
           size="sm"
           className="rounded-full"
           nativeButton={false}
-          render={<Link href="/" />}
+          render={<Link href="/dashboard" />}
         >
           <LayoutGrid data-icon="inline-start" />
           Dashboard

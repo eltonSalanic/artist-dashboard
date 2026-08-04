@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 /**
  * The finale: one big coral bento card that restates the pitch and repeats the
- * two auth buttons (still not wired up). The last thing on the page should be
- * the easiest thing to act on.
+ * two auth buttons. The last thing on the page should be the easiest thing to
+ * act on.
  */
 export function CtaSection() {
   return (
@@ -29,10 +30,18 @@ export function CtaSection() {
             isn&apos;t going to organize itself.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Button className="h-11 rounded-full bg-coral-foreground px-6 text-base text-coral hover:bg-coral-foreground/90">
+            <Button
+              className="h-11 rounded-full bg-coral-foreground px-6 text-base text-coral hover:bg-coral-foreground/90"
+              nativeButton={false}
+              render={<Link href="/login" />}
+            >
               Create account
             </Button>
-            <Button className="h-11 rounded-full border border-coral-foreground/40 bg-transparent px-6 text-base text-coral-foreground hover:bg-coral-foreground/10">
+            <Button
+              className="h-11 rounded-full border border-coral-foreground/40 bg-transparent px-6 text-base text-coral-foreground hover:bg-coral-foreground/10"
+              nativeButton={false}
+              render={<Link href="/login" />}
+            >
               Log in
             </Button>
           </div>
