@@ -25,7 +25,6 @@ export function IntroSection() {
       <div className="mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-2">
         <div>
           <SectionHeading
-            eyebrow="Nobody has to ask"
             title="Stop chasing your bandmates."
             lede="Put a name and a date on every job. Then stop being the one who remembers everything."
           />

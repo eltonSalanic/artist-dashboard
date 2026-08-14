@@ -67,7 +67,6 @@ export function FeaturesSection() {
     <section className="px-6 py-20 md:py-28">
       <div className="mx-auto max-w-6xl">
         <SectionHeading
-          eyebrow="The offstage stuff"
           title="Your one tool to get your band shit together"
           lede="Planning, follow-through, and receipts for both."
           align="center"

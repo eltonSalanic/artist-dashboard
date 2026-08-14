@@ -13,7 +13,6 @@ export function InteractiveSection() {
 
         <div className="lg:order-2">
           <SectionHeading
-            eyebrow="Make it yours"
             title="Your board, your way."
             lede="Everyone can customize their board so no one can say it's too confusing"
           />
