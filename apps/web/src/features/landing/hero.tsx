@@ -15,7 +15,7 @@ export function Hero() {
   return (
     <section
       id="top"
-      className="relative overflow-hidden px-6 pt-20 pb-16 md:pt-28 md:pb-24"
+      className="relative overflow-hidden flex min-h-[calc(100svh-4rem)] px-6 pt-20 pb-16 md:pt-28 md:pb-24"
     >
       {/* Ambient wash — the three brand accents, blurred to atmosphere. */}
       <div
