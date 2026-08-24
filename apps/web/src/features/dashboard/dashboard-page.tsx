@@ -243,7 +243,8 @@ function Greeting({ boardId }: { boardId: string }) {
   let subtitle = "Everything your band's working on, at a glance.";
   if (nextShow) {
     const days = Math.ceil(
-      (new Date(nextShow.startsAt).getTime() - Date.now()) / 86_400_000,
+      (new Date(nextShow.startsAt).getTime() - new Date(from).getTime()) /
+        86_400_000,
     );
     const when =
       days <= 0 ? "Today" : days === 1 ? "Tomorrow" : `In ${days} days`;
