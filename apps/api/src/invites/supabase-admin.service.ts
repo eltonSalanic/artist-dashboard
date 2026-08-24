@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 
 /**
  * Thin injectable wrapper around the service-role Supabase client so domain
@@ -9,7 +9,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
  */
 @Injectable()
 export class SupabaseAdminService {
-  private readonly client: SupabaseClient;
+  private readonly client: ReturnType<typeof createClient>;
   private readonly redirectTo: string;
 
   constructor(config: ConfigService) {

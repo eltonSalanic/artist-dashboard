@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 
 const BUCKET = 'attachments';
 /** Long enough for a click-to-download round trip, short enough to not leak. */
@@ -15,7 +15,7 @@ const DOWNLOAD_URL_TTL_SECONDS = 60;
  */
 @Injectable()
 export class StorageService {
-  private readonly client: SupabaseClient;
+  private readonly client: ReturnType<typeof createClient>;
 
   constructor(config: ConfigService) {
     this.client = createClient(

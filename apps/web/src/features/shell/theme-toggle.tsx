@@ -18,7 +18,11 @@ export function ThemeToggle() {
     () => false,
   );
 
-  const isDark = resolvedTheme === "dark";
+  // Gated on `mounted`: next-themes reads localStorage in its state
+  // initializer, so on the client's very first render resolvedTheme is already
+  // "dark" while the server rendered nothing at all. Anything derived from it
+  // — the icon *and* the label — has to wait, or hydration mismatches.
+  const isDark = mounted && resolvedTheme === "dark";
 
   return (
     <Button
@@ -28,7 +32,7 @@ export function ThemeToggle() {
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       onClick={() => setTheme(isDark ? "light" : "dark")}
     >
-      {mounted && isDark ? <Sun /> : <Moon />}
+      {isDark ? <Sun /> : <Moon />}
     </Button>
   );
 }

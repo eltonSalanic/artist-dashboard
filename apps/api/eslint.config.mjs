@@ -32,4 +32,14 @@ export default tseslint.config(
       "prettier/prettier": ["error", { endOfLine: "auto" }],
     },
   },
+  {
+    // Jest's asymmetric matchers (`expect.objectContaining`, `expect.any`)
+    // are typed `any`, so building an expectation object out of them trips
+    // the type-checked rule on every assertion. The mocks are hand-written
+    // and the assertions are the point of the file.
+    files: ['**/*.spec.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+    },
+  },
 );

@@ -4,6 +4,7 @@ import {
   DEFAULT_TASK_STATUSES,
   resolveBoardTheme,
 } from '@artist/shared';
+import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
 import type { AuthUser } from '../auth/current-user.decorator';
@@ -79,7 +80,8 @@ export class UsersService {
         await tx.board.create({
           data: {
             name: `${displayName}'s band`,
-            defaultLayout: DEFAULT_BOARD_LAYOUT as object[],
+            defaultLayout:
+              DEFAULT_BOARD_LAYOUT as unknown as Prisma.InputJsonValue,
             memberships: {
               create: { userId: auth.userId, role: 'ADMIN' },
             },

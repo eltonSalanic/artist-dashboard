@@ -87,9 +87,7 @@ describe('CommentsService', () => {
       });
 
       expect(prisma.mentionNotification.createMany).toHaveBeenCalledWith({
-        data: [
-          expect.objectContaining({ userId: 'u2', taskId: 't1' }),
-        ],
+        data: [expect.objectContaining({ userId: 'u2', taskId: 't1' })],
       });
     });
 

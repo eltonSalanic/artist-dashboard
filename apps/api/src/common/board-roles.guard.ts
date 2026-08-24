@@ -9,7 +9,7 @@ import { Reflector } from '@nestjs/core';
 import type { BoardRole } from '@artist/shared';
 import { BOARD_ROLE_KEY } from './board-roles.decorator';
 import { PrismaService } from '../prisma/prisma.service';
-import type { AuthUser } from '../auth/current-user.decorator';
+import type { AuthedRequest } from './authed-request';
 
 @Injectable()
 export class BoardRolesGuard implements CanActivate {
@@ -25,10 +25,12 @@ export class BoardRolesGuard implements CanActivate {
     );
     if (!required) return true;
 
-    const request = context.switchToHttp().getRequest();
-    const user = request.user as AuthUser | undefined;
-    const boardId: string | undefined =
-      request.params.boardId ?? request.params.id;
+    const request = context.switchToHttp().getRequest<AuthedRequest>();
+    const user = request.user;
+    // Express 5 types a route param as `string | string[]`; a repeated param
+    // is not a board id, so anything but a plain string falls through to 404.
+    const rawBoardId = request.params.boardId ?? request.params.id;
+    const boardId = typeof rawBoardId === 'string' ? rawBoardId : undefined;
     if (!user || !boardId) throw new NotFoundException('Board not found');
 
     const membership = await this.prisma.membership.findUnique({

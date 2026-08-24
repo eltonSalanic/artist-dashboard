@@ -23,9 +23,9 @@ describe('BoardsService.removeMember', () => {
   beforeEach(() => jest.clearAllMocks());
 
   it('refuses to remove yourself', async () => {
-    await expect(
-      service.removeMember('b1', 'u1', 'u1'),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.removeMember('b1', 'u1', 'u1')).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
     expect(prisma.membership.delete).not.toHaveBeenCalled();
   });
 
