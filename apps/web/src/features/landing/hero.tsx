@@ -69,7 +69,7 @@ export function Hero() {
               title="My Tasks"
               icon={CheckCircle2}
               color="c1"
-              className="rotate-[-2deg]"
+              className="-rotate-2"
             >
               <FauxRow width="long" tone="solid" />
               <FauxRow width="mid" />
@@ -79,7 +79,7 @@ export function Hero() {
               title="Goals"
               icon={Target}
               color="c3"
-              className="mt-6 rotate-[2deg]"
+              className="mt-6 rotate-2"
             >
               <FauxRow width="mid" tone="solid" />
               <FauxRow width="short" />
@@ -88,7 +88,7 @@ export function Hero() {
               title="Shows"
               icon={CalendarDays}
               color="c2"
-              className="col-span-2 -mt-2 rotate-[1deg]"
+              className="col-span-2 -mt-2 rotate-1"
             >
               <div className="flex gap-2">
                 <FauxRow width="mid" tone="solid" />
