@@ -18,6 +18,7 @@ import {
   type EventQueryDto,
   type UpdateEventDto,
 } from '@artist/shared';
+import { CurrentUser, type AuthUser } from '../auth/current-user.decorator';
 import { BoardRoles } from '../common/board-roles.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { EventsService } from './events.service';
@@ -48,8 +49,9 @@ export class EventsController {
   create(
     @Param('boardId') boardId: string,
     @Body(new ZodValidationPipe(createEventSchema)) dto: CreateEventDto,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.events.create(boardId, dto);
+    return this.events.create(boardId, dto, user.userId);
   }
 
   @Patch(':eventId')
@@ -58,8 +60,9 @@ export class EventsController {
     @Param('boardId') boardId: string,
     @Param('eventId') eventId: string,
     @Body(new ZodValidationPipe(updateEventSchema)) dto: UpdateEventDto,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.events.update(boardId, eventId, dto);
+    return this.events.update(boardId, eventId, dto, user.userId);
   }
 
   @Delete(':eventId')

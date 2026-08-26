@@ -35,8 +35,8 @@ These are the rules the trigger table follows. New triggers should too.
 | 1 | **Mentioned in a comment** | Users named in `Comment.mentions`, minus the author | Immediate | `CommentsService.create` | ☑ |
 | 2 | **Assigned to a task** | The newly added assignee(s), minus the actor | Immediate | `TasksService.create`, `TasksService.setAssignees` (`added`) | ☑ |
 | 3 | **Unassigned from a task** | The removed assignee(s), minus the actor | Immediate | `TasksService.setAssignees` (`removed`) | ☑ |
-| 4 | **Show, rehearsal, or meeting added** | All board members, minus the actor | Immediate | `EventsService.create` | ☐ |
-| 5 | **Show, rehearsal, or meeting moved** | All board members, minus the actor | Immediate | `EventsService.update` (diff on `startsAt` / `endsAt`) | ☐ |
+| 4 | **Show, rehearsal, or meeting added** | All board members, minus the actor | Immediate | `EventsService.create` | ☑ |
+| 5 | **Show, rehearsal, or meeting moved** | All board members, minus the actor | Immediate | `EventsService.update` (diff on `startsAt` / `endsAt`) | ☑ |
 | 6 | **Day-of show summary** | All board members | 08:00 board-local on the day of the show | `ShowSummaryJob` (cron) | ☐ |
 | 7 | **Reminder due** | All board members | At `Reminder.remindAt` | `ReminderJob` (cron) | ☐ |
 | 8 | **Tasks due tomorrow** | Assignees of each due task | 18:00 board-local, one digest per user | `DueTomorrowJob` (cron) | ☐ |
@@ -72,10 +72,11 @@ anyone named in `assigneeIds`, minus the creator.
 with type, title, start time, and location.
 
 **5 — Event moved.** Only a change to `startsAt` or `endsAt` notifies. Renames,
-description edits, and — deliberately — **location changes** do not, because a
-schedule change is the thing people plan their day around. Revisit if venue
-changes turn out to matter as much in practice. The email states both the old
-and the new time.
+description edits, and — deliberately — **location changes** do not: a venue
+change is better communicated in the group chat, while a schedule change is
+what people plan their day around. The email states both the old and the new
+time. Keyed `event-moved:{eventId}:{newStartsAtMs}:{userId}`, so moving it
+again notifies but replaying the same move does not.
 
 **6 — Day-of show summary.** `EventType.SHOW` only; rehearsals and meetings get
 the creation and move emails but no day-of digest. Contains the set time,

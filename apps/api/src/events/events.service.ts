@@ -7,6 +7,7 @@ import type {
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TasksService } from '../tasks/tasks.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const eventInclude = {
   // Archived tasks belong to the archive page, not to their event's count —
@@ -19,6 +20,7 @@ export class EventsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tasks: TasksService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async list(boardId: string, query: EventQueryDto) {
@@ -59,28 +61,104 @@ export class EventsService {
     return { ...this.toDto(event), archivedTaskCount, linkedTaskCount };
   }
 
-  async create(boardId: string, dto: CreateEventDto) {
-    const event = await this.prisma.event.create({
-      data: {
+  async create(boardId: string, dto: CreateEventDto, actorId: string) {
+    const event = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.event.create({
+        data: {
+          boardId,
+          type: dto.type,
+          title: dto.title,
+          description: dto.description,
+          location: dto.location,
+          startsAt: dto.startsAt,
+          endsAt: dto.endsAt ?? null,
+        },
+        include: eventInclude,
+      });
+
+      // Trigger 4 — the whole band, minus whoever added it.
+      const recipients = await this.notifications.boardRecipients(
+        tx,
         boardId,
-        type: dto.type,
-        title: dto.title,
-        description: dto.description,
-        location: dto.location,
-        startsAt: dto.startsAt,
-        endsAt: dto.endsAt ?? null,
-      },
-      include: eventInclude,
+        actorId,
+      );
+      await this.notifications.queue(
+        tx,
+        recipients.map((userId) => ({
+          boardId,
+          userId,
+          category: 'SCHEDULE' as const,
+          template: 'event-created',
+          dedupeKey: `event-created:${created.id}:${userId}`,
+          payload: {
+            eventId: created.id,
+            type: created.type,
+            title: created.title,
+            location: created.location,
+            startsAt: created.startsAt.toISOString(),
+          },
+        })),
+      );
+      return created;
     });
     return this.toDto(event);
   }
 
-  async update(boardId: string, eventId: string, dto: UpdateEventDto) {
-    await this.findOne(boardId, eventId);
-    const event = await this.prisma.event.update({
-      where: { id: eventId },
-      data: dto,
-      include: eventInclude,
+  async update(
+    boardId: string,
+    eventId: string,
+    dto: UpdateEventDto,
+    actorId: string,
+  ) {
+    // Read before write: trigger 5 is a diff, and `update` otherwise hands the
+    // dto straight to Prisma without ever seeing the old row.
+    const before = await this.prisma.event.findFirst({
+      where: { id: eventId, boardId },
+    });
+    if (!before) throw new NotFoundException('Event not found');
+
+    const event = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.event.update({
+        where: { id: eventId },
+        data: dto,
+        include: eventInclude,
+      });
+
+      // Only the clock counts. A rename, a description edit or — deliberately —
+      // a venue change is not worth an inbox; see docs/notifications.md.
+      const moved =
+        updated.startsAt.getTime() !== before.startsAt.getTime() ||
+        (updated.endsAt?.getTime() ?? null) !==
+          (before.endsAt?.getTime() ?? null);
+
+      if (moved) {
+        const recipients = await this.notifications.boardRecipients(
+          tx,
+          boardId,
+          actorId,
+        );
+        await this.notifications.queue(
+          tx,
+          recipients.map((userId) => ({
+            boardId,
+            userId,
+            category: 'SCHEDULE' as const,
+            template: 'event-moved',
+            // Keyed on the new time: moving it again notifies, replaying the
+            // same move does not.
+            dedupeKey: `event-moved:${eventId}:${updated.startsAt.getTime()}:${userId}`,
+            payload: {
+              eventId,
+              type: updated.type,
+              title: updated.title,
+              location: updated.location,
+              startsAt: updated.startsAt.toISOString(),
+              previousStartsAt: before.startsAt.toISOString(),
+            },
+          })),
+        );
+      }
+      return updated;
     });
     return this.toDto(event);
   }

@@ -30,6 +30,25 @@ export class NotificationsService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
+   * Everyone on the board except the person who caused the thing — the
+   * recipient list for every board-wide trigger. Design rule 2: never email
+   * the actor for their own action.
+   */
+  async boardRecipients(
+    client: NotificationWriter,
+    boardId: string,
+    exceptUserId?: string,
+  ): Promise<string[]> {
+    const memberships = await client.membership.findMany({
+      where: { boardId },
+      select: { userId: true },
+    });
+    return memberships
+      .map((m) => m.userId)
+      .filter((userId) => userId !== exceptUserId);
+  }
+
+  /**
    * Writes outbox rows. Call it inside the mutation's own transaction: if the
    * mutation rolls back, the notification goes with it, and nothing is sent
    * until the transaction commits.

@@ -1,4 +1,4 @@
-import { formatDate } from './format';
+import { formatDate, formatDateTime } from './format';
 import { esc, renderLayout } from './layout';
 
 export interface RenderedMail {
@@ -35,6 +35,13 @@ const str = (payload: Record<string, unknown>, key: string): string =>
  */
 const taskLink = (webUrl: string, taskId: string) =>
   `${webUrl}/dashboard?task=${encodeURIComponent(taskId)}`;
+
+const eventLink = (webUrl: string, eventId: string) =>
+  `${webUrl}/dashboard?event=${encodeURIComponent(eventId)}`;
+
+/** SHOW → "Show", REHEARSAL → "Rehearsal". Subject lines read better in prose. */
+const eventNoun = (type: string): string =>
+  type ? type.charAt(0) + type.slice(1).toLowerCase() : 'Event';
 
 /**
  * Dev/ops smoke test: proves the whole pipe — queue, claim, render, transport —
@@ -119,9 +126,59 @@ const taskUnassigned: TemplateRenderer = (payload, ctx) => {
   };
 };
 
+/** Trigger 4 — a show, rehearsal or meeting was added to the calendar. */
+const eventCreated: TemplateRenderer = (payload, ctx) => {
+  const noun = eventNoun(str(payload, 'type'));
+  const title = str(payload, 'title') || 'Untitled';
+  const location = str(payload, 'location');
+  const when = formatDateTime(str(payload, 'startsAt'), ctx.timezone);
+  const url = eventLink(ctx.webUrl, str(payload, 'eventId'));
+  const where = location
+    ? `<p style="margin:8px 0 0;color:#6f6862">${esc(location)}</p>`
+    : '';
+
+  return {
+    subject: `New ${noun.toLowerCase()}: ${title}`,
+    html: renderLayout({
+      heading: `${noun} added`,
+      bodyHtml: `<p style="margin:0"><strong>${esc(title)}</strong></p>
+        <p style="margin:8px 0 0">${esc(when)}</p>${where}`,
+      cta: { label: 'See the details', url },
+      boardName: ctx.boardName,
+      unsubscribeUrl: ctx.unsubscribeUrl,
+    }),
+    text: `${noun} added: ${title}\n${when}${location ? `\n${location}` : ''}\n\nDetails: ${url}\nTurn these off: ${ctx.unsubscribeUrl}`,
+  };
+};
+
+/** Trigger 5 — the date or time moved. Says what it was, so the change is obvious. */
+const eventMoved: TemplateRenderer = (payload, ctx) => {
+  const noun = eventNoun(str(payload, 'type'));
+  const title = str(payload, 'title') || 'Untitled';
+  const was = formatDateTime(str(payload, 'previousStartsAt'), ctx.timezone);
+  const now = formatDateTime(str(payload, 'startsAt'), ctx.timezone);
+  const url = eventLink(ctx.webUrl, str(payload, 'eventId'));
+
+  return {
+    subject: `${title} moved to ${now}`,
+    html: renderLayout({
+      heading: `${noun} moved`,
+      bodyHtml: `<p style="margin:0"><strong>${esc(title)}</strong> is now:</p>
+        <p style="margin:12px 0 0;font-size:17px;font-weight:600">${esc(now)}</p>
+        <p style="margin:4px 0 0;color:#6f6862;text-decoration:line-through">${esc(was)}</p>`,
+      cta: { label: 'See the details', url },
+      boardName: ctx.boardName,
+      unsubscribeUrl: ctx.unsubscribeUrl,
+    }),
+    text: `${title} moved.\n\nNow: ${now}\nWas: ${was}\n\nDetails: ${url}\nTurn these off: ${ctx.unsubscribeUrl}`,
+  };
+};
+
 export const templates: Record<string, TemplateRenderer> = {
   diagnostic,
   'comment-mention': commentMention,
   'task-assigned': taskAssigned,
   'task-unassigned': taskUnassigned,
+  'event-created': eventCreated,
+  'event-moved': eventMoved,
 };
