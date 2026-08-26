@@ -24,30 +24,35 @@ enum InviteStatus {
 }
 
 model User {
-  id            String                @id @db.Uuid // = Supabase auth user id
-  email         String                @unique
+  id            String                   @id @db.Uuid // = Supabase auth user id
+  email         String                   @unique
   displayName   String
   avatarUrl     String?
-  createdAt     DateTime              @default(now())
+  createdAt     DateTime                 @default(now())
   memberships   Membership[]
-  sentInvites   Invite[]              @relation("InvitedBy")
-  createdTasks  Task[]                @relation("TaskCreatedBy")
+  sentInvites   Invite[]                 @relation("InvitedBy")
+  createdTasks  Task[]                   @relation("TaskCreatedBy")
   taskAssignees TaskAssignee[]
   layouts       UserLayout[]
   comments      Comment[]
   attachments   Attachment[]
   activities    Activity[]
   mentions      MentionNotification[]
+  emails        EmailDelivery[]
+  emailPrefs    NotificationPreference[]
 }
 
 model Board {
-  id            String                @id @default(uuid()) @db.Uuid
+  id            String                   @id @default(uuid()) @db.Uuid
   name          String
-  defaultLayout Json                  @default("[]")
+  defaultLayout Json                     @default("[]")
   /// Board-wide appearance (palette + per-widget color slots). Starts empty and
   /// is normalized by `resolveBoardTheme` on read, so no backfill is needed.
-  theme         Json                  @default("{}")
-  createdAt     DateTime              @default(now())
+  theme         Json                     @default("{}")
+  /// IANA zone the board's wall-clock notifications fire in (day-of show
+  /// summary, tasks-due-tomorrow digest). A band shares a local time.
+  timezone      String                   @default("America/Los_Angeles")
+  createdAt     DateTime                 @default(now())
   memberships   Membership[]
   invites       Invite[]
   statuses      TaskStatus[]
@@ -62,6 +67,8 @@ model Board {
   activities    Activity[]
   customWidget  CustomWidgetContent?
   mentions      MentionNotification[]
+  emails        EmailDelivery[]
+  emailPrefs    NotificationPreference[]
 }
 
 model Membership {
@@ -235,10 +242,15 @@ model Reminder {
 }
 
 model TaskAssignee {
-  taskId String @db.Uuid
-  userId String @db.Uuid
-  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId    String   @db.Uuid
+  userId    String   @db.Uuid
+  /// Identity of *this* assignment. The composite id makes a duplicate row
+  /// impossible, so this timestamp is stable per assignment — which is what
+  /// lets the notification dedupe key tell a genuine re-assignment apart from
+  /// a concurrent double-write. See docs/notifications.md.
+  createdAt DateTime @default(now())
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([taskId, userId])
 }
@@ -363,4 +375,76 @@ model UserLayout {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([boardId, userId])
+}
+
+/// Which notification a delivery belongs to. Coarser than the trigger list on
+/// purpose — people reason about categories, not individual triggers.
+enum EmailCategory {
+  MENTIONS
+  ASSIGNMENTS
+  SCHEDULE
+  REMINDERS
+  DUE_TASKS
+}
+
+enum EmailStatus {
+  QUEUED
+  SENDING
+  SENT
+  FAILED
+  SUPPRESSED
+}
+
+/// Transactional outbox. Triggers write a row inside the same transaction as
+/// the mutation that caused them; the dispatcher sends it *after* that commits,
+/// so a mail outage can never roll back a task assignment.
+model EmailDelivery {
+  id        String        @id @default(uuid()) @db.Uuid
+  boardId   String        @db.Uuid
+  userId    String        @db.Uuid
+  category  EmailCategory
+  /// Template name, e.g. `task-assigned`.
+  template  String
+  /// Deterministic per (trigger, subject row, recipient) — the uniqueness that
+  /// makes a replayed cron or a double-submit a no-op. Also sent to Resend as
+  /// its Idempotency-Key, which covers the crash-after-send case this can't.
+  dedupeKey String        @unique
+  /// Everything the template needs, snapshotted like Activity.meta so the mail
+  /// still renders after the task is renamed or deleted.
+  payload   Json          @default("{}")
+  status    EmailStatus   @default(QUEUED)
+  attempts  Int           @default(0)
+  lastError String?
+  /// Backoff gate — the dispatcher only claims rows that are due.
+  sendAfter DateTime      @default(now())
+  sentAt    DateTime?
+  createdAt DateTime      @default(now())
+  board     Board         @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, sendAfter])
+  @@index([boardId, createdAt])
+}
+
+/// Per user *per board* — someone in two bands can be loud in one and quiet in
+/// the other. A missing row means enabled, so there is nothing to backfill.
+model NotificationPreference {
+  id       String        @id @default(uuid()) @db.Uuid
+  boardId  String        @db.Uuid
+  userId   String        @db.Uuid
+  category EmailCategory
+  enabled  Boolean       @default(true)
+  board    Board         @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId, userId, category])
+}
+
+/// Addresses that bounced or complained. Keyed by email rather than user id:
+/// the address is what the mail system rejected, and it outlives the account.
+model EmailSuppression {
+  email     String   @id
+  /// bounce | complaint | manual
+  reason    String
+  createdAt DateTime @default(now())
 }
