@@ -1,8 +1,7 @@
 # Email Notifications
 
-> **Status:** specification. None of the triggers below ship yet — this document
-> was written alongside the implementation plan and is the target behaviour.
-> Update the Implemented column as each phase lands.
+> **Status:** being built. The delivery pipeline ships; individual triggers land
+> one at a time — the Implemented column below is the authority on what is live.
 
 Transactional email is sent through **[Resend](https://resend.com)**. Board
 invites are the exception: they are still sent by Supabase GoTrue, which owns
@@ -18,9 +17,12 @@ These are the rules the trigger table follows. New triggers should too.
 2. **Never email the actor for their own action.** Every trigger excludes the
    user who caused it, even when they're a legitimate recipient by role.
 3. **Every send is deduplicated.** A row in `EmailDelivery` keyed by a
-   deterministic `dedupeKey` is written in the same transaction as the send
-   attempt, so a retry, a double-click, or a second API instance running the
-   same cron cannot send twice.
+   deterministic `dedupeKey` is written in the same transaction as **the
+   mutation that triggers it** — never the send, which happens after that
+   commits. The unique index makes a replayed cron or a concurrent second API
+   instance a no-op. It cannot cover a crash *between* a successful send and
+   recording it, so the same key is also passed to Resend as its
+   `Idempotency-Key`, which can.
 4. **Every email is suppressible.** Per-user, per-board preferences plus a
    signed one-click unsubscribe link in every message.
 5. **Recipients are resolved at send time**, not at schedule time — someone
@@ -30,7 +32,7 @@ These are the rules the trigger table follows. New triggers should too.
 
 | # | Trigger | Recipients | Timing | Source | Implemented |
 |---|---|---|---|---|---|
-| 1 | **Mentioned in a comment** | Users named in `Comment.mentions`, minus the author | Immediate | `CommentsService.create` | ☐ |
+| 1 | **Mentioned in a comment** | Users named in `Comment.mentions`, minus the author | Immediate | `CommentsService.create` | ☑ |
 | 2 | **Assigned to a task** | The newly added assignee(s), minus the actor | Immediate | `TasksService.create`, `TasksService.setAssignees` (`added`) | ☐ |
 | 3 | **Unassigned from a task** | The removed assignee(s), minus the actor | Immediate | `TasksService.setAssignees` (`removed`) | ☐ |
 | 4 | **Show, rehearsal, or meeting added** | All board members, minus the actor | Immediate | `EventsService.create` | ☐ |
@@ -41,7 +43,9 @@ These are the rules the trigger table follows. New triggers should too.
 
 ### Per-trigger detail
 
-**1 — Mentioned in a comment.** Fires on comment *creation* only. Editing a
+**1 — Mentioned in a comment.** Keyed `mention:{commentId}:{userId}` — one
+comment mentioning one person is one email, however many times the write is
+replayed. Fires on comment *creation* only. Editing a
 comment to add a new `@name` does **not** notify: `notifyMentions` is called
 from `create` and not from `update`, and the email follows the same rule so the
 in-app `MentionNotification` list and the inbox never disagree. The email body
@@ -111,7 +115,8 @@ without a login.
 
 Triggers 6 and 8 fire at a wall-clock hour, which requires a timezone.
 `Board.timezone` (IANA name) is the source of truth — a band shares a
-rehearsal room and a local time — and defaults to the value of `DEFAULT_TIMEZONE`.
+rehearsal room and a local time — and defaults to `America/Los_Angeles` at the
+schema level, so every existing board already has a usable value.
 Timestamps in email bodies are rendered in board-local time with the zone
 abbreviation shown, so nobody has to do the maths.
 
@@ -129,9 +134,13 @@ abbreviation shown, so nobody has to do the maths.
 
 Mail is routed to **Mailpit**, the local Supabase stack's mail catcher, instead
 of Resend whenever `NODE_ENV !== 'production'`. The web UI is at
-`127.0.0.1:54324`. This requires uncommenting `smtp_port = 54325` under
-`[inbucket]` in [supabase/config.toml](../supabase/config.toml) and restarting
-the stack — it ships commented out.
+`127.0.0.1:54324`. Mailpit's SMTP port is published via `smtp_port = 54325`
+under `[inbucket]` in [supabase/config.toml](../supabase/config.toml); it ships
+commented out upstream, so a fresh clone needs `npx supabase stop && npx
+supabase start` after checking out that change.
+
+`npm run mail:test -w apps/api` queues a diagnostic email — the fastest way to
+check the pipeline, or how a real client renders the layout after editing it.
 
 The demo seed (`npm run db:seed -w apps/api`) must never send email: its
 synthetic bandmates use `@demo.band` addresses that cannot receive mail, and

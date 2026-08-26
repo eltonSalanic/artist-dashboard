@@ -7,6 +7,7 @@ import { CommentsService } from './comments.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
 import { StorageService } from '../attachments/storage.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 describe('CommentsService', () => {
   const prisma = {
@@ -22,6 +23,7 @@ describe('CommentsService', () => {
     attachment: { findMany: jest.fn().mockResolvedValue([]) },
     activity: { create: jest.fn() },
     mentionNotification: { createMany: jest.fn() },
+    emailDelivery: { createMany: jest.fn() },
     $transaction: jest.fn(),
   };
   prisma.$transaction.mockImplementation((fn: (tx: unknown) => unknown) =>
@@ -32,6 +34,7 @@ describe('CommentsService', () => {
     prisma as unknown as PrismaService,
     new ActivityService(prisma as unknown as PrismaService),
     storage as unknown as StorageService,
+    new NotificationsService(prisma as unknown as PrismaService),
   );
 
   const stored = {
@@ -89,6 +92,50 @@ describe('CommentsService', () => {
       expect(prisma.mentionNotification.createMany).toHaveBeenCalledWith({
         data: [expect.objectContaining({ userId: 'u2', taskId: 't1' })],
       });
+    });
+
+    it('queues a mention email for everyone notified in-app, and no one else', async () => {
+      prisma.task.findFirst.mockResolvedValue({ id: 't1', title: 'Mix' });
+      prisma.membership.findMany.mockResolvedValue([
+        { userId: 'u1' },
+        { userId: 'u2' },
+      ]);
+      prisma.comment.create.mockResolvedValue({
+        ...stored,
+        mentions: ['u1', 'u2'],
+      });
+
+      await service.create('b1', 't1', 'u1', {
+        body: 'yo @u1 @u2',
+        mentions: ['u1', 'u2'],
+      });
+
+      expect(prisma.emailDelivery.createMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: [
+            expect.objectContaining({
+              userId: 'u2',
+              category: 'MENTIONS',
+              template: 'comment-mention',
+              // Keyed on (comment, recipient): a replay of the same comment
+              // can never produce a second email.
+              dedupeKey: 'mention:c1:u2',
+            }),
+          ],
+        }),
+      );
+    });
+
+    it('queues nothing when a comment mentions no one', async () => {
+      prisma.task.findFirst.mockResolvedValue({ id: 't1', title: 'Mix' });
+      prisma.comment.create.mockResolvedValue(stored);
+
+      await service.create('b1', 't1', 'u1', {
+        body: 'no mentions here',
+        mentions: [],
+      });
+
+      expect(prisma.emailDelivery.createMany).not.toHaveBeenCalled();
     });
 
     it('rejects a mention of someone outside the board', async () => {

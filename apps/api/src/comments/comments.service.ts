@@ -13,6 +13,7 @@ import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
 import { StorageService } from '../attachments/storage.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const commentInclude = {
   author: { select: { id: true, displayName: true, avatarUrl: true } },
@@ -28,6 +29,7 @@ export class CommentsService {
     private readonly prisma: PrismaService,
     private readonly activity: ActivityService,
     private readonly storage: StorageService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async list(boardId: string, taskId: string) {
@@ -74,6 +76,7 @@ export class CommentsService {
       });
       await this.notifyMentions(tx, {
         boardId,
+        commentId: comment.id,
         taskId,
         taskTitle: task.title,
         actorName: comment.author.displayName,
@@ -93,6 +96,7 @@ export class CommentsService {
     tx: Prisma.TransactionClient,
     input: {
       boardId: string;
+      commentId: string;
       taskId: string;
       taskTitle: string;
       actorName: string;
@@ -113,6 +117,26 @@ export class CommentsService {
         excerpt: input.excerpt,
       })),
     });
+
+    // Trigger 1. Keyed on (comment, recipient) rather than on the notification
+    // row's id, which createMany doesn't hand back — one comment mentioning
+    // one person is one email either way.
+    await this.notifications.queue(
+      tx,
+      recipients.map((userId) => ({
+        boardId: input.boardId,
+        userId,
+        category: 'MENTIONS' as const,
+        template: 'comment-mention',
+        dedupeKey: `mention:${input.commentId}:${userId}`,
+        payload: {
+          actorName: input.actorName,
+          taskTitle: input.taskTitle,
+          excerpt: input.excerpt,
+          taskId: input.taskId,
+        },
+      })),
+    );
   }
 
   /** Editing is author-only — an admin may delete, but never rewrite. */
