@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthController } from './health/health.controller';
@@ -23,13 +24,18 @@ import { CommentsModule } from './comments/comments.module';
 import { AttachmentsModule } from './attachments/attachments.module';
 import { CustomWidgetModule } from './custom-widget/custom-widget.module';
 import { MentionsModule } from './mentions/mentions.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    // Drives the notification dispatcher and the wall-clock email jobs.
+    ScheduleModule.forRoot(),
     PrismaModule,
     // Global, and imported early so every domain module can log to the feed.
     ActivityModule,
+    // Global for the same reason — domain services queue mail inline.
+    NotificationsModule,
     AuthModule,
     UsersModule,
     BoardsModule,
