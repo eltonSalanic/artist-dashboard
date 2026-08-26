@@ -3,6 +3,7 @@ import { TasksService } from './tasks.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
 import { StorageService } from '../attachments/storage.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 describe('TasksService', () => {
   const prisma = {
@@ -13,12 +14,22 @@ describe('TasksService', () => {
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+      findUniqueOrThrow: jest.fn(),
     },
     taskStatus: { findFirst: jest.fn() },
     membership: { findMany: jest.fn() },
     checklistItem: { aggregate: jest.fn(), create: jest.fn() },
     attachment: { findMany: jest.fn().mockResolvedValue([]) },
-    user: { findMany: jest.fn().mockResolvedValue([]) },
+    user: {
+      findMany: jest.fn().mockResolvedValue([]),
+      findUnique: jest.fn().mockResolvedValue({ displayName: 'sam' }),
+    },
+    taskAssignee: {
+      deleteMany: jest.fn(),
+      createMany: jest.fn(),
+      findMany: jest.fn(),
+    },
+    emailDelivery: { createMany: jest.fn() },
     activity: { create: jest.fn() },
     $transaction: jest.fn(),
   };
@@ -32,6 +43,7 @@ describe('TasksService', () => {
     prisma as unknown as PrismaService,
     new ActivityService(prisma as unknown as PrismaService),
     storage as unknown as StorageService,
+    new NotificationsService(prisma as unknown as PrismaService),
   );
 
   const baseTask = {
@@ -45,6 +57,116 @@ describe('TasksService', () => {
   };
 
   beforeEach(() => jest.clearAllMocks());
+
+  describe('setAssignees notifications', () => {
+    const assignedAt = new Date('2026-08-01T12:00:00Z');
+
+    /** A task currently assigned to `u2`, plus the mocks setAssignees needs. */
+    const withCurrentAssignee = () => {
+      prisma.task.findFirst.mockResolvedValue({
+        ...baseTask,
+        dueDate: null,
+        assignees: [
+          {
+            userId: 'u2',
+            createdAt: assignedAt,
+            user: { id: 'u2', displayName: 'Ringo' },
+          },
+        ],
+      });
+      prisma.task.findUniqueOrThrow.mockResolvedValue({
+        ...baseTask,
+        archivedAt: null,
+        dueDate: null,
+        assignees: [],
+        goal: null,
+        event: null,
+        createdBy: { id: 'u1', displayName: 'Elton' },
+        subtasks: [],
+        _count: { checklist: 0 },
+      });
+    };
+
+    /** Rows the outbox was asked to write on the last call. */
+    const queued = (): {
+      userId: string;
+      template: string;
+      dedupeKey: string;
+    }[] => {
+      const calls = prisma.emailDelivery.createMany.mock.calls as [
+        { data: { userId: string; template: string; dedupeKey: string }[] },
+      ][];
+      return calls.length ? calls[calls.length - 1][0].data : [];
+    };
+
+    it('queues an assignment email keyed on the new assignment row', async () => {
+      withCurrentAssignee();
+      prisma.membership.findMany.mockResolvedValue([
+        { userId: 'u2' },
+        { userId: 'u3' },
+      ]);
+      const addedAt = new Date('2026-08-02T09:30:00Z');
+      prisma.taskAssignee.findMany.mockResolvedValue([
+        { userId: 'u3', createdAt: addedAt },
+      ]);
+
+      await service.setAssignees('b1', 't1', 'u1', {
+        assigneeIds: ['u2', 'u3'],
+      });
+
+      expect(queued()).toEqual([
+        expect.objectContaining({
+          userId: 'u3',
+          template: 'task-assigned',
+          dedupeKey: `assign:t1:u3:${addedAt.getTime()}`,
+        }),
+      ]);
+    });
+
+    it('queues an unassignment email keyed on the assignment that ended', async () => {
+      withCurrentAssignee();
+      prisma.membership.findMany.mockResolvedValue([]);
+      prisma.taskAssignee.findMany.mockResolvedValue([]);
+
+      await service.setAssignees('b1', 't1', 'u1', { assigneeIds: [] });
+
+      expect(queued()).toEqual([
+        expect.objectContaining({
+          userId: 'u2',
+          template: 'task-unassigned',
+          dedupeKey: `unassign:t1:u2:${assignedAt.getTime()}`,
+        }),
+      ]);
+    });
+
+    it('never emails you about your own assignment', async () => {
+      withCurrentAssignee();
+      prisma.membership.findMany.mockResolvedValue([
+        { userId: 'u2' },
+        { userId: 'u1' },
+      ]);
+      prisma.taskAssignee.findMany.mockResolvedValue([
+        { userId: 'u1', createdAt: new Date() },
+      ]);
+
+      // u1 assigns the task to themselves.
+      await service.setAssignees('b1', 't1', 'u1', {
+        assigneeIds: ['u2', 'u1'],
+      });
+
+      expect(prisma.emailDelivery.createMany).not.toHaveBeenCalled();
+    });
+
+    it('queues nothing when the assignee set is unchanged', async () => {
+      withCurrentAssignee();
+      prisma.membership.findMany.mockResolvedValue([{ userId: 'u2' }]);
+      prisma.taskAssignee.findMany.mockResolvedValue([]);
+
+      await service.setAssignees('b1', 't1', 'u1', { assigneeIds: ['u2'] });
+
+      expect(prisma.emailDelivery.createMany).not.toHaveBeenCalled();
+    });
+  });
 
   describe('findOne subtask visibility', () => {
     /** A task row shaped enough for `toDto`, with the given subtasks. */

@@ -91,6 +91,7 @@ export class DispatcherService {
         boardName: board.name,
         webUrl: this.webUrl(),
         unsubscribeUrl,
+        timezone: board.timezone,
       });
 
       await this.transport.send({

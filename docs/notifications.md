@@ -33,8 +33,8 @@ These are the rules the trigger table follows. New triggers should too.
 | # | Trigger | Recipients | Timing | Source | Implemented |
 |---|---|---|---|---|---|
 | 1 | **Mentioned in a comment** | Users named in `Comment.mentions`, minus the author | Immediate | `CommentsService.create` | ☑ |
-| 2 | **Assigned to a task** | The newly added assignee(s), minus the actor | Immediate | `TasksService.create`, `TasksService.setAssignees` (`added`) | ☐ |
-| 3 | **Unassigned from a task** | The removed assignee(s), minus the actor | Immediate | `TasksService.setAssignees` (`removed`) | ☐ |
+| 2 | **Assigned to a task** | The newly added assignee(s), minus the actor | Immediate | `TasksService.create`, `TasksService.setAssignees` (`added`) | ☑ |
+| 3 | **Unassigned from a task** | The removed assignee(s), minus the actor | Immediate | `TasksService.setAssignees` (`removed`) | ☑ |
 | 4 | **Show, rehearsal, or meeting added** | All board members, minus the actor | Immediate | `EventsService.create` | ☐ |
 | 5 | **Show, rehearsal, or meeting moved** | All board members, minus the actor | Immediate | `EventsService.update` (diff on `startsAt` / `endsAt`) | ☐ |
 | 6 | **Day-of show summary** | All board members | 08:00 board-local on the day of the show | `ShowSummaryJob` (cron) | ☐ |
@@ -57,6 +57,16 @@ edited or deleted.
 it, producing `added` and `removed` arrays; those arrays are the recipient
 lists. A user who appears in neither array (unchanged membership on the task)
 is not emailed. Assigning yourself never emails you.
+
+Both key on `TaskAssignee.createdAt` — `assign:{taskId}:{userId}:{createdAtMs}`
+and `unassign:{...}` on the assignment that just ended. That column exists for
+exactly this: the composite primary key makes a duplicate row impossible, so
+two concurrent writes collapse to one email, while a genuine
+unassign-then-reassign is a new row and correctly notifies again. Keying on
+`Date.now()` instead would have let the concurrent case through.
+
+Assignment at creation time counts too — `TasksService.create` queues for
+anyone named in `assigneeIds`, minus the creator.
 
 **4 — Event created.** Covers all three `EventType` values. The email leads
 with type, title, start time, and location.

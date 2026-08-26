@@ -68,7 +68,10 @@ describe('DispatcherService', () => {
       email: 'drums@band.test',
       displayName: 'Ringo',
     });
-    prisma.board.findUniqueOrThrow.mockResolvedValue({ name: 'Neon Harbor' });
+    prisma.board.findUniqueOrThrow.mockResolvedValue({
+      name: 'Neon Harbor',
+      timezone: 'America/Los_Angeles',
+    });
     prisma.membership.findUnique.mockResolvedValue({ id: 'm1' });
     prisma.notificationPreference.findUnique.mockResolvedValue(null);
     prisma.emailSuppression.findUnique.mockResolvedValue(null);

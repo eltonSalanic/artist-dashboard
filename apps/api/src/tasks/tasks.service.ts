@@ -19,6 +19,7 @@ import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
 import { StorageService } from '../attachments/storage.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const SORT_GAP = 1024;
 
@@ -61,6 +62,7 @@ export class TasksService {
     private readonly prisma: PrismaService,
     private readonly activity: ActivityService,
     private readonly storage: StorageService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async list(boardId: string, query: TaskQueryDto) {
@@ -193,6 +195,20 @@ export class TasksService {
           },
         });
       }
+
+      // Trigger 2, for people handed a task the moment it exists.
+      await this.queueAssignmentEmails(tx, {
+        boardId,
+        actorId: userId,
+        taskId: created.id,
+        taskTitle: created.title,
+        dueDate: created.dueDate,
+        assigned: created.assignees.map((a) => ({
+          userId: a.user.id,
+          createdAt: a.createdAt,
+        })),
+        unassigned: [],
+      });
       return created;
     });
     return this.toDto(task);
@@ -391,7 +407,10 @@ export class TasksService {
     // The endpoint replaces the whole set, so who actually joined or left is a
     // diff against the previous one — that's what the feed reports.
     const before = new Map(
-      task.assignees.map((a) => [a.userId, a.user.displayName]),
+      task.assignees.map((a) => [
+        a.userId,
+        { name: a.user.displayName, createdAt: a.createdAt },
+      ]),
     );
     const after = new Set(dto.assigneeIds);
     const added = dto.assigneeIds.filter((id) => !before.has(id));
@@ -403,7 +422,9 @@ export class TasksService {
         data: dto.assigneeIds.map((userId) => ({ taskId, userId })),
       });
 
-      const names = new Map(before);
+      const names = new Map(
+        [...before].map(([id, entry]) => [id, entry.name] as const),
+      );
       if (added.length > 0) {
         const users = await tx.user.findMany({
           where: { id: { in: added } },
@@ -430,12 +451,91 @@ export class TasksService {
         }
       }
 
+      // The rows were just rewritten, so their createdAt is the identity of
+      // *this* assignment — see the dedupe key note in docs/notifications.md.
+      const rows =
+        added.length > 0
+          ? await tx.taskAssignee.findMany({
+              where: { taskId, userId: { in: added } },
+              select: { userId: true, createdAt: true },
+            })
+          : [];
+
+      // Triggers 2 and 3 — only the people whose membership actually changed.
+      await this.queueAssignmentEmails(tx, {
+        boardId,
+        actorId,
+        taskId,
+        taskTitle: task.title,
+        dueDate: task.dueDate,
+        assigned: rows,
+        unassigned: removed.map((userId) => ({
+          userId,
+          // The assignment that just ended, so a replayed removal keys the same.
+          createdAt: before.get(userId)?.createdAt ?? new Date(0),
+        })),
+      });
+
       return tx.task.findUniqueOrThrow({
         where: { id: taskId },
         include: taskInclude,
       });
     });
     return this.toDto(updated);
+  }
+
+  /**
+   * Triggers 2 and 3. Both sides key on the assignment's own `createdAt`: a
+   * genuine unassign-then-reassign is a new row and notifies again, while two
+   * concurrent writes can only produce one row and so one email.
+   */
+  private async queueAssignmentEmails(
+    tx: Prisma.TransactionClient,
+    input: {
+      boardId: string;
+      actorId: string;
+      taskId: string;
+      taskTitle: string;
+      dueDate: Date | null;
+      assigned: { userId: string; createdAt: Date }[];
+      unassigned: { userId: string; createdAt: Date }[];
+    },
+  ) {
+    const assigned = input.assigned.filter((a) => a.userId !== input.actorId);
+    const unassigned = input.unassigned.filter(
+      (a) => a.userId !== input.actorId,
+    );
+    if (assigned.length === 0 && unassigned.length === 0) return;
+
+    const actor = await tx.user.findUnique({
+      where: { id: input.actorId },
+      select: { displayName: true },
+    });
+    const payload = {
+      actorName: actor?.displayName ?? 'Someone',
+      taskTitle: input.taskTitle,
+      taskId: input.taskId,
+      dueDate: input.dueDate?.toISOString() ?? null,
+    };
+
+    await this.notifications.queue(tx, [
+      ...assigned.map((a) => ({
+        boardId: input.boardId,
+        userId: a.userId,
+        category: 'ASSIGNMENTS' as const,
+        template: 'task-assigned',
+        dedupeKey: `assign:${input.taskId}:${a.userId}:${a.createdAt.getTime()}`,
+        payload,
+      })),
+      ...unassigned.map((a) => ({
+        boardId: input.boardId,
+        userId: a.userId,
+        category: 'ASSIGNMENTS' as const,
+        template: 'task-unassigned',
+        dedupeKey: `unassign:${input.taskId}:${a.userId}:${a.createdAt.getTime()}`,
+        payload,
+      })),
+    ]);
   }
 
   async addChecklistItem(

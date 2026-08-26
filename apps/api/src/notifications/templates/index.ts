@@ -1,3 +1,4 @@
+import { formatDate } from './format';
 import { esc, renderLayout } from './layout';
 
 export interface RenderedMail {
@@ -10,6 +11,8 @@ export interface TemplateContext {
   boardName: string;
   webUrl: string;
   unsubscribeUrl: string;
+  /** The board's IANA zone — every rendered timestamp is in it. */
+  timezone: string;
 }
 
 /**
@@ -74,7 +77,51 @@ const commentMention: TemplateRenderer = (payload, ctx) => {
   };
 };
 
+/** Trigger 2 — you were added to a task. */
+const taskAssigned: TemplateRenderer = (payload, ctx) => {
+  const actorName = str(payload, 'actorName') || 'Someone';
+  const taskTitle = str(payload, 'taskTitle') || 'a task';
+  const dueDate = str(payload, 'dueDate');
+  const url = taskLink(ctx.webUrl, str(payload, 'taskId'));
+  const due = dueDate
+    ? `<p style="margin:12px 0 0;color:#6f6862">Due ${esc(formatDate(dueDate, ctx.timezone))}.</p>`
+    : '';
+
+  return {
+    subject: `${actorName} assigned you "${taskTitle}"`,
+    html: renderLayout({
+      heading: 'You picked up a task',
+      bodyHtml: `<p style="margin:0">${esc(actorName)} assigned you <strong>${esc(taskTitle)}</strong>.</p>${due}`,
+      cta: { label: 'Open the task', url },
+      boardName: ctx.boardName,
+      unsubscribeUrl: ctx.unsubscribeUrl,
+    }),
+    text: `${actorName} assigned you "${taskTitle}".${dueDate ? ` Due ${formatDate(dueDate, ctx.timezone)}.` : ''}\n\nOpen it: ${url}\nTurn these off: ${ctx.unsubscribeUrl}`,
+  };
+};
+
+/** Trigger 3 — you were taken off a task. */
+const taskUnassigned: TemplateRenderer = (payload, ctx) => {
+  const actorName = str(payload, 'actorName') || 'Someone';
+  const taskTitle = str(payload, 'taskTitle') || 'a task';
+  const url = taskLink(ctx.webUrl, str(payload, 'taskId'));
+
+  return {
+    subject: `You're off "${taskTitle}"`,
+    html: renderLayout({
+      heading: 'One less thing',
+      bodyHtml: `<p style="margin:0">${esc(actorName)} took you off <strong>${esc(taskTitle)}</strong>. Nothing needed from you.</p>`,
+      cta: { label: 'See the task', url },
+      boardName: ctx.boardName,
+      unsubscribeUrl: ctx.unsubscribeUrl,
+    }),
+    text: `${actorName} took you off "${taskTitle}". Nothing needed from you.\n\nSee it: ${url}\nTurn these off: ${ctx.unsubscribeUrl}`,
+  };
+};
+
 export const templates: Record<string, TemplateRenderer> = {
   diagnostic,
   'comment-mention': commentMention,
+  'task-assigned': taskAssigned,
+  'task-unassigned': taskUnassigned,
 };
