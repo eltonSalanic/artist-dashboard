@@ -17,8 +17,8 @@
  * bandmates are upserted, so reruns never duplicate them.
  */
 import 'dotenv/config';
-import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../generated/prisma/client';
+import { createPgAdapter } from '../src/prisma/pg-adapter';
 import {
   ActivityType,
   BoardRole,
@@ -29,9 +29,7 @@ import {
 } from '../generated/prisma/enums';
 import { DEFAULT_BOARD_LAYOUT, DEFAULT_TASK_STATUSES } from '@artist/shared';
 
-const prisma = new PrismaClient({
-  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
-});
+const prisma = new PrismaClient({ adapter: createPgAdapter() });
 
 const DEMO_BOARD_ID = 'de300000-0000-4000-8000-000000000001';
 const DEMO_OWNER_EMAIL =

@@ -11,12 +11,10 @@
  * The API has to be running, since the dispatcher lives there.
  */
 import 'dotenv/config';
-import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../generated/prisma/client';
+import { createPgAdapter } from '../src/prisma/pg-adapter';
 
-const prisma = new PrismaClient({
-  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
-});
+const prisma = new PrismaClient({ adapter: createPgAdapter() });
 
 async function main() {
   const email = process.env.MAIL_TEST_EMAIL ?? 'elton.salanic@gmail.com';

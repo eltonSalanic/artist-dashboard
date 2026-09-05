@@ -1,6 +1,6 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../../generated/prisma/client';
+import { createPgAdapter } from './pg-adapter';
 
 @Injectable()
 export class PrismaService
@@ -8,9 +8,7 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   constructor() {
-    super({
-      adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
-    });
+    super({ adapter: createPgAdapter() });
   }
 
   async onModuleInit() {
