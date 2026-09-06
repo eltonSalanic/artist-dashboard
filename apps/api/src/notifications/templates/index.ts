@@ -174,6 +174,32 @@ const eventMoved: TemplateRenderer = (payload, ctx) => {
   };
 };
 
+/** Trigger 6 — a reminder came due. Board-wide: reminders have no owner. */
+const reminderDue: TemplateRenderer = (payload, ctx) => {
+  const title = str(payload, 'title') || 'Reminder';
+  const description = str(payload, 'description');
+  const when = formatDateTime(str(payload, 'remindAt'), ctx.timezone);
+  // Reminders have no detail modal — the calendar renders them as plain chips —
+  // so this lands on the board rather than deep-linking to nothing.
+  const url = `${ctx.webUrl}/dashboard`;
+  const note = description
+    ? `<p style="margin:8px 0 0;color:#6f6862">${esc(description)}</p>`
+    : '';
+
+  return {
+    subject: `Reminder: ${title}`,
+    html: renderLayout({
+      heading: 'Reminder',
+      bodyHtml: `<p style="margin:0"><strong>${esc(title)}</strong></p>${note}
+        <p style="margin:12px 0 0;color:#6f6862">Set for ${esc(when)}.</p>`,
+      cta: { label: 'Open the board', url },
+      boardName: ctx.boardName,
+      unsubscribeUrl: ctx.unsubscribeUrl,
+    }),
+    text: `Reminder: ${title}${description ? `\n\n${description}` : ''}\n\nSet for ${when}.\n\nOpen the board: ${url}\nTurn these off: ${ctx.unsubscribeUrl}`,
+  };
+};
+
 export const templates: Record<string, TemplateRenderer> = {
   diagnostic,
   'comment-mention': commentMention,
@@ -181,4 +207,5 @@ export const templates: Record<string, TemplateRenderer> = {
   'task-unassigned': taskUnassigned,
   'event-created': eventCreated,
   'event-moved': eventMoved,
+  'reminder-due': reminderDue,
 };

@@ -37,9 +37,10 @@ These are the rules the trigger table follows. New triggers should too.
 | 3 | **Unassigned from a task** | The removed assignee(s), minus the actor | Immediate | `TasksService.setAssignees` (`removed`) | ☑ |
 | 4 | **Show, rehearsal, or meeting added** | All board members, minus the actor | Immediate | `EventsService.create` | ☑ |
 | 5 | **Show, rehearsal, or meeting moved** | All board members, minus the actor | Immediate | `EventsService.update` (diff on `startsAt` / `endsAt`) | ☑ |
-| 6 | **Day-of show summary** | All board members | 08:00 board-local on the day of the show | `ShowSummaryJob` (cron) | ☐ |
-| 7 | **Reminder due** | All board members | At `Reminder.remindAt` | `ReminderJob` (cron) | ☐ |
-| 8 | **Tasks due tomorrow** | Assignees of each due task | 18:00 board-local, one digest per user | `DueTomorrowJob` (cron) | ☐ |
+| 6 | **Reminder due** | All board members | At `Reminder.remindAt` | `ReminderDueJob` (cron) | ☐ |
+
+Two further triggers were specified and then deliberately dropped — see
+[Considered and dropped](#considered-and-dropped).
 
 ### Per-trigger detail
 
@@ -78,19 +79,29 @@ what people plan their day around. The email states both the old and the new
 time. Keyed `event-moved:{eventId}:{newStartsAtMs}:{userId}`, so moving it
 again notifies but replaying the same move does not.
 
-**6 — Day-of show summary.** `EventType.SHOW` only; rehearsals and meetings get
-the creation and move emails but no day-of digest. Contains the set time,
-location, and every task linked to that event with its status, so the "who's
-bringing the cables" question is answered in the email.
-
-**7 — Reminder due.** Reminders have no owner in the schema, so they go to the
+**6 — Reminder due.** Reminders have no owner in the schema, so they go to the
 whole board. Suppressed when the reminder is `done` or archived at send time.
 Reminders with a null `remindAt` never notify — they're notes, not alarms.
 
-**8 — Tasks due tomorrow.** One digest per user listing all of their tasks due
-the next board-local day, not one email per task. Skips tasks whose status has
-`isDone = true` and tasks that are archived. A task with no assignees emails
-nobody — it is deliberately not broadcast to the board.
+This is the only trigger that fires on a clock rather than on a mutation, and
+it fires at an *absolute* instant (`remindAt`), not a wall-clock hour — so
+unlike the two dropped triggers it needs no board-local hour selection and no
+DST reasoning. `Board.timezone` still decides how the time is *rendered*.
+
+## Considered and dropped
+
+**Day-of show summary** (08:00 board-local, `SHOW` events, with the linked
+tasks) — dropped. The band checks the board on a show day anyway, and they
+already know when their own shows are. The creation and move emails cover the
+part that's actually news.
+
+**Tasks due tomorrow** (18:00 board-local, one digest per assignee) — dropped
+for the MVP. Not necessary; the To-Dos widget already shows what's due.
+
+Both are still described in the plan if they're ever wanted. The `DUE_TASKS`
+value stays in the `EmailCategory` enum rather than being migrated away: it
+costs nothing, and dropping an enum value is a migration that would have to be
+reversed to bring the digest back.
 
 ## Suppression rules
 
@@ -103,7 +114,7 @@ An email is not sent when any of these hold at send time:
 - The recipient's address is marked undeliverable by a Resend bounce or
   complaint webhook.
 - The underlying row was archived, completed, or deleted between scheduling and
-  sending (triggers 6–8).
+  sending (trigger 6).
 
 ## Preferences
 
@@ -114,9 +125,8 @@ quiet in the other. Categories are coarser than triggers on purpose:
 |---|---|
 | `mentions` | 1 |
 | `assignments` | 2, 3 |
-| `schedule` | 4, 5, 6 |
-| `reminders` | 7 |
-| `dueTasks` | 8 |
+| `schedule` | 4, 5 |
+| `reminders` | 6 |
 
 All default to on. Unsubscribe links carry a signed token identifying
 `(userId, boardId, category)` so one click turns off exactly one category
@@ -124,7 +134,8 @@ without a login.
 
 ## Timezones
 
-Triggers 6 and 8 fire at a wall-clock hour, which requires a timezone.
+No trigger fires at a wall-clock hour any more, so nothing *selects* on
+timezone — but every timestamp in a body still has to be rendered in one.
 `Board.timezone` (IANA name) is the source of truth — a band shares a
 rehearsal room and a local time — and defaults to `America/Los_Angeles` at the
 schema level, so every existing board already has a usable value.
