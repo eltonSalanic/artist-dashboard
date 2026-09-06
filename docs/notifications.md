@@ -37,7 +37,7 @@ These are the rules the trigger table follows. New triggers should too.
 | 3 | **Unassigned from a task** | The removed assignee(s), minus the actor | Immediate | `TasksService.setAssignees` (`removed`) | ☑ |
 | 4 | **Show, rehearsal, or meeting added** | All board members, minus the actor | Immediate | `EventsService.create` | ☑ |
 | 5 | **Show, rehearsal, or meeting moved** | All board members, minus the actor | Immediate | `EventsService.update` (diff on `startsAt` / `endsAt`) | ☑ |
-| 6 | **Reminder due** | All board members | At `Reminder.remindAt` | `ReminderDueJob` (cron) | ☐ |
+| 6 | **Reminder due** | All board members | At `Reminder.remindAt` | `ReminderDueJob` (cron) | ☑ |
 
 Two further triggers were specified and then deliberately dropped — see
 [Considered and dropped](#considered-and-dropped).
@@ -80,8 +80,17 @@ time. Keyed `event-moved:{eventId}:{newStartsAtMs}:{userId}`, so moving it
 again notifies but replaying the same move does not.
 
 **6 — Reminder due.** Reminders have no owner in the schema, so they go to the
-whole board. Suppressed when the reminder is `done` or archived at send time.
-Reminders with a null `remindAt` never notify — they're notes, not alarms.
+whole board. Reminders with a null `remindAt` never notify — they're notes, not
+alarms.
+
+The reminder's own state is read **at queue time**, not at send time: `done` and
+`archivedAt` are part of the job's `where`, and nothing re-reads the row before
+the mail goes out. Completing a reminder in the seconds between the two loops
+still sends — and after a failed send backs off, that gap can stretch to hours.
+The dispatcher is deliberately template-agnostic (one drain loop serves all six
+triggers, knowing nothing about reminders), so closing this would mean giving
+templates a freshness hook. Not worth the concept for one trigger and a window
+this small; revisit if a second clock-driven trigger ever needs it.
 
 This is the only trigger that fires on a clock rather than on a mutation, and
 it fires at an *absolute* instant (`remindAt`), not a wall-clock hour — so
@@ -113,8 +122,9 @@ An email is not sent when any of these hold at send time:
 - A matching `dedupeKey` already exists in `EmailDelivery`.
 - The recipient's address is marked undeliverable by a Resend bounce or
   complaint webhook.
-- The underlying row was archived, completed, or deleted between scheduling and
-  sending (trigger 6).
+
+Note what is **not** on that list: the state of the row the email is *about*.
+Only the recipient is re-checked at send time. See trigger 6 above.
 
 ## Preferences
 
