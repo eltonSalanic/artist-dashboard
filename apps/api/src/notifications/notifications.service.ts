@@ -1,4 +1,9 @@
 import { Injectable } from '@nestjs/common';
+import {
+  NotificationCategories,
+  type NotificationCategory,
+  type NotificationPreferencesDto,
+} from '@artist/shared';
 import { Prisma, type EmailCategory } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -75,5 +80,43 @@ export class NotificationsService {
       })),
       skipDuplicates: true,
     });
+  }
+
+  /**
+   * Every category with its current state. Absent rows mean on — someone who
+   * has never opened their settings has no rows at all, and backfilling them
+   * would only be writing the default down.
+   */
+  async preferences(
+    boardId: string,
+    userId: string,
+  ): Promise<NotificationPreferencesDto> {
+    const rows = await this.prisma.notificationPreference.findMany({
+      where: { boardId, userId },
+      select: { category: true, enabled: true },
+    });
+    const byCategory = new Map(rows.map((row) => [row.category, row.enabled]));
+
+    return Object.fromEntries(
+      NotificationCategories.map((category) => [
+        category,
+        byCategory.get(category) ?? true,
+      ]),
+    ) as NotificationPreferencesDto;
+  }
+
+  /** Upsert: the first toggle writes the row, later ones flip it. */
+  async setPreference(
+    boardId: string,
+    userId: string,
+    category: NotificationCategory,
+    enabled: boolean,
+  ): Promise<NotificationPreferencesDto> {
+    await this.prisma.notificationPreference.upsert({
+      where: { boardId_userId_category: { boardId, userId, category } },
+      create: { boardId, userId, category, enabled },
+      update: { enabled },
+    });
+    return this.preferences(boardId, userId);
   }
 }

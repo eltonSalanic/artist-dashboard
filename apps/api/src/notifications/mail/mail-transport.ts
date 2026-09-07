@@ -11,8 +11,14 @@ export interface OutgoingMail {
    * a successful send and recording it.
    */
   idempotencyKey: string;
-  /** Feeds the List-Unsubscribe header, which Gmail surfaces as a UI button. */
+  /** The human link in the footer — a web page that explains and confirms. */
   unsubscribeUrl: string;
+  /**
+   * The List-Unsubscribe header target, which Gmail surfaces as a UI button
+   * and then POSTs to directly (RFC 8058). It has to be an endpoint that
+   * accepts POST with no session, so it points at the API, not the web app.
+   */
+  unsubscribePostUrl: string;
 }
 
 /**

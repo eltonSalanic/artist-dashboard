@@ -1,11 +1,16 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DispatcherService } from './dispatcher.service';
+import {
+  NotificationPreferencesController,
+  UnsubscribeController,
+} from './notifications.controller';
 import { MAIL_TRANSPORT } from './mail/mail-transport';
 import { NoopTransport } from './mail/noop.transport';
 import { ResendTransport } from './mail/resend.transport';
 import { SmtpTransport } from './mail/smtp.transport';
 import { NotificationsService } from './notifications.service';
+import { UnsubscribeService } from './unsubscribe.service';
 import { ReminderDueJob } from './reminder-due.job';
 
 /**
@@ -19,8 +24,10 @@ import { ReminderDueJob } from './reminder-due.job';
  */
 @Global()
 @Module({
+  controllers: [UnsubscribeController, NotificationPreferencesController],
   providers: [
     NotificationsService,
+    UnsubscribeService,
     DispatcherService,
     ReminderDueJob,
     {

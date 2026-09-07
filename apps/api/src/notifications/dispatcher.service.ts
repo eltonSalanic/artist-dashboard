@@ -86,7 +86,8 @@ export class DispatcherService {
         this.prisma.board.findUniqueOrThrow({ where: { id: row.boardId } }),
       ]);
 
-      const unsubscribeUrl = this.unsubscribeUrl(row);
+      const token = this.unsubscribeToken(row);
+      const unsubscribeUrl = `${this.webUrl()}/unsubscribe?token=${token}`;
       const mail = render(row.payload as Record<string, unknown>, {
         boardName: board.name,
         webUrl: this.webUrl(),
@@ -101,6 +102,7 @@ export class DispatcherService {
         text: mail.text,
         idempotencyKey: row.dedupeKey,
         unsubscribeUrl,
+        unsubscribePostUrl: `${this.apiUrl()}/unsubscribe?token=${token}`,
       });
 
       await this.prisma.emailDelivery.update({
@@ -183,11 +185,16 @@ export class DispatcherService {
     return this.config.get<string>('WEB_URL') ?? 'http://localhost:3000';
   }
 
-  private unsubscribeUrl(row: EmailDelivery): string {
-    const token = signUnsubscribeToken(
+  /** Where the one-click header points. The web app is a static client bundle
+   * and cannot answer a POST; this endpoint can. */
+  private apiUrl(): string {
+    return this.config.get<string>('API_URL') ?? 'http://localhost:3001';
+  }
+
+  private unsubscribeToken(row: EmailDelivery): string {
+    return signUnsubscribeToken(
       { userId: row.userId, boardId: row.boardId, category: row.category },
       this.config.getOrThrow<string>('UNSUBSCRIBE_SECRET'),
     );
-    return `${this.webUrl()}/unsubscribe?token=${token}`;
   }
 }

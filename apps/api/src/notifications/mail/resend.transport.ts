@@ -28,7 +28,7 @@ export class ResendTransport implements MailTransport {
         html: mail.html,
         text: mail.text,
         headers: {
-          'List-Unsubscribe': `<${mail.unsubscribeUrl}>`,
+          'List-Unsubscribe': `<${mail.unsubscribePostUrl}>`,
           'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
         },
       },
