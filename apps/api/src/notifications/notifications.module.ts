@@ -5,6 +5,8 @@ import {
   NotificationPreferencesController,
   UnsubscribeController,
 } from './notifications.controller';
+import { ResendWebhookController } from './resend-webhook.controller';
+import { SuppressionsService } from './suppressions.service';
 import { MAIL_TRANSPORT } from './mail/mail-transport';
 import { NoopTransport } from './mail/noop.transport';
 import { ResendTransport } from './mail/resend.transport';
@@ -24,10 +26,15 @@ import { ReminderDueJob } from './reminder-due.job';
  */
 @Global()
 @Module({
-  controllers: [UnsubscribeController, NotificationPreferencesController],
+  controllers: [
+    UnsubscribeController,
+    NotificationPreferencesController,
+    ResendWebhookController,
+  ],
   providers: [
     NotificationsService,
     UnsubscribeService,
+    SuppressionsService,
     DispatcherService,
     ReminderDueJob,
     {

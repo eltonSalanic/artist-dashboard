@@ -160,7 +160,29 @@ abbreviation shown, so nobody has to do the maths.
   retried with backoff. Retries are bounded; a permanently failing address is
   suppressed rather than retried forever.
 - Bounce and complaint webhooks from Resend mark an address undeliverable.
-  Nothing is sent to a suppressed address until it is manually cleared.
+  `POST /webhooks/resend` verifies the Svix signature over the **raw** request
+  body — hence `rawBody: true` in `main.ts`, since body-parser's
+  parse-then-restringify is not byte-identical — and writes `EmailSuppression`.
+  Only a *permanent* bounce suppresses; a transient one (a full mailbox, a
+  temporary outage) is ignored, and complaints always suppress. With no
+  `RESEND_WEBHOOK_SECRET` set the endpoint rejects everything rather than
+  trusting unsigned events. Nothing is sent to a suppressed address until the
+  row is cleared by hand.
+
+## Unsubscribe
+
+Two links, because they are two different things:
+
+| | Goes to | Who follows it |
+|---|---|---|
+| `List-Unsubscribe` header | `API_URL/unsubscribe?token=` | Gmail's one-click button, which **POSTs** with no session |
+| Footer link | `WEB_URL/unsubscribe?token=` | A person, who gets a page explaining what will happen |
+
+The header cannot point at the web app: it is a static client bundle and cannot
+answer a POST. The endpoint is POST-only and the page asks before acting —
+link scanners and mail-client prefetchers follow every URL in a message, and a
+GET that unsubscribed would let a security appliance turn someone's email off
+for them.
 
 ## Local development
 
