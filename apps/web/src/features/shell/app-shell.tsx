@@ -161,12 +161,12 @@ function Header({ me }: { me: MeResponse }) {
                 {me.user.email}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {role === "ADMIN" && (
-                <DropdownMenuItem onClick={() => router.push("/settings")}>
-                  <Settings data-icon="inline-start" />
-                  Settings
-                </DropdownMenuItem>
-              )}
+              {/* Everyone needs this now — their own email preferences live
+                  there, and the admin-only cards gate themselves. */}
+              <DropdownMenuItem onClick={() => router.push("/settings")}>
+                <Settings data-icon="inline-start" />
+                Settings
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={signOut}>
                 <LogOut data-icon="inline-start" />
                 Sign out

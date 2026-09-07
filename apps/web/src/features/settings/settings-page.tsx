@@ -12,6 +12,7 @@ import type { BoardDetailDto, InviteDto } from "@/features/auth/types";
 import { AppearanceCard } from "./appearance-card";
 import { DefaultLayoutCard } from "./default-layout-card";
 import { StatusesCard } from "./statuses-card";
+import { NotificationsCard } from "./notifications-card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,24 +41,25 @@ export function SettingsPage() {
   const { can } = usePermissions();
   const boardId = me.data?.board?.id;
 
-  if (!can("member.invite")) {
-    return (
-      <main className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-        Only board admins can manage settings.
-      </main>
-    );
-  }
-
   if (!boardId) return <Skeleton className="m-6 h-64" />;
+
+  // Notification preferences are personal, so every member gets this page —
+  // the admin half of it is what's gated.
+  const isAdmin = can("member.invite");
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold tracking-tight">Board settings</h1>
-      <MembersCard boardId={boardId} />
-      <InvitesCard boardId={boardId} />
-      <StatusesCard boardId={boardId} />
-      {can("board.appearance") && <AppearanceCard boardId={boardId} />}
-      <DefaultLayoutCard boardId={boardId} />
+      <h1 className="text-lg font-semibold tracking-tight">Settings</h1>
+      <NotificationsCard boardId={boardId} />
+      {isAdmin && (
+        <>
+          <MembersCard boardId={boardId} />
+          <InvitesCard boardId={boardId} />
+          <StatusesCard boardId={boardId} />
+          {can("board.appearance") && <AppearanceCard boardId={boardId} />}
+          <DefaultLayoutCard boardId={boardId} />
+        </>
+      )}
     </main>
   );
 }
