@@ -1,5 +1,5 @@
 import type { EventType, Priority } from "@artist/shared";
-import type { TaskStatusDto } from "@/features/auth/types";
+import type { TaskStatusDto } from "../auth/types";
 
 export interface TaskAssigneeDto {
   id: string;

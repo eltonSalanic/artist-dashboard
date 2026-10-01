@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    // Deliberately NO "dom": this package ships to React Native, so a lib.dom
+    // type leaking in (RequestInit, File, Window) must fail here rather than
+    // compile against the web app's tsconfig and break at Metro time.
+    "lib": ["ES2022"],
+    "types": ["node", "jest"],
+    "paths": {
+      "@artist/shared": ["../shared/src"],
+      "@artist/shared/*": ["../shared/src/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
+}

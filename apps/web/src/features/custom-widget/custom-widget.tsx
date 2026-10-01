@@ -13,7 +13,7 @@ import {
   Strikethrough,
   Undo2,
 } from "lucide-react";
-import { usePermissions } from "@/features/auth/permissions";
+import { usePermissions } from "@artist/api-client";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -23,7 +23,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCustomWidget, useSaveCustomWidget } from "./use-custom-widget";
+import { useCustomWidget, useSaveCustomWidget } from "@artist/api-client";
 
 /** A TipTap doc with no real content — one empty paragraph, or literally nothing. */
 function isEmptyDoc(content: Record<string, unknown>): boolean {

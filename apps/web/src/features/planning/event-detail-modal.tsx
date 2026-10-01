@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { EventTypes, type EventType } from "@artist/shared";
-import { usePermissions } from "@/features/auth/permissions";
+import { usePermissions } from "@artist/api-client";
 import { ArchivedBanner } from "@/features/archive/archived-banner";
 import { ItemActions } from "@/features/archive/item-actions";
-import { useTasks } from "@/features/tasks/use-tasks";
-import { useDeleteEvent, useEvent, useUpdateEvent } from "./use-events";
+import { useTasks } from "@artist/api-client";
+import { useDeleteEvent, useEvent, useUpdateEvent } from "@artist/api-client";
 import { useDetailParams } from "./use-detail-params";
 import {
   EventTypeBadge,
@@ -16,7 +16,7 @@ import {
   toLocalInputValue,
 } from "./planning-bits";
 import { LinkedTasks } from "./linked-tasks";
-import type { EventDto } from "./types";
+import type { EventDto } from "@artist/api-client";
 import {
   Dialog,
   DialogContent,

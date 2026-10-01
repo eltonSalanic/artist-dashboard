@@ -1,14 +1,12 @@
-"use client";
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { notify } from "../client";
 import { resolveBoardTheme, type BoardTheme } from "@artist/shared";
-import { apiFetch, ApiError } from "@/lib/api";
-import { useMe } from "@/features/auth/use-me";
-import type { MeResponse } from "@/features/auth/types";
+import { apiFetch, ApiError } from "../client";
+import { useMe } from "../auth/use-me";
+import type { MeResponse } from "../auth/types";
 
 const showError = (error: unknown) =>
-  toast.error(
+  notify.error(
     error instanceof ApiError ? error.message : "Couldn't save appearance",
   );
 

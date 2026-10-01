@@ -37,11 +37,33 @@ packages/shared     unchanged — Zod DTOs, can(), layout merge, enums, statuses
 packages/api-client NEW — apiFetch + the ~19 TanStack Query hooks, platform-agnostic
 ```
 
-`packages/api-client` is the keystone. The existing hooks in
-`apps/web/src/features/*/use-*.ts` contain no web-specific code, so extracting
-them hands the mobile app the entire data layer — cache keys, optimistic
-updates, invalidation — for free, and makes a server contract change a
-one-place fix.
+`packages/api-client` is the keystone: extracting the hooks hands the mobile app
+the data layer — cache keys, optimistic updates, invalidation — and makes a
+server contract change a one-place fix.
+
+**An audit of all 19 hooks corrected an early assumption.** They are not
+web-free. Findings:
+
+| Finding | Count | Consequence |
+|---|---|---|
+| Import `toast` from **`sonner`** | 12 | Dominant blocker. `sonner` is a DOM renderer with no RN build (`sonner-native` is a separate, API-incompatible package). Inverting one notifier unblocks all 12. |
+| Cleanly portable, move as-is | 4 | `use-activity`, `use-me`, `use-calendar`, `use-can-change-status` |
+| Read `process.env.NEXT_PUBLIC_*` | **0 hooks** | Config injection is a 2-file problem (`lib/api.ts`, `lib/supabase.ts`), not a 19-file one |
+| Import `next/*` | **1** | Only `use-detail-params.ts` (`next/navigation`) |
+
+Three specifics worth keeping in mind:
+
+- **`Omit<RequestInit, 'body'>` is a `lib.dom` type.** Reusing it would make the
+  package fail to typecheck in a DOM-free RN tsconfig, so `ApiFetchInit` is
+  hand-rolled with just the fields the call sites pass.
+- **`URLSearchParams` is a false alarm.** Three hooks use it, but only as a
+  query-string builder (`new`/`set`/`toString`), all within RN's polyfill. The
+  one member to avoid is `.size`, used only in the web-only
+  `use-detail-params.ts`.
+- **`use-can-change-status.ts` cannot move alone** — it depends on
+  `features/auth/permissions.tsx`, which is itself platform-agnostic
+  (context + `can()`, no DOM) and must co-move. That means **the package needs
+  JSX compilation**, not just plain `.ts`.
 
 Two things must be injected so the package stays platform-neutral:
 
@@ -62,7 +84,7 @@ Nine of the fifteen phases never open `apps/web`. The three that do:
 
 | Phase | What changes in web | Avoidable? |
 |---|---|---|
-| P1 | **26 files** change their `apiFetch` import; **19 hook files** move out of `features/`; `lib/api.ts` is replaced by a factory | No — the extraction *is* a web refactor. Behaviour-neutral by definition; the web Jest suite is the check. |
+| P1 | **26 files** change their `apiFetch` import; **15 hook files** move out of `features/` (+ `permissions.tsx` and 7 `types.ts`); `lib/api.ts` is replaced by a factory | No — the extraction *is* a web refactor. Behaviour-neutral by definition; the web Jest suite is the check. |
 | P2 | 3 files touch `EmailCategory` (`notifications-card.tsx`, `settings-page.tsx`, `unsubscribe/page.tsx`) | Yes — keep `export type EmailCategory = NotificationCategory` as an alias. |
 | P3 | **15 files** import `useMe`/`MeResponse`; **6 read `.board` directly**, incl. `app-shell.tsx`, which gates the whole authed app on `me.data.board` being non-null | Yes — add `boards[]` while keeping `board` populated with the first membership. |
 
@@ -134,13 +156,47 @@ trusting recall.
 
 ### P1 — `packages/api-client` extraction
 
-Move `apiFetch` and the ~19 TanStack Query hooks into a new workspace package;
-point `apps/web` at it. Invert the token source and base URL as described in
-[Architecture](#architecture).
+Move `apiFetch` and the portable query hooks into a new workspace package;
+point `apps/web` at it. Invert the three platform dependencies: base URL, token
+source, and — per the audit — the **notifier**.
 
 Pure refactor. **Done means: `apps/web` behaves identically and its Jest suite
 is green.** No feature work, no UI change. Largest single web diff in the
 project, and the highest-leverage move in it.
+
+**What moves (15 hooks):** the 4 cleanly portable ones, plus the 11 whose only
+web dependency is `sonner`. Co-moving: `features/auth/permissions.tsx` and the
+7 feature-local `types.ts` files (all clean, but their `@/*` path aliases need
+rewriting to package-relative).
+
+**What stays in `apps/web` (2):**
+
+- `use-detail-params.ts` — the hook *is* URL-as-UI-state. Native has no `?query`
+  bar; the Expo equivalent is `expo-router`'s `useLocalSearchParams`, and
+  `{ scroll: false }` is meaningless there. Reimplement per platform behind a
+  shared interface rather than moving it.
+- `use-grid-resize-guard.ts` — mechanically portable but semantically empty on
+  native: its contract is `react-grid-layout`'s resize callbacks and its payoff
+  is a CSS `select-none` to suppress drag-text-selection. Not a data hook.
+
+**What is deliberately deferred (2),** because each needs its *native*
+counterpart written before the abstraction can be designed honestly:
+
+- `use-attachments.ts` → **P10.** Three browser-only dependencies, one of them a
+  real behavioural break rather than a type error: it passes a raw `File` as a
+  `PUT` body, and RN's `fetch` cannot stream a `file://` URI that way. Needs
+  `expo-file-system`'s `uploadAsync` or a `{ uri, name, type }` FormData. Also
+  `File` as the mutation input type and `window.open` in `downloadAttachment`.
+  The three-step signed-URL flow and `MAX_ATTACHMENT_BYTES` guard are sound and
+  stay; only the byte-transfer primitive and URL-opener get injected.
+- `use-session.ts` → **P5.** The body (getSession + onAuthStateChange +
+  unsubscribe) is already platform-agnostic; it just imports the web Supabase
+  singleton. Moving it is trivial *after* P5 builds the RN client with a
+  secure-store adapter and `detectSessionInUrl: false`.
+
+Rejected alternative: copy the hooks into the package and leave web on its own
+copies. Two divergent data layers is exactly the tax the package exists to
+prevent.
 
 Rejected alternative: copy the hooks into the package and leave web on its own
 copies. Two divergent data layers is exactly the tax the package exists to

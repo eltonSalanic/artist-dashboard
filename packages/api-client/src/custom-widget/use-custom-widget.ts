@@ -1,9 +1,7 @@
-"use client";
-
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { notify } from "../client";
 import type { UpdateCustomWidgetDto } from "@artist/shared";
-import { apiFetch, ApiError } from "@/lib/api";
+import { apiFetch, ApiError } from "../client";
 
 export interface CustomWidgetDto {
   title: string;
@@ -31,7 +29,7 @@ export function useSaveCustomWidget(boardId: string) {
     onSuccess: (data) =>
       queryClient.setQueryData(["custom-widget", boardId], data),
     onError: (error) =>
-      toast.error(
+      notify.error(
         error instanceof ApiError ? error.message : "Could not save the note",
       ),
   });

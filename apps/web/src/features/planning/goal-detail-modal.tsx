@@ -2,15 +2,15 @@
 
 import { useState } from "react";
 import { GoalPeriods, type GoalPeriod } from "@artist/shared";
-import { usePermissions } from "@/features/auth/permissions";
+import { usePermissions } from "@artist/api-client";
 import { ArchivedBanner } from "@/features/archive/archived-banner";
 import { ItemActions } from "@/features/archive/item-actions";
-import { useTasks } from "@/features/tasks/use-tasks";
-import { useDeleteGoal, useGoal, useUpdateGoal } from "./use-goals";
+import { useTasks } from "@artist/api-client";
+import { useDeleteGoal, useGoal, useUpdateGoal } from "@artist/api-client";
 import { useDetailParams } from "./use-detail-params";
 import { formatDate, formatLocalDate, goalPeriodLabel } from "./planning-bits";
 import { LinkedTasks } from "./linked-tasks";
-import type { GoalDto } from "./types";
+import type { GoalDto } from "@artist/api-client";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {

@@ -3,9 +3,9 @@
 import { Activity } from "lucide-react";
 import { useDetailParams } from "@/features/planning/use-detail-params";
 import { relativeTime } from "@/features/comments/comment-bits";
-import { useActivityFeed } from "@/features/activity/use-activity";
+import { useActivityFeed } from "@artist/api-client";
 import { activityTaskId, renderActivity } from "@/features/activity/activity-bits";
-import type { ActivityItemDto } from "@/features/activity/types";
+import type { ActivityItemDto } from "@artist/api-client";
 import { Button } from "@/components/ui/button";
 import {
   Empty,

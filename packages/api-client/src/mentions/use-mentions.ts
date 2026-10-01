@@ -1,12 +1,10 @@
-"use client";
-
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { apiFetch, ApiError } from "@/lib/api";
+import { notify } from "../client";
+import { apiFetch, ApiError } from "../client";
 import type { MentionNotificationDto } from "./types";
 
 const showError = (error: unknown) =>
-  toast.error(error instanceof ApiError ? error.message : "Something went wrong");
+  notify.error(error instanceof ApiError ? error.message : "Something went wrong");
 
 const key = (boardId: string) => ["mentions", boardId];
 

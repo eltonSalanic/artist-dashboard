@@ -1,7 +1,5 @@
-"use client";
-
-import { useMe } from "@/features/auth/use-me";
-import { usePermissions } from "@/features/auth/permissions";
+import { useMe } from "../auth/use-me";
+import { usePermissions } from "../auth/permissions";
 import type { TaskAssigneeDto } from "./types";
 
 /**

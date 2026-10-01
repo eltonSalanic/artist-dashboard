@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { FocusPeriods, type FocusPeriod } from "@artist/shared";
-import { usePermissions } from "@/features/auth/permissions";
-import { useFocus, useSetFocus } from "@/features/planning/use-focus";
+import { usePermissions } from "@artist/api-client";
+import { useFocus, useSetFocus } from "@artist/api-client";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 

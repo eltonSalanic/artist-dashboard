@@ -2,7 +2,7 @@
 
 import { Suspense, useMemo, useState } from "react";
 import { Archive } from "lucide-react";
-import { useMe } from "@/features/auth/use-me";
+import { useMe } from "@artist/api-client";
 import { useDetailParams } from "@/features/planning/use-detail-params";
 import {
   formatDate,
@@ -19,8 +19,8 @@ import {
   CATEGORY_ACCENT,
   type CalendarCategory,
 } from "@/features/calendar/month-grid";
-import { useArchive } from "./use-archive";
-import type { ArchiveItemDto } from "./types";
+import { useArchive } from "@artist/api-client";
+import type { ArchiveItemDto } from "@artist/api-client";
 import { Button } from "@/components/ui/button";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
 import {

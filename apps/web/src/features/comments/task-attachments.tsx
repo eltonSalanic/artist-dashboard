@@ -2,8 +2,8 @@
 
 import { useRef } from "react";
 import { Paperclip, Upload } from "lucide-react";
-import { usePermissions } from "@/features/auth/permissions";
-import { useMe } from "@/features/auth/use-me";
+import { usePermissions } from "@artist/api-client";
+import { useMe } from "@artist/api-client";
 import { labelStyle } from "@/lib/label-style";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";

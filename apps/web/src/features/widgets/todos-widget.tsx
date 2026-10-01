@@ -18,9 +18,9 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, ListChecks } from "lucide-react";
-import { apiFetch } from "@/lib/api";
-import { usePermissions } from "@/features/auth/permissions";
-import type { BoardDetailDto, TaskStatusDto } from "@/features/auth/types";
+import { apiFetch } from "@artist/api-client";
+import { usePermissions } from "@artist/api-client";
+import type { BoardDetailDto, TaskStatusDto } from "@artist/api-client";
 import { TasksTable } from "@/features/tasks/tasks-table";
 import {
   formatDueDate,
@@ -31,8 +31,8 @@ import {
   useReorderTask,
   useTasks,
   useUpdateTask,
-} from "@/features/tasks/use-tasks";
-import type { TaskDto } from "@/features/tasks/types";
+} from "@artist/api-client";
+import type { TaskDto } from "@artist/api-client";
 import {
   Empty,
   EmptyDescription,

@@ -5,12 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { ListChecks, Plus, Search } from "lucide-react";
 import type { Priority } from "@artist/shared";
-import { apiFetch } from "@/lib/api";
-import { usePermissions } from "@/features/auth/permissions";
-import type { BoardDetailDto } from "@/features/auth/types";
-import { useCreateTask, useTasks, useUpdateTask } from "./use-tasks";
-import { useCanChangeStatus } from "./use-can-change-status";
-import type { TaskFilters } from "./types";
+import { apiFetch } from "@artist/api-client";
+import { usePermissions } from "@artist/api-client";
+import type { BoardDetailDto } from "@artist/api-client";
+import { useCreateTask, useTasks, useUpdateTask } from "@artist/api-client";
+import { useCanChangeStatus } from "@artist/api-client";
+import type { TaskFilters } from "@artist/api-client";
 import {
   AssigneeAvatars,
   formatDueDate,

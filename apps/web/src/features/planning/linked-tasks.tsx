@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { Archive, Link2Off, Plus } from "lucide-react";
-import { usePermissions } from "@/features/auth/permissions";
+import { usePermissions } from "@artist/api-client";
 import { StatusDot, SubtaskCount } from "@/features/tasks/task-bits";
-import { useCreateTask, useTasks, useUpdateTask } from "@/features/tasks/use-tasks";
-import type { TaskDto } from "@/features/tasks/types";
+import { useCreateTask, useTasks, useUpdateTask } from "@artist/api-client";
+import type { TaskDto } from "@artist/api-client";
 import { useDetailParams } from "./use-detail-params";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

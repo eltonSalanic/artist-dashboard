@@ -1,21 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { usePermissions } from "@/features/auth/permissions";
+import { usePermissions } from "@artist/api-client";
 import { ArchivedBanner } from "@/features/archive/archived-banner";
 import { ItemActions } from "@/features/archive/item-actions";
 import {
   useDeleteReminder,
   useReminder,
   useUpdateReminder,
-} from "./use-reminders";
+} from "@artist/api-client";
 import { useDetailParams } from "./use-detail-params";
 import {
   formatDateTime,
   fromLocalInputValue,
   toLocalInputValue,
 } from "./planning-bits";
-import type { ReminderDto } from "./types";
+import type { ReminderDto } from "@artist/api-client";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,

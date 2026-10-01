@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
-import { apiFetch, ApiError } from "@/lib/api";
-import type { TaskStatusDto } from "@/features/auth/types";
+import { apiFetch, ApiError } from "@artist/api-client";
+import type { TaskStatusDto } from "@artist/api-client";
 import { Button } from "@/components/ui/button";
 import {
   Card,

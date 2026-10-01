@@ -4,19 +4,19 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Trash2, UserRound } from "lucide-react";
-import { apiFetch } from "@/lib/api";
-import { usePermissions } from "@/features/auth/permissions";
-import { useMe } from "@/features/auth/use-me";
-import type { BoardDetailDto, BoardMemberDto, TaskStatusDto } from "@/features/auth/types";
-import { useGoals } from "@/features/planning/use-goals";
-import { useEvents } from "@/features/planning/use-events";
+import { apiFetch } from "@artist/api-client";
+import { usePermissions } from "@artist/api-client";
+import { useMe } from "@artist/api-client";
+import type { BoardDetailDto, BoardMemberDto, TaskStatusDto } from "@artist/api-client";
+import { useGoals } from "@artist/api-client";
+import { useEvents } from "@artist/api-client";
 import { useDetailParams } from "@/features/planning/use-detail-params";
 import { eventTypeLabel, formatDateTime } from "@/features/planning/planning-bits";
 import { CommentsSection } from "@/features/comments/comments-section";
 import { TaskAttachments } from "@/features/comments/task-attachments";
 import { ArchivedBanner } from "@/features/archive/archived-banner";
 import { ItemActions } from "@/features/archive/item-actions";
-import type { TaskDetailDto } from "./types";
+import type { TaskDetailDto } from "@artist/api-client";
 import {
   useChecklist,
   useCreateTask,
@@ -24,8 +24,8 @@ import {
   useSetAssignees,
   useTask,
   useUpdateTask,
-} from "./use-tasks";
-import { useCanChangeStatus } from "./use-can-change-status";
+} from "@artist/api-client";
+import { useCanChangeStatus } from "@artist/api-client";
 import {
   AssigneeAvatars,
   formatDueDate,

@@ -12,9 +12,9 @@ import {
   type WidgetColor,
   type WidgetType,
 } from "@artist/shared";
-import { apiFetch } from "@/lib/api";
-import type { BoardDetailDto } from "@/features/auth/types";
-import { useSaveBoardTheme } from "@/features/appearance/use-board-theme";
+import { apiFetch } from "@artist/api-client";
+import type { BoardDetailDto } from "@artist/api-client";
+import { useSaveBoardTheme } from "@artist/api-client";
 import {
   slotLabel,
   swatchStyle,

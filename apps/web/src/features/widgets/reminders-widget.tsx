@@ -2,18 +2,18 @@
 
 import { useState } from "react";
 import { BellRing } from "lucide-react";
-import { usePermissions } from "@/features/auth/permissions";
+import { usePermissions } from "@artist/api-client";
 import {
   useCreateReminder,
   useReminders,
   useUpdateReminder,
-} from "@/features/planning/use-reminders";
+} from "@artist/api-client";
 import {
   formatDateTime,
   fromLocalInputValue,
 } from "@/features/planning/planning-bits";
 import { useDetailParams } from "@/features/planning/use-detail-params";
-import type { ReminderDto } from "@/features/planning/types";
+import type { ReminderDto } from "@artist/api-client";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {

@@ -2,15 +2,15 @@
 
 import { Suspense, useState } from "react";
 import { ChevronLeft, ChevronRight, UserRound } from "lucide-react";
-import { useMe } from "@/features/auth/use-me";
-import { useCalendar } from "@/features/planning/use-calendar";
+import { useMe } from "@artist/api-client";
+import { useCalendar } from "@artist/api-client";
 import { useDetailParams } from "@/features/planning/use-detail-params";
 import { formatTime } from "@/features/planning/planning-bits";
 import { GoalDetailModal } from "@/features/planning/goal-detail-modal";
 import { EventDetailModal } from "@/features/planning/event-detail-modal";
 import { ReminderDetailModal } from "@/features/planning/reminder-detail-modal";
 import { TaskDetailModal } from "@/features/tasks/task-detail-modal";
-import type { CalendarItemDto } from "@/features/planning/types";
+import type { CalendarItemDto } from "@artist/api-client";
 import {
   buildMonthGrid,
   calendarCategory,

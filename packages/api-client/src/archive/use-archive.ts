@@ -1,13 +1,11 @@
-"use client";
-
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { notify } from "../client";
 import type { ArchiveKind } from "@artist/shared";
-import { apiFetch, ApiError } from "@/lib/api";
+import { apiFetch, ApiError } from "../client";
 import type { ArchiveItemDto } from "./types";
 
 const showError = (error: unknown) =>
-  toast.error(error instanceof ApiError ? error.message : "Something went wrong");
+  notify.error(error instanceof ApiError ? error.message : "Something went wrong");
 
 export function useArchive(boardId: string) {
   return useQuery({
@@ -58,7 +56,7 @@ export function useArchiveItem(boardId: string) {
       }),
     onSuccess: () => {
       invalidate();
-      toast.success("Moved to the archive");
+      notify.success("Moved to the archive");
     },
     onError: showError,
   });
@@ -74,7 +72,7 @@ export function useRestoreItem(boardId: string) {
       }),
     onSuccess: () => {
       invalidate();
-      toast.success("Back on your dashboard");
+      notify.success("Back on your dashboard");
     },
     onError: showError,
   });

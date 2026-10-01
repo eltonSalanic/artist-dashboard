@@ -3,18 +3,18 @@
 import { useState } from "react";
 import { GoalPeriods, type GoalPeriod } from "@artist/shared";
 import { Target } from "lucide-react";
-import { usePermissions } from "@/features/auth/permissions";
+import { usePermissions } from "@artist/api-client";
 import {
   useCreateGoal,
   useGoals,
   useUpdateGoal,
-} from "@/features/planning/use-goals";
+} from "@artist/api-client";
 import { useDetailParams } from "@/features/planning/use-detail-params";
 import {
   formatDate,
   goalPeriodLabel,
 } from "@/features/planning/planning-bits";
-import type { GoalDto } from "@/features/planning/types";
+import type { GoalDto } from "@artist/api-client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";

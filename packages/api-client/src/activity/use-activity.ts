@@ -1,8 +1,6 @@
-"use client";
-
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { ACTIVITY_PAGE_SIZE } from "@artist/shared";
-import { apiFetch } from "@/lib/api";
+import { apiFetch } from "../client";
 import type { ActivityPage } from "./types";
 
 /**

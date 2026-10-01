@@ -1,17 +1,15 @@
-"use client";
-
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { notify } from "../client";
 import type {
   CreateEventDto,
   EventType,
   UpdateEventDto,
 } from "@artist/shared";
-import { apiFetch, ApiError } from "@/lib/api";
+import { apiFetch, ApiError } from "../client";
 import type { EventDto } from "./types";
 
 const showError = (error: unknown) =>
-  toast.error(error instanceof ApiError ? error.message : "Something went wrong");
+  notify.error(error instanceof ApiError ? error.message : "Something went wrong");
 
 export interface EventFilters {
   type?: EventType;

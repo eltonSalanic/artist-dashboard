@@ -5,7 +5,7 @@ import type { ArchiveKind } from "@artist/shared";
 import { Archive, ArchiveRestore, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog, type ConfirmMode } from "./confirm-dialog";
-import { useArchiveItem, useRestoreItem } from "./use-archive";
+import { useArchiveItem, useRestoreItem } from "@artist/api-client";
 
 /**
  * The Archive/Delete pair that closes every detail modal. Both actions are

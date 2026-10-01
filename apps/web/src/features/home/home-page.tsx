@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import { useMe } from "@/features/auth/use-me";
+import { useMe } from "@artist/api-client";
 import { DashboardPage } from "@/features/dashboard/dashboard-page";
 import { TaskDetailModal } from "@/features/tasks/task-detail-modal";
 import { GoalDetailModal } from "@/features/planning/goal-detail-modal";

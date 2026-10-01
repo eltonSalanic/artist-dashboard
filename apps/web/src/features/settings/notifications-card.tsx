@@ -8,7 +8,7 @@ import {
   type NotificationCategory,
   type NotificationPreferencesDto,
 } from "@artist/shared";
-import { apiFetch, ApiError } from "@/lib/api";
+import { apiFetch, ApiError } from "@artist/api-client";
 import {
   Card,
   CardContent,

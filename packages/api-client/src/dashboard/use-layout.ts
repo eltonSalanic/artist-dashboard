@@ -1,16 +1,14 @@
-"use client";
-
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { notify } from "../client";
 import type { LayoutItem } from "@artist/shared";
-import { apiFetch, ApiError } from "@/lib/api";
+import { apiFetch, ApiError } from "../client";
 
 interface LayoutResponse {
   layout: LayoutItem[];
 }
 
 const showError = (error: unknown) =>
-  toast.error(
+  notify.error(
     error instanceof ApiError ? error.message : "Couldn't save layout",
   );
 
@@ -49,7 +47,7 @@ export function useResetLayout(boardId: string) {
       }),
     onSuccess: (data) => {
       queryClient.setQueryData(["layout", boardId], data);
-      toast.success("Layout reset to the board default");
+      notify.success("Layout reset to the board default");
     },
     onError: showError,
   });
@@ -66,7 +64,7 @@ export function useSaveDefaultLayout(boardId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["layout", boardId] });
       queryClient.invalidateQueries({ queryKey: ["board", boardId] });
-      toast.success("Default layout saved for the board");
+      notify.success("Default layout saved for the board");
     },
     onError: showError,
   });

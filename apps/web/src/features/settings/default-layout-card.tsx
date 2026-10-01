@@ -11,10 +11,10 @@ import {
   type LayoutItem,
   type WidgetType,
 } from "@artist/shared";
-import { apiFetch } from "@/lib/api";
-import type { BoardDetailDto } from "@/features/auth/types";
+import { apiFetch } from "@artist/api-client";
+import type { BoardDetailDto } from "@artist/api-client";
 import { DashboardGrid } from "@/features/dashboard/dashboard-grid";
-import { useSaveDefaultLayout } from "@/features/dashboard/use-layout";
+import { useSaveDefaultLayout } from "@artist/api-client";
 import { widgetRegistry } from "@/features/widgets/registry";
 import { WidgetFrame } from "@/features/widgets/widget-frame";
 import { Button } from "@/components/ui/button";

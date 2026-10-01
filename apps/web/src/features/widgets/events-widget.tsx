@@ -3,8 +3,8 @@
 import { useMemo, useState } from "react";
 import type { EventType } from "@artist/shared";
 import { CalendarPlus, MapPin } from "lucide-react";
-import { usePermissions } from "@/features/auth/permissions";
-import { useCreateEvent, useEvents } from "@/features/planning/use-events";
+import { usePermissions } from "@artist/api-client";
+import { useCreateEvent, useEvents } from "@artist/api-client";
 import { useDetailParams } from "@/features/planning/use-detail-params";
 import {
   eventTypeIcon,
@@ -12,7 +12,7 @@ import {
   formatDateTime,
   fromLocalInputValue,
 } from "@/features/planning/planning-bits";
-import type { EventDto } from "@/features/planning/types";
+import type { EventDto } from "@artist/api-client";
 import { Button } from "@/components/ui/button";
 import {
   Empty,

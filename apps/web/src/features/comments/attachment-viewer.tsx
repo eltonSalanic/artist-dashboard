@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatBytes } from "./comment-bits";
-import type { AttachmentDto } from "./types";
+import type { AttachmentDto } from "@artist/api-client";
 import { downloadAttachment, fetchViewUrl } from "./use-attachments";
 
 /**

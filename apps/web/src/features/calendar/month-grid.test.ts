@@ -1,5 +1,5 @@
 import { buildMonthGrid, calendarCategory, monthRange } from "./month-grid";
-import type { CalendarItemDto } from "@/features/planning/types";
+import type { CalendarItemDto } from "@artist/api-client";
 
 const item = (
   overrides: Partial<CalendarItemDto> & { date: string },

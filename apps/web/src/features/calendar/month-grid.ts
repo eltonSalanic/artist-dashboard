@@ -1,4 +1,4 @@
-import type { CalendarItemDto } from "@/features/planning/types";
+import type { CalendarItemDto } from "@artist/api-client";
 
 export interface MonthCell {
   date: Date;

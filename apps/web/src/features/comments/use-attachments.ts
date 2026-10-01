@@ -7,8 +7,8 @@ import {
   type CreateAttachmentDto,
   type UploadUrlDto,
 } from "@artist/shared";
-import { apiFetch, ApiError } from "@/lib/api";
-import type { AttachmentDto } from "./types";
+import { apiFetch, ApiError } from "@artist/api-client";
+import type { AttachmentDto } from "@artist/api-client";
 
 const showError = (error: unknown) =>
   toast.error(error instanceof ApiError ? error.message : "Upload failed");

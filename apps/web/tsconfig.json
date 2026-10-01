@@ -22,7 +22,9 @@
     "paths": {
       "@/*": ["./src/*"],
       "@artist/shared": ["../../packages/shared/src"],
-      "@artist/shared/*": ["../../packages/shared/src/*"]
+      "@artist/shared/*": ["../../packages/shared/src/*"],
+      "@artist/api-client": ["../../packages/api-client/src"],
+      "@artist/api-client/*": ["../../packages/api-client/src/*"]
     }
   },
   "include": [

@@ -2,8 +2,8 @@
 
 import type { Priority } from "@artist/shared";
 import { ListTree } from "lucide-react";
-import type { TaskStatusDto } from "@/features/auth/types";
-import type { TaskAssigneeDto } from "./types";
+import type { TaskStatusDto } from "@artist/api-client";
+import type { TaskAssigneeDto } from "@artist/api-client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";

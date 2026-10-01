@@ -9,7 +9,7 @@ import {
   NOTIFICATION_CATEGORY_COPY,
   type UnsubscribeResultDto,
 } from "@artist/shared";
-import { apiFetch, ApiError } from "@/lib/api";
+import { apiFetch, ApiError } from "@artist/api-client";
 import { Button } from "@/components/ui/button";
 import {
   Card,

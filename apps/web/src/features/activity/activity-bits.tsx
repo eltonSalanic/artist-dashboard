@@ -10,7 +10,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import type { ActivityType } from "@artist/shared";
-import type { ActivityItemDto } from "./types";
+import type { ActivityItemDto } from "@artist/api-client";
 
 const str = (value: unknown, fallback = "") =>
   typeof value === "string" ? value : fallback;

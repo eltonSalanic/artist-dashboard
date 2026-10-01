@@ -10,6 +10,8 @@ const config: Config = {
     "^@/(.*)$": "<rootDir>/src/$1",
     "^@artist/shared$": "<rootDir>/../../packages/shared/src",
     "^@artist/shared/(.*)$": "<rootDir>/../../packages/shared/src/$1",
+    "^@artist/api-client$": "<rootDir>/../../packages/api-client/src",
+    "^@artist/api-client/(.*)$": "<rootDir>/../../packages/api-client/src/$1",
   },
 };
 

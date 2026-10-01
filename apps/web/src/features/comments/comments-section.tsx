@@ -2,9 +2,9 @@
 
 import { useRef, useState } from "react";
 import { Paperclip, Pencil, Trash2, X } from "lucide-react";
-import type { BoardMemberDto } from "@/features/auth/types";
-import { usePermissions } from "@/features/auth/permissions";
-import { useMe } from "@/features/auth/use-me";
+import type { BoardMemberDto } from "@artist/api-client";
+import { usePermissions } from "@artist/api-client";
+import { useMe } from "@artist/api-client";
 import { labelStyle } from "@/lib/label-style";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -16,13 +16,13 @@ import {
   relativeTime,
 } from "./comment-bits";
 import { collectMentionIds } from "./mentions";
-import type { CommentDto } from "./types";
+import type { CommentDto } from "@artist/api-client";
 import {
   useComments,
   useCreateComment,
   useDeleteComment,
   useUpdateComment,
-} from "./use-comments";
+} from "@artist/api-client";
 import {
   useDeleteAttachment,
   useUploadAttachment,

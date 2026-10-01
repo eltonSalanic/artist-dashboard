@@ -10,19 +10,19 @@ import {
   type WidgetColor,
   type WidgetType,
 } from "@artist/shared";
-import { useMe } from "@/features/auth/use-me";
-import { usePermissions } from "@/features/auth/permissions";
+import { useMe } from "@artist/api-client";
+import { usePermissions } from "@artist/api-client";
 import {
   useBoardTheme,
   useSaveBoardTheme,
-} from "@/features/appearance/use-board-theme";
+} from "@artist/api-client";
 import { WidgetColorMenu } from "@/features/appearance/widget-color-menu";
-import { useEvents } from "@/features/planning/use-events";
+import { useEvents } from "@artist/api-client";
 import { widgetRegistry } from "@/features/widgets/registry";
 import { WidgetFrame } from "@/features/widgets/widget-frame";
 import { DashboardGrid } from "./dashboard-grid";
 import { mergeHidden } from "./dashboard-grid-inner";
-import { useLayout, useResetLayout, useSaveLayout } from "./use-layout";
+import { useLayout, useResetLayout, useSaveLayout } from "@artist/api-client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {

@@ -13,7 +13,7 @@ import {
   useClearMentions,
   useDismissMention,
   useMentions,
-} from "./use-mentions";
+} from "@artist/api-client";
 
 /**
  * A "you were mentioned" bell that only appears once you actually have an
