@@ -7,6 +7,7 @@ npm-workspaces monorepo:
 ```
 apps/api        NestJS 11 + Prisma 7 (driver adapter, PrismaPg)   → owns the DB schema
 apps/web        Next.js 16 (CLIENT-ONLY — routing/SEO only, no RSC/server actions)
+apps/mobile     Expo / React Native (PLANNED — see docs/mobile-app.md)
 packages/shared Zod DTOs + permission map + layout logic, consumed as TS source
 supabase/       local stack (config.toml, seed.sql) — Postgres, Auth, Storage, Mailpit
 ```
@@ -38,6 +39,14 @@ Prisma skills are installed under `apps/api/.claude/skills/` and are **scoped to
 - **`frontend-design`** — when creating or reshaping UI and you want intentional, non-templated visual design.
 - **`vercel-react-best-practices`** — React 19 / Next perf review.
 - ⚠️ **`nextjs-app-router-patterns` mostly does NOT apply.** That skill is about Server Components, streaming, and server-side data fetching — all of which this project deliberately avoids (see convention below). Ignore its RSC guidance; only its routing/file-convention bits are relevant.
+
+### Mobile — `apps/mobile` (Expo / React Native)
+17 skills are installed under `apps/mobile/.claude/skills/` and are **scoped to `apps/mobile/`** — they stay inert while you edit `apps/web`, which matters because several carry opinions that are wrong advice for the Next app. The per-area routing table lives in [apps/mobile/AGENTS.md](apps/mobile/AGENTS.md); read it before writing mobile code.
+
+- Official Expo (15): `expo-overview`, `expo-project-structure`, `expo-router`, `expo-dev-client`, `expo-web-to-native`, `expo-data-fetching`, `expo-design-system`, `expo-native-ui`, `expo-animation`, `expo-upgrade`, `eas-app-stores`, `eas-update`, `eas-workflows`, `eas-simulator`.
+- Third-party (3): `animate-expo`, `vercel-react-native-skills`, `upgrading-react-native`.
+- ⚠️ **No skill covers Expo push notifications or `expo-secure-store`/auth sessions.** Those are the two highest-risk areas (plan phases P5 and P13) — work from Expo's docs and verify on a physical device.
+- ⚠️ **`expo-tailwind-setup`, `expo-ui`, `use-dom`/`expo-dom` are deliberately NOT installed.** Mobile styling is React Native `StyleSheet` (NativeWind declined), and webviews are out — Expo was chosen over a Capacitor wrapper to avoid one.
 
 ---
 

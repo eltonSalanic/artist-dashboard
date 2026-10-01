@@ -24,7 +24,8 @@ for build conventions and skills read [CLAUDE.md](../CLAUDE.md). Those describe
 
 | Area | Status |
 |---|---|
-| [Email notifications](notifications.md) — every trigger, recipient, and suppression rule | Spec written, implementation in progress |
+| [Email notifications](notifications.md) — every trigger, recipient, and suppression rule | Shipped (no `Board.timezone` editor) |
+| [Mobile app](mobile-app.md) — the Expo/React Native app: phase tracker, navigation design, locked decisions | In progress — P0 done, P1 next |
 | Permissions — the `can()` map, role matrix, and where each action is enforced | Not yet written |
 | Tasks — statuses, subtasks, assignees, checklists, ordering | Not yet written |
 | Planning — goals, events, reminders, focus pins, calendar | Not yet written |
