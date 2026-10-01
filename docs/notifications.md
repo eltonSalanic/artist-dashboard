@@ -1,7 +1,15 @@
 # Email Notifications
 
-> **Status:** being built. The delivery pipeline ships; individual triggers land
-> one at a time — the Implemented column below is the authority on what is live.
+> **Status:** shipped. All six triggers below are live, as are preferences,
+> unsubscribe, and bounce/complaint suppression. Two further triggers were
+> specified and deliberately dropped (see [Considered and
+> dropped](#considered-and-dropped)).
+>
+> Still outstanding: no editor for `Board.timezone`, so every board renders
+> email timestamps in the schema default (`America/Los_Angeles`). Going to
+> production also needs a Resend domain with SPF/DKIM, and an API host that
+> **stays running** — the dispatcher and the reminder job are in-process
+> `@Interval`s and will never fire on a serverless host that sleeps.
 
 Transactional email is sent through **[Resend](https://resend.com)**. Board
 invites are the exception: they are still sent by Supabase GoTrue, which owns
