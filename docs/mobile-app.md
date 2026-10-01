@@ -114,7 +114,9 @@ deliberately scheduled after mobile rather than blocking it.
 | **P15** | [Web board switcher](#p15--web-board-switcher) | **web** | ☐ |
 
 Each phase ends with a **hard stop for manual verification** before the next
-begins, per the project's phase-gated convention.
+begins, per the project's phase-gated convention. What to verify is tracked
+separately in the [feature test checklist](test-checklist.md) — this table
+records what has been *built*, that one records what has been *seen working*.
 
 P1–P4 are API and package work that require no React Native decisions. They are
 safe to build first and are useful even if the runtime choice ever changed.
