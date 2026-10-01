@@ -30,7 +30,7 @@ async function main() {
 
   // Unique per run, so repeated tests aren't swallowed by the dedupe index.
   const dedupeKey = `diagnostic:${Date.now()}`;
-  await prisma.emailDelivery.create({
+  await prisma.notificationDelivery.create({
     data: {
       boardId: membership.boardId,
       userId: user.id,

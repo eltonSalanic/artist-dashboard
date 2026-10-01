@@ -51,14 +51,17 @@ describe('UnsubscribeService', () => {
     ).resolves.toEqual({ category: 'SCHEDULE', boardName: 'Neon Harbor' });
 
     const [args] = prisma.notificationPreference.upsert.mock.calls[0] as [
-      { where: { boardId_userId_category: unknown }; create: unknown },
+      { where: { boardId_userId_category_channel: unknown }; create: unknown },
     ];
-    expect(args.where.boardId_userId_category).toEqual({
+    expect(args.where.boardId_userId_category_channel).toEqual({
       boardId: 'b1',
       userId: 'u1',
       category: 'SCHEDULE',
+      // An email unsubscribe link silences email, not push: one click in a
+      // mail client must not also kill the person's phone notifications.
+      channel: 'EMAIL',
     });
-    expect(args.create).toEqual({ ...CLAIMS, enabled: false });
+    expect(args.create).toEqual({ ...CLAIMS, channel: 'EMAIL', enabled: false });
   });
 
   it('rejects a tampered token without touching preferences', async () => {

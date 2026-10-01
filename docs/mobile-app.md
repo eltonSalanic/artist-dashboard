@@ -1,7 +1,8 @@
 # Mobile App (React Native + Expo)
 
-> **Status:** in progress. P0 done; P1 built and awaiting your verification.
-> No Expo app exists yet — `apps/mobile/` holds only skills and agent docs.
+> **Status:** in progress. P0 and P1 done; P2 built and awaiting your
+> verification. No Expo app exists yet — `apps/mobile/` holds only skills and
+> agent docs.
 >
 > **Progress is tracked in [the phase table](#phases).** Update the Status
 > column in the same commit that lands the work. ☑ done and user-verified ·
@@ -97,8 +98,8 @@ deliberately scheduled after mobile rather than blocking it.
 | # | Phase | Touches | Status |
 |---|---|---|---|
 | **P0** | [Groundwork](#p0--groundwork) — skills, docs, branch | tooling | ☑ |
-| **P1** | [`packages/api-client` extraction](#p1--packagesapi-client-extraction) | shared, **web** | ◐ |
-| **P2** | [Notification channels + push transport](#p2--notification-channels--push-transport) | api, shared | ☐ |
+| **P1** | [`packages/api-client` extraction](#p1--packagesapi-client-extraction) | shared, **web** | ☑ |
+| **P2** | [Notification channels + push transport](#p2--notification-channels--push-transport) | api, shared | ◐ |
 | **P3** | [Multi-board API](#p3--multi-board-api) | api, shared | ☐ |
 | **P4** | [Cross-board calendar + inbox](#p4--cross-board-calendar--inbox) | api, shared | ☐ |
 | **P5** | [Expo skeleton + auth on a real device](#p5--expo-skeleton--auth-on-a-real-device) | mobile | ☐ |
@@ -266,6 +267,40 @@ data model.
 
 Doing this before the app exists means the mobile client ships against a server
 that is already ready for it.
+
+**Built.** 17 new API tests; `docs/notifications.md` carries the full channel
+design. Three deviations from the plan above, all deliberate:
+
+- **One outbox, not a parallel `PushDelivery`.** Reading the dispatcher changed
+  my mind: the claim/backoff/drain machinery is concurrency-sensitive and a
+  second copy would be a second place to get multi-instance safety wrong. The
+  per-channel differences — transport, and what "undeliverable" means — were
+  already seams. `NotificationDelivery` gained a `channel` instead.
+- **No `EmailCategory` alias was needed.** `packages/shared` already exported
+  its own `NotificationCategory`, deliberately decoupled from the Prisma enum
+  because `DUE_TASKS` was cut. The Prisma enum appeared in only two API files,
+  so **P2 touched zero web files** — better than planned.
+- **The preferences DTO is unchanged.** `NotificationPreference` carries a
+  channel, but the existing endpoint reads and writes `EMAIL` explicitly, so
+  `apps/web` needed no edit. The push dimension surfaces in P13, when there is
+  a screen for it.
+
+Two things worth knowing for later phases:
+
+- **`prisma migrate dev` wanted to DROP `EmailDelivery`** and recreate it under
+  the new name — 33 rows, including the dedupe history that stops already-sent
+  mail going again. The migration is hand-written with `ALTER TABLE … RENAME`;
+  `migrate diff` confirms no drift. Any future rename in this repo needs the
+  same `--create-only` inspection.
+- **`expo-server-sdk` is unusable here.** It is ESM-only and ts-jest cannot
+  require it, the same wall this codebase already hit with svix.
+  `ExpoPushTransport` uses `fetch` against the endpoint and shapes read off
+  `expo-server-sdk@7.2.0`.
+
+Also fixed in passing: `apps/api`'s `npm test` ran `jest` only, and ts-jest here
+does not typecheck — so the suite could pass while `tsc` failed. It genuinely
+did during this phase. The script now typechecks first, matching
+`packages/api-client`.
 
 ### P3 — Multi-board API
 

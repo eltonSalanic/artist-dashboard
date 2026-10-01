@@ -23,7 +23,7 @@ function setup(rows: ReturnType<typeof reminder>[], members = ['u1', 'u2']) {
         .fn()
         .mockResolvedValue(members.map((userId) => ({ userId }))),
     },
-    emailDelivery: { createMany: jest.fn() },
+    notificationDelivery: { createMany: jest.fn() },
   };
   const notifications = new NotificationsService(
     prisma as unknown as PrismaService,
@@ -35,10 +35,22 @@ function setup(rows: ReturnType<typeof reminder>[], members = ['u1', 'u2']) {
   return { job, prisma };
 }
 
-const queuedRows = (prisma: { emailDelivery: { createMany: jest.Mock } }) =>
-  prisma.emailDelivery.createMany.mock.calls.flatMap(
-    ([args]: [{ data: { userId: string; dedupeKey: string }[] }]) => args.data,
-  );
+/**
+ * Queued rows, narrowed to the email channel. `queue()` fans every
+ * notification out across channels, and these tests are about *who* gets told
+ * and *how often* — questions that are the same on every channel, so counting
+ * one channel keeps them readable.
+ */
+const queuedRows = (prisma: {
+  notificationDelivery: { createMany: jest.Mock };
+}) =>
+  prisma.notificationDelivery.createMany.mock.calls
+    .flatMap(
+      ([args]: [
+        { data: { userId: string; dedupeKey: string; channel: string }[] },
+      ]) => args.data,
+    )
+    .filter((row) => row.channel === 'EMAIL');
 
 describe('ReminderDueJob', () => {
   it('notifies every board member — reminders have no owner', async () => {
@@ -108,7 +120,7 @@ describe('ReminderDueJob', () => {
     const { job, prisma } = setup([reminder()], []);
 
     await expect(job.run(NOW)).resolves.toBe(0);
-    expect(prisma.emailDelivery.createMany).not.toHaveBeenCalled();
+    expect(prisma.notificationDelivery.createMany).not.toHaveBeenCalled();
   });
 
   it('never throws out of the tick', async () => {

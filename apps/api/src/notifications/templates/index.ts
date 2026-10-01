@@ -1,11 +1,22 @@
 import { formatDate, formatDateTime } from './format';
 import { esc, renderLayout } from './layout';
 
-export interface RenderedMail {
+export interface RenderedNotification {
   subject: string;
   html: string;
   text: string;
+  /**
+   * Push wording, when a template wants different copy for a lock screen than
+   * for an inbox. Optional: the dispatcher falls back to the subject line and
+   * the first line of the plaintext body, which reads acceptably for all seven
+   * templates today. Per-template push copy lands with the client that can
+   * actually display it.
+   */
+  push?: { title: string; body: string };
 }
+
+/** @deprecated Kept so the name change doesn't ripple; use RenderedNotification. */
+export type RenderedMail = RenderedNotification;
 
 export interface TemplateContext {
   boardName: string;
@@ -23,7 +34,7 @@ export interface TemplateContext {
 export type TemplateRenderer = (
   payload: Record<string, unknown>,
   ctx: TemplateContext,
-) => RenderedMail;
+) => RenderedNotification;
 
 const str = (payload: Record<string, unknown>, key: string): string =>
   typeof payload[key] === 'string' ? payload[key] : '';

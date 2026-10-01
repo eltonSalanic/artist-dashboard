@@ -29,7 +29,7 @@ describe('TasksService', () => {
       createMany: jest.fn(),
       findMany: jest.fn(),
     },
-    emailDelivery: { createMany: jest.fn() },
+    notificationDelivery: { createMany: jest.fn() },
     activity: { create: jest.fn() },
     $transaction: jest.fn(),
   };
@@ -93,10 +93,24 @@ describe('TasksService', () => {
       template: string;
       dedupeKey: string;
     }[] => {
-      const calls = prisma.emailDelivery.createMany.mock.calls as [
-        { data: { userId: string; template: string; dedupeKey: string }[] },
+      const calls = prisma.notificationDelivery.createMany.mock.calls as [
+        {
+          data: {
+            userId: string;
+            template: string;
+            dedupeKey: string;
+            channel: string;
+          }[];
+        },
       ][];
-      return calls.length ? calls[calls.length - 1][0].data : [];
+        // Filtered to one channel: queue() fans each notification out across
+        // channels, and these assertions are about who is notified and with
+        // what key — identical on every channel.
+      return calls.length
+        ? calls[calls.length - 1][0].data.filter(
+            (row) => row.channel === 'EMAIL',
+          )
+        : [];
     };
 
     it('queues an assignment email keyed on the new assignment row', async () => {
@@ -154,7 +168,7 @@ describe('TasksService', () => {
         assigneeIds: ['u2', 'u1'],
       });
 
-      expect(prisma.emailDelivery.createMany).not.toHaveBeenCalled();
+      expect(prisma.notificationDelivery.createMany).not.toHaveBeenCalled();
     });
 
     it('queues nothing when the assignee set is unchanged', async () => {
@@ -164,7 +178,7 @@ describe('TasksService', () => {
 
       await service.setAssignees('b1', 't1', 'u1', { assigneeIds: ['u2'] });
 
-      expect(prisma.emailDelivery.createMany).not.toHaveBeenCalled();
+      expect(prisma.notificationDelivery.createMany).not.toHaveBeenCalled();
     });
   });
 

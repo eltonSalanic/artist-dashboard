@@ -2,6 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { DispatcherService } from './dispatcher.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NoopTransport } from './mail/noop.transport';
+import { NoopPushTransport } from './push/noop.push-transport';
 
 describe('DispatcherService', () => {
   const row = {
@@ -9,6 +10,7 @@ describe('DispatcherService', () => {
     boardId: 'b1',
     userId: 'u1',
     category: 'MENTIONS' as const,
+    channel: 'EMAIL' as const,
     template: 'diagnostic',
     dedupeKey: 'mention:m1',
     payload: { note: 'hello' },
@@ -21,7 +23,7 @@ describe('DispatcherService', () => {
   };
 
   const prisma = {
-    emailDelivery: {
+    notificationDelivery: {
       findMany: jest.fn(),
       updateMany: jest.fn(),
       findUnique: jest.fn(),
@@ -32,6 +34,11 @@ describe('DispatcherService', () => {
     membership: { findUnique: jest.fn() },
     notificationPreference: { findUnique: jest.fn() },
     emailSuppression: { findUnique: jest.fn() },
+    deviceToken: {
+      findMany: jest.fn(),
+      count: jest.fn(),
+      deleteMany: jest.fn(),
+    },
   };
   const config = {
     get: jest.fn((key: string) =>
@@ -41,12 +48,17 @@ describe('DispatcherService', () => {
   };
 
   let transport: NoopTransport;
+  let pushTransport: NoopPushTransport;
   let service: DispatcherService;
 
   /** The `data` of the last status write on the delivery row. */
-  const lastUpdate = (): { status?: string; sendAfter?: Date } => {
-    const calls = prisma.emailDelivery.update.mock.calls as [
-      { data: { status?: string; sendAfter?: Date } },
+  const lastUpdate = (): {
+    status?: string;
+    sendAfter?: Date;
+    lastError?: string | null;
+  } => {
+    const calls = prisma.notificationDelivery.update.mock.calls as [
+      { data: { status?: string; sendAfter?: Date; lastError?: string | null } },
     ][];
     return calls[calls.length - 1][0].data;
   };
@@ -54,15 +66,17 @@ describe('DispatcherService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     transport = new NoopTransport();
+    pushTransport = new NoopPushTransport();
     service = new DispatcherService(
       prisma as unknown as PrismaService,
       config as unknown as ConfigService,
       transport,
+      pushTransport,
     );
 
-    prisma.emailDelivery.findMany.mockResolvedValue([{ id: 'd1' }]);
-    prisma.emailDelivery.updateMany.mockResolvedValue({ count: 1 });
-    prisma.emailDelivery.findUnique.mockResolvedValue(row);
+    prisma.notificationDelivery.findMany.mockResolvedValue([{ id: 'd1' }]);
+    prisma.notificationDelivery.updateMany.mockResolvedValue({ count: 1 });
+    prisma.notificationDelivery.findUnique.mockResolvedValue(row);
     prisma.user.findUnique.mockResolvedValue({ email: 'drums@band.test' });
     prisma.user.findUniqueOrThrow.mockResolvedValue({
       email: 'drums@band.test',
@@ -89,11 +103,11 @@ describe('DispatcherService', () => {
   });
 
   it('skips a row another instance already claimed', async () => {
-    prisma.emailDelivery.updateMany.mockResolvedValue({ count: 0 });
+    prisma.notificationDelivery.updateMany.mockResolvedValue({ count: 0 });
 
     expect(await service.drain()).toBe(0);
     expect(transport.sent).toHaveLength(0);
-    expect(prisma.emailDelivery.update).not.toHaveBeenCalled();
+    expect(prisma.notificationDelivery.update).not.toHaveBeenCalled();
   });
 
   it('suppresses instead of sending when the category is muted', async () => {
@@ -136,7 +150,7 @@ describe('DispatcherService', () => {
   });
 
   it('gives up once the backoff schedule is exhausted', async () => {
-    prisma.emailDelivery.findUnique.mockResolvedValue({ ...row, attempts: 5 });
+    prisma.notificationDelivery.findUnique.mockResolvedValue({ ...row, attempts: 5 });
     jest.spyOn(transport, 'send').mockRejectedValue(new Error('smtp down'));
 
     await service.drain();
@@ -145,7 +159,7 @@ describe('DispatcherService', () => {
   });
 
   it('fails a delivery naming a template that does not exist', async () => {
-    prisma.emailDelivery.findUnique.mockResolvedValue({
+    prisma.notificationDelivery.findUnique.mockResolvedValue({
       ...row,
       template: 'nope',
     });
@@ -154,5 +168,82 @@ describe('DispatcherService', () => {
 
     expect(transport.sent).toHaveLength(0);
     expect(lastUpdate().status).toBe('QUEUED');
+  });
+
+  describe('push channel', () => {
+    const pushRow = { ...row, id: 'd2', channel: 'PUSH' as const };
+
+    beforeEach(() => {
+      prisma.notificationDelivery.findUnique.mockResolvedValue(pushRow);
+      prisma.deviceToken.count.mockResolvedValue(1);
+      prisma.deviceToken.findMany.mockResolvedValue([
+        { token: 'tok-a' },
+        { token: 'tok-b' },
+      ]);
+      prisma.deviceToken.deleteMany.mockResolvedValue({ count: 0 });
+    });
+
+    it('sends to every device the recipient registered', async () => {
+      await service.drain();
+
+      expect(pushTransport.sent).toHaveLength(1);
+      expect(pushTransport.sent[0].tokens).toEqual(['tok-a', 'tok-b']);
+      // Rendered from the same template as the email, so the two can never
+      // describe the same event differently.
+      expect(pushTransport.sent[0].title).toBe('Artist Dashboard test email');
+      expect(pushTransport.sent[0].idempotencyKey).toBe('mention:m1');
+      expect(lastUpdate().status).toBe('SENT');
+    });
+
+    it('carries deep-link data so a tap lands somewhere specific', async () => {
+      await service.drain();
+      expect(pushTransport.sent[0].data).toEqual({
+        boardId: 'b1',
+        template: 'diagnostic',
+      });
+    });
+
+    // The push analogue of a bounced address: nothing to deliver to. Suppressed
+    // rather than retried, because no amount of waiting creates a device.
+    it('suppresses when the recipient has no registered device', async () => {
+      prisma.deviceToken.count.mockResolvedValue(0);
+
+      await service.drain();
+
+      expect(pushTransport.sent).toHaveLength(0);
+      expect(lastUpdate().status).toBe('SUPPRESSED');
+      expect(lastUpdate().lastError).toMatch(/no registered device/);
+    });
+
+    // A push row must not consult the email suppression list — a bounced
+    // address says nothing about whether a phone can be reached.
+    it('ignores email suppression for a push row', async () => {
+      prisma.emailSuppression.findUnique.mockResolvedValue({
+        reason: 'bounce',
+      });
+
+      await service.drain();
+
+      expect(lastUpdate().status).toBe('SENT');
+    });
+
+    it('deletes tokens Expo reports as gone', async () => {
+      jest
+        .spyOn(pushTransport, 'send')
+        .mockResolvedValue({ invalidTokens: ['tok-b'] });
+
+      await service.drain();
+
+      expect(prisma.deviceToken.deleteMany).toHaveBeenCalledWith({
+        where: { token: { in: ['tok-b'] } },
+      });
+      // A dead token is not a delivery failure — the other device got it.
+      expect(lastUpdate().status).toBe('SENT');
+    });
+
+    it('does not send mail for a push row', async () => {
+      await service.drain();
+      expect(transport.sent).toHaveLength(0);
+    });
   });
 });

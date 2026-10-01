@@ -54,3 +54,19 @@ export interface UnsubscribeResultDto {
   category: NotificationCategory;
   boardName: string;
 }
+
+/** Platforms we mint push tokens for. Mirrors the Prisma `DevicePlatform`. */
+export const DevicePlatforms = ['IOS', 'ANDROID'] as const;
+export type DevicePlatform = (typeof DevicePlatforms)[number];
+
+/**
+ * Registering an install for push. Idempotent on the token: the same install
+ * re-registering must update its row, not add another, or one notification
+ * would arrive twice.
+ */
+export const registerDeviceSchema = z.object({
+  /** An Expo push token, e.g. `ExponentPushToken[xxxxxxxx]`. */
+  token: z.string().trim().min(1).max(256),
+  platform: z.enum(DevicePlatforms),
+});
+export type RegisterDeviceDto = z.infer<typeof registerDeviceSchema>;

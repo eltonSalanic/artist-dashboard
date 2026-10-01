@@ -23,7 +23,7 @@ describe('CommentsService', () => {
     attachment: { findMany: jest.fn().mockResolvedValue([]) },
     activity: { create: jest.fn() },
     mentionNotification: { createMany: jest.fn() },
-    emailDelivery: { createMany: jest.fn() },
+    notificationDelivery: { createMany: jest.fn() },
     $transaction: jest.fn(),
   };
   prisma.$transaction.mockImplementation((fn: (tx: unknown) => unknown) =>
@@ -110,19 +110,24 @@ describe('CommentsService', () => {
         mentions: ['u1', 'u2'],
       });
 
-      expect(prisma.emailDelivery.createMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: [
-            expect.objectContaining({
-              userId: 'u2',
-              category: 'MENTIONS',
-              template: 'comment-mention',
-              // Keyed on (comment, recipient): a replay of the same comment
-              // can never produce a second email.
-              dedupeKey: 'mention:c1:u2',
-            }),
-          ],
-        }),
+      const [args] = prisma.notificationDelivery.createMany.mock
+        .calls[0] as [{ data: { userId: string; channel: string }[] }];
+      // One recipient, one row per channel — u1 is the author and is excluded
+      // from both.
+      expect(args.data).toHaveLength(2);
+      expect(args.data).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            userId: 'u2',
+            category: 'MENTIONS',
+            channel: 'EMAIL',
+            template: 'comment-mention',
+            // Keyed on (comment, recipient): a replay of the same comment
+            // can never produce a second notification.
+            dedupeKey: 'mention:c1:u2',
+          }),
+          expect.objectContaining({ userId: 'u2', channel: 'PUSH' }),
+        ]),
       );
     });
 
@@ -135,7 +140,7 @@ describe('CommentsService', () => {
         mentions: [],
       });
 
-      expect(prisma.emailDelivery.createMany).not.toHaveBeenCalled();
+      expect(prisma.notificationDelivery.createMany).not.toHaveBeenCalled();
     });
 
     it('rejects a mention of someone outside the board', async () => {

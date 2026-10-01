@@ -38,8 +38,9 @@ model User {
   attachments   Attachment[]
   activities    Activity[]
   mentions      MentionNotification[]
-  emails        EmailDelivery[]
-  emailPrefs    NotificationPreference[]
+  notifications NotificationDelivery[]
+  notifyPrefs   NotificationPreference[]
+  devices       DeviceToken[]
 }
 
 model Board {
@@ -67,8 +68,8 @@ model Board {
   activities    Activity[]
   customWidget  CustomWidgetContent?
   mentions      MentionNotification[]
-  emails        EmailDelivery[]
-  emailPrefs    NotificationPreference[]
+  notifications NotificationDelivery[]
+  notifyPrefs   NotificationPreference[]
 }
 
 model Membership {
@@ -379,7 +380,7 @@ model UserLayout {
 
 /// Which notification a delivery belongs to. Coarser than the trigger list on
 /// purpose — people reason about categories, not individual triggers.
-enum EmailCategory {
+enum NotificationCategory {
   MENTIONS
   ASSIGNMENTS
   SCHEDULE
@@ -387,7 +388,17 @@ enum EmailCategory {
   DUE_TASKS
 }
 
-enum EmailStatus {
+/// How a notification reaches someone. One outbox serves both: the claim,
+/// backoff and drain machinery is concurrency-sensitive and duplicating it per
+/// channel would mean two places to get multi-instance safety wrong. What
+/// genuinely differs per channel is the transport and what counts as
+/// undeliverable, and both of those are already seams.
+enum NotificationChannel {
+  EMAIL
+  PUSH
+}
+
+enum NotificationStatus {
   QUEUED
   SENDING
   SENT
@@ -395,49 +406,80 @@ enum EmailStatus {
   SUPPRESSED
 }
 
+enum DevicePlatform {
+  IOS
+  ANDROID
+}
+
 /// Transactional outbox. Triggers write a row inside the same transaction as
 /// the mutation that caused them; the dispatcher sends it *after* that commits,
 /// so a mail outage can never roll back a task assignment.
-model EmailDelivery {
-  id        String        @id @default(uuid()) @db.Uuid
-  boardId   String        @db.Uuid
-  userId    String        @db.Uuid
-  category  EmailCategory
+model NotificationDelivery {
+  id        String               @id @default(uuid()) @db.Uuid
+  boardId   String               @db.Uuid
+  userId    String               @db.Uuid
+  category  NotificationCategory
+  channel   NotificationChannel  @default(EMAIL)
   /// Template name, e.g. `task-assigned`.
   template  String
   /// Deterministic per (trigger, subject row, recipient) — the uniqueness that
   /// makes a replayed cron or a double-submit a no-op. Also sent to Resend as
   /// its Idempotency-Key, which covers the crash-after-send case this can't.
-  dedupeKey String        @unique
+  ///
+  /// Unique *with* the channel, not alone: one trigger legitimately produces an
+  /// email row and a push row, and they must not dedupe each other away.
+  dedupeKey String
   /// Everything the template needs, snapshotted like Activity.meta so the mail
   /// still renders after the task is renamed or deleted.
-  payload   Json          @default("{}")
-  status    EmailStatus   @default(QUEUED)
-  attempts  Int           @default(0)
+  payload   Json                 @default("{}")
+  status    NotificationStatus   @default(QUEUED)
+  attempts  Int                  @default(0)
   lastError String?
   /// Backoff gate — the dispatcher only claims rows that are due.
-  sendAfter DateTime      @default(now())
+  sendAfter DateTime             @default(now())
   sentAt    DateTime?
-  createdAt DateTime      @default(now())
-  board     Board         @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime             @default(now())
+  board     Board                @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([dedupeKey, channel])
   @@index([status, sendAfter])
   @@index([boardId, createdAt])
+}
+
+/// Expo push tokens. One row per install, not per user — the same person on a
+/// phone and a tablet is two rows, and both should ring.
+model DeviceToken {
+  id         String         @id @default(uuid()) @db.Uuid
+  userId     String         @db.Uuid
+  /// The Expo push token. Unique because re-registering the same install must
+  /// update the existing row rather than accumulate duplicates that would make
+  /// one notification arrive twice.
+  token      String         @unique
+  platform   DevicePlatform
+  /// Touched on every registration so a stale install can be pruned later.
+  lastSeenAt DateTime       @default(now())
+  createdAt  DateTime       @default(now())
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 /// Per user *per board* — someone in two bands can be loud in one and quiet in
 /// the other. A missing row means enabled, so there is nothing to backfill.
 model NotificationPreference {
-  id       String        @id @default(uuid()) @db.Uuid
-  boardId  String        @db.Uuid
-  userId   String        @db.Uuid
-  category EmailCategory
-  enabled  Boolean       @default(true)
-  board    Board         @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id       String               @id @default(uuid()) @db.Uuid
+  boardId  String               @db.Uuid
+  userId   String               @db.Uuid
+  category NotificationCategory
+  /// Muting email for a category should not mute push for it, so the channel is
+  /// part of the identity. Rows that predate push are EMAIL.
+  channel  NotificationChannel  @default(EMAIL)
+  enabled  Boolean              @default(true)
+  board    Board                @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user     User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([boardId, userId, category])
+  @@unique([boardId, userId, category, channel])
 }
 
 /// Addresses that bounced or complained. Keyed by email rather than user id:

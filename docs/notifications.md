@@ -1,7 +1,9 @@
-# Email Notifications
+# Notifications
 
-> **Status:** shipped. All six triggers below are live, as are preferences,
-> unsubscribe, and bounce/complaint suppression. Two further triggers were
+> **Status:** email shipped; push plumbed but not yet reachable. All six
+> triggers below are live on both channels, as are preferences, unsubscribe,
+> and bounce/complaint suppression. Nothing can arrive on a phone until the
+> mobile app registers a device — see [docs/mobile-app.md](mobile-app.md). Two further triggers were
 > specified and deliberately dropped (see [Considered and
 > dropped](#considered-and-dropped)).
 >
@@ -120,6 +122,73 @@ value stays in the `EmailCategory` enum rather than being migrated away: it
 costs nothing, and dropping an enum value is a migration that would have to be
 reversed to bring the digest back.
 
+## Channels
+
+One notification, two ways out. `NotificationDelivery` carries a
+`NotificationChannel` (`EMAIL` | `PUSH`), and `queue()` writes **one row per
+channel** for every recipient.
+
+**Why one outbox and not two.** The claim mechanism (a conditional `updateMany`
+that checks `count === 1`), the backoff ladder and the drain loop are
+concurrency-sensitive, and a second copy would be a second place to get
+multi-instance safety wrong. What actually differs per channel is the transport
+and what counts as undeliverable — and both of those were already seams.
+
+**Both channels render the same template**, once, in the dispatcher. Email uses
+`subject`/`html`/`text`; push uses the optional `push: { title, body }` a
+template may provide, falling back to the subject line and the first non-empty
+line of the plaintext body. A template cannot describe the same event
+differently on two channels because it is only asked once.
+
+**`dedupeKey` is unique *with* the channel**, not alone. One trigger
+legitimately produces an email row and a push row for the same person, and a
+single-column unique index would have deduped one of them away.
+
+| | Email | Push |
+|---|---|---|
+| Transport | Resend (prod) / Mailpit (dev) / noop (test) | Expo (prod) / noop everywhere else |
+| Undeliverable means | address in `EmailSuppression` (bounce/complaint) | recipient has no row in `DeviceToken` |
+| Dead recipient handling | address suppressed until cleared by hand | token deleted on `DeviceNotRegistered` |
+| Idempotency | `dedupeKey` as Resend's `Idempotency-Key` | `dedupeKey` as Expo's message `id` |
+
+Push is a **no-op outside `NODE_ENV=production`**, for the same reason mail goes
+to Mailpit: a dev run must not be able to buzz a real phone, and the destructive
+demo seed has to stay safe to re-run.
+
+### Device tokens
+
+`DeviceToken` is one row per *install*, not per user — the same person on a
+phone and a tablet is two rows and both should ring. Deliberately **not**
+board-scoped: a token belongs to a device, which belongs to a person who may be
+in several bands. Which boards may notify them is a preference question.
+
+`POST /me/devices` upserts on the token itself rather than on
+`(userId, token)`. Re-registering on every launch must touch one row, not
+accumulate them, or a notification would arrive once per launch the user ever
+made; and a handed-down device signing in as someone else must *move* the token,
+or its previous owner would keep receiving the new owner's notifications.
+`DELETE /me/devices/:token` is scoped to the caller's own tokens — without
+that, knowing a token string would be enough to silence someone else's phone.
+
+**`expo-server-sdk` is not used.** It is the official client, but it is ESM-only
+(`"type": "module"`) and ts-jest cannot require it — the same wall this codebase
+already hit with svix. `ExpoPushTransport` speaks to
+`https://exp.host/--/api/v2/push/send` over `fetch` instead; the endpoint, the
+request shape, the 100-recipient chunk limit and the `DeviceNotRegistered`
+sentinel were all read off `expo-server-sdk@7.2.0` rather than recalled.
+
+### What push does not have yet
+
+- **No per-template push copy.** Every template falls back to its subject line
+  and first body line. Readable, but not written for a lock screen. Deferred
+  until there is a device to see it on.
+- **No push preference UI.** `NotificationPreference` carries the channel, and
+  the existing `GET/PUT /boards/:id/notification-preferences` is scoped to
+  `EMAIL` explicitly, so its DTO is unchanged and `apps/web` needed no edit.
+  Nothing yet lets anyone mute push specifically.
+- **An email unsubscribe link silences email only.** One click in a mail client
+  must not also kill the person's phone notifications.
+
 ## Suppression rules
 
 An email is not sent when any of these hold at send time:
@@ -136,8 +205,9 @@ Only the recipient is re-checked at send time. See trigger 6 above.
 
 ## Preferences
 
-Stored per user **per board** — someone in two bands can be loud in one and
-quiet in the other. Categories are coarser than triggers on purpose:
+Stored per user **per board, per channel** — someone in two bands can be loud
+in one and quiet in the other, and loud on their phone while quiet in their
+inbox. Categories are coarser than triggers on purpose:
 
 | Category | Covers triggers |
 |---|---|

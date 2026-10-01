@@ -1,10 +1,10 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import type { EmailCategory } from '../../generated/prisma/client';
+import type { NotificationCategory as DbNotificationCategory } from '../../generated/prisma/client';
 
 export interface UnsubscribeClaims {
   userId: string;
   boardId: string;
-  category: EmailCategory;
+  category: DbNotificationCategory;
 }
 
 const encode = (claims: UnsubscribeClaims) =>
@@ -50,5 +50,5 @@ export function verifyUnsubscribeToken(
     .toString('utf8')
     .split(':');
   if (!userId || !boardId || !category) return null;
-  return { userId, boardId, category: category as EmailCategory };
+  return { userId, boardId, category: category as DbNotificationCategory };
 }

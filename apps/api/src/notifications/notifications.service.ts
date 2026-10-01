@@ -4,7 +4,11 @@ import {
   type NotificationCategory,
   type NotificationPreferencesDto,
 } from '@artist/shared';
-import { Prisma, type EmailCategory } from '../../generated/prisma/client';
+import {
+  Prisma,
+  type NotificationCategory as DbNotificationCategory,
+  type NotificationChannel,
+} from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
@@ -13,11 +17,21 @@ import { PrismaService } from '../prisma/prisma.service';
  */
 export type NotificationWriter = PrismaService | Prisma.TransactionClient;
 
-export interface QueueEmailInput {
+/**
+ * Every notification is queued on every channel, and the dispatcher decides at
+ * send time whether each one can actually go out — a push row for someone with
+ * no registered device is SUPPRESSED exactly as an email row for a bounced
+ * address is. That follows the pipeline's existing rule that recipients are
+ * resolved at send time, not at queue time, and keeps `queue()` a single cheap
+ * write inside the caller's transaction instead of a per-recipient lookup.
+ */
+const FAN_OUT: NotificationChannel[] = ['EMAIL', 'PUSH'];
+
+export interface QueueNotificationInput {
   boardId: string;
   /** Recipient. Their address is resolved at send time, not now. */
   userId: string;
-  category: EmailCategory;
+  category: DbNotificationCategory;
   /** Key into the template registry. */
   template: string;
   /**
@@ -64,20 +78,23 @@ export class NotificationsService {
    */
   async queue(
     client: NotificationWriter,
-    inputs: QueueEmailInput | QueueEmailInput[],
+    inputs: QueueNotificationInput | QueueNotificationInput[],
   ): Promise<void> {
     const rows = Array.isArray(inputs) ? inputs : [inputs];
     if (rows.length === 0) return;
 
-    await client.emailDelivery.createMany({
-      data: rows.map((row) => ({
-        boardId: row.boardId,
-        userId: row.userId,
-        category: row.category,
-        template: row.template,
-        dedupeKey: row.dedupeKey,
-        payload: (row.payload ?? {}) as Prisma.InputJsonValue,
-      })),
+    await client.notificationDelivery.createMany({
+      data: rows.flatMap((row) =>
+        FAN_OUT.map((channel) => ({
+          boardId: row.boardId,
+          userId: row.userId,
+          category: row.category,
+          channel,
+          template: row.template,
+          dedupeKey: row.dedupeKey,
+          payload: (row.payload ?? {}) as Prisma.InputJsonValue,
+        })),
+      ),
       skipDuplicates: true,
     });
   }
@@ -91,8 +108,12 @@ export class NotificationsService {
     boardId: string,
     userId: string,
   ): Promise<NotificationPreferencesDto> {
+    // Scoped to email on purpose. The table now carries a channel, but the
+    // only UI that exists is the email settings card, and widening this DTO
+    // would change apps/web for no user-visible gain. Push preferences get
+    // surfaced when the mobile app has a screen for them.
     const rows = await this.prisma.notificationPreference.findMany({
-      where: { boardId, userId },
+      where: { boardId, userId, channel: 'EMAIL' },
       select: { category: true, enabled: true },
     });
     const byCategory = new Map(rows.map((row) => [row.category, row.enabled]));
@@ -113,8 +134,15 @@ export class NotificationsService {
     enabled: boolean,
   ): Promise<NotificationPreferencesDto> {
     await this.prisma.notificationPreference.upsert({
-      where: { boardId_userId_category: { boardId, userId, category } },
-      create: { boardId, userId, category, enabled },
+      where: {
+        boardId_userId_category_channel: {
+          boardId,
+          userId,
+          category,
+          channel: 'EMAIL',
+        },
+      },
+      create: { boardId, userId, category, channel: 'EMAIL', enabled },
       update: { enabled },
     });
     return this.preferences(boardId, userId);

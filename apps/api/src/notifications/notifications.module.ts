@@ -12,6 +12,11 @@ import { NoopTransport } from './mail/noop.transport';
 import { ResendTransport } from './mail/resend.transport';
 import { SmtpTransport } from './mail/smtp.transport';
 import { NotificationsService } from './notifications.service';
+import { DevicesController } from './devices.controller';
+import { DevicesService } from './devices.service';
+import { PUSH_TRANSPORT } from './push/push-transport';
+import { ExpoPushTransport } from './push/expo.push-transport';
+import { NoopPushTransport } from './push/noop.push-transport';
 import { UnsubscribeService } from './unsubscribe.service';
 import { ReminderDueJob } from './reminder-due.job';
 
@@ -30,9 +35,11 @@ import { ReminderDueJob } from './reminder-due.job';
     UnsubscribeController,
     NotificationPreferencesController,
     ResendWebhookController,
+    DevicesController,
   ],
   providers: [
     NotificationsService,
+    DevicesService,
     UnsubscribeService,
     SuppressionsService,
     DispatcherService,
@@ -47,7 +54,21 @@ import { ReminderDueJob } from './reminder-due.job';
         return new SmtpTransport(config);
       },
     },
+    {
+      provide: PUSH_TRANSPORT,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        // Noop outside production for the same reason mail goes to Mailpit: a
+        // dev run must not be able to buzz a real phone, and the demo seed has
+        // to stay safe to re-run. Also noop in prod until an Expo project is
+        // configured, so a missing credential degrades instead of crashing.
+        if (config.get<string>('NODE_ENV') !== 'production') {
+          return new NoopPushTransport();
+        }
+        return new ExpoPushTransport(config.get<string>('EXPO_ACCESS_TOKEN'));
+      },
+    },
   ],
-  exports: [NotificationsService],
+  exports: [NotificationsService, DevicesService],
 })
 export class NotificationsModule {}

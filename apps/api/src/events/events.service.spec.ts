@@ -24,7 +24,7 @@ describe('EventsService notifications', () => {
   const prisma = {
     event: { create: jest.fn(), update: jest.fn(), findFirst: jest.fn() },
     membership: { findMany: jest.fn() },
-    emailDelivery: { createMany: jest.fn() },
+    notificationDelivery: { createMany: jest.fn() },
     $transaction: jest.fn(),
   };
   prisma.$transaction.mockImplementation((fn: (tx: unknown) => unknown) =>
@@ -43,17 +43,25 @@ describe('EventsService notifications', () => {
     dedupeKey: string;
     payload: Record<string, unknown>;
   }[] => {
-    const calls = prisma.emailDelivery.createMany.mock.calls as [
+    const calls = prisma.notificationDelivery.createMany.mock.calls as [
       {
         data: {
           userId: string;
           template: string;
           dedupeKey: string;
+          channel: string;
           payload: Record<string, unknown>;
         }[];
       },
     ][];
-    return calls.length ? calls[calls.length - 1][0].data : [];
+    // Filtered to one channel: queue() fans each notification out across
+    // channels, and these assertions are about who is notified and with what
+    // key — identical on every channel.
+    return calls.length
+      ? calls[calls.length - 1][0].data.filter(
+          (row) => row.channel === 'EMAIL',
+        )
+      : [];
   };
 
   beforeEach(() => {
@@ -124,7 +132,7 @@ describe('EventsService notifications', () => {
 
       await service.update('b1', 'e1', { title: 'New name' }, 'u1');
 
-      expect(prisma.emailDelivery.createMany).not.toHaveBeenCalled();
+      expect(prisma.notificationDelivery.createMany).not.toHaveBeenCalled();
     });
 
     it('stays quiet for a venue change — that is the group chat’s job', async () => {
@@ -136,7 +144,7 @@ describe('EventsService notifications', () => {
 
       await service.update('b1', 'e1', { location: 'Somewhere else' }, 'u1');
 
-      expect(prisma.emailDelivery.createMany).not.toHaveBeenCalled();
+      expect(prisma.notificationDelivery.createMany).not.toHaveBeenCalled();
     });
 
     it('notifies when only the end time changes', async () => {

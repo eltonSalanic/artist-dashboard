@@ -1,11 +1,21 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Interval } from '@nestjs/schedule';
-import type { EmailDelivery } from '../../generated/prisma/client';
+import type { NotificationDelivery } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MAIL_TRANSPORT, type MailTransport } from './mail/mail-transport';
-import { templates } from './templates';
+import { PUSH_TRANSPORT, type PushTransport } from './push/push-transport';
+import { templates, type RenderedNotification } from './templates';
 import { signUnsubscribeToken } from './unsubscribe-token';
+
+/**
+ * First non-empty line of a plaintext body — the push fallback when a template
+ * offers no push copy of its own. Email bodies open with the sentence that
+ * matters, so this reads correctly rather than truncating mid-greeting.
+ */
+function firstLine(text: string): string {
+  return text.split('\n').map((l) => l.trim()).find((l) => l.length > 0) ?? '';
+}
 
 /** Waits between retries. Index by attempts-so-far; past the end, give up. */
 const BACKOFF_MS = [60_000, 5 * 60_000, 30 * 60_000, 2 * 60 * 60_000];
@@ -24,6 +34,7 @@ export class DispatcherService {
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     @Inject(MAIL_TRANSPORT) private readonly transport: MailTransport,
+    @Inject(PUSH_TRANSPORT) private readonly push: PushTransport,
   ) {}
 
   @Interval(10_000)
@@ -37,7 +48,7 @@ export class DispatcherService {
   }
 
   async drain(limit = BATCH): Promise<number> {
-    const due = await this.prisma.emailDelivery.findMany({
+    const due = await this.prisma.notificationDelivery.findMany({
       where: { status: 'QUEUED', sendAfter: { lte: new Date() } },
       orderBy: { createdAt: 'asc' },
       take: limit,
@@ -58,20 +69,20 @@ export class DispatcherService {
    * `updateMany` filtered on the status we expect, so the write itself is the
    * lock: exactly one caller sees count === 1.
    */
-  private async claim(id: string): Promise<EmailDelivery | null> {
-    const { count } = await this.prisma.emailDelivery.updateMany({
+  private async claim(id: string): Promise<NotificationDelivery | null> {
+    const { count } = await this.prisma.notificationDelivery.updateMany({
       where: { id, status: 'QUEUED' },
       data: { status: 'SENDING', attempts: { increment: 1 } },
     });
     if (count === 0) return null;
-    return this.prisma.emailDelivery.findUnique({ where: { id } });
+    return this.prisma.notificationDelivery.findUnique({ where: { id } });
   }
 
-  private async deliver(row: EmailDelivery): Promise<boolean> {
+  private async deliver(row: NotificationDelivery): Promise<boolean> {
     try {
       const reason = await this.suppressionReason(row);
       if (reason) {
-        await this.prisma.emailDelivery.update({
+        await this.prisma.notificationDelivery.update({
           where: { id: row.id },
           data: { status: 'SUPPRESSED', lastError: reason },
         });
@@ -88,24 +99,30 @@ export class DispatcherService {
 
       const token = this.unsubscribeToken(row);
       const unsubscribeUrl = `${this.webUrl()}/unsubscribe?token=${token}`;
-      const mail = render(row.payload as Record<string, unknown>, {
+      const rendered = render(row.payload as Record<string, unknown>, {
         boardName: board.name,
         webUrl: this.webUrl(),
         unsubscribeUrl,
         timezone: board.timezone,
       });
 
-      await this.transport.send({
-        to: user.email,
-        subject: mail.subject,
-        html: mail.html,
-        text: mail.text,
-        idempotencyKey: row.dedupeKey,
-        unsubscribeUrl,
-        unsubscribePostUrl: `${this.apiUrl()}/unsubscribe?token=${token}`,
-      });
+      // One rendered notification, two ways out. The template is rendered once
+      // either way so email and push can never describe the event differently.
+      if (row.channel === 'PUSH') {
+        await this.deliverPush(row, rendered);
+      } else {
+        await this.transport.send({
+          to: user.email,
+          subject: rendered.subject,
+          html: rendered.html,
+          text: rendered.text,
+          idempotencyKey: row.dedupeKey,
+          unsubscribeUrl,
+          unsubscribePostUrl: `${this.apiUrl()}/unsubscribe?token=${token}`,
+        });
+      }
 
-      await this.prisma.emailDelivery.update({
+      await this.prisma.notificationDelivery.update({
         where: { id: row.id },
         data: { status: 'SENT', sentAt: new Date(), lastError: null },
       });
@@ -117,10 +134,44 @@ export class DispatcherService {
   }
 
   /**
+   * Sends to every device the recipient has registered, then deletes any token
+   * Expo reports as gone. A dead token is permanent — retrying it would burn
+   * the row's attempts and eventually fail a delivery that actually succeeded
+   * on the person's other devices.
+   */
+  private async deliverPush(
+    row: NotificationDelivery,
+    rendered: RenderedNotification,
+  ): Promise<void> {
+    const devices = await this.prisma.deviceToken.findMany({
+      where: { userId: row.userId },
+      select: { token: true },
+    });
+    // suppressionReason() already rejected the no-device case, so reaching here
+    // with an empty list means the last device was removed mid-flight.
+    if (devices.length === 0) return;
+
+    const { invalidTokens } = await this.push.send({
+      tokens: devices.map((d) => d.token),
+      title: rendered.push?.title ?? rendered.subject,
+      body: rendered.push?.body ?? firstLine(rendered.text),
+      data: { boardId: row.boardId, template: row.template },
+      idempotencyKey: row.dedupeKey,
+    });
+
+    if (invalidTokens.length > 0) {
+      await this.prisma.deviceToken.deleteMany({
+        where: { token: { in: invalidTokens } },
+      });
+      this.logger.log(`Pruned ${invalidTokens.length} dead device token(s)`);
+    }
+  }
+
+  /**
    * Re-checked at send time, not at queue time: someone can leave the board or
    * mute a category in the seconds between.
    */
-  private async suppressionReason(row: EmailDelivery): Promise<string | null> {
+  private async suppressionReason(row: NotificationDelivery): Promise<string | null> {
     const [user, membership, preference] = await Promise.all([
       this.prisma.user.findUnique({
         where: { id: row.userId },
@@ -132,10 +183,11 @@ export class DispatcherService {
       }),
       this.prisma.notificationPreference.findUnique({
         where: {
-          boardId_userId_category: {
+          boardId_userId_category_channel: {
             boardId: row.boardId,
             userId: row.userId,
             category: row.category,
+            channel: row.channel,
           },
         },
         select: { enabled: true },
@@ -147,6 +199,15 @@ export class DispatcherService {
     // A missing preference row means enabled — nothing to backfill.
     if (preference && !preference.enabled) return 'category muted';
 
+    // Undeliverability means different things per channel. An email bounces;
+    // a push has nowhere to go. Everything above this line is shared.
+    if (row.channel === 'PUSH') {
+      const devices = await this.prisma.deviceToken.count({
+        where: { userId: row.userId },
+      });
+      return devices === 0 ? 'recipient has no registered device' : null;
+    }
+
     const suppressed = await this.prisma.emailSuppression.findUnique({
       where: { email: user.email },
       select: { reason: true },
@@ -155,7 +216,7 @@ export class DispatcherService {
   }
 
   private async recordFailure(
-    row: EmailDelivery,
+    row: NotificationDelivery,
     error: unknown,
   ): Promise<void> {
     const message = error instanceof Error ? error.message : String(error);
@@ -163,7 +224,7 @@ export class DispatcherService {
 
     if (backoff === undefined) {
       this.logger.error(`Giving up on ${row.dedupeKey}: ${message}`);
-      await this.prisma.emailDelivery.update({
+      await this.prisma.notificationDelivery.update({
         where: { id: row.id },
         data: { status: 'FAILED', lastError: message },
       });
@@ -171,7 +232,7 @@ export class DispatcherService {
     }
 
     this.logger.warn(`Retrying ${row.dedupeKey} in ${backoff}ms: ${message}`);
-    await this.prisma.emailDelivery.update({
+    await this.prisma.notificationDelivery.update({
       where: { id: row.id },
       data: {
         status: 'QUEUED',
@@ -191,7 +252,7 @@ export class DispatcherService {
     return this.config.get<string>('API_URL') ?? 'http://localhost:3001';
   }
 
-  private unsubscribeToken(row: EmailDelivery): string {
+  private unsubscribeToken(row: NotificationDelivery): string {
     return signUnsubscribeToken(
       { userId: row.userId, boardId: row.boardId, category: row.category },
       this.config.getOrThrow<string>('UNSUBSCRIBE_SECRET'),
