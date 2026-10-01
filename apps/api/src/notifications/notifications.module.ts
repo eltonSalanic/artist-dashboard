@@ -60,8 +60,12 @@ import { ReminderDueJob } from './reminder-due.job';
       useFactory: (config: ConfigService) => {
         // Noop outside production for the same reason mail goes to Mailpit: a
         // dev run must not be able to buzz a real phone, and the demo seed has
-        // to stay safe to re-run. Also noop in prod until an Expo project is
-        // configured, so a missing credential degrades instead of crashing.
+        // to stay safe to re-run.
+        //
+        // In production the real transport is always used. EXPO_ACCESS_TOKEN is
+        // genuinely optional — Expo only requires it once a project turns on
+        // push security — so there is no credential to gate on, and gating on
+        // one would silently disable push for projects that need no token.
         if (config.get<string>('NODE_ENV') !== 'production') {
           return new NoopPushTransport();
         }

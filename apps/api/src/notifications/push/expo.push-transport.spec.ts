@@ -21,7 +21,7 @@ describe('ExpoPushTransport', () => {
     global.fetch = fetchMock as unknown as typeof fetch;
   });
 
-  it('posts all tokens in one request with the dedupe key as the id', async () => {
+  it('posts all tokens in one request, with the dedupe key as collapseId', async () => {
     fetchMock.mockResolvedValue(ok([{ status: 'ok' }, { status: 'ok' }]));
 
     await expect(transport.send(push)).resolves.toEqual({ invalidTokens: [] });
@@ -33,7 +33,7 @@ describe('ExpoPushTransport', () => {
       to: ['tok-a', 'tok-b'],
       title: 'Dana mentioned you',
       body: 'can you check the mix?',
-      id: 'mention:c1:u1',
+      collapseId: 'mention:c1:u1',
     });
   });
 

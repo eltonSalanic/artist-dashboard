@@ -10,8 +10,12 @@ export interface OutgoingPush {
    */
   data?: Record<string, string>;
   /**
-   * The delivery's `dedupeKey`. Expo accepts an id per message and collapses
-   * repeats, covering the same crash-after-send window the outbox cannot.
+   * The delivery's `dedupeKey`, passed to Expo as `collapseId`.
+   *
+   * Named for what it is used for, not for a guarantee it provides: Expo's
+   * message format has no idempotency key, so this does not prevent a repeat
+   * send — it only makes the repeat replace the earlier notification on the
+   * device instead of stacking beside it.
    */
   idempotencyKey: string;
 }

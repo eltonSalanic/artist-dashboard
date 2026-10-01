@@ -13,16 +13,25 @@ import { DevicesService } from './devices.service';
 export class DevicesController {
   constructor(private readonly devices: DevicesService) {}
 
+  // Both return a body rather than void. `apiFetch` calls `response.json()`
+  // unconditionally, so an empty 200 would reject with a parse error on a write
+  // that actually succeeded — which is why every other endpoint here returns an
+  // object too.
   @Post()
-  register(
+  async register(
     @CurrentUser() user: AuthUser,
     @Body(new ZodValidationPipe(registerDeviceSchema)) dto: RegisterDeviceDto,
   ) {
-    return this.devices.register(user.userId, dto);
+    await this.devices.register(user.userId, dto);
+    return { registered: true };
   }
 
   @Delete(':token')
-  unregister(@CurrentUser() user: AuthUser, @Param('token') token: string) {
-    return this.devices.unregister(user.userId, token);
+  async unregister(
+    @CurrentUser() user: AuthUser,
+    @Param('token') token: string,
+  ) {
+    await this.devices.unregister(user.userId, token);
+    return { unregistered: true };
   }
 }

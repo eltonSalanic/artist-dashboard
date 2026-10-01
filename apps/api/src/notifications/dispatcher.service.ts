@@ -147,9 +147,13 @@ export class DispatcherService {
       where: { userId: row.userId },
       select: { token: true },
     });
-    // suppressionReason() already rejected the no-device case, so reaching here
-    // with an empty list means the last device was removed mid-flight.
-    if (devices.length === 0) return;
+    // suppressionReason() already rejected the no-device case, so an empty list
+    // here means the last device was unregistered between that check and this
+    // read. Thrown rather than returned: returning would let deliver() stamp
+    // the row SENT and record a delivery that never happened.
+    if (devices.length === 0) {
+      throw new Error('recipient has no registered device');
+    }
 
     const { invalidTokens } = await this.push.send({
       tokens: devices.map((d) => d.token),
@@ -172,7 +176,7 @@ export class DispatcherService {
    * mute a category in the seconds between.
    */
   private async suppressionReason(row: NotificationDelivery): Promise<string | null> {
-    const [user, membership, preference] = await Promise.all([
+    const [user, membership, preferences] = await Promise.all([
       this.prisma.user.findUnique({
         where: { id: row.userId },
         select: { email: true },
@@ -181,18 +185,25 @@ export class DispatcherService {
         where: { boardId_userId: { boardId: row.boardId, userId: row.userId } },
         select: { id: true },
       }),
-      this.prisma.notificationPreference.findUnique({
+      // Both channels for this category, so a push row can honour an email
+      // mute. Nothing writes PUSH preference rows yet — the settings card and
+      // the unsubscribe link are email-scoped — so reading only `row.channel`
+      // would mean a muted category still buzzed the phone, and no API existed
+      // to stop it. Someone who mutes "mentions" means it; the explicit PUSH
+      // row wins once a screen exists to write one.
+      this.prisma.notificationPreference.findMany({
         where: {
-          boardId_userId_category_channel: {
-            boardId: row.boardId,
-            userId: row.userId,
-            category: row.category,
-            channel: row.channel,
-          },
+          boardId: row.boardId,
+          userId: row.userId,
+          category: row.category,
         },
-        select: { enabled: true },
+        select: { channel: true, enabled: true },
       }),
     ]);
+
+    const forChannel = preferences.find((p) => p.channel === row.channel);
+    const forEmail = preferences.find((p) => p.channel === 'EMAIL');
+    const preference = forChannel ?? forEmail;
 
     if (!user) return 'recipient no longer exists';
     if (!membership) return 'recipient is no longer a board member';

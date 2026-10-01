@@ -32,7 +32,7 @@ describe('DispatcherService', () => {
     user: { findUnique: jest.fn(), findUniqueOrThrow: jest.fn() },
     board: { findUniqueOrThrow: jest.fn() },
     membership: { findUnique: jest.fn() },
-    notificationPreference: { findUnique: jest.fn() },
+    notificationPreference: { findMany: jest.fn() },
     emailSuppression: { findUnique: jest.fn() },
     deviceToken: {
       findMany: jest.fn(),
@@ -87,7 +87,7 @@ describe('DispatcherService', () => {
       timezone: 'America/Los_Angeles',
     });
     prisma.membership.findUnique.mockResolvedValue({ id: 'm1' });
-    prisma.notificationPreference.findUnique.mockResolvedValue(null);
+    prisma.notificationPreference.findMany.mockResolvedValue([]);
     prisma.emailSuppression.findUnique.mockResolvedValue(null);
   });
 
@@ -111,9 +111,9 @@ describe('DispatcherService', () => {
   });
 
   it('suppresses instead of sending when the category is muted', async () => {
-    prisma.notificationPreference.findUnique.mockResolvedValue({
-      enabled: false,
-    });
+    prisma.notificationPreference.findMany.mockResolvedValue([
+      { channel: 'EMAIL', enabled: false },
+    ]);
 
     await service.drain();
 
@@ -244,6 +244,47 @@ describe('DispatcherService', () => {
     it('does not send mail for a push row', async () => {
       await service.drain();
       expect(transport.sent).toHaveLength(0);
+    });
+
+    // Nothing writes PUSH preference rows yet, so a push row reads the email
+    // preference. Without this, muting a category would leave the phone
+    // buzzing with no way to stop it.
+    it('honours an email mute for a push row', async () => {
+      prisma.notificationPreference.findMany.mockResolvedValue([
+        { channel: 'EMAIL', enabled: false },
+      ]);
+
+      await service.drain();
+
+      expect(pushTransport.sent).toHaveLength(0);
+      expect(lastUpdate().status).toBe('SUPPRESSED');
+      expect(lastUpdate().lastError).toMatch(/muted/);
+    });
+
+    // An explicit per-channel row wins, so a future push-preferences screen
+    // can let someone keep email on and push off.
+    it('lets an explicit push preference override the email one', async () => {
+      prisma.notificationPreference.findMany.mockResolvedValue([
+        { channel: 'EMAIL', enabled: false },
+        { channel: 'PUSH', enabled: true },
+      ]);
+
+      await service.drain();
+
+      expect(pushTransport.sent).toHaveLength(1);
+      expect(lastUpdate().status).toBe('SENT');
+    });
+
+    // The device list is read after suppressionReason() has already checked it,
+    // so an empty list here means a race. It must not be recorded as delivered.
+    it('does not record SENT when the last device vanishes mid-flight', async () => {
+      prisma.deviceToken.count.mockResolvedValue(1);
+      prisma.deviceToken.findMany.mockResolvedValue([]);
+
+      await service.drain();
+
+      expect(pushTransport.sent).toHaveLength(0);
+      expect(lastUpdate().status).not.toBe('SENT');
     });
   });
 });

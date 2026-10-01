@@ -11,8 +11,13 @@ import type {
  * `expo-server-sdk` is the official client and would normally be the answer,
  * but it is ESM-only (`"type": "module"`), which is the same wall this codebase
  * already hit with svix — ts-jest cannot require it. The request and response
- * shapes, the endpoint, the 100-message chunk limit and the DeviceNotRegistered
- * sentinel below were all read off expo-server-sdk@7.2.0 rather than recalled.
+ * shapes, the endpoint, the 100-recipient chunk limit and the
+ * DeviceNotRegistered sentinel below were all read off the type definitions in
+ * expo-server-sdk@7.2.0 rather than recalled.
+ *
+ * Note what the message format does *not* have: any idempotency key. Email gets
+ * one via Resend; push does not, so a crash between a successful send and the
+ * SENT write means a duplicate buzz.
  *
  * Reference: https://docs.expo.dev/push-notifications/sending-notifications/
  */
@@ -56,9 +61,14 @@ export class ExpoPushTransport implements PushTransport {
           title: push.title,
           body: push.body,
           data: push.data,
-          // Expo collapses repeats of the same id, which covers the window
-          // between a successful send and recording it that the outbox cannot.
-          id: push.idempotencyKey,
+          // `collapseId`, not an idempotency key — Expo's message format has no
+          // such field (`id` appears only on the ticket it returns). So unlike
+          // email, push has NO provider-side guard for the window between a
+          // successful send and recording it: if that write fails, the delivery
+          // re-queues and the phone is notified again. What this does buy is
+          // that the repeat *replaces* the earlier notification on the device
+          // rather than stacking beside it.
+          collapseId: push.idempotencyKey,
           sound: 'default',
           priority: 'high',
         }),

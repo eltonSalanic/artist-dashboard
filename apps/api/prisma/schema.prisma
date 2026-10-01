@@ -452,17 +452,25 @@ model NotificationDelivery {
 model DeviceToken {
   id         String         @id @default(uuid()) @db.Uuid
   userId     String         @db.Uuid
-  /// The Expo push token. Unique because re-registering the same install must
-  /// update the existing row rather than accumulate duplicates that would make
-  /// one notification arrive twice.
-  token      String         @unique
+  /// The Expo push token.
+  ///
+  /// Unique per *user*, not globally. A global unique would force a
+  /// re-registration under a different account to reassign the row, and then
+  /// knowing someone's token would be enough to redirect their notifications
+  /// to your own account and silence theirs. Handing a device over is handled
+  /// by signing out (which deletes the row), not by re-registration.
+  token      String
   platform   DevicePlatform
   /// Touched on every registration so a stale install can be pruned later.
   lastSeenAt DateTime       @default(now())
   createdAt  DateTime       @default(now())
   user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, token])
   @@index([userId])
+  /// Expo reports dead tokens without reference to a user, so the prune path
+  /// looks rows up by token alone.
+  @@index([token])
 }
 
 /// Per user *per board* — someone in two bands can be loud in one and quiet in

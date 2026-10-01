@@ -149,7 +149,7 @@ single-column unique index would have deduped one of them away.
 | Transport | Resend (prod) / Mailpit (dev) / noop (test) | Expo (prod) / noop everywhere else |
 | Undeliverable means | address in `EmailSuppression` (bounce/complaint) | recipient has no row in `DeviceToken` |
 | Dead recipient handling | address suppressed until cleared by hand | token deleted on `DeviceNotRegistered` |
-| Idempotency | `dedupeKey` as Resend's `Idempotency-Key` | `dedupeKey` as Expo's message `id` |
+| Idempotency | `dedupeKey` as Resend's `Idempotency-Key` | **none** — see below |
 
 Push is a **no-op outside `NODE_ENV=production`**, for the same reason mail goes
 to Mailpit: a dev run must not be able to buzz a real phone, and the destructive
@@ -162,13 +162,23 @@ phone and a tablet is two rows and both should ring. Deliberately **not**
 board-scoped: a token belongs to a device, which belongs to a person who may be
 in several bands. Which boards may notify them is a preference question.
 
-`POST /me/devices` upserts on the token itself rather than on
-`(userId, token)`. Re-registering on every launch must touch one row, not
-accumulate them, or a notification would arrive once per launch the user ever
-made; and a handed-down device signing in as someone else must *move* the token,
-or its previous owner would keep receiving the new owner's notifications.
-`DELETE /me/devices/:token` is scoped to the caller's own tokens — without
-that, knowing a token string would be enough to silence someone else's phone.
+`POST /me/devices` upserts on `(userId, token)`. Re-registering on every launch
+must touch one row rather than accumulate them, or a notification would arrive
+once per launch the user ever made.
+
+The token is unique **per user, not globally**, and `register` never writes
+`userId` on update. A global unique would make re-registration reassign the row,
+and then knowing someone's push token would be enough to redirect their
+notifications to your own account and silence their phone. Handing a device to
+someone else is handled by signing out — `DELETE /me/devices/:token`, itself
+scoped to the caller's own tokens for the same reason.
+
+**Push has no idempotency guard.** Expo's message format has no key for it
+(`id` appears only on the ticket it returns), so if the `SENT` write fails after
+a successful send, the delivery re-queues and the phone is notified again. The
+`dedupeKey` is passed as `collapseId` instead, which makes the repeat *replace*
+the earlier notification on the device rather than stack beside it. Email has a
+real guard via Resend; push does not.
 
 **`expo-server-sdk` is not used.** It is the official client, but it is ESM-only
 (`"type": "module"`) and ts-jest cannot require it — the same wall this codebase
@@ -185,9 +195,16 @@ sentinel were all read off `expo-server-sdk@7.2.0` rather than recalled.
 - **No push preference UI.** `NotificationPreference` carries the channel, and
   the existing `GET/PUT /boards/:id/notification-preferences` is scoped to
   `EMAIL` explicitly, so its DTO is unchanged and `apps/web` needed no edit.
-  Nothing yet lets anyone mute push specifically.
-- **An email unsubscribe link silences email only.** One click in a mail client
-  must not also kill the person's phone notifications.
+  Nothing yet lets anyone mute push *specifically*.
+
+  Because of that, **a push row reads the email preference when it has no row of
+  its own.** Otherwise muting a category would leave the phone buzzing with no
+  API to stop it — a consent control that silently lost half its meaning.
+  Someone who mutes "mentions" means it. An explicit `PUSH` row wins once a
+  screen exists to write one.
+- **An email unsubscribe link writes an `EMAIL` row.** It is still honoured by
+  push through the fallback above, which is the conservative reading of one
+  click. A future push-preferences screen is what lets the two diverge.
 
 ## Suppression rules
 

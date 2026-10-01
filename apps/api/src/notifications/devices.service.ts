@@ -14,20 +14,21 @@ export class DevicesService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Upsert on the token. The same install reopening the app re-registers, and
-   * that has to be a no-op plus a timestamp touch — accumulating rows would
-   * make one notification arrive once per launch the user ever made.
+   * Upsert on (userId, token). The same install reopening the app re-registers,
+   * and that has to be one row plus a timestamp touch — accumulating rows would
+   * make a notification arrive once per launch the user ever made.
    *
-   * Keyed on the token rather than (userId, token) on purpose: a shared or
-   * handed-down device re-registering under a new account must move, not
-   * duplicate, or the previous owner would keep receiving the new owner's
-   * notifications.
+   * Scoped to the caller rather than keyed on the token alone: a global key
+   * would let this call *reassign* a token, so knowing someone else's token
+   * would be enough to redirect their notifications here and silence their
+   * phone. Handing a device over is handled by signing out, which deletes the
+   * row.
    */
   async register(userId: string, dto: RegisterDeviceDto): Promise<void> {
     await this.prisma.deviceToken.upsert({
-      where: { token: dto.token },
+      where: { userId_token: { userId, token: dto.token } },
       create: { userId, token: dto.token, platform: dto.platform },
-      update: { userId, platform: dto.platform, lastSeenAt: new Date() },
+      update: { platform: dto.platform, lastSeenAt: new Date() },
     });
   }
 
