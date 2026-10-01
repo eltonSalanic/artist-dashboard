@@ -1,7 +1,7 @@
 # Mobile App (React Native + Expo)
 
-> **Status:** in progress. P0 (groundwork) is done; P1 is next. No Expo app
-> exists yet — `apps/mobile/` currently holds only skills and agent docs.
+> **Status:** in progress. P0 done; P1 built and awaiting your verification.
+> No Expo app exists yet — `apps/mobile/` holds only skills and agent docs.
 >
 > **Progress is tracked in [the phase table](#phases).** Update the Status
 > column in the same commit that lands the work. ☑ done and user-verified ·
@@ -97,7 +97,7 @@ deliberately scheduled after mobile rather than blocking it.
 | # | Phase | Touches | Status |
 |---|---|---|---|
 | **P0** | [Groundwork](#p0--groundwork) — skills, docs, branch | tooling | ☑ |
-| **P1** | [`packages/api-client` extraction](#p1--packagesapi-client-extraction) | shared, **web** | ☐ |
+| **P1** | [`packages/api-client` extraction](#p1--packagesapi-client-extraction) | shared, **web** | ◐ |
 | **P2** | [Notification channels + push transport](#p2--notification-channels--push-transport) | api, shared | ☐ |
 | **P3** | [Multi-board API](#p3--multi-board-api) | api, shared | ☐ |
 | **P4** | [Cross-board calendar + inbox](#p4--cross-board-calendar--inbox) | api, shared | ☐ |
@@ -198,9 +198,53 @@ Rejected alternative: copy the hooks into the package and leave web on its own
 copies. Two divergent data layers is exactly the tax the package exists to
 prevent.
 
+**Built (commits `8229103`, `ad4184a`).** 23 files moved as git renames, so
+history is preserved. Verified: `tsc` clean on both web and the package,
+`next build` green across all 11 routes, web lint clean, 10 + 159 + 54 tests
+passing.
+
+Two things the package's own DOM-free tsconfig caught that the web build had
+waved through — both are the reason it exists:
+
+- `Omit<RequestInit, 'body'>` as the fetch init type. `RequestInit` is
+  `lib.dom`; it compiled only because web's tsconfig includes `"dom"`.
+- An unchecked `data.message` read on an error body. Outside `lib.dom`,
+  `response.json()` is `unknown`, not `any`, so the access is now narrowed.
+
+A review pass then found the guards themselves weren't wired: the package's
+jest had no `tsx` support (so `index.ts` was untestable and the suite was green
+only by accident), and `tsc -p packages/api-client` was run by no script — a
+`lib.dom` leak would have passed `next build` *and* jest and failed only at
+Metro time. `npm test` in the package now typechecks first, and a barrel spec
+guards resolution. `"use client"` was also restored on the 16 runtime modules,
+since `app/layout.tsx` is a server component and the directive is a no-op under
+Metro.
+
 Rejected alternative: copy the hooks into the package and leave web on its own
 copies. Two divergent data layers is exactly the tax the package exists to
 prevent.
+
+**Built (commits `8229103`, `ad4184a`).** 23 files moved as git renames, so
+history is preserved. Verified: `tsc` clean on both web and the package,
+`next build` green across all 11 routes, web lint clean, 10 + 159 + 54 tests
+passing.
+
+Two things the package's own DOM-free tsconfig caught that the web build had
+waved through — both are the reason it exists:
+
+- `Omit<RequestInit, 'body'>` as the fetch init type. `RequestInit` is
+  `lib.dom`; it compiled only because web's tsconfig includes `"dom"`.
+- An unchecked `data.message` read on an error body. Outside `lib.dom`,
+  `response.json()` is `unknown`, not `any`, so the access is now narrowed.
+
+A review pass then found the guards themselves weren't wired: the package's
+jest had no `tsx` support (so `index.ts` was untestable and the suite was green
+only by accident), and `tsc -p packages/api-client` was run by no script — a
+`lib.dom` leak would have passed `next build` *and* jest and failed only at
+Metro time. `npm test` in the package now typechecks first, and a barrel spec
+guards resolution. `"use client"` was also restored on the 16 runtime modules,
+since `app/layout.tsx` is a server component and the directive is a no-op under
+Metro.
 
 ### P2 — Notification channels + push transport
 
