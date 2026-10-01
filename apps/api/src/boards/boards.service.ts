@@ -6,6 +6,7 @@ import {
 import {
   resolveBoardTheme,
   withShippedWidgets,
+  type BoardSummaryDto,
   type BoardThemeDto,
   type LayoutItem,
   type UpdateBoardDto,
@@ -19,6 +20,36 @@ export class BoardsService {
     private readonly prisma: PrismaService,
     private readonly activity: ActivityService,
   ) {}
+
+  /**
+   * Every board the caller is a member of, with their role on each.
+   *
+   * Derived from Membership rather than Board: the membership set *is* the
+   * authorisation. There is no board id to guard on here, so unlike every
+   * other board route this one cannot use BoardRolesGuard — the `where` clause
+   * is what keeps other bands out, and that is the only thing keeping them out.
+   *
+   * Ordered oldest-first so the list is stable across calls, and so
+   * `boards[0]` is the same board `/me` reports as the legacy single `board`.
+   */
+  async findAllForUser(userId: string): Promise<BoardSummaryDto[]> {
+    const memberships = await this.prisma.membership.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        role: true,
+        board: { select: { id: true, name: true } },
+      },
+    });
+
+    return memberships.map((m) => ({
+      id: m.board.id,
+      name: m.board.name,
+      membershipId: m.id,
+      role: m.role,
+    }));
+  }
 
   async findOne(boardId: string) {
     const board = await this.prisma.board.findUnique({

@@ -157,12 +157,38 @@ Email must be unchanged; push is plumbed but unreachable until P13.
 
 ---
 
-## P3–P15 — not yet built
+## P3 — Multi-board API
+
+Additive by design, so the headline check is that **nothing in web changed.**
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ↻ Sign in as a single-board user and use the whole app | Identical to before — dashboard, calendar, archive, settings |
+| ☐ | ★ `GET /boards` as that user | One entry, with `role` and `membershipId` |
+| ☐ | ★ `GET /me` | `boards[0].id` equals `board.id`; `membership` matches `boards[0]` |
+| ☐ | ★ Invite a second account to the board, accept, then `GET /boards` as them | One entry, `role: "USER"` |
+| ☐ | ★ Create a second board for one account (or accept a second invite) | `GET /boards` lists both, oldest first |
+| ☐ | ★ With two boards, reload web | Still shows the **first** board only — deliberate, closed in P15 |
+| ☐ | ★ `GET /boards` as a user who is admin of one board and member of another | `role` differs per entry, not one role for the user |
+| ☐ | ★ `GET /boards` as an account with **no** boards | `[]` and HTTP 200, not an error |
+
+### The authorisation check — ★ new, do this with two real accounts
+
+`GET /boards` has no board id, so `BoardRolesGuard` cannot run on it. The
+service's `where: { userId }` is the only thing keeping bands apart.
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ★ Account A and account B in **different** boards; call `GET /boards` as A | **B's board must not appear** |
+| ☐ | ★ Call `GET /boards/:id` as A with **B's** board id | 404, not 403 and not the board |
+| ☐ | ★ Call `GET /boards` with no bearer token | 401 |
+
+---
+
+## P4–P15 — not yet built
 
 Sections get added as each phase lands. Known in advance:
 
-- **P3** will need a check that a user in **one** board sees no change anywhere
-  in web — the whole point of the additive approach.
 - **P4** needs the one test that matters most in this project: **a member of
   board A must never see board B's calendar items or mentions.** Try it with
   two real accounts, not just unit mocks.

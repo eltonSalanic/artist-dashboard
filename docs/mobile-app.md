@@ -1,7 +1,8 @@
 # Mobile App (React Native + Expo)
 
-> **Status:** in progress. P0–P2 done; P3 (multi-board API) is next. No Expo
-> app exists yet — `apps/mobile/` holds only skills and agent docs.
+> **Status:** in progress. P0–P2 done; P3 built and awaiting your
+> verification. No Expo app exists yet — `apps/mobile/` holds only skills and
+> agent docs.
 >
 > **Progress is tracked in [the phase table](#phases).** Update the Status
 > column in the same commit that lands the work. ☑ done and user-verified ·
@@ -99,7 +100,7 @@ deliberately scheduled after mobile rather than blocking it.
 | **P0** | [Groundwork](#p0--groundwork) — skills, docs, branch | tooling | ☑ |
 | **P1** | [`packages/api-client` extraction](#p1--packagesapi-client-extraction) | shared, **web** | ☑ |
 | **P2** | [Notification channels + push transport](#p2--notification-channels--push-transport) | api, shared | ☑ |
-| **P3** | [Multi-board API](#p3--multi-board-api) | api, shared | ☐ |
+| **P3** | [Multi-board API](#p3--multi-board-api) | api, shared | ◐ |
 | **P4** | [Cross-board calendar + inbox](#p4--cross-board-calendar--inbox) | api, shared | ☐ |
 | **P5** | [Expo skeleton + auth on a real device](#p5--expo-skeleton--auth-on-a-real-device) | mobile | ☐ |
 | **P6** | [Primitives + design tokens](#p6--primitives--design-tokens) | mobile | ☐ |
@@ -337,6 +338,29 @@ with `@@index([userId])`. The **API collapses it on purpose**:
 
 Gates the entire mobile IA — the header board switcher, and every screen that
 names which board an item belongs to.
+
+**Built.** 11 new API tests; `apps/web` entirely untouched and still builds,
+which was the point of the additive approach.
+
+- `GET /boards` returns `BoardSummaryDto[]` — id, name, membershipId, role.
+  Deliberately light: a switcher needs a name and a role, not a layout and a
+  palette, so listing twenty bands does not fetch twenty themes.
+- `boards[]` on `/me`, oldest-first, with `membership` and `board` still
+  populated from `boards[0]`.
+- `BoardSummaryDto` lives in `packages/shared`, so the API and the client cannot
+  drift on its shape.
+
+**`GET /boards` is the first route in the codebase with no board id to guard
+on.** `BoardRolesGuard` reads a `:boardId`/`:id` param, so it cannot run here —
+the service's `where: { userId }` is the entire authorisation. That is exactly
+P4's situation, and this route is the small version of it. Both guarantees were
+mutation-tested: removing the `userId` scope fails a test, and making the legacy
+`board` field point anywhere but `boards[0]` fails another.
+
+The role is **per board**. Someone can be admin of their own project and an
+ordinary member of someone else's, so there is no "the user's role" to cache —
+only their role *here*. Any mobile screen reading a role must read it from the
+board it is showing.
 
 ### P4 — Cross-board calendar + inbox
 

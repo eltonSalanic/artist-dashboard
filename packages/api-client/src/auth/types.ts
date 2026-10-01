@@ -1,4 +1,9 @@
-import type { BoardRole, BoardTheme, LayoutItem } from "@artist/shared";
+import type {
+  BoardRole,
+  BoardSummaryDto,
+  BoardTheme,
+  LayoutItem,
+} from "@artist/shared";
 
 export interface TaskStatusDto {
   id: string;
@@ -15,6 +20,13 @@ export interface MeResponse {
     displayName: string;
     avatarUrl: string | null;
   };
+  /** Every board the caller belongs to, oldest first. */
+  boards: BoardSummaryDto[];
+  /**
+   * The first membership, kept for the pre-multi-board callers in `apps/web`.
+   * New code should read `boards` — these two describe `boards[0]` and nothing
+   * more.
+   */
   membership: { id: string; role: BoardRole } | null;
   board: {
     id: string;

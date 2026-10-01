@@ -22,6 +22,18 @@ import { BoardsService } from './boards.service';
 export class BoardsController {
   constructor(private readonly boards: BoardsService) {}
 
+  /**
+   * No `@BoardRoles` — there is no board id in the path to guard on. The route
+   * is scoped to the authenticated caller instead, and the service's `where`
+   * clause is the whole of the authorisation.
+   *
+   * Declared before `:id` so the literal path is matched first.
+   */
+  @Get()
+  findAll(@CurrentUser() user: AuthUser) {
+    return this.boards.findAllForUser(user.userId);
+  }
+
   @Get(':id')
   @BoardRoles('USER')
   findOne(@Param('id') id: string) {

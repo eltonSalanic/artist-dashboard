@@ -115,6 +115,30 @@ export class UsersService {
         displayName: user.displayName,
         avatarUrl: user.avatarUrl,
       },
+      /**
+       * Every board the caller belongs to, with their role on each. Ordered
+       * oldest-first, so `boards[0]` is always the board the two legacy fields
+       * below describe.
+       */
+      boards: user.memberships.map((m) => ({
+        id: m.board.id,
+        name: m.board.name,
+        membershipId: m.id,
+        role: m.role,
+      })),
+      /**
+       * `membership` and `board` are the pre-multi-board shape, kept populated
+       * with the first membership.
+       *
+       * They are not deprecated-but-dead: fifteen files in apps/web read them,
+       * six of them reading `board` directly, and app-shell.tsx gates the whole
+       * authenticated app on `board` being non-null. Removing them here would
+       * turn an additive API change into a web migration, which is a separate
+       * decision taken at a separate time.
+       *
+       * The consequence is deliberate and known: web still shows only the first
+       * board. Closing that is its own phase — see docs/mobile-app.md (P15).
+       */
       membership: membership
         ? { id: membership.id, role: membership.role }
         : null,
