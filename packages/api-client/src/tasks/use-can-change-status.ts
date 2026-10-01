@@ -1,3 +1,5 @@
+"use client";
+
 import { useMe } from "../auth/use-me";
 import { usePermissions } from "../auth/permissions";
 import type { TaskAssigneeDto } from "./types";

@@ -5,7 +5,8 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
-    "test": "jest"
+    "test": "tsc --noEmit && jest",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@artist/shared": "*"
@@ -21,14 +22,21 @@
     "typescript": "^5.7.3"
   },
   "jest": {
-    "moduleFileExtensions": ["js", "json", "ts"],
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts",
+      "tsx"
+    ],
     "moduleNameMapper": {
       "^@artist/shared$": "<rootDir>/../../../packages/shared/src",
       "^@artist/shared/(.*)$": "<rootDir>/../../../packages/shared/src/$1"
     },
     "rootDir": "src",
-    "testRegex": ".*\\.spec\\.ts$",
-    "transform": { "^.+\\.(t|j)s$": "ts-jest" },
+    "testRegex": ".*\\.spec\\.tsx?$",
+    "transform": {
+      "^.+\\.(t|j)sx?$": "ts-jest"
+    },
     "testEnvironment": "node"
   }
 }

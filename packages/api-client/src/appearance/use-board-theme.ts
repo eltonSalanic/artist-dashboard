@@ -1,3 +1,5 @@
+"use client";
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { notify } from "../client";
 import { resolveBoardTheme, type BoardTheme } from "@artist/shared";

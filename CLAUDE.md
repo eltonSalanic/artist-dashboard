@@ -5,11 +5,12 @@ Guidance for working in this repo. For *what the product does* and the module ma
 npm-workspaces monorepo:
 
 ```
-apps/api        NestJS 11 + Prisma 7 (driver adapter, PrismaPg)   → owns the DB schema
-apps/web        Next.js 16 (CLIENT-ONLY — routing/SEO only, no RSC/server actions)
-apps/mobile     Expo / React Native (PLANNED — see docs/mobile-app.md)
-packages/shared Zod DTOs + permission map + layout logic, consumed as TS source
-supabase/       local stack (config.toml, seed.sql) — Postgres, Auth, Storage, Mailpit
+apps/api            NestJS 11 + Prisma 7 (driver adapter, PrismaPg)   → owns the DB schema
+apps/web            Next.js 16 (CLIENT-ONLY — routing/SEO only, no RSC/server actions)
+apps/mobile         Expo / React Native (PLANNED — see docs/mobile-app.md)
+packages/shared     Zod DTOs + permission map + layout logic, consumed as TS source
+packages/api-client apiFetch + React Query hooks — platform-agnostic, shared by web + mobile
+supabase/           local stack (config.toml, seed.sql) — Postgres, Auth, Storage, Mailpit
 ```
 
 Scoped instructions also live in [apps/web/CLAUDE.md](apps/web/CLAUDE.md) → [apps/web/AGENTS.md](apps/web/AGENTS.md). Read those when touching the web app.

@@ -5,10 +5,11 @@ A shared workspace for a band or artist to run the business side of making music
 npm-workspaces monorepo: NestJS API + Next.js web app + shared TypeScript package, backed by local Supabase (Postgres, Auth, Mailpit).
 
 ```
-apps/api        NestJS 11 + Prisma 7
-apps/web        Next.js 16 (client-only; Next is used for routing/SEO metadata, not RSC)
-packages/shared DTOs and layout logic, consumed as TS source
-supabase/       local stack config (config.toml)
+apps/api            NestJS 11 + Prisma 7
+apps/web            Next.js 16 (client-only; Next is used for routing/SEO metadata, not RSC)
+packages/shared     DTOs and layout logic, consumed as TS source
+packages/api-client apiFetch + the React Query hooks, shared by web and the planned mobile app
+supabase/           local stack config (config.toml)
 ```
 
 ## What it does
@@ -79,7 +80,8 @@ It's **idempotent but destructive to that board's content**: each run wipes the 
 ## Tests
 
 ```bash
-npm test                  # api + web
+npm test                  # api-client + api + web
+npm test -w packages/api-client   # typecheck (DOM-free) + Jest units
 npm test -w apps/api      # Jest unit tests (no e2e/supertest by design)
 npm test -w apps/web
 ```
