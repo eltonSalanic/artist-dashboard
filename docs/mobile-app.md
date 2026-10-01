@@ -1,8 +1,7 @@
 # Mobile App (React Native + Expo)
 
-> **Status:** in progress. P0 and P1 done; P2 built and awaiting your
-> verification. No Expo app exists yet — `apps/mobile/` holds only skills and
-> agent docs.
+> **Status:** in progress. P0–P2 done; P3 (multi-board API) is next. No Expo
+> app exists yet — `apps/mobile/` holds only skills and agent docs.
 >
 > **Progress is tracked in [the phase table](#phases).** Update the Status
 > column in the same commit that lands the work. ☑ done and user-verified ·
@@ -99,7 +98,7 @@ deliberately scheduled after mobile rather than blocking it.
 |---|---|---|---|
 | **P0** | [Groundwork](#p0--groundwork) — skills, docs, branch | tooling | ☑ |
 | **P1** | [`packages/api-client` extraction](#p1--packagesapi-client-extraction) | shared, **web** | ☑ |
-| **P2** | [Notification channels + push transport](#p2--notification-channels--push-transport) | api, shared | ◐ |
+| **P2** | [Notification channels + push transport](#p2--notification-channels--push-transport) | api, shared | ☑ |
 | **P3** | [Multi-board API](#p3--multi-board-api) | api, shared | ☐ |
 | **P4** | [Cross-board calendar + inbox](#p4--cross-board-calendar--inbox) | api, shared | ☐ |
 | **P5** | [Expo skeleton + auth on a real device](#p5--expo-skeleton--auth-on-a-real-device) | mobile | ☐ |
@@ -301,6 +300,26 @@ Also fixed in passing: `apps/api`'s `npm test` ran `jest` only, and ts-jest here
 does not typecheck — so the suite could pass while `tsc` failed. It genuinely
 did during this phase. The script now typechecks first, matching
 `packages/api-client`.
+
+A review pass then found six holes, two serious enough to record here because
+they are the kind that would have shipped quietly:
+
+- **Push tokens were globally unique**, so registering an existing token
+  reassigned it — knowing someone's token was enough to redirect their
+  notifications to your account and silence their phone. Now unique per user,
+  and `register` never writes `userId` on update.
+- **Muting a category did not stop push.** Preferences and the unsubscribe link
+  only ever write `EMAIL` rows, while the dispatcher read the row's own channel.
+  A push row now falls back to the email preference.
+- The transport sent `id` as an idempotency key; **Expo's message format has no
+  such field** — `id` is on the ticket it returns. Now sends `collapseId`, and
+  both code and spec say plainly that push has no idempotency guard.
+- `deliverPush` returned early on an empty device list and the row was then
+  stamped `SENT`, recording a delivery that never happened.
+
+Lesson carried forward: both dispatcher fixes were mutation-tested (break the
+code, confirm a test fails) before being called done. Worth repeating on P4,
+where the failure mode is a cross-board data leak.
 
 ### P3 — Multi-board API
 
