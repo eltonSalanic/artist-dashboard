@@ -404,7 +404,62 @@ number is the failure mode here, and only you can spot it.
 
 ---
 
-## P8–P15 — not yet built
+## P8 — Spokes
+
+Read-only, so the question is whether each widget shows **everything** the web
+version does. Nothing here should change any data — if tapping something edits
+it, that is a bug, not an early P10.
+
+### Getting there and moving around — ★ new
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ★ Tap a hub card | Its widget opens, titled, with the strip above it |
+| ☐ | ★ Swipe left and right | Moves to the next and previous widget; the strip follows |
+| ☐ | ★ Swipe to the last widget | The strip has scrolled along — the active chip must be visible, not off-screen |
+| ☐ | ★ Tap a chip several along | Jumps there |
+| ☐ | ★ Tap the card for the *last* widget, then swipe right | Starts on the right widget, not the first one |
+| ☐ | ★ Back, then open a different card | Opens on that one |
+| ☐ | ★ Hide a widget on web, refresh the hub, open a spoke | The hidden widget is not in the strip either |
+
+### Each widget, against its web counterpart — ★ new
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ★ Focus | All three horizons listed, unset ones reading "Not set" rather than being hidden |
+| ☐ | ★ To-Do's | Every top-level task, with status, priority when it is not medium, assignees, subtask count, due date |
+| ☐ | ★ A completed task | Struck through and dimmed, still readable |
+| ☐ | ★ My Tasks | Only yours, soonest due first |
+| ☐ | ★ Goals | Open ones first, then completed; period and due date on each |
+| ☐ | ★ Shows / Rehearsals / Meetings | Upcoming only, soonest first, with the location where there is one |
+| ☐ | ★ Reminders | Soonest first, standing notes (no date) last, overdue ones marked "due" |
+| ☐ | ★ Activity | Sentences matching web's wording exactly, newest first |
+| ☐ | ★ Scroll the activity feed to the bottom | More loads; it does not stop at one page |
+| ☐ | ★ Notes | The note's text, paragraph by paragraph, with when it was edited |
+| ☐ | ★ A widget with nothing in it | A designed empty state saying why — never a blank area or a spinner |
+| ☐ | ★ Stop the API and open a spoke | "Could not load this" with a working Try again |
+
+### Task detail — ★ new
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ★ Tap a task row | Opens the task: title, status, priority, due date, description |
+| ☐ | ★ A task with assignees, a checklist, subtasks, and a linked goal or event | All four sections present; the checklist shows done/total |
+| ☐ | ★ Tap a subtask | Opens it; back returns to the parent |
+| ☐ | ★ A task that is archived or deleted on web, then opened on the phone | "Task not found", with a way back |
+
+### Deliberately not in this phase
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ⊘ Changing a status, ticking a checklist item, reordering | All P10. Nothing on these screens writes |
+| ☐ | ⊘ Comments and attachments on a task | P10 |
+| ☐ | ⊘ Editing the note | P11 — it needs a different editor bridge than web's |
+| ☐ | ⊘ Rich text in the note (bold, links, headings) | Rendered as plain text for now |
+
+---
+
+## P9–P15 — not yet built
 
 Sections get added as each phase lands. Known in advance:
 

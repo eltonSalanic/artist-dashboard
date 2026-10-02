@@ -1,8 +1,9 @@
 # Mobile App (React Native + Expo)
 
-> **Status:** in progress. P0–P4 done and verified; **P5–P7 built, awaiting
+> **Status:** in progress. P0–P4 done and verified; **P5–P8 built, awaiting
 > verification on a phone** — `apps/mobile/` signs in, has its four tabs, and
-> the board hub renders every widget as a card. P8 (spokes) is next.
+> every widget reads end to end: hub card → spoke → task. Nothing writes yet.
+> P9 (calendar + inbox) is next.
 >
 > **Progress is tracked in [the phase table](#phases).** Update the Status
 > column in the same commit that lands the work. ☑ done and user-verified ·
@@ -105,7 +106,7 @@ deliberately scheduled after mobile rather than blocking it.
 | **P5** | [Expo skeleton + auth on a real device](#p5--expo-skeleton--auth-on-a-real-device) | mobile | ◐ |
 | **P6** | [Primitives + design tokens](#p6--primitives--design-tokens) | mobile, **shared** | ◐ |
 | **P7** | [Board hub (stat cards)](#p7--board-hub-stat-cards) | mobile, **shared** | ◐ |
-| **P8** | [Spokes (expanded widgets)](#p8--spokes-expanded-widgets) | mobile | ☐ |
+| **P8** | [Spokes (expanded widgets)](#p8--spokes-expanded-widgets) | mobile, **shared** | ◐ |
 | **P9** | [Calendar + Inbox screens](#p9--calendar--inbox-screens) | mobile | ☐ |
 | **P10** | [Write parity](#p10--write-parity) | mobile | ☐ |
 | **P11** | [Notes widget](#p11--notes-widget) | mobile | ☐ |
@@ -776,6 +777,46 @@ movement is useful. Swipe between widgets, with a strip showing position
 
 Routes must be addressable for P13 deep links: `/board/[boardId]`,
 `/board/[boardId]/w/[widgetType]`, `/board/[boardId]/task/[taskId]`.
+
+**Built.** Two commits: the shared activity sentence, then the spokes. All nine
+card widgets expanded, plus a task detail screen. Read-only throughout — P10 is
+write parity and P11 is the note's editor, which is why `CUSTOM` renders text.
+
+`/board/[boardId]` was **not** built. It would be a second route rendering the
+hub, which already lives at `/` off the selected board; a deep link to a board
+root can set the selection and go there. The other two exist as specified, and
+both params are validated, since both come from a URL.
+
+#### The strip, and why it is here
+
+Labels rather than dots: ten dots say how far along you are but not what you
+would land on. The strip scrolls to keep the active chip visible — without
+that, swiping to the eighth widget leaves it showing the first four and the
+position indicator stops indicating. `useVisibleWidgets` is shared with the hub
+because the two have to agree: paging past the end of one while the other shows
+nine cards is a confusing kind of wrong.
+
+#### Three rules the spokes follow
+
+- **Grouped rows, hairline separators — not a card each.** "Everything's a
+  Card" is a named native-slop tell, and a list of twelve tasks is exactly
+  where it shows up.
+- **Colour reinforces, never carries.** A task row has a status dot *and* the
+  status name in its meta line, so it reads the same to someone who cannot
+  separate the hues. The same rule P9 applies to board colours.
+- **The activity spoke owns its own `FlatList`** instead of the shared
+  `SpokeList`. It is the one spoke that can run to hundreds of rows, so it
+  needs virtualisation and `onEndReached`, and a list inside a scroll view
+  breaks both.
+
+#### The activity sentence moved to `packages/shared`
+
+A feed row's text is built entirely from its denormalised `meta`, so it is
+platform-agnostic by construction — and two platforms describing the same event
+differently is a bug nobody would think to look for. The icon table stays
+per-platform. It also gained the tests it never had, including one that pins
+that no *known* activity type falls through to the "did something" fallback:
+that line is for a row written by a newer build, not for one this build forgot.
 
 ### P9 — Calendar + Inbox screens
 
