@@ -1,8 +1,8 @@
 # Mobile App (React Native + Expo)
 
-> **Status:** in progress. P0–P2 done; P3 built and awaiting your
-> verification. No Expo app exists yet — `apps/mobile/` holds only skills and
-> agent docs.
+> **Status:** in progress. P0–P3 done; P4 (cross-board calendar + inbox) is
+> next and is the phase where a mistake leaks another band's data. No Expo app
+> exists yet — `apps/mobile/` holds only skills and agent docs.
 >
 > **Progress is tracked in [the phase table](#phases).** Update the Status
 > column in the same commit that lands the work. ☑ done and user-verified ·
@@ -100,7 +100,7 @@ deliberately scheduled after mobile rather than blocking it.
 | **P0** | [Groundwork](#p0--groundwork) — skills, docs, branch | tooling | ☑ |
 | **P1** | [`packages/api-client` extraction](#p1--packagesapi-client-extraction) | shared, **web** | ☑ |
 | **P2** | [Notification channels + push transport](#p2--notification-channels--push-transport) | api, shared | ☑ |
-| **P3** | [Multi-board API](#p3--multi-board-api) | api, shared | ◐ |
+| **P3** | [Multi-board API](#p3--multi-board-api) | api, shared | ☑ |
 | **P4** | [Cross-board calendar + inbox](#p4--cross-board-calendar--inbox) | api, shared | ☐ |
 | **P5** | [Expo skeleton + auth on a real device](#p5--expo-skeleton--auth-on-a-real-device) | mobile | ☐ |
 | **P6** | [Primitives + design tokens](#p6--primitives--design-tokens) | mobile | ☐ |
@@ -361,6 +361,14 @@ The role is **per board**. Someone can be admin of their own project and an
 ordinary member of someone else's, so there is no "the user's role" to cache —
 only their role *here*. Any mobile screen reading a role must read it from the
 board it is showing.
+
+A review pass over P2 and P3 together found four more holes, all in the push
+path and all recorded in `docs/notifications.md`: a 200-with-`errors` reply read
+as a clean send (notification lost silently), ticket-to-token matching that
+trusted position without a length check (could delete a live device), the
+device-handover content leak that scoping tokens per user had opened, and push
+`data` carrying no entity id so a tap could only reach the board root. Each fix
+was mutation-tested.
 
 ### P4 — Cross-board calendar + inbox
 
