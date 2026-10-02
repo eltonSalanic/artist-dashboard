@@ -1,8 +1,25 @@
 import { ExpoPushTransport } from './expo.push-transport';
 
+/** The shape our transport actually passes to fetch. */
+interface SentRequest {
+  method: string;
+  headers: Record<string, string>;
+  body: string;
+}
+
 describe('ExpoPushTransport', () => {
-  const fetchMock = jest.fn();
+  const fetchMock = jest.fn<Promise<unknown>, [string, SentRequest]>();
   const transport = new ExpoPushTransport();
+
+  /** The nth request, with its JSON body already parsed. */
+  const sent = (index = 0) => {
+    const [url, init] = fetchMock.mock.calls[index];
+    return {
+      url,
+      headers: init.headers,
+      body: JSON.parse(init.body) as Record<string, unknown>,
+    };
+  };
 
   const push = {
     tokens: ['tok-a', 'tok-b'],
@@ -13,11 +30,14 @@ describe('ExpoPushTransport', () => {
 
   const ok = (tickets: unknown[]) => ({
     ok: true,
-    json: async () => ({ data: tickets }),
+    json: () => Promise.resolve({ data: tickets }),
   });
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // The mock is typed to what this transport actually sends, which is
+    // narrower than fetch's overloads — hence the cast at the boundary rather
+    // than an `any` mock that would lose the typing inside every assertion.
     global.fetch = fetchMock as unknown as typeof fetch;
   });
 
@@ -27,9 +47,8 @@ describe('ExpoPushTransport', () => {
     await expect(transport.send(push)).resolves.toEqual({ invalidTokens: [] });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe('https://exp.host/--/api/v2/push/send');
-    expect(JSON.parse(init.body)).toMatchObject({
+    expect(sent().url).toBe('https://exp.host/--/api/v2/push/send');
+    expect(sent().body).toMatchObject({
       to: ['tok-a', 'tok-b'],
       title: 'Dana mentioned you',
       body: 'can you check the mix?',
@@ -106,20 +125,18 @@ describe('ExpoPushTransport', () => {
     await transport.send({ ...push, tokens });
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body).to).toHaveLength(100);
-    expect(JSON.parse(fetchMock.mock.calls[1][1].body).to).toHaveLength(50);
+    expect(sent(0).body.to).toHaveLength(100);
+    expect(sent(1).body.to).toHaveLength(50);
   });
 
   it('omits the Authorization header when no access token is configured', async () => {
     fetchMock.mockResolvedValue(ok([]));
     await transport.send(push);
-    expect(fetchMock.mock.calls[0][1].headers).not.toHaveProperty(
-      'Authorization',
-    );
+    expect(sent().headers).not.toHaveProperty('Authorization');
 
     fetchMock.mockResolvedValue(ok([]));
     await new ExpoPushTransport('secret-tok').send(push);
-    expect(fetchMock.mock.calls[1][1].headers).toMatchObject({
+    expect(sent(1).headers).toMatchObject({
       Authorization: 'Bearer secret-tok',
     });
   });
@@ -130,9 +147,10 @@ describe('ExpoPushTransport', () => {
   it('throws when a 200 carries a top-level errors array', async () => {
     fetchMock.mockResolvedValue({
       ok: true,
-      json: async () => ({
-        errors: [{ code: 'PUSH_TOO_MANY_EXPERIENCE_IDS' }],
-      }),
+      json: () =>
+        Promise.resolve({
+          errors: [{ code: 'PUSH_TOO_MANY_EXPERIENCE_IDS' }],
+        }),
     });
 
     await expect(transport.send(push)).rejects.toThrow(
@@ -141,7 +159,7 @@ describe('ExpoPushTransport', () => {
   });
 
   it('throws when a 200 carries no ticket array at all', async () => {
-    fetchMock.mockResolvedValue({ ok: true, json: async () => ({}) });
+    fetchMock.mockResolvedValue({ ok: true, json: () => Promise.resolve({}) });
     await expect(transport.send(push)).rejects.toThrow(/no ticket array/);
   });
 

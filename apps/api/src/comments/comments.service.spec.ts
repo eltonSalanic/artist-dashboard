@@ -110,8 +110,9 @@ describe('CommentsService', () => {
         mentions: ['u1', 'u2'],
       });
 
-      const [args] = prisma.notificationDelivery.createMany.mock
-        .calls[0] as [{ data: { userId: string; channel: string }[] }];
+      const [args] = prisma.notificationDelivery.createMany.mock.calls[0] as [
+        { data: { userId: string; channel: string }[] },
+      ];
       // One recipient, one row per channel — u1 is the author and is excluded
       // from both.
       expect(args.data).toHaveLength(2);

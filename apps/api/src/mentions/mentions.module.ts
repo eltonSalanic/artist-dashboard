@@ -1,9 +1,14 @@
 import { Module } from '@nestjs/common';
-import { MentionsController } from './mentions.controller';
+import {
+  CrossBoardMentionsController,
+  MentionsController,
+} from './mentions.controller';
 import { MentionsService } from './mentions.service';
+import { UserBoardsGuard } from '../common/user-boards.guard';
 
 @Module({
-  controllers: [MentionsController],
-  providers: [MentionsService],
+  controllers: [MentionsController, CrossBoardMentionsController],
+  providers: [MentionsService, UserBoardsGuard],
+  exports: [MentionsService],
 })
 export class MentionsModule {}

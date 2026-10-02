@@ -9,6 +9,8 @@ describe('BoardsService.removeMember', () => {
     membership: { findFirst: jest.fn(), delete: jest.fn() },
     userLayout: { deleteMany: jest.fn() },
     taskAssignee: { deleteMany: jest.fn() },
+    mentionNotification: { deleteMany: jest.fn() },
+    notificationPreference: { deleteMany: jest.fn() },
     activity: { create: jest.fn() },
     $transaction: jest.fn(),
   };
@@ -52,6 +54,20 @@ describe('BoardsService.removeMember', () => {
     });
     expect(prisma.taskAssignee.deleteMany).toHaveBeenCalledWith({
       where: { userId: 'u2', task: { boardId: 'b1' } },
+    });
+    /**
+     * Mention rows carry a snapshotted task title and comment excerpt — this
+     * board's own text. Leaving them meant an ex-member's inbox still held it,
+     * which BoardRolesGuard only happened to hide by 404-ing before the
+     * mentions service ran. The cross-board route has no such 404.
+     */
+    expect(prisma.mentionNotification.deleteMany).toHaveBeenCalledWith({
+      where: { boardId: 'b1', userId: 'u2' },
+    });
+    // Their preferences about mail they can no longer receive, which would
+    // otherwise silently resurrect on a re-invite.
+    expect(prisma.notificationPreference.deleteMany).toHaveBeenCalledWith({
+      where: { boardId: 'b1', userId: 'u2' },
     });
     expect(prisma.activity.create).toHaveBeenCalledWith(
       expect.objectContaining({

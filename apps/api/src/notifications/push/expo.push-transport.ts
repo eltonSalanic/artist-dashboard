@@ -1,9 +1,5 @@
 import { Logger } from '@nestjs/common';
-import type {
-  OutgoingPush,
-  PushResult,
-  PushTransport,
-} from './push-transport';
+import type { OutgoingPush, PushResult, PushTransport } from './push-transport';
 
 /**
  * Expo's push endpoint, spoken to directly over fetch.

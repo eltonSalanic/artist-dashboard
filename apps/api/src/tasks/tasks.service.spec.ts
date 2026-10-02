@@ -103,9 +103,9 @@ describe('TasksService', () => {
           }[];
         },
       ][];
-        // Filtered to one channel: queue() fans each notification out across
-        // channels, and these assertions are about who is notified and with
-        // what key — identical on every channel.
+      // Filtered to one channel: queue() fans each notification out across
+      // channels, and these assertions are about who is notified and with
+      // what key — identical on every channel.
       return calls.length
         ? calls[calls.length - 1][0].data.filter(
             (row) => row.channel === 'EMAIL',

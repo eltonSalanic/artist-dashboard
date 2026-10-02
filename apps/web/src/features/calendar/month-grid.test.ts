@@ -6,6 +6,11 @@ const item = (
 ): CalendarItemDto => ({
   kind: "EVENT",
   id: "e1",
+  // Board identity is now part of every calendar item, including on the
+  // single-board route — these tests are about grid placement, so the values
+  // only need to be present.
+  boardId: "b1",
+  boardName: "Neon Harbor",
   title: "Gig",
   ...overrides,
 });

@@ -65,6 +65,13 @@ export type CalendarItemKind = "EVENT" | "TASK" | "GOAL" | "REMINDER";
 export interface CalendarItemDto {
   kind: CalendarItemKind;
   id: string;
+  /**
+   * Which board the item came from. Always present, including on the
+   * single-board route — merged across bands it is what disambiguates two
+   * items with the same title, and every click-through URL is board-scoped.
+   */
+  boardId: string;
+  boardName: string;
   title: string;
   date: string;
   event?: { type: EventType; endsAt: string | null; location: string | null };

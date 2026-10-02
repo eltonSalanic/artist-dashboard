@@ -14,7 +14,12 @@ import { signUnsubscribeToken } from './unsubscribe-token';
  * matters, so this reads correctly rather than truncating mid-greeting.
  */
 function firstLine(text: string): string {
-  return text.split('\n').map((l) => l.trim()).find((l) => l.length > 0) ?? '';
+  return (
+    text
+      .split('\n')
+      .map((l) => l.trim())
+      .find((l) => l.length > 0) ?? ''
+  );
 }
 
 /**
@@ -208,7 +213,9 @@ export class DispatcherService {
    * Re-checked at send time, not at queue time: someone can leave the board or
    * mute a category in the seconds between.
    */
-  private async suppressionReason(row: NotificationDelivery): Promise<string | null> {
+  private async suppressionReason(
+    row: NotificationDelivery,
+  ): Promise<string | null> {
     const [user, membership, preferences] = await Promise.all([
       this.prisma.user.findUnique({
         where: { id: row.userId },

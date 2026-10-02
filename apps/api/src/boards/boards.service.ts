@@ -121,6 +121,19 @@ export class BoardsService {
       await tx.taskAssignee.deleteMany({
         where: { userId, task: { boardId } },
       });
+      // An ex-member's mention rows carry a snapshotted task title and comment
+      // excerpt — this board's content, sitting in their inbox. Until the
+      // cross-board GET /mentions existed, BoardRolesGuard happened to hide
+      // them by 404-ing on the missing membership; that was a mask, not a fix,
+      // and leaving them would have made this board's text readable to someone
+      // removed from it.
+      await tx.mentionNotification.deleteMany({ where: { boardId, userId } });
+      // Their choices about this board's mail, which they can no longer
+      // receive. Harmless if left, but they would silently resurrect if the
+      // person were ever re-invited.
+      await tx.notificationPreference.deleteMany({
+        where: { boardId, userId },
+      });
       await this.activity.log(tx, {
         boardId,
         type: 'MEMBER_REMOVED',

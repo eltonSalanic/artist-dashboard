@@ -58,7 +58,9 @@ describe('DispatcherService', () => {
     lastError?: string | null;
   } => {
     const calls = prisma.notificationDelivery.update.mock.calls as [
-      { data: { status?: string; sendAfter?: Date; lastError?: string | null } },
+      {
+        data: { status?: string; sendAfter?: Date; lastError?: string | null };
+      },
     ][];
     return calls[calls.length - 1][0].data;
   };
@@ -150,7 +152,10 @@ describe('DispatcherService', () => {
   });
 
   it('gives up once the backoff schedule is exhausted', async () => {
-    prisma.notificationDelivery.findUnique.mockResolvedValue({ ...row, attempts: 5 });
+    prisma.notificationDelivery.findUnique.mockResolvedValue({
+      ...row,
+      attempts: 5,
+    });
     jest.spyOn(transport, 'send').mockRejectedValue(new Error('smtp down'));
 
     await service.drain();

@@ -6,6 +6,15 @@ export interface CalendarItemDto {
   /** What kind of record this is — drives icon/color and click-through target. */
   kind: 'EVENT' | 'TASK' | 'GOAL' | 'REMINDER';
   id: string;
+  /**
+   * Which board this came from. Not optional, and not only for colour-coding:
+   * merged across bands, two items called "Load in" are otherwise
+   * indistinguishable and neither can be linked to, since every click-through
+   * URL is board-scoped.
+   */
+  boardId: string;
+  /** Shown as the subtitle on a merged list, so colour is never the only cue. */
+  boardName: string;
   title: string;
   /** The instant the item appears at on the calendar. */
   date: Date;
@@ -21,29 +30,46 @@ export interface CalendarItemDto {
 }
 
 /**
- * Aggregates everything datable on a board into one range query for the
- * month grid: events (startsAt), tasks (dueDate), goals (dueDate) and
- * open reminders (remindAt). Range is [from, to). Archived items are
+ * Aggregates everything datable across one or more boards into a single range
+ * query for the month grid: events (startsAt), tasks (dueDate), goals (dueDate)
+ * and open reminders (remindAt). Range is [from, to). Archived items are
  * excluded everywhere — the calendar is part of the dashboard they left.
+ *
+ * Takes a **list** of board ids, never a single one, and never an optional one.
+ * On the cross-board route there is no `:boardId` for BoardRolesGuard to check,
+ * so `{ in: boardIds }` is the entire tenancy boundary; a `string | undefined`
+ * signature would let a caller drop it, and Prisma treats a missing `in` as no
+ * filter rather than an empty one — which returns every board in the database.
+ * The array type is what makes that unexpressible.
  */
 @Injectable()
 export class CalendarService {
   constructor(private readonly prisma: PrismaService) {}
 
   async range(
-    boardId: string,
+    boardIds: string[],
     userId: string,
     query: CalendarQueryDto,
   ): Promise<CalendarItemDto[]> {
-    const window = { gte: query.from, lt: query.to };
+    // `{ in: [] }` matches nothing, which is the right answer for someone who
+    // belongs to no board. Returning early just saves five pointless queries.
+    if (boardIds.length === 0) return [];
 
-    const [events, tasks, goals, reminders] = await Promise.all([
+    const window = { gte: query.from, lt: query.to };
+    const board = { in: boardIds };
+
+    const [boards, events, tasks, goals, reminders] = await Promise.all([
+      // Names once, rather than joining Board onto every row of four queries.
+      this.prisma.board.findMany({
+        where: { id: board },
+        select: { id: true, name: true },
+      }),
       this.prisma.event.findMany({
-        where: { boardId, startsAt: window, archivedAt: null },
+        where: { boardId: board, startsAt: window, archivedAt: null },
         orderBy: { startsAt: 'asc' },
       }),
       this.prisma.task.findMany({
-        where: { boardId, dueDate: window, archivedAt: null },
+        where: { boardId: board, dueDate: window, archivedAt: null },
         // Pull only the requesting user's assignee row, if any, so we can flag
         // "assigned to me" without loading every assignee.
         include: {
@@ -53,20 +79,32 @@ export class CalendarService {
         orderBy: { dueDate: 'asc' },
       }),
       this.prisma.goal.findMany({
-        where: { boardId, dueDate: window, archivedAt: null },
+        where: { boardId: board, dueDate: window, archivedAt: null },
         orderBy: { dueDate: 'asc' },
       }),
       this.prisma.reminder.findMany({
         // Once a reminder is done it has nothing left to say about the day.
-        where: { boardId, remindAt: window, done: false, archivedAt: null },
+        where: {
+          boardId: board,
+          remindAt: window,
+          done: false,
+          archivedAt: null,
+        },
         orderBy: { remindAt: 'asc' },
       }),
     ]);
+
+    const nameOf = new Map(boards.map((b) => [b.id, b.name]));
+    const named = (boardId: string) => ({
+      boardId,
+      boardName: nameOf.get(boardId) ?? '',
+    });
 
     const items: CalendarItemDto[] = [
       ...events.map((e): CalendarItemDto => ({
         kind: 'EVENT',
         id: e.id,
+        ...named(e.boardId),
         title: e.title,
         date: e.startsAt,
         event: { type: e.type, endsAt: e.endsAt, location: e.location },
@@ -74,6 +112,7 @@ export class CalendarService {
       ...tasks.map((t): CalendarItemDto => ({
         kind: 'TASK',
         id: t.id,
+        ...named(t.boardId),
         title: t.title,
         date: t.dueDate as Date,
         task: {
@@ -86,6 +125,7 @@ export class CalendarService {
       ...goals.map((g): CalendarItemDto => ({
         kind: 'GOAL',
         id: g.id,
+        ...named(g.boardId),
         title: g.title,
         date: g.dueDate as Date,
         goal: { period: g.period, completed: g.completedAt !== null },
@@ -93,6 +133,7 @@ export class CalendarService {
       ...reminders.map((r): CalendarItemDto => ({
         kind: 'REMINDER',
         id: r.id,
+        ...named(r.boardId),
         title: r.title,
         // The range filter above already drops the undated ones.
         date: r.remindAt as Date,

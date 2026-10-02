@@ -5,7 +5,9 @@ describe('DevicesService', () => {
   const deviceToken = { upsert: jest.fn(), deleteMany: jest.fn() };
   const prisma = {
     deviceToken,
-    $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn({ deviceToken })),
+    $transaction: jest.fn((fn: (tx: unknown) => unknown) =>
+      fn({ deviceToken }),
+    ),
   };
   const service = new DevicesService(prisma as unknown as PrismaService);
 

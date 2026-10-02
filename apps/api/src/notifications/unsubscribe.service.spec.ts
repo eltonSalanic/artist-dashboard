@@ -61,7 +61,11 @@ describe('UnsubscribeService', () => {
       // mail client must not also kill the person's phone notifications.
       channel: 'EMAIL',
     });
-    expect(args.create).toEqual({ ...CLAIMS, channel: 'EMAIL', enabled: false });
+    expect(args.create).toEqual({
+      ...CLAIMS,
+      channel: 'EMAIL',
+      enabled: false,
+    });
   });
 
   it('rejects a tampered token without touching preferences', async () => {

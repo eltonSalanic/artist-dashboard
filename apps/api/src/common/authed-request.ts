@@ -13,4 +13,10 @@ import type { AuthUser } from '../auth/current-user.decorator';
 export interface AuthedRequest extends Request {
   user?: AuthUser;
   membership?: Membership;
+  /**
+   * Boards the caller belongs to, set by `UserBoardsGuard` on cross-board
+   * routes. Optional for the same reason as the others — and read only through
+   * `@UserBoards()`, which refuses to hand over `undefined`.
+   */
+  userBoardIds?: string[];
 }

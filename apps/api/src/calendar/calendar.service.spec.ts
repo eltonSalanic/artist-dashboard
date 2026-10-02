@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 describe('CalendarService', () => {
   const prisma = {
+    board: { findMany: jest.fn() },
     event: { findMany: jest.fn() },
     task: { findMany: jest.fn() },
     goal: { findMany: jest.fn() },
@@ -17,6 +18,10 @@ describe('CalendarService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.board.findMany.mockResolvedValue([
+      { id: 'b1', name: 'Neon Harbor' },
+      { id: 'b2', name: 'Weekend Duo' },
+    ]);
     prisma.event.findMany.mockResolvedValue([]);
     prisma.task.findMany.mockResolvedValue([]);
     prisma.goal.findMany.mockResolvedValue([]);
@@ -24,22 +29,22 @@ describe('CalendarService', () => {
   });
 
   it('scopes every source query to the board and the half-open range', async () => {
-    await service.range('b1', 'u1', query);
+    await service.range(['b1'], 'u1', query);
 
     const window = { gte: query.from, lt: query.to };
     expect(prisma.event.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { boardId: 'b1', startsAt: window, archivedAt: null },
+        where: { boardId: { in: ['b1'] }, startsAt: window, archivedAt: null },
       }),
     );
     expect(prisma.task.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { boardId: 'b1', dueDate: window, archivedAt: null },
+        where: { boardId: { in: ['b1'] }, dueDate: window, archivedAt: null },
       }),
     );
     expect(prisma.goal.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { boardId: 'b1', dueDate: window, archivedAt: null },
+        where: { boardId: { in: ['b1'] }, dueDate: window, archivedAt: null },
       }),
     );
     // Done reminders are filtered out here — a finished note tells you
@@ -47,7 +52,7 @@ describe('CalendarService', () => {
     expect(prisma.reminder.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
-          boardId: 'b1',
+          boardId: { in: ['b1'] },
           remindAt: window,
           done: false,
           archivedAt: null,
@@ -57,7 +62,7 @@ describe('CalendarService', () => {
   });
 
   it('keeps archived items off the calendar entirely', async () => {
-    await service.range('b1', 'u1', query);
+    await service.range(['b1'], 'u1', query);
 
     for (const source of [
       prisma.event.findMany,
@@ -111,7 +116,7 @@ describe('CalendarService', () => {
       },
     ]);
 
-    const items = await service.range('b1', 'u1', query);
+    const items = await service.range(['b1'], 'u1', query);
 
     expect(items.map((i) => [i.kind, i.id])).toEqual([
       ['REMINDER', 'r1'],
@@ -153,7 +158,7 @@ describe('CalendarService', () => {
       },
     ]);
 
-    const items = await service.range('b1', 'u1', query);
+    const items = await service.range(['b1'], 'u1', query);
     const byKind = Object.fromEntries(items.map((i) => [i.kind, i]));
 
     expect(byKind.EVENT.event).toEqual({
@@ -168,5 +173,92 @@ describe('CalendarService', () => {
       assignedToMe: true,
     });
     expect(byKind.GOAL.goal).toEqual({ period: 'MONTHLY', completed: true });
+  });
+
+  describe('cross-board', () => {
+    /**
+     * The tenancy boundary. On the flat route there is no `:boardId` for
+     * BoardRolesGuard to check, so this `in` clause is the only thing keeping
+     * one band's month out of another's.
+     */
+    it('constrains every source to the given board set', async () => {
+      await service.range(['b1', 'b2'], 'u1', query);
+
+      for (const table of [
+        prisma.event.findMany,
+        prisma.task.findMany,
+        prisma.goal.findMany,
+        prisma.reminder.findMany,
+      ]) {
+        const [args] = table.mock.calls[0] as [{ where: { boardId: unknown } }];
+        expect(args.where.boardId).toEqual({ in: ['b1', 'b2'] });
+      }
+    });
+
+    /**
+     * Prisma treats `{ in: undefined }` as *no* filter — verified against the
+     * dev database, where it returned every board while `{ in: [] }` returned
+     * none. So no code path may emit a where-clause whose board term is
+     * missing or undefined; that is the shape of the leak.
+     */
+    it('never emits a source query without a defined board term', async () => {
+      await service.range(['b1'], 'u1', query);
+
+      for (const table of [
+        prisma.event.findMany,
+        prisma.task.findMany,
+        prisma.goal.findMany,
+        prisma.reminder.findMany,
+      ]) {
+        const [args] = table.mock.calls[0] as [
+          { where: Record<string, unknown> },
+        ];
+        expect(args.where).toHaveProperty('boardId');
+        expect(args.where.boardId).not.toBeUndefined();
+      }
+    });
+
+    // Belonging to no board is legitimate (someone mid-invite). It must read as
+    // "nothing", and must not reach the database at all.
+    it('returns nothing and queries nothing for an empty board set', async () => {
+      await expect(service.range([], 'u1', query)).resolves.toEqual([]);
+
+      expect(prisma.event.findMany).not.toHaveBeenCalled();
+      expect(prisma.task.findMany).not.toHaveBeenCalled();
+      expect(prisma.goal.findMany).not.toHaveBeenCalled();
+      expect(prisma.reminder.findMany).not.toHaveBeenCalled();
+    });
+
+    // Merged across bands, two items called "Load in" are otherwise
+    // indistinguishable, and neither can be linked to.
+    it('labels every item with the board it came from', async () => {
+      prisma.event.findMany.mockResolvedValue([
+        {
+          id: 'e1',
+          boardId: 'b2',
+          title: 'Load in',
+          startsAt: new Date('2026-03-14T18:00:00.000Z'),
+          endsAt: null,
+          location: null,
+          type: 'SHOW',
+        },
+      ]);
+
+      const [item] = await service.range(['b1', 'b2'], 'u1', query);
+
+      expect(item.boardId).toBe('b2');
+      expect(item.boardName).toBe('Weekend Duo');
+    });
+
+    // One query for names, not a join on every row of four queries.
+    it('resolves board names in a single query scoped to the same set', async () => {
+      await service.range(['b1', 'b2'], 'u1', query);
+
+      expect(prisma.board.findMany).toHaveBeenCalledTimes(1);
+      const [args] = prisma.board.findMany.mock.calls[0] as [
+        { where: { id: unknown } },
+      ];
+      expect(args.where.id).toEqual({ in: ['b1', 'b2'] });
+    });
   });
 });
