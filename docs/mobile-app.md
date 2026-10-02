@@ -109,7 +109,7 @@ deliberately scheduled after mobile rather than blocking it.
 | **P8** | [Spokes (expanded widgets)](#p8--spokes-expanded-widgets) | mobile, **shared** | ☑ |
 | **P9** | [Calendar + Inbox screens](#p9--calendar--inbox-screens) | mobile, api | ☑ |
 | **P10** | [Write parity](#p10--write-parity) | mobile, **shared**, web | ☑ |
-| **P10b** | [Content editing](#p10b--content-editing) | mobile, shared | ☐ |
+| **P10b** | [Content editing](#p10b--content-editing) | mobile, shared, api-client | ◐ |
 | **P10c** | [Board admin](#p10c--board-admin) | mobile, api-client | ☐ |
 | **P11** | [Notes widget](#p11--notes-widget) | mobile | ☐ |
 | **P12** | [Mobile layout editor](#p12--mobile-layout-editor) | mobile | ☐ |
@@ -1084,6 +1084,61 @@ date-only string as UTC — but a native picker returns a *local* `Date`, and it
 is in `packages/shared/src/calendar.ts` (`dueDateFromLocalDay`,
 `localDayFromDueDate`), tested in Los Angeles. Events and reminders are instants
 and convert normally.
+
+**Built.** Four commits after the plan: a display fix, the api-client
+invalidation fix, then the forms.
+
+#### Due dates were a day early on the phone since P7
+
+Writing due dates surfaced the reading bug. The hub, the spokes and task detail
+passed a due date straight to `shortDate`/`isToday`, which read an instant in
+local time — so in Los Angeles a task due the 2nd showed as the 1st, and "due
+today" counted yesterday's. The calendar was right only because P9 had used the
+shared rule. `dueDay()` in `features/board/format.ts` adapts a due date for the
+instant helpers, and every due-date read goes through it. The mobile suite now
+runs in `America/Los_Angeles`, like `packages/shared`'s: in UTC the bug cannot
+be seen.
+
+#### Calendars were not refreshed by the writes that change them
+
+Planning mutations invalidated `["calendar", boardId]`, but the phone's
+Calendar tab reads `["calendar", "all", …]`, so an event saved on the phone left
+that tab stale until its cache aged out. Task mutations invalidated no calendar
+at all, though due tasks are on it. All four now invalidate every calendar
+query — there are only ever a handful — and return their refetch, so an
+optimistic tick holds until fresh data lands, as the task hooks already did.
+
+#### The shape of the forms
+
+- **One route, five forms.** `/board/:boardId/form/:kind` with `?id=` to edit,
+  `?parentTaskId=` for a subtask, `?type=` for a new event. One stack entry, one
+  frame (`FormScreen`): a modal with Cancel and Save, keyboard-aware.
+- **A form mounts only once its data has arrived** (`FormGate`), so it takes the
+  item as initial state instead of syncing it in from an effect. The gate also
+  answers a stale link: a member landing on an admin's form is told so.
+- **PATCHes carry only what changed.** Sending every field would log activity
+  for edits nobody made.
+- **Unsaved work is guarded by `usePreventRemove`** (from
+  `expo-router/react-navigation`), which catches the iOS swipe, Android's back
+  button and Cancel alike. Saving, archiving and deleting leave through
+  `useLeaveForm`, which skips the prompt.
+- **Dates use each platform's own picker** (`@react-native-community/datetimepicker`,
+  which ships in Expo Go): the compact inline pill on iOS; on Android, which has
+  no inline picker and no date-time mode, the date dialog then the time dialog.
+- **Header actions are one pure function** (`spokeAction`), tested against the
+  shared map so a member is never offered a form the API would refuse. It
+  follows the page you have swiped to. My Tasks offers none: a new task there
+  would need self-assignment, an admin's call, and To-Do is one swipe away.
+- **Goal labels are web's** (Yearly / Monthly / Daily), and archive/delete copy
+  is web's `ItemActions` copy, as alerts. Linked tasks are a separate button,
+  never the default — web's unticked checkbox.
+- **Subtasks only on root tasks**, as on web (the API allows two levels; web's UI
+  offers one, and two clients offering different depths would be a bug report).
+
+#### Still web-only after this phase
+
+Linking a task to a goal or event, and editing checklist item text (ticking is
+on mobile since P10). Neither was asked for; both are small if they are wanted.
 
 ### P10c — Board admin
 

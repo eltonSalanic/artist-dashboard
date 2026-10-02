@@ -619,6 +619,55 @@ Mention parsing and the upload flow moved into the shared packages.
 
 
 
+## P10b — Content editing
+
+Admins can now create and edit everything on a board from the phone; members
+can add subtasks. Test as an **admin**, then check the member rows with a second
+account. Run the phone in a **US timezone** for the date checks; that's where
+date bugs show.
+
+### Dates — ★ new, highest priority
+
+- [ ] 🔵 ★ Look at a task due **today** on the phone → Reads "Today", and the hub's To-Do card says "1 due today". (It said "Yesterday" before this phase)
+- [ ] 🔵 ★ Set a task's due date to the 2nd on the phone → Web shows the 2nd, and so does the phone
+- [ ] 🔵 ★ Create a show at 9pm on the phone → Web shows 9pm on the same day
+- [ ] ★ Set a goal's target to the 1st of next month → It sits on the 1st in the Calendar tab and on web
+
+### Tasks — ★ new
+
+- [ ] 🔵 ★ To-Do spoke → **+** → title, priority, due, assignees → Save → It appears in the list and on web, assigned
+- [ ] 🔵 ★ Task detail → **Edit** → change the title → Save → The task screen already shows it; web agrees after refresh
+- [ ] ★ Task detail → Subtasks → **Add** → Save → The subtask is listed under its parent
+- [ ] ★ Open a subtask → No "Add" — subtasks only go one level, as on web
+- [ ] ★ Edit → Archive → The form *and* the task screen close; the task is gone from To-Do and is in web's Archive
+- [ ] ★ Edit → Delete → "Delete forever" → Same, and it's not in the Archive either
+- [ ] ★ As a **member**, open a task → No Edit button; "Add" under Subtasks is there, and creating one works
+
+### Events, reminders, goals, focus — ★ new
+
+- [ ] 🔵 ★ Shows spoke → **+** → It opens as a new *show*; save it → It appears in Shows, the Calendar tab **without pulling to refresh**, and web
+- [ ] ★ Swipe to Rehearsals, tap **+** → It opens as a new *rehearsal* (the + follows the page)
+- [ ] ★ An end time before the start → Save is disabled with "It can't end before it starts."
+- [ ] 🔵 ★ Tap a reminder's bell → Ticks done immediately; web agrees. Tap the row → Edit form
+- [ ] 🔵 ★ Tap a goal's circle → Completes it; the Goals card's count drops
+- [ ] ★ Archive a goal that has linked tasks → The alert offers "Archive" *and* "Archive with N tasks"; plain Archive leaves the tasks
+- [ ] ★ Focus spoke → **Edit** → set the week's focus → The hub's Focus card shows it. Clear it and save → "Not set"
+- [ ] ★ As a **member**, every spoke → No **+**, no Edit, and tapping an event/reminder/goal does nothing
+
+### Unsaved work — ★ new
+
+- [ ] 🔵 ★ Type into a form, then swipe it down (iOS) → It won't go; Cancel asks "Discard changes?"
+- [ ] ★ Same on Android with the **back button** → "Discard changes?"
+- [ ] ★ Save a change → It closes without asking
+
+### Regressions — ↻
+
+- [ ] ↻ On web, edit a show, then open the web Calendar page → Shows the change (calendar refresh widened in the shared hooks)
+
+---
+
+
+
 ## P11–P15 — not yet built
 
 Sections get added as each phase lands. Known in advance:
