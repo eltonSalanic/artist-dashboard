@@ -1,7 +1,9 @@
 import { Pressable, ScrollView, View } from 'react-native';
+import { router } from 'expo-router';
 import { usePermissions } from '@artist/api-client';
 import { Icon, type IconName } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
+import { useSelectedBoard } from '@/features/board/selected-board';
 import { radius, spacing, useThemeColors } from '@/theme';
 
 /**
@@ -13,12 +15,16 @@ import { radius, spacing, useThemeColors } from '@/theme';
 export function BoardMenuSheet() {
   const colors = useThemeColors();
   const { can } = usePermissions();
+  const { board } = useSelectedBoard();
+  const base = board ? `/board/${board.id}` : null;
 
   const items: {
     icon: IconName;
     title: string;
     body: string;
-    phase: string;
+    /** Absent until the phase that builds the screen. */
+    href?: string;
+    phase?: string;
     visible: boolean;
   }[] = [
     {
@@ -32,15 +38,19 @@ export function BoardMenuSheet() {
       icon: { sf: 'archivebox', md: 'archive' },
       title: 'Archive',
       body: 'Anything put away, and a way to bring it back.',
-      phase: 'P10',
+      href: base ? `${base}/archive` : undefined,
       visible: can('archive.view'),
     },
     {
       icon: { sf: 'slider.horizontal.3', md: 'tune' },
-      title: 'Board settings',
-      body: 'Name, palette, statuses and members.',
-      phase: 'P10',
-      visible: can('board.appearance'),
+      title: 'Settings',
+      // Notifications are personal, so everyone gets this; what is inside
+      // depends on the role.
+      body: can('member.invite')
+        ? 'Members, invites, statuses, palette — and your notifications.'
+        : 'What this band may email you about.',
+      href: base ? `${base}/settings` : undefined,
+      visible: true,
     },
   ];
 
@@ -56,30 +66,49 @@ export function BoardMenuSheet() {
           <Pressable
             key={item.title}
             accessibilityRole="button"
-            // Nothing to navigate to yet; the phase that builds each screen
-            // wires it up. Left non-interactive rather than opening a dead end.
-            disabled
-            style={{
+            // Without a screen yet, left non-interactive rather than opening a
+            // dead end.
+            disabled={!item.href}
+            onPress={() => {
+              if (!item.href) return;
+              // Close the sheet first, so the screen pushes onto the stack
+              // underneath instead of on top of a sheet.
+              router.dismiss();
+              router.push(item.href);
+            }}
+            style={({ pressed }) => ({
               flexDirection: 'row',
               alignItems: 'center',
               gap: spacing.md,
               padding: spacing.md,
               borderRadius: radius.md,
               borderCurve: 'continuous',
-              backgroundColor: colors.card,
-              opacity: 0.6,
-            }}
+              backgroundColor: pressed ? colors.accent : colors.card,
+              opacity: item.href ? 1 : 0.6,
+            })}
           >
-            <Icon name={item.icon} size={22} color={colors.mutedForeground} />
+            <Icon
+              name={item.icon}
+              size={22}
+              color={item.href ? colors.foreground : colors.mutedForeground}
+            />
             <View style={{ flex: 1, gap: 2 }}>
               <ThemedText variant="headline">{item.title}</ThemedText>
               <ThemedText variant="footnote" tone="muted">
                 {item.body}
               </ThemedText>
             </View>
-            <ThemedText variant="caption" tone="muted">
-              {item.phase}
-            </ThemedText>
+            {item.phase ? (
+              <ThemedText variant="caption" tone="muted">
+                {item.phase}
+              </ThemedText>
+            ) : (
+              <Icon
+                name={{ sf: 'chevron.right', md: 'chevron-right' }}
+                size={14}
+                color={colors.mutedForeground}
+              />
+            )}
           </Pressable>
         ))}
     </ScrollView>

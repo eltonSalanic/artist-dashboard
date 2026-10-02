@@ -45,6 +45,9 @@ export function useSaveBoardTheme(boardId: string) {
     onSuccess: () => {
       // GET /boards/:id carries the theme too — keep the settings page honest.
       queryClient.invalidateQueries({ queryKey: ["board", boardId] });
+      // So does each band's palette on `me.boards`, which colours the phone's
+      // band dots and filter chips.
+      queryClient.invalidateQueries({ queryKey: ["me"] });
     },
   });
 }

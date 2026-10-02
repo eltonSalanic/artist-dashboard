@@ -129,3 +129,22 @@ export function boardAccent(
   accentCache.set(key, resolved);
   return resolved;
 }
+
+/**
+ * A palette's four card colours, as hex — what the palette picker previews.
+ * Same conversion and the same caching reason as `boardAccent`.
+ */
+const swatchCache = new Map<string, string[]>();
+
+export function paletteSwatches(palette: BoardPalette, scheme: ColorScheme): string[] {
+  const key = `${palette}:${scheme}`;
+  const cached = swatchCache.get(key);
+  if (cached) return cached;
+
+  const slots = BOARD_PALETTE_COLORS[palette][scheme];
+  const resolved = (['c1', 'c2', 'c3', 'c4'] as const).map((slot) =>
+    oklchToHex(slots[slot].bg),
+  );
+  swatchCache.set(key, resolved);
+  return resolved;
+}

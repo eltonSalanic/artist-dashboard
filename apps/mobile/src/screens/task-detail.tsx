@@ -77,6 +77,8 @@ export function TaskDetailScreen({
 
   const t = task.data;
   const meta = [
+    // Reached from the Archive; Edit → Unarchive brings it back.
+    t.archivedAt ? 'archived' : null,
     t.priority !== 'MEDIUM' ? `${t.priority.toLowerCase()} priority` : null,
     t.dueDate ? `due ${shortDate(dueDay(t.dueDate))}` : null,
   ].filter((part): part is string => part !== null);
