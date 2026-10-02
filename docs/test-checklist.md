@@ -668,6 +668,45 @@ date bugs show.
 
 
 
+## P10c — Board admin
+
+The board menu's **Archive** and **Settings** now open real screens. Test as an
+admin, then as a member. P10b's checks above are still unticked; run both
+sections in one pass.
+
+### Reaching them — ★ new
+
+- [ ] 🔵 ★ Board header → ⋯ → Archive → The sheet closes and the Archive opens; back returns to the board
+- [ ] 🔵 ★ ⋯ → Settings, as a **member** → Only "Email notifications"; no members, invites, statuses or palette
+
+### Archive — ★ new
+
+- [ ] 🔵 ★ Archive a show on web, open the phone's Archive → It's listed as a Show, with when it was archived
+- [ ] 🔵 ★ Tap it (as admin) → Its form opens with **Unarchive**; unarchive → It leaves the Archive and is back in Shows
+- [ ] ★ Tap an archived task → The task screen opens and says "archived"; Edit → Unarchive brings it back
+- [ ] ★ Tap the "Tasks" chip, then "Goals" too → The list narrows to both; untick both → Everything again
+- [ ] ★ As a **member**, tap an archived show → Nothing (a record, not a door); an archived task still opens read-only
+
+### Settings — ★ new
+
+- [ ] 🔵 ★ Toggle an email notification off → It flips at once; web's Settings shows it off
+- [ ] 🔵 ★ Invite an email address → An alert says whether an email went out or they'll join on sign-in; it's listed under Pending, and Mailpit has the email
+- [ ] ★ Revoke a pending invite → Confirm, then gone; web agrees
+- [ ] ★ Remove a member → Confirm with web's wording; they disappear, and tasks they were on show them unassigned
+- [ ] ★ Your own row in Members → No remove button
+- [ ] 🔵 ★ Tap a status → rename it, pick a new colour, toggle "Counts as done", Done → The To-Do rows and web show the new name and colour
+- [ ] ★ Add a status → It's offered in the status sheet straight away
+- [ ] ★ Delete a status that tasks still use → Refused with how many tasks use it
+- [ ] 🔵 ★ Pick another palette → The hub's cards recolour; web shows the new palette too, and any per-card colours set on web are kept
+
+### Regressions — ↻
+
+- [ ] 🔵 ↻ On web, Settings → toggle a notification, send and revoke an invite, rename a status → All behave as before, with the same toasts
+
+---
+
+
+
 ## P11–P15 — not yet built
 
 Sections get added as each phase lands. Known in advance:

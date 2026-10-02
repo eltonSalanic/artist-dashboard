@@ -110,7 +110,7 @@ deliberately scheduled after mobile rather than blocking it.
 | **P9** | [Calendar + Inbox screens](#p9--calendar--inbox-screens) | mobile, api | ☑ |
 | **P10** | [Write parity](#p10--write-parity) | mobile, **shared**, web | ☑ |
 | **P10b** | [Content editing](#p10b--content-editing) | mobile, shared, api-client | ◐ |
-| **P10c** | [Board admin](#p10c--board-admin) | mobile, api-client | ☐ |
+| **P10c** | [Board admin](#p10c--board-admin) | mobile, api-client, web | ◐ |
 | **P11** | [Notes widget](#p11--notes-widget) | mobile | ☐ |
 | **P12** | [Mobile layout editor](#p12--mobile-layout-editor) | mobile | ☐ |
 | **P13** | [Push client](#p13--push-client) | mobile, api | ☐ |
@@ -1146,6 +1146,43 @@ The **Archive** screen (browse, restore, delete forever) and **Board settings**:
 palette, statuses, members and invites, and the person's notification
 preferences. The invites and members queries live inline in web's settings
 page, so they move into `@artist/api-client` first.
+
+**Built** (two commits: the lift, then the screens). P10b and P10c go to
+verification together — the user skipped P10b's gate once to test both in one
+pass.
+
+#### Lifted first, as with every shared write
+
+Members (remove), invites (list, send, revoke), statuses (list, create,
+update, delete) and notification preferences (read, optimistic save) lived
+inline in web's settings components. They are `@artist/api-client` hooks now
+and web uses them, unchanged in behaviour and toasts. Two small gains came with
+the move: removing a member refreshes the task lists their assignments vanish
+from, and a failed invite revoke reports itself instead of failing silently.
+Archive/restore got the same calendar-wide refresh as the planning hooks, and
+a palette change now also refreshes `me`, whose per-band palettes colour the
+phone's band dots and filter chips.
+
+#### Choices
+
+- **Both screens open from the board menu**, for the selected band, at
+  `/board/:boardId/archive` and `/board/:boardId/settings`. Settings is visible to
+  every member, because notification preferences are personal; the sections
+  inside are gated by the shared map exactly as web gates its cards.
+- **The Archive keeps web's additive category chips and drops the year and day
+  filters**: two more controls above a usually short list cost more than they
+  save on a phone. A task opens its task screen (now marked "archived"),
+  everything else opens its form, where Unarchive and the "with its N tasks"
+  choice already live — no second restore path to keep in step.
+- **Status colours are a fixed set of eight swatches**, the board's four
+  defaults plus four, instead of web's colour input; a status's existing colour
+  is always offered, so editing never loses one. Deleting a status still in use
+  is refused by the API with a count, which the phone shows as is.
+- **The palette is here; per-widget card colours are not.** The palette is the
+  decision that changes how the board looks; the per-card overrides are kept
+  intact when the palette changes on the phone. The default layout is P12's.
+- **Invite results are an alert**, because the phone's notifier shows no success
+  toasts and whether an email actually went out is worth knowing.
 
 ### P11 — Notes widget
 
