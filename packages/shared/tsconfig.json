@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    // No "dom": this package is consumed by the API (Node), the web app and
+    // React Native. A lib.dom type leaking in must fail here rather than
+    // compile against whichever consumer happens to allow it.
+    "lib": ["ES2022"],
+    "types": ["node", "jest"]
+  },
+  "include": ["src/**/*.ts"]
+}
