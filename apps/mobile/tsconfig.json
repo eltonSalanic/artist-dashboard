@@ -1,0 +1,22 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "types": ["jest"],
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/assets/*": ["./assets/*"],
+      "@artist/shared": ["../../packages/shared/src"],
+      "@artist/shared/*": ["../../packages/shared/src/*"],
+      "@artist/api-client": ["../../packages/api-client/src"],
+      "@artist/api-client/*": ["../../packages/api-client/src/*"]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ],
+  "exclude": ["node_modules"]
+}
