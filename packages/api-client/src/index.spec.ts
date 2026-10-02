@@ -21,6 +21,9 @@ describe('package barrel', () => {
       'useCreateComment', 'useCustomWidget', 'useLayout', 'useSaveLayout',
       'useMentions', 'useCalendar', 'useEvents', 'useFocus', 'useGoals',
       'useReminders', 'useTasks', 'useCanChangeStatus',
+      // The cross-board pair the mobile Calendar and Inbox tabs read.
+      'useInbox', 'useDismissInboxItem', 'useClearInbox',
+      'useAllBoardsCalendar',
     ];
     for (const name of hooks) {
       expect(typeof (api as Record<string, unknown>)[name]).toBe('function');

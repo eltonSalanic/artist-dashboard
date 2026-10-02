@@ -94,3 +94,38 @@ export function useCardColors(
 ): ThemeColors {
   return cardTokens(palette, useScheme(), slot);
 }
+
+/**
+ * A band's own colour, for a list that has to tell several of them apart.
+ *
+ * The first slot of the board's palette — the colour the board itself leads
+ * with when you open it, which is what makes the dot learnable rather than
+ * arbitrary. Two bands on the same palette therefore look alike, and that is
+ * honest: the dot says what a board looks like, it does not claim to identify
+ * it. Every row names its band in words as well, so nothing is carried by
+ * colour alone.
+ *
+ * A plain function taking the scheme, not a hook, because the callers paint a
+ * *list* of boards: a hook would be called a different number of times as
+ * membership changed. The caller reads `useScheme()` once and spends it here.
+ */
+export interface SlotHex {
+  bg: string;
+  fg: string;
+}
+
+const accentCache = new Map<string, SlotHex>();
+
+export function boardAccent(
+  palette: BoardPalette,
+  scheme: ColorScheme,
+): SlotHex {
+  const key = `${palette}:${scheme}`;
+  const cached = accentCache.get(key);
+  if (cached) return cached;
+
+  const { bg, fg } = BOARD_PALETTE_COLORS[palette][scheme].c1;
+  const resolved = { bg: oklchToHex(bg), fg: oklchToHex(fg) };
+  accentCache.set(key, resolved);
+  return resolved;
+}

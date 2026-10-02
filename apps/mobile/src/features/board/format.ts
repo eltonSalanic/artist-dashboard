@@ -73,3 +73,37 @@ export function shortAgo(iso: string, now = new Date()): string {
 export function count(value: number | undefined): string {
   return String(value ?? 0);
 }
+
+/**
+ * A clock time, in the device's own 12/24-hour convention.
+ *
+ * Only for a value that *has* a time. A task's due date is a calendar day
+ * stored as UTC midnight, so running it through here would invent a 5pm
+ * deadline nobody set — the caller checks the kind first.
+ */
+export function timeOfDay(iso: string): string {
+  return new Date(iso).toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+/**
+ * A day as an agenda section heading: "Today · Sat 14 Mar".
+ *
+ * The relative word never replaces the date. Scanning a month, a heading that
+ * says only "Tomorrow" forces you to count forwards from it to place everything
+ * below; with both, the list stays readable wherever you entered it.
+ */
+export function dayHeading(date: Date, now = new Date()): string {
+  const absolute = date.toLocaleDateString(undefined, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
+  const days = daysFromToday(date.toISOString(), now);
+  if (days === 0) return `Today · ${absolute}`;
+  if (days === 1) return `Tomorrow · ${absolute}`;
+  if (days === -1) return `Yesterday · ${absolute}`;
+  return absolute;
+}

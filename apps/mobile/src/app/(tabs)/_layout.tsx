@@ -1,6 +1,6 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { ActivityIndicator, View } from 'react-native';
-import { PermissionsProvider, useBoard, useMe } from '@artist/api-client';
+import { PermissionsProvider, useBoard, useInbox, useMe } from '@artist/api-client';
 import { resolveBoardTheme } from '@artist/shared';
 import { ThemedText } from '@/components/themed-text';
 import {
@@ -65,6 +65,7 @@ export default function TabsLayout() {
               md="inbox"
             />
             <NativeTabs.Trigger.Label>Inbox</NativeTabs.Trigger.Label>
+            <InboxBadge />
           </NativeTabs.Trigger>
 
           <NativeTabs.Trigger name="(you)">
@@ -100,6 +101,32 @@ function BoardChrome({ children }: { children: React.ReactNode }) {
         children
       )}
     </BoardPaletteProvider>
+  );
+}
+
+/**
+ * How many mentions are waiting.
+ *
+ * The badge is honest here in a way it could not be on the Board tab: a mention
+ * is a row that exists until the person dismisses it, so the count is a fact
+ * rather than a guess about what they have already read. Unfiltered on purpose —
+ * a badge is about the app, not about whichever band the Inbox happens to be
+ * filtered to, and it reads the same cached query that tab's unfiltered list
+ * does.
+ *
+ * Rendering nothing at zero, rather than a `0`, because an empty inbox is not
+ * news.
+ */
+function InboxBadge() {
+  const inbox = useInbox();
+  const waiting = inbox.data?.length ?? 0;
+
+  if (waiting === 0) return null;
+
+  return (
+    <NativeTabs.Trigger.Badge>
+      {waiting > 9 ? '9+' : String(waiting)}
+    </NativeTabs.Trigger.Badge>
   );
 }
 
