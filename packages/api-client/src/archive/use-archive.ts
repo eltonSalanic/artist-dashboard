@@ -20,25 +20,27 @@ export function useArchive(boardId: string) {
  * Archiving moves an item between the dashboard and the archive, so both
  * sides of that line have to be refetched — every entity list, both detail
  * keys, the calendar, and the archive itself.
+ *
+ * Every calendar query, not just this board's: the phone's Calendar tab reads
+ * the cross-board key (`["calendar", "all", …]`), which a board prefix misses.
  */
 function useInvalidateArchive(boardId: string) {
   const queryClient = useQueryClient();
-  return () => {
-    for (const key of [
-      "archive",
-      "tasks",
-      "task",
-      "goals",
-      "goal",
-      "events",
-      "event",
-      "reminders",
-      "reminder",
-      "calendar",
-    ]) {
-      queryClient.invalidateQueries({ queryKey: [key, boardId] });
-    }
-  };
+  return () =>
+    Promise.all([
+      ...[
+        "archive",
+        "tasks",
+        "task",
+        "goals",
+        "goal",
+        "events",
+        "event",
+        "reminders",
+        "reminder",
+      ].map((key) => queryClient.invalidateQueries({ queryKey: [key, boardId] })),
+      queryClient.invalidateQueries({ queryKey: ["calendar"] }),
+    ]);
 }
 
 export interface ArchiveVariables {
@@ -57,8 +59,8 @@ export function useArchiveItem(boardId: string) {
         body: { cascadeTasks },
       }),
     onSuccess: () => {
-      invalidate();
       notify.success("Moved to the archive");
+      return invalidate();
     },
     onError: showError,
   });
@@ -73,8 +75,8 @@ export function useRestoreItem(boardId: string) {
         body: { cascadeTasks },
       }),
     onSuccess: () => {
-      invalidate();
       notify.success("Back on your dashboard");
+      return invalidate();
     },
     onError: showError,
   });

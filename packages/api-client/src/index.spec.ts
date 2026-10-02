@@ -26,6 +26,10 @@ describe('package barrel', () => {
       'useAllBoardsCalendar',
       // Lifted from apps/web when the phone gained uploads.
       'useAttachments', 'useUploadAttachment', 'useDeleteAttachment',
+      // Lifted from web's settings page when the phone gained one.
+      'useRemoveMember', 'useInvites', 'useSendInvite', 'useRevokeInvite',
+      'useStatuses', 'useCreateStatus', 'useUpdateStatus', 'useDeleteStatus',
+      'useNotificationPreferences', 'useSaveNotificationPreference',
     ];
     for (const name of hooks) {
       expect(typeof (api as Record<string, unknown>)[name]).toBe('function');

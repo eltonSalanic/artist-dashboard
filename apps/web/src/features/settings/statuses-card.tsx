@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
-import { apiFetch, ApiError } from "@artist/api-client";
+import {
+  useCreateStatus,
+  useDeleteStatus,
+  useStatuses,
+  useUpdateStatus,
+} from "@artist/api-client";
 import type { TaskStatusDto } from "@artist/api-client";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,62 +21,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const showError = (error: unknown) =>
-  toast.error(error instanceof ApiError ? error.message : "Something went wrong");
-
 export function StatusesCard({ boardId }: { boardId: string }) {
-  const queryClient = useQueryClient();
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState("#4f7cff");
 
-  const statuses = useQuery({
-    queryKey: ["statuses", boardId],
-    queryFn: () => apiFetch<TaskStatusDto[]>(`/boards/${boardId}/statuses`),
-  });
-
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ["statuses", boardId] });
-    queryClient.invalidateQueries({ queryKey: ["board", boardId] });
-    queryClient.invalidateQueries({ queryKey: ["tasks", boardId] });
-  };
-
-  const createStatus = useMutation({
-    mutationFn: () =>
-      apiFetch(`/boards/${boardId}/statuses`, {
-        method: "POST",
-        body: { name: newName.trim(), color: newColor },
-      }),
-    onSuccess: () => {
-      setNewName("");
-      invalidate();
-    },
-    onError: showError,
-  });
-
-  const updateStatus = useMutation({
-    mutationFn: ({
-      statusId,
-      dto,
-    }: {
-      statusId: string;
-      dto: Partial<Pick<TaskStatusDto, "name" | "color" | "isDone">>;
-    }) =>
-      apiFetch(`/boards/${boardId}/statuses/${statusId}`, {
-        method: "PATCH",
-        body: dto,
-      }),
-    onSuccess: invalidate,
-    onError: showError,
-  });
-
-  const deleteStatus = useMutation({
-    mutationFn: (statusId: string) =>
-      apiFetch(`/boards/${boardId}/statuses/${statusId}`, {
-        method: "DELETE",
-      }),
-    onSuccess: invalidate,
-    onError: showError,
-  });
+  const statuses = useStatuses(boardId);
+  const createStatus = useCreateStatus(boardId);
+  const updateStatus = useUpdateStatus(boardId);
+  const deleteStatus = useDeleteStatus(boardId);
 
   return (
     <Card>
@@ -98,7 +53,12 @@ export function StatusesCard({ boardId }: { boardId: string }) {
           className="flex items-center gap-2"
           onSubmit={(e) => {
             e.preventDefault();
-            if (newName.trim()) createStatus.mutate();
+            if (newName.trim()) {
+              createStatus.mutate(
+                { name: newName.trim(), color: newColor },
+                { onSuccess: () => setNewName("") },
+              );
+            }
           }}
         >
           <input

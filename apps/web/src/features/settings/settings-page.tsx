@@ -1,14 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import type { BoardRole } from "@artist/shared";
-import { apiFetch, ApiError } from "@artist/api-client";
-import { useMe } from "@artist/api-client";
-import { usePermissions } from "@artist/api-client";
-import type { BoardDetailDto, InviteDto } from "@artist/api-client";
+import {
+  useBoard,
+  useInvites,
+  useMe,
+  usePermissions,
+  useRemoveMember,
+  useRevokeInvite,
+  useSendInvite,
+} from "@artist/api-client";
 import { AppearanceCard } from "./appearance-card";
 import { DefaultLayoutCard } from "./default-layout-card";
 import { StatusesCard } from "./statuses-card";
@@ -66,24 +69,8 @@ export function SettingsPage() {
 
 function MembersCard({ boardId }: { boardId: string }) {
   const me = useMe(true);
-  const queryClient = useQueryClient();
-  const board = useQuery({
-    queryKey: ["board", boardId],
-    queryFn: () => apiFetch<BoardDetailDto>(`/boards/${boardId}`),
-  });
-
-  const removeMember = useMutation({
-    mutationFn: (userId: string) =>
-      apiFetch<{ removed: true }>(`/boards/${boardId}/members/${userId}`, {
-        method: "DELETE",
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["board", boardId] });
-      toast.success("Member removed");
-    },
-    onError: (error) =>
-      toast.error(error instanceof ApiError ? error.message : "Remove failed"),
-  });
+  const board = useBoard(boardId);
+  const removeMember = useRemoveMember(boardId);
 
   const myUserId = me.data?.user.id;
 
@@ -138,42 +125,12 @@ function MembersCard({ boardId }: { boardId: string }) {
 }
 
 function InvitesCard({ boardId }: { boardId: string }) {
-  const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<BoardRole>("USER");
 
-  const invites = useQuery({
-    queryKey: ["invites", boardId],
-    queryFn: () => apiFetch<InviteDto[]>(`/boards/${boardId}/invites`),
-  });
-
-  const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: ["invites", boardId] });
-
-  const sendInvite = useMutation({
-    mutationFn: () =>
-      apiFetch<InviteDto & { delivery: string }>(`/boards/${boardId}/invites`, {
-        method: "POST",
-        body: { email, role },
-      }),
-    onSuccess: (invite) => {
-      setEmail("");
-      invalidate();
-      toast.success(
-        invite.delivery === "already_registered"
-          ? "Invite saved — they'll join next time they sign in"
-          : "Invite email sent",
-      );
-    },
-    onError: (error) =>
-      toast.error(error instanceof ApiError ? error.message : "Invite failed"),
-  });
-
-  const revokeInvite = useMutation({
-    mutationFn: (inviteId: string) =>
-      apiFetch(`/boards/${boardId}/invites/${inviteId}`, { method: "DELETE" }),
-    onSuccess: () => invalidate(),
-  });
+  const invites = useInvites(boardId);
+  const sendInvite = useSendInvite(boardId);
+  const revokeInvite = useRevokeInvite(boardId);
 
   return (
     <Card>
@@ -187,7 +144,7 @@ function InvitesCard({ boardId }: { boardId: string }) {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            sendInvite.mutate();
+            sendInvite.mutate({ email, role }, { onSuccess: () => setEmail("") });
           }}
         >
           <FieldGroup>
