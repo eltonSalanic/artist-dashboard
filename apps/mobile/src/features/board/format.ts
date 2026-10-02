@@ -107,3 +107,11 @@ export function dayHeading(date: Date, now = new Date()): string {
   if (days === -1) return `Yesterday · ${absolute}`;
   return absolute;
 }
+
+/** "820 B", "34 KB", "4.2 MB" — the same steps web uses. */
+export function fileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${Math.round(kb)} KB`;
+  return `${(kb / 1024).toFixed(1)} MB`;
+}

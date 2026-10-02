@@ -2,6 +2,7 @@ import {
   count,
   dayHeading,
   daysFromToday,
+  fileSize,
   isThisWeek,
   isToday,
   shortAgo,
@@ -116,5 +117,15 @@ describe('dayHeading', () => {
     const heading = dayHeading(new Date(2026, 2, 20), now);
     expect(heading).not.toContain('·');
     expect(heading).toContain('20');
+  });
+});
+
+describe('fileSize', () => {
+  it('steps from bytes to KB to MB', () => {
+    expect(fileSize(820)).toBe('820 B');
+    expect(fileSize(1023)).toBe('1023 B');
+    expect(fileSize(1024)).toBe('1 KB');
+    expect(fileSize(34 * 1024 + 300)).toBe('34 KB');
+    expect(fileSize(4.2 * 1024 * 1024)).toBe('4.2 MB');
   });
 });

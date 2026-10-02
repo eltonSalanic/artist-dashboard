@@ -32,7 +32,15 @@
           "imageWidth": 76
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Lets you attach photos and videos to your band's tasks.",
+          "cameraPermission": "Lets you take a photo and attach it to a task.",
+          "microphonePermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false,

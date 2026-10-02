@@ -1,14 +1,17 @@
 import { router } from 'expo-router';
-import { Pressable, ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView, Pressable, ScrollView, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useCanChangeStatus, useChecklist, useTask } from '@artist/api-client';
 import { Badge } from '@/components/badge';
 import { Button } from '@/components/button';
 import { Icon } from '@/components/icon';
 import { Dot, Row } from '@/components/row';
+import { Section } from '@/components/section';
 import { Skeleton } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
+import { TaskAttachments } from '@/features/attachments/task-attachments';
 import { shortDate } from '@/features/board/format';
+import { CommentsSection } from '@/features/comments/comments-section';
 import { radius, spacing, useThemeColors } from '@/theme';
 
 /**
@@ -61,12 +64,7 @@ export function TaskDetailScreen({
               rather than confirming it exists. */}
           It may have been deleted, archived, or belong to another band.
         </ThemedText>
-        <Button
-          title="Go back"
-          variant="ghost"
-          size="sm"
-          onPress={() => router.back()}
-        />
+        <Button title="Go back" variant="ghost" size="sm" onPress={() => router.back()} />
       </View>
     );
   }
@@ -78,140 +76,159 @@ export function TaskDetailScreen({
   ].filter((part): part is string => part !== null);
 
   return (
-    <ScrollView
+    // The composer sits at the bottom of a long scroll, so the keyboard would
+    // cover it. iOS's scroll view insets itself for the keyboard; Android is
+    // edge-to-edge, where the window no longer resizes, so it gets padding.
+    <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.background }}
-      contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={{ padding: spacing.md, gap: spacing.lg }}
+      behavior={process.env.EXPO_OS === 'android' ? 'padding' : undefined}
     >
-      <View style={{ gap: spacing.sm }}>
-        <ThemedText variant="title">{t.title}</ThemedText>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: spacing.sm,
-          }}
-        >
-          <StatusButton
-            name={t.status.name}
-            color={t.status.color}
-            onPress={
-              canChangeStatus(t.assignees)
-                ? () => router.push(`/board/${boardId}/status/${t.id}`)
-                : undefined
-            }
-          />
-          {meta.length > 0 && (
-            <ThemedText variant="subhead" tone="muted">
-              {meta.join(' · ')}
-            </ThemedText>
-          )}
-        </View>
-      </View>
-
-      {t.description !== null && t.description.trim() !== '' && (
-        <ThemedText variant="body">{t.description}</ThemedText>
-      )}
-
-      {t.assignees.length > 0 && (
-        <Section title="ASSIGNED TO">
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
-            {t.assignees.map((person) => (
-              <Badge key={person.id} label={person.displayName} />
-            ))}
-          </View>
-        </Section>
-      )}
-
-      {(t.goal !== null || t.event !== null) && (
-        <Section title="PART OF">
-          {t.goal && (
-            <Row first title={t.goal.title} meta="goal" />
-          )}
-          {t.event && (
-            <Row
-              first={t.goal === null}
-              title={t.event.title}
-              meta={t.event.type.toLowerCase()}
-              trailing={shortDate(t.event.startsAt)}
-            />
-          )}
-        </Section>
-      )}
-
-      {t.checklist.length > 0 && (
-        <Section
-          title={`CHECKLIST · ${t.checklist.filter((i) => i.done).length}/${t.checklist.length}`}
-        >
-          {t.checklist.map((item, index) => {
-            // While a tick is in flight, show where it is going. The mutation
-            // stays pending until the refetch lands, so this never flickers
-            // back to the old value in between.
-            const pending =
-              checklist.update.isPending &&
-              checklist.update.variables?.itemId === item.id;
-            const done = pending
-              ? (checklist.update.variables?.dto.done ?? item.done)
-              : item.done;
-            return (
-              <Row
-                key={item.id}
-                first={index === 0}
-                title={item.text}
-                dim={done}
-                // Any member may tick an item — the API and web both allow it.
-                onPress={
-                  pending
-                    ? undefined
-                    : () => {
-                        void Haptics.selectionAsync();
-                        checklist.update.mutate({
-                          itemId: item.id,
-                          dto: { done: !item.done },
-                        });
-                      }
-                }
-                lead={
-                  <Icon
-                    name={
-                      done
-                        ? { sf: 'checkmark.circle.fill', md: 'check-circle' }
-                        : { sf: 'circle', md: 'radio-button-unchecked' }
-                    }
-                    size={17}
-                    color={done ? colors.primary : undefined}
-                  />
-                }
-              />
-            );
-          })}
-        </Section>
-      )}
-
-      {t.subtasks.length > 0 && (
-        <Section title={`SUBTASKS · ${t.subtasks.length}`}>
-          {t.subtasks.map((subtask, index) => (
-            <Row
-              key={subtask.id}
-              first={index === 0}
-              title={subtask.title}
-              meta={subtask.status.name}
-              dim={subtask.status.isDone}
-              lead={<Dot color={subtask.status.color} />}
-              trailing={subtask.dueDate ? shortDate(subtask.dueDate) : undefined}
-              onPress={() =>
-                router.push(`/board/${boardId}/task/${subtask.id}`)
+      <ScrollView
+        style={{ flex: 1 }}
+        contentInsetAdjustmentBehavior="automatic"
+        automaticallyAdjustKeyboardInsets
+        keyboardDismissMode="interactive"
+        // A tap on "Comment" or a mention chip must land while the keyboard is
+        // up, not just dismiss it.
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ padding: spacing.md, gap: spacing.lg }}
+      >
+        <View style={{ gap: spacing.sm }}>
+          <ThemedText variant="title">{t.title}</ThemedText>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: spacing.sm,
+            }}
+          >
+            <StatusButton
+              name={t.status.name}
+              color={t.status.color}
+              onPress={
+                canChangeStatus(t.assignees)
+                  ? () => router.push(`/board/${boardId}/status/${t.id}`)
+                  : undefined
               }
             />
-          ))}
-        </Section>
-      )}
+            {meta.length > 0 && (
+              <ThemedText variant="subhead" tone="muted">
+                {meta.join(' · ')}
+              </ThemedText>
+            )}
+          </View>
+        </View>
 
-      <ThemedText variant="footnote" tone="muted">
-        Created by {t.createdBy.displayName}.
-      </ThemedText>
-    </ScrollView>
+        {t.description !== null && t.description.trim() !== '' && (
+          <ThemedText variant="body">{t.description}</ThemedText>
+        )}
+
+        {t.assignees.length > 0 && (
+          <Section title="ASSIGNED TO">
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: spacing.xs,
+              }}
+            >
+              {t.assignees.map((person) => (
+                <Badge key={person.id} label={person.displayName} />
+              ))}
+            </View>
+          </Section>
+        )}
+
+        {(t.goal !== null || t.event !== null) && (
+          <Section title="PART OF">
+            {t.goal && <Row first title={t.goal.title} meta="goal" />}
+            {t.event && (
+              <Row
+                first={t.goal === null}
+                title={t.event.title}
+                meta={t.event.type.toLowerCase()}
+                trailing={shortDate(t.event.startsAt)}
+              />
+            )}
+          </Section>
+        )}
+
+        {t.checklist.length > 0 && (
+          <Section
+            title={`CHECKLIST · ${t.checklist.filter((i) => i.done).length}/${t.checklist.length}`}
+          >
+            {t.checklist.map((item, index) => {
+              // While a tick is in flight, show where it is going. The mutation
+              // stays pending until the refetch lands, so this never flickers
+              // back to the old value in between.
+              const pending =
+                checklist.update.isPending &&
+                checklist.update.variables?.itemId === item.id;
+              const done = pending
+                ? (checklist.update.variables?.dto.done ?? item.done)
+                : item.done;
+              return (
+                <Row
+                  key={item.id}
+                  first={index === 0}
+                  title={item.text}
+                  dim={done}
+                  // Any member may tick an item — the API and web both allow it.
+                  onPress={
+                    pending
+                      ? undefined
+                      : () => {
+                          void Haptics.selectionAsync();
+                          checklist.update.mutate({
+                            itemId: item.id,
+                            dto: { done: !item.done },
+                          });
+                        }
+                  }
+                  lead={
+                    <Icon
+                      name={
+                        done
+                          ? { sf: 'checkmark.circle.fill', md: 'check-circle' }
+                          : { sf: 'circle', md: 'radio-button-unchecked' }
+                      }
+                      size={17}
+                      color={done ? colors.primary : undefined}
+                    />
+                  }
+                />
+              );
+            })}
+          </Section>
+        )}
+
+        {t.subtasks.length > 0 && (
+          <Section title={`SUBTASKS · ${t.subtasks.length}`}>
+            {t.subtasks.map((subtask, index) => (
+              <Row
+                key={subtask.id}
+                first={index === 0}
+                title={subtask.title}
+                meta={subtask.status.name}
+                dim={subtask.status.isDone}
+                lead={<Dot color={subtask.status.color} />}
+                trailing={subtask.dueDate ? shortDate(subtask.dueDate) : undefined}
+                onPress={() => router.push(`/board/${boardId}/task/${subtask.id}`)}
+              />
+            ))}
+          </Section>
+        )}
+
+        <ThemedText variant="footnote" tone="muted">
+          Created by {t.createdBy.displayName}.
+        </ThemedText>
+
+        <TaskAttachments boardId={boardId} taskId={t.id} />
+
+        <CommentsSection boardId={boardId} taskId={t.id} />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -261,23 +278,6 @@ function StatusButton({
         />
       )}
     </Pressable>
-  );
-}
-
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <View style={{ gap: spacing.xs }}>
-      <ThemedText variant="caption" tone="muted">
-        {title}
-      </ThemedText>
-      {children}
-    </View>
   );
 }
 
