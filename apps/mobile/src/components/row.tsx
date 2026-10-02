@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, View, type AccessibilityActionInfo } from 'react-native';
 import { radius, spacing, useTokens } from '@/theme';
 import { ThemedText } from './themed-text';
 
@@ -19,6 +19,9 @@ export function Row({
   dim = false,
   first = false,
   onPress,
+  onLongPress,
+  accessibilityActions,
+  onAccessibilityAction,
 }: {
   title: string;
   meta?: string | null;
@@ -29,6 +32,11 @@ export function Row({
   /** Suppresses the separator, so a list has no rule above its first row. */
   first?: boolean;
   onPress?: () => void;
+  /** Press-and-hold — a reorderable list uses it to pick the row up. */
+  onLongPress?: () => void;
+  /** Named actions a screen reader offers instead of a gesture it cannot do. */
+  accessibilityActions?: AccessibilityActionInfo[];
+  onAccessibilityAction?: (actionName: string) => void;
 }) {
   const tokens = useTokens();
 
@@ -74,12 +82,19 @@ export function Row({
     minHeight: 48,
   };
 
-  if (!onPress) return <View style={layout}>{body}</View>;
+  if (!onPress && !onLongPress) return <View style={layout}>{body}</View>;
 
   return (
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
+      onLongPress={onLongPress}
+      accessibilityActions={accessibilityActions}
+      onAccessibilityAction={
+        onAccessibilityAction
+          ? (event) => onAccessibilityAction(event.nativeEvent.actionName)
+          : undefined
+      }
       style={({ pressed }) => [
         layout,
         pressed && { backgroundColor: tokens.accent },

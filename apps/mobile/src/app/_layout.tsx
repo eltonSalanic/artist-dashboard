@@ -8,6 +8,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router/stack';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useSession } from '@artist/api-client';
 import { supabase } from '@/lib/supabase';
@@ -60,19 +61,24 @@ export default function RootLayout() {
   if (loading) return null;
 
   return (
-    <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
-        <StatusBar style="auto" />
-        <Stack>
-          <Stack.Protected guard={session !== null}>
-            {/* The tab group owns its own headers, one stack per tab. */}
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          </Stack.Protected>
-          <Stack.Protected guard={session === null}>
-            <Stack.Screen name="sign-in" options={{ title: 'Sign in' }} />
-          </Stack.Protected>
-        </Stack>
-      </QueryClientProvider>
-    </SafeAreaProvider>
+    // Gesture Handler does nothing without this root, and says nothing about
+    // it either — the drag-to-reorder list would simply never pick up. The
+    // native stack does not provide one (only expo-router's JS stack does).
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <QueryClientProvider client={queryClient}>
+          <StatusBar style="auto" />
+          <Stack>
+            <Stack.Protected guard={session !== null}>
+              {/* The tab group owns its own headers, one stack per tab. */}
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            </Stack.Protected>
+            <Stack.Protected guard={session === null}>
+              <Stack.Screen name="sign-in" options={{ title: 'Sign in' }} />
+            </Stack.Protected>
+          </Stack>
+        </QueryClientProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

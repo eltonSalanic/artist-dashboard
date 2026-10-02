@@ -1,10 +1,24 @@
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable } from 'react-native';
 import { router } from 'expo-router';
-import { useCanChangeStatus, useMe, useTasks } from '@artist/api-client';
+import * as Haptics from 'expo-haptics';
+import { Gesture } from 'react-native-gesture-handler';
+import ReorderableList, { useReorderableDrag } from 'react-native-reorderable-list';
+import { scheduleOnRN } from 'react-native-worklets';
+import {
+  useCanChangeStatus,
+  useMe,
+  usePermissions,
+  useReorderTask,
+  useTasks,
+} from '@artist/api-client';
 import type { TaskDto } from '@artist/api-client';
 import { Dot, Row } from '@/components/row';
 import { SpokeList } from '@/components/spoke-list';
+import { ThemedText } from '@/components/themed-text';
+import { spacing } from '@/theme';
 import { shortDate } from '../format';
+import { planMove } from '../reorder';
 
 /** Priority is only worth saying when it is not the middle. */
 function meta(task: TaskDto): string {
@@ -17,18 +31,25 @@ function meta(task: TaskDto): string {
   return parts.join(' · ');
 }
 
-function TaskRows({
-  tasks,
+function TaskRow({
+  task,
   boardId,
+  first,
+  onLongPress,
+  accessibilityActions,
+  onAccessibilityAction,
 }: {
-  tasks: TaskDto[];
+  task: TaskDto;
   boardId: string;
-}) {
+  first: boolean;
+} & Pick<
+  React.ComponentProps<typeof Row>,
+  'onLongPress' | 'accessibilityActions' | 'onAccessibilityAction'
+>) {
   const canChangeStatus = useCanChangeStatus();
-  return tasks.map((task, index) => (
+  return (
     <Row
-      key={task.id}
-      first={index === 0}
+      first={first}
       title={task.title}
       meta={meta(task)}
       dim={task.status.isDone}
@@ -42,7 +63,16 @@ function TaskRows({
       }
       trailing={task.dueDate ? shortDate(task.dueDate) : undefined}
       onPress={() => router.push(`/board/${boardId}/task/${task.id}`)}
+      onLongPress={onLongPress}
+      accessibilityActions={accessibilityActions}
+      onAccessibilityAction={onAccessibilityAction}
     />
+  );
+}
+
+function TaskRows({ tasks, boardId }: { tasks: TaskDto[]; boardId: string }) {
+  return tasks.map((task, index) => (
+    <TaskRow key={task.id} task={task} boardId={boardId} first={index === 0} />
   ));
 }
 
@@ -65,10 +95,22 @@ function StatusDot({ task, boardId }: { task: TaskDto; boardId: string }) {
   );
 }
 
-/** Everything on the board. Subtasks are reached through their parent. */
+/**
+ * Everything on the board, in the board's own order — the order web's To-Do
+ * widget shows and an admin can drag. Subtasks are reached through their parent.
+ */
 export function TodosSpoke({ boardId }: { boardId: string }) {
-  const tasks = useTasks(boardId);
+  const { can } = usePermissions();
+  const tasks = useTasks(boardId, { sort: 'order' });
   const roots = (tasks.data ?? []).filter((t) => t.parentTaskId === null);
+
+  // Reorder is ADMIN-only at the endpoint (`@BoardRoles('ADMIN')`), and
+  // `task.editFields` is the shared map's name for exactly that.
+  if (can('task.editFields') && !tasks.isPending && !tasks.error && roots.length > 0) {
+    return (
+      <ReorderableTodos tasks={roots} boardId={boardId} basis={tasks.dataUpdatedAt} />
+    );
+  }
 
   return (
     <SpokeList
@@ -82,6 +124,121 @@ export function TodosSpoke({ boardId }: { boardId: string }) {
     >
       <TaskRows tasks={roots} boardId={boardId} />
     </SpokeList>
+  );
+}
+
+const pickUp = () => void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+/**
+ * Hold a row, then drag it. The pan only activates after the long press, so
+ * a plain horizontal swipe still pages to the next widget and a vertical one
+ * still scrolls — the drag never steals a gesture the person meant for the
+ * spoke around it.
+ *
+ * The new order shows at once and is held until the server's order comes back
+ * (`basis` is when the list was fetched): the move mutation stays pending
+ * until its refetch lands, so the list never jumps back in between. A failed
+ * move drops the held order, putting the rows back where the server has them.
+ */
+function ReorderableTodos({
+  tasks,
+  boardId,
+  basis,
+}: {
+  tasks: TaskDto[];
+  boardId: string;
+  basis: number;
+}) {
+  const reorder = useReorderTask(boardId);
+  const [held, setHeld] = useState<{ ids: string[]; basis: number } | null>(null);
+
+  const byId = new Map(tasks.map((task) => [task.id, task]));
+  const ordered =
+    held?.basis === basis ? held.ids.flatMap((id) => byId.get(id) ?? []) : tasks;
+
+  const move = (from: number, to: number) => {
+    const plan = planMove(
+      ordered.map((task) => task.id),
+      from,
+      to,
+    );
+    if (!plan) return;
+    setHeld({ ids: plan.ids, basis });
+    reorder.mutate(
+      { taskId: plan.taskId, afterTaskId: plan.afterTaskId },
+      { onError: () => setHeld(null) },
+    );
+  };
+
+  // Just past Pressable's 500ms long press, per the library's guidance, so the
+  // press picks the row up before the pan can claim the touch.
+  const panGesture = useMemo(() => Gesture.Pan().activateAfterLongPress(520), []);
+  const onDragStart = useCallback(() => {
+    'worklet';
+    scheduleOnRN(pickUp);
+  }, []);
+
+  return (
+    <ReorderableList
+      data={ordered}
+      keyExtractor={(task) => task.id}
+      onReorder={({ from, to }) => move(from, to)}
+      panGesture={panGesture}
+      onDragStart={onDragStart}
+      contentInsetAdjustmentBehavior="automatic"
+      contentContainerStyle={{ padding: spacing.md }}
+      ListHeaderComponent={
+        <ThemedText
+          variant="footnote"
+          tone="muted"
+          style={{ paddingHorizontal: spacing.sm, paddingBottom: spacing.sm }}
+        >
+          Hold a task to move it.
+        </ThemedText>
+      }
+      renderItem={({ item, index }) => (
+        <DraggableTaskRow
+          task={item}
+          boardId={boardId}
+          index={index}
+          count={ordered.length}
+          onMove={move}
+        />
+      )}
+    />
+  );
+}
+
+function DraggableTaskRow({
+  task,
+  boardId,
+  index,
+  count,
+  onMove,
+}: {
+  task: TaskDto;
+  boardId: string;
+  index: number;
+  count: number;
+  onMove: (from: number, to: number) => void;
+}) {
+  const drag = useReorderableDrag();
+  return (
+    <TaskRow
+      task={task}
+      boardId={boardId}
+      first={index === 0}
+      onLongPress={drag}
+      // A screen reader cannot drag; it gets the same move one step at a time.
+      accessibilityActions={[
+        ...(index > 0 ? [{ name: 'moveUp', label: 'Move up' }] : []),
+        ...(index < count - 1 ? [{ name: 'moveDown', label: 'Move down' }] : []),
+      ]}
+      onAccessibilityAction={(action) => {
+        if (action === 'moveUp') onMove(index, index - 1);
+        if (action === 'moveDown') onMove(index, index + 1);
+      }}
+    />
   );
 }
 
