@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
-import { ScrollView, View } from 'react-native';
-import { useTask } from '@artist/api-client';
+import { Pressable, ScrollView, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { useCanChangeStatus, useChecklist, useTask } from '@artist/api-client';
 import { Badge } from '@/components/badge';
 import { Button } from '@/components/button';
 import { Icon } from '@/components/icon';
@@ -8,14 +9,16 @@ import { Dot, Row } from '@/components/row';
 import { Skeleton } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { shortDate } from '@/features/board/format';
-import { spacing, useThemeColors } from '@/theme';
+import { radius, spacing, useThemeColors } from '@/theme';
 
 /**
- * One task, read-only. Editing — status, assignees, checklist, comments,
- * attachments — is P10.
+ * One task. Status, checklist ticks, comments and attachments are writable
+ * here; the task's own fields (title, description, dates, assignees) are an
+ * admin's job and stay on web.
  *
  * Reached from any task row, and addressable, so a mention notification can
- * open the task it is about rather than the board root.
+ * open the task it is about rather than the board root. Wrapped by its route
+ * in `BoardPermissions`, so every control answers for this task's band.
  */
 export function TaskDetailScreen({
   boardId,
@@ -26,6 +29,8 @@ export function TaskDetailScreen({
 }) {
   const colors = useThemeColors();
   const task = useTask(boardId, taskId);
+  const checklist = useChecklist(boardId, taskId);
+  const canChangeStatus = useCanChangeStatus();
 
   if (task.isPending) {
     return (
@@ -68,7 +73,6 @@ export function TaskDetailScreen({
 
   const t = task.data;
   const meta = [
-    t.status.name,
     t.priority !== 'MEDIUM' ? `${t.priority.toLowerCase()} priority` : null,
     t.dueDate ? `due ${shortDate(t.dueDate)}` : null,
   ].filter((part): part is string => part !== null);
@@ -82,12 +86,27 @@ export function TaskDetailScreen({
       <View style={{ gap: spacing.sm }}>
         <ThemedText variant="title">{t.title}</ThemedText>
         <View
-          style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: spacing.sm,
+          }}
         >
-          <Dot color={t.status.color} />
-          <ThemedText variant="subhead" tone="muted">
-            {meta.join(' · ')}
-          </ThemedText>
+          <StatusButton
+            name={t.status.name}
+            color={t.status.color}
+            onPress={
+              canChangeStatus(t.assignees)
+                ? () => router.push(`/board/${boardId}/status/${t.id}`)
+                : undefined
+            }
+          />
+          {meta.length > 0 && (
+            <ThemedText variant="subhead" tone="muted">
+              {meta.join(' · ')}
+            </ThemedText>
+          )}
         </View>
       </View>
 
@@ -125,24 +144,48 @@ export function TaskDetailScreen({
         <Section
           title={`CHECKLIST · ${t.checklist.filter((i) => i.done).length}/${t.checklist.length}`}
         >
-          {t.checklist.map((item, index) => (
-            <Row
-              key={item.id}
-              first={index === 0}
-              title={item.text}
-              dim={item.done}
-              lead={
-                <Icon
-                  name={
-                    item.done
-                      ? { sf: 'checkmark.circle.fill', md: 'check-circle' }
-                      : { sf: 'circle', md: 'radio-button-unchecked' }
-                  }
-                  size={15}
-                />
-              }
-            />
-          ))}
+          {t.checklist.map((item, index) => {
+            // While a tick is in flight, show where it is going. The mutation
+            // stays pending until the refetch lands, so this never flickers
+            // back to the old value in between.
+            const pending =
+              checklist.update.isPending &&
+              checklist.update.variables?.itemId === item.id;
+            const done = pending
+              ? (checklist.update.variables?.dto.done ?? item.done)
+              : item.done;
+            return (
+              <Row
+                key={item.id}
+                first={index === 0}
+                title={item.text}
+                dim={done}
+                // Any member may tick an item — the API and web both allow it.
+                onPress={
+                  pending
+                    ? undefined
+                    : () => {
+                        void Haptics.selectionAsync();
+                        checklist.update.mutate({
+                          itemId: item.id,
+                          dto: { done: !item.done },
+                        });
+                      }
+                }
+                lead={
+                  <Icon
+                    name={
+                      done
+                        ? { sf: 'checkmark.circle.fill', md: 'check-circle' }
+                        : { sf: 'circle', md: 'radio-button-unchecked' }
+                    }
+                    size={17}
+                    color={done ? colors.primary : undefined}
+                  />
+                }
+              />
+            );
+          })}
         </Section>
       )}
 
@@ -166,10 +209,58 @@ export function TaskDetailScreen({
       )}
 
       <ThemedText variant="footnote" tone="muted">
-        Created by {t.createdBy.displayName}. Editing, comments and attachments
-        come to mobile in a later phase.
+        Created by {t.createdBy.displayName}.
       </ThemedText>
     </ScrollView>
+  );
+}
+
+/**
+ * The status, as the control that changes it. A pill with a chevron rather
+ * than a bare dot: it has to read as tappable, and it is the one write a
+ * member does most. Without permission it is the same pill, minus the chevron
+ * and the press — still saying what the status is.
+ */
+function StatusButton({
+  name,
+  color,
+  onPress,
+}: {
+  name: string;
+  color: string;
+  onPress?: () => void;
+}) {
+  const colors = useThemeColors();
+  return (
+    <Pressable
+      accessibilityRole={onPress ? 'button' : 'text'}
+      accessibilityLabel={`Status: ${name}`}
+      accessibilityHint={onPress ? 'Changes the status' : undefined}
+      disabled={!onPress}
+      onPress={onPress}
+      hitSlop={8}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+        paddingVertical: spacing.xs,
+        paddingHorizontal: spacing.sm,
+        borderRadius: radius.full,
+        backgroundColor: pressed ? colors.accent : colors.muted,
+      })}
+    >
+      <Dot color={color} />
+      <ThemedText variant="subhead" style={{ fontWeight: '600' }}>
+        {name}
+      </ThemedText>
+      {onPress && (
+        <Icon
+          name={{ sf: 'chevron.down', md: 'expand-more' }}
+          size={12}
+          color={colors.mutedForeground}
+        />
+      )}
+    </Pressable>
   );
 }
 

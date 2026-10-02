@@ -1,4 +1,5 @@
 import { useLocalSearchParams } from 'expo-router';
+import { BoardPermissions } from '@/features/board/board-permissions';
 import { TaskDetailScreen } from '@/screens/task-detail';
 
 /** `/board/:boardId/task/:taskId` — addressable so a push can open it cold. */
@@ -8,5 +9,9 @@ export default function TaskDetail() {
     taskId: string;
   }>();
 
-  return <TaskDetailScreen boardId={boardId} taskId={taskId} />;
+  return (
+    <BoardPermissions boardId={boardId}>
+      <TaskDetailScreen boardId={boardId} taskId={taskId} />
+    </BoardPermissions>
+  );
 }

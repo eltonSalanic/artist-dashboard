@@ -1,5 +1,6 @@
+import { Pressable } from 'react-native';
 import { router } from 'expo-router';
-import { useMe, useTasks } from '@artist/api-client';
+import { useCanChangeStatus, useMe, useTasks } from '@artist/api-client';
 import type { TaskDto } from '@artist/api-client';
 import { Dot, Row } from '@/components/row';
 import { SpokeList } from '@/components/spoke-list';
@@ -23,6 +24,7 @@ function TaskRows({
   tasks: TaskDto[];
   boardId: string;
 }) {
+  const canChangeStatus = useCanChangeStatus();
   return tasks.map((task, index) => (
     <Row
       key={task.id}
@@ -31,11 +33,36 @@ function TaskRows({
       meta={meta(task)}
       dim={task.status.isDone}
       // Colour never carries alone: the status name is in the meta line too.
-      lead={<Dot color={task.status.color} />}
+      lead={
+        canChangeStatus(task.assignees) ? (
+          <StatusDot task={task} boardId={boardId} />
+        ) : (
+          <Dot color={task.status.color} />
+        )
+      }
       trailing={task.dueDate ? shortDate(task.dueDate) : undefined}
       onPress={() => router.push(`/board/${boardId}/task/${task.id}`)}
     />
   ));
+}
+
+/**
+ * The row's status dot, as a shortcut to the status sheet — the same sheet
+ * task detail opens, so a status changes one way everywhere. The dot is small;
+ * the slop makes the target the size of a thumb without moving the layout.
+ */
+function StatusDot({ task, boardId }: { task: TaskDto; boardId: string }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Status: ${task.status.name}`}
+      accessibilityHint="Changes the status"
+      hitSlop={14}
+      onPress={() => router.push(`/board/${boardId}/status/${task.id}`)}
+    >
+      <Dot color={task.status.color} size={12} />
+    </Pressable>
+  );
 }
 
 /** Everything on the board. Subtasks are reached through their parent. */

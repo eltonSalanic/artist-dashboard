@@ -40,18 +40,23 @@ export function useTask(boardId: string, taskId: string | null) {
   });
 }
 
+/**
+ * Returns the refetch as a promise, and the mutations below return it from
+ * `onSuccess`, so a mutation stays pending until fresh data has landed. A
+ * client rendering the pending `variables` optimistically (a ticked box) then
+ * never flickers back to the stale value between "saved" and "refetched".
+ */
 function useInvalidateTasks(boardId: string) {
   const queryClient = useQueryClient();
-  return (taskId?: string) => {
-    queryClient.invalidateQueries({ queryKey: ["tasks", boardId] });
-    if (taskId) {
-      queryClient.invalidateQueries({ queryKey: ["task", boardId, taskId] });
-    } else {
-      queryClient.invalidateQueries({ queryKey: ["task", boardId] });
-    }
-    // A task can be deleted from the archive page, so that list moves too.
-    queryClient.invalidateQueries({ queryKey: ["archive", boardId] });
-  };
+  return (taskId?: string) =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["tasks", boardId] }),
+      taskId
+        ? queryClient.invalidateQueries({ queryKey: ["task", boardId, taskId] })
+        : queryClient.invalidateQueries({ queryKey: ["task", boardId] }),
+      // A task can be deleted from the archive page, so that list moves too.
+      queryClient.invalidateQueries({ queryKey: ["archive", boardId] }),
+    ]);
 }
 
 export function useCreateTask(boardId: string) {
@@ -75,7 +80,13 @@ export function useUpdateTask(boardId: string) {
         method: "PATCH",
         body: dto,
       }),
-    onSuccess: (task) => invalidate(task.parentTaskId ?? task.id),
+    // Both: web edits a subtask inside its parent's modal, but on mobile a
+    // subtask is its own screen, and that one would otherwise stay stale.
+    onSuccess: (task) =>
+      Promise.all([
+        invalidate(task.id),
+        task.parentTaskId ? invalidate(task.parentTaskId) : undefined,
+      ]),
     onError: showError,
   });
 }

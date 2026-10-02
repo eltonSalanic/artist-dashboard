@@ -50,6 +50,15 @@ export default function TabStackLayout({ segment }: { segment: string }) {
         options={{ title: 'Task' }}
       />
       <Stack.Screen
+        name="board/[boardId]/status/[taskId]"
+        options={{
+          presentation: 'formSheet',
+          sheetGrabberVisible: true,
+          sheetAllowedDetents: 'fitToContents',
+          title: 'Status',
+        }}
+      />
+      <Stack.Screen
         name="board-menu"
         options={{
           presentation: 'formSheet',

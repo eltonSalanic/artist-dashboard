@@ -1,5 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 import { WidgetTypes, type WidgetType } from '@artist/shared';
+import { BoardPermissions } from '@/features/board/board-permissions';
 import { WidgetSpokeScreen } from '@/screens/widget-spoke';
 
 /**
@@ -18,5 +19,9 @@ export default function WidgetSpoke() {
     ? (widgetType as WidgetType)
     : 'TODOS';
 
-  return <WidgetSpokeScreen boardId={boardId} widgetType={type} />;
+  return (
+    <BoardPermissions boardId={boardId}>
+      <WidgetSpokeScreen boardId={boardId} widgetType={type} />
+    </BoardPermissions>
+  );
 }
