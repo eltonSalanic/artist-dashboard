@@ -17,9 +17,42 @@ function firstLine(text: string): string {
   return text.split('\n').map((l) => l.trim()).find((l) => l.length > 0) ?? '';
 }
 
+/**
+ * What the app reads on tap to open the thing the notification is about.
+ *
+ * The board id alone would only ever land someone on the board root, which for
+ * a mention is the one place the comment *isn't*. The entity id is already in
+ * the snapshotted payload — the email templates build their deep links from
+ * exactly these keys — so it costs nothing to pass through.
+ *
+ * Whitelisted rather than spread: the payload is a template's render snapshot
+ * and can hold a comment excerpt or a task title, none of which belongs in a
+ * push payload that the OS logs.
+ */
+const DEEP_LINK_KEYS = ['taskId', 'eventId'] as const;
+
+function deepLinkData(row: NotificationDelivery): Record<string, string> {
+  const payload = (row.payload ?? {}) as Record<string, unknown>;
+  const data: Record<string, string> = {
+    boardId: row.boardId,
+    template: row.template,
+  };
+  for (const key of DEEP_LINK_KEYS) {
+    if (typeof payload[key] === 'string' && payload[key]) {
+      data[key] = payload[key];
+    }
+  }
+  return data;
+}
+
 /** Waits between retries. Index by attempts-so-far; past the end, give up. */
 const BACKOFF_MS = [60_000, 5 * 60_000, 30 * 60_000, 2 * 60 * 60_000];
-const BATCH = 20;
+/**
+ * Rows claimed per tick. Doubled when `queue()` began fanning out per channel:
+ * one trigger to a twenty-member board now writes forty rows, and leaving this
+ * at 20 would have halved effective email throughput during a burst.
+ */
+const BATCH = 40;
 
 /**
  * Drains the outbox. Runs on every API instance, which is the point: claiming
@@ -159,7 +192,7 @@ export class DispatcherService {
       tokens: devices.map((d) => d.token),
       title: rendered.push?.title ?? rendered.subject,
       body: rendered.push?.body ?? firstLine(rendered.text),
-      data: { boardId: row.boardId, template: row.template },
+      data: deepLinkData(row),
       idempotencyKey: row.dedupeKey,
     });
 

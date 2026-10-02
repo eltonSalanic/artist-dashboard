@@ -167,11 +167,37 @@ must touch one row rather than accumulate them, or a notification would arrive
 once per launch the user ever made.
 
 The token is unique **per user, not globally**, and `register` never writes
-`userId` on update. A global unique would make re-registration reassign the row,
-and then knowing someone's push token would be enough to redirect their
-notifications to your own account and silence their phone. Handing a device to
-someone else is handled by signing out — `DELETE /me/devices/:token`, itself
-scoped to the caller's own tokens for the same reason.
+`userId` on update — so it can never rewrite another account's row in place.
+It does, in the same transaction, **delete any other account's row for that
+token**: the newest registration claims the device.
+
+That ordering is a judgement call, because nothing here can tell a legitimate
+handover from someone who has merely learned a token:
+
+- Leave other rows alone, and a phone passed from one bandmate to another keeps
+  putting the *previous* owner's notification titles and bodies on the new
+  owner's lock screen until they sign out of a device they no longer hold.
+- Remove them, and anyone who knows a token can take it, stopping its owner's
+  notifications.
+
+The first is a live content leak on an ordinary action. The second needs an
+attacker who already holds a token that exists only on that device and in this
+API — at which point they very likely have the session too. So the leak is the
+one worth closing. `DELETE /me/devices/:token` stays scoped to the caller's own
+tokens.
+
+`lastSeenAt` is written on every registration but **nothing reads it** — there
+is no prune job. Dead tokens are removed reactively, when Expo answers a send
+with `DeviceNotRegistered`, which covers the case that matters: an app deleted
+or its permissions revoked. A sweep over `lastSeenAt` would only catch installs
+that stopped being opened without being uninstalled, and those still accept
+pushes.
+
+A push carries `boardId`, `template`, and the entity id (`taskId` / `eventId`)
+from the delivery's payload, so a tap opens the thing the notification is about
+rather than the board root. The ids are **whitelisted, not spread** — the
+payload is a template's render snapshot and also holds comment excerpts and task
+titles, none of which belongs in a push payload the OS logs.
 
 **Push has no idempotency guard.** Expo's message format has no key for it
 (`id` appears only on the ticket it returns), so if the `SENT` write fails after

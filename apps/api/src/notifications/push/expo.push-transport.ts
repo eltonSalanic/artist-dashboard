@@ -83,19 +83,57 @@ export class ExpoPushTransport implements PushTransport {
         );
       }
 
-      const body = (await response.json()) as { data?: ExpoTicket[] };
-      const tickets = body.data ?? [];
+      const body = (await response.json()) as {
+        data?: ExpoTicket[];
+        errors?: { message?: string; code?: string }[];
+      };
 
-      // Tickets come back positionally — the nth ticket is for the nth token.
+      // A 200 can still carry a top-level `errors` array, or no `data` at all.
+      // Treating either as a clean send would stamp the row SENT and lose the
+      // notification silently — no retry, no log. The official SDK throws here
+      // too, so throwing keeps the dispatcher's backoff in charge.
+      if (body.errors?.length) {
+        throw new Error(
+          `Expo push rejected the request: ${body.errors
+            .map((e) => e.code ?? e.message ?? 'unknown')
+            .join(', ')}`,
+        );
+      }
+      if (!Array.isArray(body.data)) {
+        throw new Error('Expo push returned no ticket array');
+      }
+
+      const tickets = body.data;
+
+      // Tickets come back positionally — the nth ticket is for the nth token —
+      // but only trust that when the counts actually line up. A short or offset
+      // array would otherwise attribute a DeviceNotRegistered to the wrong
+      // token and delete a live device while keeping the dead one.
+      const positional = tickets.length === tokens.length;
+      if (!positional) {
+        this.logger.warn(
+          `Expo returned ${tickets.length} ticket(s) for ${tokens.length} token(s); ` +
+            'falling back to echoed tokens only',
+        );
+      }
+
       tickets.forEach((ticket, index) => {
         if (ticket.status !== 'error') return;
-        const token = ticket.details?.expoPushToken ?? tokens[index];
+        const token =
+          ticket.details?.expoPushToken ??
+          (positional ? tokens[index] : undefined);
         if (ticket.details?.error === DEVICE_GONE) {
+          // Without a token we cannot say *which* device died, and guessing
+          // would delete a working one. Logged and left for the next send,
+          // which will report it again.
           if (token) invalidTokens.push(token);
+          else this.logger.warn('DeviceNotRegistered with no token to match');
           return;
         }
         this.logger.warn(
-          `Expo push ticket error for ${token}: ${ticket.details?.error ?? ticket.message}`,
+          `Expo push ticket error for ${token ?? 'unknown token'}: ${
+            ticket.details?.error ?? ticket.message
+          }`,
         );
       });
     }

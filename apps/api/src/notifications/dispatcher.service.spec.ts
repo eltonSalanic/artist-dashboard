@@ -203,6 +203,38 @@ describe('DispatcherService', () => {
       });
     });
 
+    // Without the entity id a tap can only ever open the board root, which for
+    // a mention is the one place the comment is not.
+    it('passes the entity id through from the payload', async () => {
+      prisma.notificationDelivery.findUnique.mockResolvedValue({
+        ...pushRow,
+        template: 'comment-mention',
+        payload: { taskId: 't7', excerpt: 'check the mix', actorName: 'Dana' },
+      });
+
+      await service.drain();
+
+      expect(pushTransport.sent[0].data).toMatchObject({
+        boardId: 'b1',
+        taskId: 't7',
+      });
+    });
+
+    // The payload is a render snapshot and can hold a comment excerpt or task
+    // title. None of that belongs in a push payload the OS logs.
+    it('passes through only whitelisted ids, not the whole payload', async () => {
+      prisma.notificationDelivery.findUnique.mockResolvedValue({
+        ...pushRow,
+        template: 'comment-mention',
+        payload: { taskId: 't7', excerpt: 'check the mix', actorName: 'Dana' },
+      });
+
+      await service.drain();
+
+      expect(pushTransport.sent[0].data).not.toHaveProperty('excerpt');
+      expect(pushTransport.sent[0].data).not.toHaveProperty('actorName');
+    });
+
     // The push analogue of a bounced address: nothing to deliver to. Suppressed
     // rather than retried, because no amount of waiting creates a device.
     it('suppresses when the recipient has no registered device', async () => {

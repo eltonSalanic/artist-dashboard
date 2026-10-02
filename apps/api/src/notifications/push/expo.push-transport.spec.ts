@@ -123,4 +123,54 @@ describe('ExpoPushTransport', () => {
       Authorization: 'Bearer secret-tok',
     });
   });
+
+  // A 200 carrying a top-level `errors` array is a rejected request, not a
+  // clean send. Treated as success it would stamp the row SENT and lose the
+  // notification with no retry and no log.
+  it('throws when a 200 carries a top-level errors array', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        errors: [{ code: 'PUSH_TOO_MANY_EXPERIENCE_IDS' }],
+      }),
+    });
+
+    await expect(transport.send(push)).rejects.toThrow(
+      /PUSH_TOO_MANY_EXPERIENCE_IDS/,
+    );
+  });
+
+  it('throws when a 200 carries no ticket array at all', async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({}) });
+    await expect(transport.send(push)).rejects.toThrow(/no ticket array/);
+  });
+
+  /**
+   * Position is only meaningful when the counts line up. A short array with a
+   * positional fallback would blame the wrong device — deleting a live token
+   * and keeping the dead one.
+   */
+  it('does not guess a token when the ticket count does not match', async () => {
+    fetchMock.mockResolvedValue(
+      ok([{ status: 'error', details: { error: 'DeviceNotRegistered' } }]),
+    );
+
+    await expect(transport.send(push)).resolves.toEqual({ invalidTokens: [] });
+  });
+
+  // An echoed token is authoritative even when the counts disagree.
+  it('still trusts an echoed token when counts do not match', async () => {
+    fetchMock.mockResolvedValue(
+      ok([
+        {
+          status: 'error',
+          details: { error: 'DeviceNotRegistered', expoPushToken: 'tok-b' },
+        },
+      ]),
+    );
+
+    await expect(transport.send(push)).resolves.toEqual({
+      invalidTokens: ['tok-b'],
+    });
+  });
 });

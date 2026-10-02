@@ -8,27 +8,54 @@ import { PrismaService } from '../prisma/prisma.service';
  * Deliberately not board-scoped: a token belongs to a phone, and a phone
  * belongs to a person who may be in several bands. Which boards a notification
  * may come from is a preference question, answered by NotificationPreference.
+ *
+ * `lastSeenAt` is written on every registration but nothing reads it yet —
+ * there is no prune job. Dead tokens are removed reactively instead, when Expo
+ * answers a send with DeviceNotRegistered, which covers the case that actually
+ * matters (an app deleted or permissions revoked). A sweep over `lastSeenAt`
+ * would only catch installs that stopped opening *without* being uninstalled,
+ * and those still accept pushes.
  */
 @Injectable()
 export class DevicesService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Upsert on (userId, token). The same install reopening the app re-registers,
-   * and that has to be one row plus a timestamp touch — accumulating rows would
-   * make a notification arrive once per launch the user ever made.
+   * Claims a device for the caller: the newest registration wins, and any other
+   * account's row for the same token is removed.
    *
-   * Scoped to the caller rather than keyed on the token alone: a global key
-   * would let this call *reassign* a token, so knowing someone else's token
-   * would be enough to redirect their notifications here and silence their
-   * phone. Handing a device over is handled by signing out, which deletes the
-   * row.
+   * Two things are being balanced, and neither can be had for free, because
+   * nothing here can distinguish a legitimate handover from someone who has
+   * merely learned a token.
+   *
+   * - **Leave other rows in place** and a device handed from B to A keeps
+   *   delivering *B's* notification content — titles and bodies — to A's lock
+   *   screen until B happens to sign out from a phone they no longer hold.
+   * - **Remove them**, as here, and anyone who knows B's token can take it,
+   *   which stops B's notifications.
+   *
+   * The first is a live content leak on an ordinary action. The second needs an
+   * attacker who already has a token that exists only on B's device and in this
+   * API — by which point they very likely have B's session anyway. So the leak
+   * is the one worth closing.
+   *
+   * The delete and the upsert go in one transaction: between them the device
+   * belongs to nobody, and a notification resolving recipients in that window
+   * would silently skip a phone that is in fact registered.
    */
   async register(userId: string, dto: RegisterDeviceDto): Promise<void> {
-    await this.prisma.deviceToken.upsert({
-      where: { userId_token: { userId, token: dto.token } },
-      create: { userId, token: dto.token, platform: dto.platform },
-      update: { platform: dto.platform, lastSeenAt: new Date() },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.deviceToken.deleteMany({
+        where: { token: dto.token, userId: { not: userId } },
+      });
+      // The same install reopening the app must touch one row rather than add
+      // another, or a notification would arrive once per launch the user ever
+      // made.
+      await tx.deviceToken.upsert({
+        where: { userId_token: { userId, token: dto.token } },
+        create: { userId, token: dto.token, platform: dto.platform },
+        update: { platform: dto.platform, lastSeenAt: new Date() },
+      });
     });
   }
 

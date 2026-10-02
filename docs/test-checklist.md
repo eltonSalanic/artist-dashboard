@@ -133,7 +133,8 @@ Email must be unchanged; push is plumbed but unreachable until P13.
 |---|---|---|
 | ☐ | ★ `POST /me/devices` with a token | `{ "registered": true }`, **not** an empty body |
 | ☐ | ★ Post the same token twice | One row, `lastSeenAt` moved |
-| ☐ | ★ Post the same token as a **different** user | A second row — the first user keeps theirs |
+| ☐ | ★ Post the same token as a different user, then check rows | **One** row only — the newest registration claims the device |
+| ☐ | ★ Hand a device over: register as A, then as B, then notify A | A's notification does **not** reach that device |
 | ☐ | ★ `DELETE /me/devices/:token` for a token you don't own | The owner's row survives |
 | ☐ | ★ `DELETE /me/devices/:token` for your own | `{ "unregistered": true }`, row gone |
 
@@ -148,6 +149,8 @@ Email must be unchanged; push is plumbed but unreachable until P13.
 | ☐ | ⊘ Push arrives on a device | Needs a registered device from the mobile app |
 | ☐ | ⊘ Tapping a push deep-links to the right screen | Needs P8 routes + P13 client |
 | ☐ | ⊘ A dead token is pruned | Needs a real `DeviceNotRegistered` from Expo |
+| ☐ | ⊘ Tapping a mention push opens that **task**, not the board root | Needs P8 routes; `taskId` is already in the payload |
+| ☐ | ⊘ A push payload contains no comment excerpt or task title | Only `boardId`, `template`, and an entity id |
 | ☐ | ★ In dev, trigger any notification | **Nothing buzzes** — push is a no-op outside production, by design |
 
 > Push has **no idempotency guard** — Expo's message format has no key for it.
