@@ -28,11 +28,15 @@ describe('spokeAction', () => {
       href: '/board/b1/form/focus',
       edit: true,
     });
+    expect(spokeAction('CUSTOM', 'b1', admin)).toMatchObject({
+      href: '/board/b1/form/note',
+      edit: true,
+    });
   });
 
   it('offers nothing on spokes that have no form', () => {
     const admin = as('ADMIN');
-    for (const type of ['MY_TASKS', 'ACTIVITY_FEED', 'CUSTOM', 'CALENDAR'] as const) {
+    for (const type of ['MY_TASKS', 'ACTIVITY_FEED', 'CALENDAR'] as const) {
       expect(spokeAction(type, 'b1', admin)).toBeNull();
     }
   });

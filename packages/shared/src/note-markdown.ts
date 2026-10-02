@@ -27,18 +27,20 @@
  * than flattening what web wrote.
  */
 
-export interface NoteMark {
+// Type aliases, not interfaces: an alias is assignable to the
+// `Record<string, unknown>` the API's DTO uses for the note, an interface is not.
+export type NoteMark = {
   type: string;
   attrs?: Record<string, unknown>;
-}
+};
 
-export interface NoteNode {
+export type NoteNode = {
   type: string;
   attrs?: Record<string, unknown>;
   content?: NoteNode[];
   text?: string;
   marks?: NoteMark[];
-}
+};
 
 // ─── What the dialect can carry ─────────────────────────────────────────────
 

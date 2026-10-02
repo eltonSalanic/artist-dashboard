@@ -44,6 +44,10 @@ export function spokeAction(
       return can('focus.manage')
         ? { label: 'Edit focus', href: `${base}/focus`, edit: true }
         : null;
+    case 'CUSTOM':
+      return can('widget.manage')
+        ? { label: 'Edit note', href: `${base}/note`, edit: true }
+        : null;
     default:
       return null;
   }

@@ -1,25 +1,27 @@
 import { ScrollView, View } from 'react-native';
-import { useCustomWidget } from '@artist/api-client';
+import { isMarkdownEditable, type NoteNode } from '@artist/shared';
+import { useCustomWidget, usePermissions } from '@artist/api-client';
 import { Icon } from '@/components/icon';
 import { Skeleton } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
+import { NoteView } from '@/features/notes/note-view';
 import { noteBlocks } from '../note-preview';
 import { shortAgo } from '../format';
 import { spacing, useTokens } from '@/theme';
 
 /**
- * The board's note, read-only.
+ * The board's note, drawn natively from its TipTap document. Editing is the
+ * header's Edit (admins, `widget.manage`), which opens the note form.
  *
- * Editing is P11, and it is its own phase for a reason: `@tiptap` has no React
- * Native port, so making this editable means bringing in a different bridge to
- * the same ProseMirror core. Reading it needs none of that — the stored
- * document is JSON, and plain text blocks are a faithful enough rendering of
- * what the widget is for.
+ * `noteBlocks` still decides emptiness: a document of empty paragraphs is
+ * "nothing written yet", whatever its structure.
  */
 export function NoteSpoke({ boardId }: { boardId: string }) {
   const tokens = useTokens();
+  const { can } = usePermissions();
   const note = useCustomWidget(boardId);
   const blocks = noteBlocks(note.data?.content);
+  const canManage = can('widget.manage');
 
   return (
     <ScrollView
@@ -48,7 +50,9 @@ export function NoteSpoke({ boardId }: { boardId: string }) {
           />
           <ThemedText variant="headline">Nothing written yet</ThemedText>
           <ThemedText variant="subhead" tone="muted" style={{ textAlign: 'center' }}>
-            The band&apos;s shared note lives here. Editing it on a phone comes later.
+            {canManage
+              ? 'The band\'s shared note lives here. Tap Edit to write it.'
+              : 'The band\'s shared note lives here.'}
           </ThemedText>
         </View>
       ) : (
@@ -58,11 +62,13 @@ export function NoteSpoke({ boardId }: { boardId: string }) {
               EDITED {shortAgo(note.data.updatedAt).toUpperCase()}
             </ThemedText>
           )}
-          {blocks.map((block, index) => (
-            <ThemedText key={index} variant="body">
-              {block}
+          <NoteView doc={note.data!.content as unknown as NoteNode} />
+          {canManage && !isMarkdownEditable(note.data!.content) && (
+            <ThemedText variant="footnote" tone="muted">
+              This note uses formatting the phone can&apos;t edit without losing. Edit
+              it on web.
             </ThemedText>
-          ))}
+          )}
         </>
       )}
     </ScrollView>

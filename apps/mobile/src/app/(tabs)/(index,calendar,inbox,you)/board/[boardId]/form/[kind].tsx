@@ -4,6 +4,7 @@ import { BoardPermissions } from '@/features/board/board-permissions';
 import { EventForm } from '@/features/forms/event-form';
 import { FocusForm } from '@/features/forms/focus-form';
 import { GoalForm } from '@/features/forms/goal-form';
+import { NoteForm } from '@/features/forms/note-form';
 import { ReminderForm } from '@/features/forms/reminder-form';
 import { TaskForm } from '@/features/forms/task-form';
 
@@ -41,6 +42,8 @@ export default function Form() {
         return <GoalForm boardId={boardId} goalId={id} />;
       case 'focus':
         return <FocusForm boardId={boardId} />;
+      case 'note':
+        return <NoteForm boardId={boardId} />;
       default:
         return <TaskForm boardId={boardId} taskId={id} parentTaskId={parentTaskId} />;
     }
