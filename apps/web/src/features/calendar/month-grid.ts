@@ -1,3 +1,10 @@
+import {
+  calendarCategory,
+  calendarDayKey,
+  CALENDAR_CATEGORY_COPY,
+  CalendarCategories,
+  type CalendarCategory,
+} from "@artist/shared";
 import type { CalendarItemDto } from "@artist/api-client";
 
 export interface MonthCell {
@@ -9,10 +16,6 @@ export interface MonthCell {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-function startOfDay(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
 
 function sameDay(a: Date, b: Date): boolean {
   return (
@@ -35,20 +38,6 @@ export function monthRange(year: number, month: number): { from: Date; to: Date 
   return { from, to };
 }
 
-function itemDayKey(item: CalendarItemDto): string {
-  const date = new Date(item.date);
-  // Tasks/goals store a calendar day as UTC midnight — bucket by UTC Y/M/D
-  // so western timezones don't place them on the previous local day.
-  if (item.kind === "TASK" || item.kind === "GOAL") {
-    return new Date(
-      date.getUTCFullYear(),
-      date.getUTCMonth(),
-      date.getUTCDate(),
-    ).toDateString();
-  }
-  return startOfDay(date).toDateString();
-}
-
 /**
  * Builds the 6×7 month grid and buckets items into their day.
  * Always 42 cells so the grid height doesn't jump between months.
@@ -63,7 +52,9 @@ export function buildMonthGrid(
 
   const byDay = new Map<string, CalendarItemDto[]>();
   for (const item of items) {
-    const key = itemDayKey(item);
+    // `calendarDayKey` is the shared rule — see its comment for why a task's
+    // due date and a show's start time cannot be read the same way.
+    const key = calendarDayKey(item);
     const bucket = byDay.get(key);
     if (bucket) bucket.push(item);
     else byDay.set(key, [item]);
@@ -75,30 +66,34 @@ export function buildMonthGrid(
       date,
       inMonth: date.getMonth() === month && date.getFullYear() === year,
       isToday: sameDay(date, today),
-      items: byDay.get(date.toDateString()) ?? [],
+      items: byDay.get(dayKeyOf(date)) ?? [],
     };
   });
 }
 
+/** A grid cell's own day, in the same spelling `calendarDayKey` produces. */
+function dayKeyOf(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+    date.getDate(),
+  ).padStart(2, "0")}`;
+}
+
 export const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-/** The togglable filter buckets on the calendar. */
-export type CalendarCategory =
-  | "SHOW"
-  | "MEETING"
-  | "REHEARSAL"
-  | "TASK"
-  | "REMINDER"
-  | "GOAL";
+/**
+ * The buckets, the labels and `calendarCategory` itself now live in
+ * `@artist/shared` — a filter that put shows in a different bucket on a phone
+ * than in a browser is the kind of divergence nobody would think to look for.
+ * Re-exported from here so the call sites in this feature do not all have to
+ * change, and because the accent table below is keyed by the same type.
+ */
+export { calendarCategory, type CalendarCategory };
 
-export const CALENDAR_CATEGORIES: { key: CalendarCategory; label: string }[] = [
-  { key: "SHOW", label: "Shows" },
-  { key: "MEETING", label: "Meetings" },
-  { key: "REHEARSAL", label: "Rehearsals" },
-  { key: "TASK", label: "Tasks" },
-  { key: "REMINDER", label: "Reminders" },
-  { key: "GOAL", label: "Goals" },
-];
+export const CALENDAR_CATEGORIES: { key: CalendarCategory; label: string }[] =
+  CalendarCategories.map((key) => ({
+    key,
+    label: CALENDAR_CATEGORY_COPY[key].label,
+  }));
 
 /**
  * One color per category, shared by the calendar grid and the archive list —
@@ -117,11 +112,3 @@ export const CATEGORY_ACCENT: Record<
   REMINDER: { border: "border-l-amber-500", dot: "bg-amber-500" },
   GOAL: { border: "border-l-emerald-500", dot: "bg-emerald-500" },
 };
-
-/** Which filter bucket a calendar item belongs to — events split by their type. */
-export function calendarCategory(item: CalendarItemDto): CalendarCategory {
-  if (item.kind === "EVENT") return item.event?.type ?? "SHOW";
-  if (item.kind === "TASK") return "TASK";
-  if (item.kind === "REMINDER") return "REMINDER";
-  return "GOAL";
-}

@@ -8,7 +8,7 @@
     "zod": "latest"
   },
   "scripts": {
-    "test": "tsc --noEmit && jest",
+    "test": "tsc --noEmit && TZ=America/Los_Angeles jest",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
