@@ -4,6 +4,7 @@ export * from './layout';
 export * from './theme';
 export * from './colors';
 export * from './palettes';
+export * from './widgets';
 export * from './statuses';
 export * from './dto/invite.dto';
 export * from './dto/board.dto';

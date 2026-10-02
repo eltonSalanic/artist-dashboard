@@ -11,7 +11,7 @@ import {
   Users,
   Zap,
 } from "lucide-react";
-import type { WidgetColor, WidgetType } from "@artist/shared";
+import { WIDGET_META, type WidgetColor, type WidgetType } from "@artist/shared";
 import { MyTasksWidget, MyTasksWidgetExpanded } from "./my-tasks-widget";
 import { TodosWidget, TodosWidgetExpanded } from "./todos-widget";
 import { GoalsWidget, GoalsWidgetExpanded } from "./goals-widget";
@@ -55,16 +55,15 @@ const meetings = makeEventsWidget("MEETING");
  */
 export const widgetRegistry: Partial<Record<WidgetType, WidgetDefinition>> = {
   FOCUS: {
-    title: "Focus",
+    ...WIDGET_META.FOCUS,
     icon: Zap,
-    defaultColor: "c1",
     Collapsed: FocusWidget,
     Expanded: FocusWidgetExpanded,
     defaultSize: { w: 12, h: 3 },
     minSize: { w: 4, h: 2 },
   },
   TODOS: {
-    title: "To-Do's",
+    ...WIDGET_META.TODOS,
     icon: CheckSquare2,
     Collapsed: TodosWidget,
     Expanded: TodosWidgetExpanded,
@@ -72,7 +71,7 @@ export const widgetRegistry: Partial<Record<WidgetType, WidgetDefinition>> = {
     minSize: { w: 4, h: 3 },
   },
   MY_TASKS: {
-    title: "My Tasks",
+    ...WIDGET_META.MY_TASKS,
     icon: UserCheck,
     Collapsed: MyTasksWidget,
     Expanded: MyTasksWidgetExpanded,
@@ -80,25 +79,23 @@ export const widgetRegistry: Partial<Record<WidgetType, WidgetDefinition>> = {
     minSize: { w: 3, h: 3 },
   },
   GOALS: {
-    title: "Goals",
+    ...WIDGET_META.GOALS,
     icon: Target,
-    defaultColor: "c2",
     Collapsed: GoalsWidget,
     Expanded: GoalsWidgetExpanded,
     defaultSize: { w: 4, h: 4 },
     minSize: { w: 3, h: 3 },
   },
   SHOWS: {
-    title: "Shows",
+    ...WIDGET_META.SHOWS,
     icon: Mic2,
-    defaultColor: "c4",
     Collapsed: shows.Collapsed,
     Expanded: shows.Expanded,
     defaultSize: { w: 4, h: 4 },
     minSize: { w: 3, h: 3 },
   },
   NEXT_REHEARSALS: {
-    title: "Next Rehearsals",
+    ...WIDGET_META.NEXT_REHEARSALS,
     icon: CalendarDays,
     Collapsed: rehearsals.Collapsed,
     Expanded: rehearsals.Expanded,
@@ -106,7 +103,7 @@ export const widgetRegistry: Partial<Record<WidgetType, WidgetDefinition>> = {
     minSize: { w: 3, h: 3 },
   },
   NEXT_MEETINGS: {
-    title: "Next Meetings",
+    ...WIDGET_META.NEXT_MEETINGS,
     icon: Users,
     Collapsed: meetings.Collapsed,
     Expanded: meetings.Expanded,
@@ -114,16 +111,15 @@ export const widgetRegistry: Partial<Record<WidgetType, WidgetDefinition>> = {
     minSize: { w: 3, h: 3 },
   },
   REMINDERS: {
-    title: "Reminders",
+    ...WIDGET_META.REMINDERS,
     icon: BellRing,
-    defaultColor: "c3",
     Collapsed: RemindersWidget,
     Expanded: RemindersWidgetExpanded,
     defaultSize: { w: 4, h: 4 },
     minSize: { w: 3, h: 3 },
   },
   ACTIVITY_FEED: {
-    title: "Activity",
+    ...WIDGET_META.ACTIVITY_FEED,
     icon: Activity,
     Collapsed: ActivityWidget,
     Expanded: ActivityWidgetExpanded,
@@ -131,7 +127,7 @@ export const widgetRegistry: Partial<Record<WidgetType, WidgetDefinition>> = {
     minSize: { w: 3, h: 3 },
   },
   CUSTOM: {
-    title: "Notes",
+    ...WIDGET_META.CUSTOM,
     icon: NotebookPen,
     Collapsed: CustomWidget,
     Expanded: CustomWidgetExpanded,
