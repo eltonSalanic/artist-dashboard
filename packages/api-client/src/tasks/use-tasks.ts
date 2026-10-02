@@ -56,6 +56,9 @@ function useInvalidateTasks(boardId: string) {
         : queryClient.invalidateQueries({ queryKey: ["task", boardId] }),
       // A task can be deleted from the archive page, so that list moves too.
       queryClient.invalidateQueries({ queryKey: ["archive", boardId] }),
+      // Due tasks are on the calendar — every calendar query, for the same
+      // reason as the planning hooks: the cross-board key has no board prefix.
+      queryClient.invalidateQueries({ queryKey: ["calendar"] }),
     ]);
 }
 

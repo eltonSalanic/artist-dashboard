@@ -38,15 +38,25 @@ export function useGoal(boardId: string, goalId: string | null) {
   });
 }
 
+/**
+ * Returned as a promise, and returned from `onSuccess`, so a mutation stays
+ * pending until fresh data has landed — what lets a client show a tick
+ * optimistically without it flickering back.
+ *
+ * Every calendar query, not just this board's: the phone's Calendar tab reads
+ * the cross-board key (`["calendar", "all", …]`), which a board-scoped prefix
+ * does not match.
+ */
 function useInvalidateGoals(boardId: string) {
   const queryClient = useQueryClient();
-  return () => {
-    queryClient.invalidateQueries({ queryKey: ["goals", boardId] });
-    queryClient.invalidateQueries({ queryKey: ["goal", boardId] });
-    queryClient.invalidateQueries({ queryKey: ["calendar", boardId] });
-    // A goal can be deleted from the archive page, so that list moves too.
-    queryClient.invalidateQueries({ queryKey: ["archive", boardId] });
-  };
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["goals", boardId] }),
+      queryClient.invalidateQueries({ queryKey: ["goal", boardId] }),
+      queryClient.invalidateQueries({ queryKey: ["calendar"] }),
+      // A goal can be deleted from the archive page, so that list moves too.
+      queryClient.invalidateQueries({ queryKey: ["archive", boardId] }),
+    ]);
 }
 
 export function useCreateGoal(boardId: string) {

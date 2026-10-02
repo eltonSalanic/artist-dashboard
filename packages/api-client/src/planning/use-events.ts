@@ -44,15 +44,25 @@ export function useEvent(boardId: string, eventId: string | null) {
   });
 }
 
+/**
+ * Returned as a promise, and returned from `onSuccess`, so a mutation stays
+ * pending until fresh data has landed — what lets a client show a tick
+ * optimistically without it flickering back.
+ *
+ * Every calendar query, not just this board's: the phone's Calendar tab reads
+ * the cross-board key (`["calendar", "all", …]`), which a board-scoped prefix
+ * does not match.
+ */
 function useInvalidateEvents(boardId: string) {
   const queryClient = useQueryClient();
-  return () => {
-    queryClient.invalidateQueries({ queryKey: ["events", boardId] });
-    queryClient.invalidateQueries({ queryKey: ["event", boardId] });
-    queryClient.invalidateQueries({ queryKey: ["calendar", boardId] });
-    // An event can be deleted from the archive page, so that list moves too.
-    queryClient.invalidateQueries({ queryKey: ["archive", boardId] });
-  };
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["events", boardId] }),
+      queryClient.invalidateQueries({ queryKey: ["event", boardId] }),
+      queryClient.invalidateQueries({ queryKey: ["calendar"] }),
+      // A event can be deleted from the archive page, so that list moves too.
+      queryClient.invalidateQueries({ queryKey: ["archive", boardId] }),
+    ]);
 }
 
 export function useCreateEvent(boardId: string) {
