@@ -56,6 +56,22 @@ link the product sends is a Supabase *invite*, and the API hardcodes its
 redirect to `WEB_URL/auth/callback`. An invited bandmate accepts on the web,
 sets a password there, and signs in here with it.
 
+## Typed routes are off
+
+`experiments.typedRoutes` is `false` in `app.json`, and it is not a preference:
+with it on, **`expo start` crashes outright**. Type generation runs inside
+`@expo/cli`, which npm installs under the repo root (`node_modules/expo/
+node_modules/@expo/cli`), and it `require`s `expo-router/_ctx-shared`. npm
+nests `expo-router` in `apps/mobile/node_modules` because of a `react-is`
+conflict with the root's test tooling, so Node walking up from the CLI never
+reaches it.
+
+The cost is that `<Link href="...">` strings are not checked against the route
+tree, so a typo is a dead tap rather than a compile error. Forcing the hoist
+with an `overrides` entry was tried and did not move `expo-router`; a fix needs
+either Expo to resolve this through the project root or the dependency conflict
+to go away.
+
 ## Three deliberate deviations from the Expo defaults
 
 Each would otherwise read as an oversight:

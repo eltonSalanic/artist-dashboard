@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from 'react';
+import { createContext, use, type ReactNode } from 'react';
 import {
   DEFAULT_BOARD_THEME,
   type BoardPalette,
@@ -36,7 +36,7 @@ export function ThemeTokensProvider({
 
 /** The nearest token set: a card's if inside one, otherwise the page's. */
 export function useTokens(): ThemeColors {
-  const fromCard = useContext(TokensContext);
+  const fromCard = use(TokensContext);
   const page = useThemeColors();
   return fromCard ?? page;
 }
@@ -63,7 +63,7 @@ export function BoardPaletteProvider({
 }
 
 export function useBoardPalette(): BoardPalette {
-  return useContext(PaletteContext);
+  return use(PaletteContext);
 }
 
 /** The tokens for a slot in the board's palette. */

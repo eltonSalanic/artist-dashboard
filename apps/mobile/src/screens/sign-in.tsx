@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import {
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   StyleSheet,
   View,
@@ -62,7 +61,7 @@ export function SignInScreen() {
   return (
     <KeyboardAvoidingView
       style={[styles.root, { backgroundColor: colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.form}>
         <ThemedText variant="title">

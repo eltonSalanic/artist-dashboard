@@ -65,7 +65,8 @@ export default function RootLayout() {
         <StatusBar style="auto" />
         <Stack>
           <Stack.Protected guard={session !== null}>
-            <Stack.Screen name="index" options={{ title: 'Artist Dashboard' }} />
+            {/* The tab group owns its own headers, one stack per tab. */}
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           </Stack.Protected>
           <Stack.Protected guard={session === null}>
             <Stack.Screen name="sign-in" options={{ title: 'Sign in' }} />

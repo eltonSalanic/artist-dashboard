@@ -10,6 +10,12 @@
  */
 declare const process: {
   readonly env: {
+    /**
+     * `'ios' | 'android' | 'web'`, inlined by Babel the same way — the
+     * documented alternative to `Platform.OS`, because the branch not taken is
+     * dropped from the bundle instead of shipped to every platform.
+     */
+    readonly EXPO_OS?: 'ios' | 'android' | 'web';
     readonly EXPO_PUBLIC_API_URL?: string;
     readonly EXPO_PUBLIC_SUPABASE_URL?: string;
     readonly EXPO_PUBLIC_SUPABASE_ANON_KEY?: string;

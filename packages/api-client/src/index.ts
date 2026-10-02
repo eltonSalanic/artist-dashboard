@@ -25,6 +25,7 @@ export * from './appearance/use-board-theme';
 export * from './archive/types';
 export * from './archive/use-archive';
 export * from './auth/types';
+export * from './auth/use-board';
 export * from './auth/use-me';
 export * from './auth/use-session';
 export * from './comments/types';
