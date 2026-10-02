@@ -183,13 +183,33 @@ describe('BoardsService.findAllForUser', () => {
   // someone else's, so there is no single "user role" to cache anywhere.
   it('reports the role per board, not per user', async () => {
     membership.findMany.mockResolvedValue([
-      { id: 'm1', role: 'ADMIN', board: { id: 'b1', name: 'Neon Harbor' } },
-      { id: 'm2', role: 'USER', board: { id: 'b2', name: 'Weekend Duo' } },
+      {
+        id: 'm1',
+        role: 'ADMIN',
+        board: { id: 'b1', name: 'Neon Harbor', theme: { palette: 'ocean' } },
+      },
+      {
+        id: 'm2',
+        role: 'USER',
+        board: { id: 'b2', name: 'Weekend Duo', theme: {} },
+      },
     ]);
 
     await expect(service.findAllForUser('u1')).resolves.toEqual([
-      { id: 'b1', name: 'Neon Harbor', membershipId: 'm1', role: 'ADMIN' },
-      { id: 'b2', name: 'Weekend Duo', membershipId: 'm2', role: 'USER' },
+      {
+        id: 'b1',
+        name: 'Neon Harbor',
+        membershipId: 'm1',
+        role: 'ADMIN',
+        palette: 'ocean',
+      },
+      {
+        id: 'b2',
+        name: 'Weekend Duo',
+        membershipId: 'm2',
+        role: 'USER',
+        palette: 'playful',
+      },
     ]);
   });
 
@@ -213,7 +233,11 @@ describe('BoardsService.findAllForUser', () => {
     await expect(service.findAllForUser('u1')).resolves.toEqual([]);
   });
 
-  // Listing twenty bands must not mean fetching twenty layouts and palettes.
+  /**
+   * Listing twenty bands must not mean fetching twenty layouts. `theme` is on
+   * the row either way, so the palette is free; `defaultLayout` is the field
+   * that would make this expensive, and it stays out.
+   */
   it('selects only what a switcher needs', async () => {
     membership.findMany.mockResolvedValue([]);
 
@@ -222,6 +246,25 @@ describe('BoardsService.findAllForUser', () => {
     const [args] = membership.findMany.mock.calls[0] as [
       { select: { board: { select: Record<string, boolean> } } },
     ];
-    expect(args.select.board.select).toEqual({ id: true, name: true });
+    expect(args.select.board.select).toEqual({
+      id: true,
+      name: true,
+      theme: true,
+    });
+  });
+
+  // An unreadable theme must not cost the whole list: a board with no palette
+  // set still has to appear, coloured like the default.
+  it('falls back to the default palette rather than dropping the board', async () => {
+    membership.findMany.mockResolvedValue([
+      {
+        id: 'm1',
+        role: 'ADMIN',
+        board: { id: 'b1', name: 'Neon Harbor', theme: 'not-an-object' },
+      },
+    ]);
+
+    const [board] = await service.findAllForUser('u1');
+    expect(board.palette).toBe('playful');
   });
 });

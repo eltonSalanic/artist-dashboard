@@ -12,6 +12,7 @@ import {
   type UpdateBoardDto,
 } from '@artist/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { toBoardSummary } from './board-summary';
 import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
@@ -39,16 +40,14 @@ export class BoardsService {
       select: {
         id: true,
         role: true,
-        board: { select: { id: true, name: true } },
+        // `theme` is a column on the row this join already reads, so the
+        // palette costs nothing extra; the rest of the theme stays behind
+        // `GET /boards/:id`.
+        board: { select: { id: true, name: true, theme: true } },
       },
     });
 
-    return memberships.map((m) => ({
-      id: m.board.id,
-      name: m.board.name,
-      membershipId: m.id,
-      role: m.role,
-    }));
+    return memberships.map(toBoardSummary);
   }
 
   async findOne(boardId: string) {

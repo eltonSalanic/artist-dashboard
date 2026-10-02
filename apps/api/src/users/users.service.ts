@@ -7,6 +7,7 @@ import {
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
+import { toBoardSummary } from '../boards/board-summary';
 import type { AuthUser } from '../auth/current-user.decorator';
 
 @Injectable()
@@ -120,12 +121,7 @@ export class UsersService {
        * oldest-first, so `boards[0]` is always the board the two legacy fields
        * below describe.
        */
-      boards: user.memberships.map((m) => ({
-        id: m.board.id,
-        name: m.board.name,
-        membershipId: m.id,
-        role: m.role,
-      })),
+      boards: user.memberships.map(toBoardSummary),
       /**
        * `membership` and `board` are the pre-multi-board shape, kept populated
        * with the first membership.

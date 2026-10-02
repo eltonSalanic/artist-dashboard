@@ -104,9 +104,47 @@ describe('UsersService.me — multi-board', () => {
     const me = await service.me(auth);
 
     expect(me.boards).toEqual([
-      { id: 'b1', name: 'Neon Harbor', membershipId: 'm1', role: 'ADMIN' },
-      { id: 'b2', name: 'Weekend Duo', membershipId: 'm2', role: 'USER' },
+      {
+        id: 'b1',
+        name: 'Neon Harbor',
+        membershipId: 'm1',
+        role: 'ADMIN',
+        palette: 'playful',
+      },
+      {
+        id: 'b2',
+        name: 'Weekend Duo',
+        membershipId: 'm2',
+        role: 'USER',
+        palette: 'playful',
+      },
     ]);
+  });
+
+  /**
+   * `GET /boards` and this list are built by the same mapper precisely so they
+   * cannot disagree. This is the assertion that would fail if someone inlined
+   * one of them again.
+   */
+  it('colours each board with its own palette, like GET /boards does', async () => {
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'u1',
+      email: auth.email,
+      displayName: 'Ringo',
+      avatarUrl: null,
+      memberships: [
+        {
+          id: 'm1',
+          role: 'ADMIN',
+          board: { ...board('b1', 'Neon Harbor'), theme: { palette: 'forest' } },
+        },
+        { id: 'm2', role: 'USER', board: board('b2', 'Weekend Duo') },
+      ],
+    });
+
+    const me = await service.me(auth);
+
+    expect(me.boards.map((b) => b.palette)).toEqual(['forest', 'playful']);
   });
 
   /**
