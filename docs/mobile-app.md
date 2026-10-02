@@ -1,8 +1,8 @@
 # Mobile App (React Native + Expo)
 
-> **Status:** in progress. P0–P4 done and verified; **P5 built, awaiting
-> verification on a phone** — `apps/mobile/` is now a real Expo app that signs
-> in and does nothing else. P6 (primitives + design tokens) is next.
+> **Status:** in progress. P0–P4 done and verified; **P5 and P6 built, awaiting
+> verification on a phone** — `apps/mobile/` is an Expo app that signs in, with
+> a token layer wired to the shared board palettes. P7 (board hub) is next.
 >
 > **Progress is tracked in [the phase table](#phases).** Update the Status
 > column in the same commit that lands the work. ☑ done and user-verified ·
@@ -103,7 +103,7 @@ deliberately scheduled after mobile rather than blocking it.
 | **P3** | [Multi-board API](#p3--multi-board-api) | api, shared | ☑ |
 | **P4** | [Cross-board calendar + inbox](#p4--cross-board-calendar--inbox) | api, shared | ☑ |
 | **P5** | [Expo skeleton + auth on a real device](#p5--expo-skeleton--auth-on-a-real-device) | mobile | ◐ |
-| **P6** | [Primitives + design tokens](#p6--primitives--design-tokens) | mobile | ☐ |
+| **P6** | [Primitives + design tokens](#p6--primitives--design-tokens) | mobile, **shared** | ◐ |
 | **P7** | [Board hub (stat cards)](#p7--board-hub-stat-cards) | mobile | ☐ |
 | **P8** | [Spokes (expanded widgets)](#p8--spokes-expanded-widgets) | mobile | ☐ |
 | **P9** | [Calendar + Inbox screens](#p9--calendar--inbox-screens) | mobile | ☐ |
@@ -573,6 +573,78 @@ Use the `expo-design-system` skill: it explicitly covers auditing for
 hardcoded colours/spacing/fonts and the "looks AI-generated instead of native"
 tells. `expo-native-ui` covers HIG semantics, safe areas, and responsive
 layout.
+
+**Built.** Two commits: the shared colour source, then the mobile layer on top.
+43 new units (29 in `packages/shared`, which gained a test runner; 86 new
+assertions in web's suite). Both screens are now free of hardcoded colour.
+
+#### The palette lift, and why `apps/web` was left alone
+
+`packages/shared/src/palettes.ts` now holds five palettes × four slots × two
+schemes, the brand accents `playful` is built from, and the eighteen surface
+tokens both platforms name identically. `slotTokens()` carries the
+coloured-card formula.
+
+`apps/web` still renders from `globals.css`. Generating that stylesheet from the
+package was the plan, and it was the wrong trade for a mobile phase: it means
+rewriting 300 lines of hand-tuned CSS and needing eyes on the result.
+`apps/web/src/app/palette-tokens.test.ts` parses the stylesheet and checks it
+against the package declaration for declaration instead — which is also how the
+transcription was verified in the first place. Mutation-tested three ways: a
+nudged value in the package fails, the same nudge in the CSS fails, and a new
+`[data-wc]` override the package does not mirror fails. That last case is the
+quiet one, since otherwise it would surface only as a card that looks different
+on a phone. Generating the CSS is now a safe follow-up whenever the duplication
+grates, because the test pins the current output exactly.
+
+#### Two things that had to be solved rather than configured
+
+- **React Native cannot parse `oklch()`.** `@react-native/normalize-colors`
+  takes hex, `rgb()`, `hsl()`, `hwb()` and names. An OKLCH string does not
+  throw — it silently yields no colour, which is the worst kind of failure. So
+  `packages/shared/src/colors.ts` converts, pinned against the published sRGB
+  primaries rather than its own output, and emits the 8-digit `#rrggbbaa` form
+  RN reads for the translucent tokens. Three authored colours turn out to sit
+  outside sRGB (ocean's c2 in both schemes, playful's dark c3 foreground) and
+  are gamut-mapped by reducing chroma at constant lightness and hue, the way
+  CSS Color 4 specifies — so both platforms land in the same place. Worth being
+  accurate: for those three it barely matters (`#00828d` clipped vs `#00818c`
+  mapped). The reason to do it properly is the colour nobody has authored yet,
+  where clipping shifts the hue.
+- **There is no cascade.** The whole colour system leans on one: a coloured card
+  re-points thirteen tokens and everything inside inherits them. Threading
+  colours through every child would put back exactly the per-widget styling the
+  CSS formula removed, so `Card` publishes its token set through React context
+  and the text, badge and button primitives read the nearest one. Outside a card
+  that is the page's own tokens.
+
+#### Deviations from this phase's component list
+
+All three are toward native chrome, following the skill's named slop tells:
+
+| Planned | Built | Why |
+|---|---|---|
+| `Sheet` | nothing | A custom sheet is "The Web Modal". The native answer is a route with `presentation: "formSheet"` — configuration in P8, not a primitive. |
+| tab bar, header | nothing | `NativeTabs` and the stack header already carry the platform's design language; the skill is explicit about not wrapping platform components to route them through the system. P7 configures them. |
+| — | `TextField`, `Button` | Sign-in had hand-rolled both and home needed the second button. Two screens is the extraction trigger. |
+
+`Card`, `ThemedText`, `Badge` and `Skeleton` were built as planned.
+
+Also deliberate: the skill's default is a palette built from platform semantic
+colours, with brand pairs only where the brand needs them. Here that exception
+is the whole surface — a warm cream canvas and five board palettes that have to
+match the browser. `systemBackground` would be a different app. The system font
+*is* kept, so text renders in San Francisco or Roboto rather than matching the
+web app's typeface; the native face is worth more than the match.
+
+#### Found for P7
+
+`BoardSummaryDto` carries id, name, membershipId and role, and deliberately no
+theme — "listing twenty bands should not fetch twenty themes" (P3). So **the
+board switcher cannot colour-code the boards it lists**, which the hub design
+implies it would. Either widen the DTO with just the palette id, or accept a
+neutral list. The home screen currently paints its band list in the *current*
+board's palette and rotates the slot per row.
 
 ### P7 — Board hub (stat cards)
 

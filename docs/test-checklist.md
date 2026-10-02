@@ -293,13 +293,63 @@ bytes, so it is stored in chunks. These boxes are what prove the chunking:
 
 ---
 
-## P6–P15 — not yet built
+## P6 — Primitives + design tokens
+
+Two halves: the colour values moved into `packages/shared`, and the mobile token
+layer built on them. The web half is covered by automated tests (86 assertions
+comparing `globals.css` to the package), so **the boxes here are the ones a test
+cannot tick** — whether it looks right, and whether web still looks the same.
+
+### Web must be unchanged — ↻ regression, do this first
+
+Nothing in `apps/web` was edited except a new test file. These boxes confirm it.
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ↻ Open the dashboard in light mode | Identical to before — cream canvas, same card colours |
+| ☐ | ↻ Switch to dark mode | Identical to before |
+| ☐ | ↻ Settings → appearance, try all five palettes | Each looks exactly as it did; the staged preview still differs from the saved board |
+| ☐ | ↻ A coloured widget with muted text, a badge and a button inside | Text still legible, borders still faint — the `[data-wc]` formula untouched |
+
+### The phone, in both schemes — ★ new
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ★ Sign-in screen in light mode | Warm cream background, not white — same canvas as web |
+| ☐ | ★ Switch the phone to dark mode (Control Centre or Settings → Display) | Warm charcoal, not pure black; text stays legible |
+| ☐ | ★ The band list on the authed screen | Each row a different palette slot, alternating pale and solid the way the web grid does |
+| ☐ | ★ Compare one board's card colour side by side with the same board on web | The same colour. This is the whole point of the phase |
+| ☐ | ★ Change the board's palette on web, reload the phone | The phone's cards follow |
+| ☐ | ★ The `role` badge sitting on a coloured card | Readable on every slot, including the dark `c4` panel |
+| ☐ | ★ Sign out button | Reads as destructive without shouting |
+
+### It feels native — ★ new, judgement calls
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ★ Press and hold a button | Visibly dims while held, springs back — no dead taps |
+| ☐ | ★ The loading state on the authed screen | Pulsing skeletons in the shape of the cards, **not** a centred spinner |
+| ☐ | ★ Card corners next to the native header | Squircles, not circular arcs (`borderCurve: "continuous"`) |
+| ☐ | ★ Settings → Accessibility → Display → Larger Text, crank it up | Text grows, rows grow with it, nothing clips or overlaps |
+| ☐ | ★ Tap into the email field on a short phone | The keyboard does not cover the password field or the button |
+| ☐ | ★ VoiceOver / TalkBack over the sign-in screen | Fields announce their labels; the button announces its name and its busy state while signing in |
+
+### Deliberately not in this phase
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ⊘ A light/dark toggle inside the app | Follows the OS only. Web has its own toggle; the phone's setting is where people look |
+| ☐ | ⊘ Bottom tabs, a board switcher, any widget | P7 |
+| ☐ | ⊘ Sheets | P8, and as a native `formSheet` route rather than a component |
+
+---
+
+## P7–P15 — not yet built
 
 Sections get added as each phase lands. Known in advance:
 
-- **P6** has more to do than planned: `packages/shared/src/theme.ts` holds
-  palette *metadata*, not colours — the actual values live in web's
-  `globals.css`, which Metro cannot read.
+- **P7** will hit the `BoardSummaryDto` gap: it carries no theme, so the board
+  switcher cannot colour-code the boards it lists.
 - **P13** is the other risky one, and the first phase that needs a real
   development build rather than Expo Go.
 - **P15** is the only phase that intentionally changes web behaviour.
