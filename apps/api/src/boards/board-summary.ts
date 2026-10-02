@@ -1,4 +1,8 @@
-import { resolveBoardTheme, type BoardRole, type BoardSummaryDto } from '@artist/shared';
+import {
+  resolveBoardTheme,
+  type BoardRole,
+  type BoardSummaryDto,
+} from '@artist/shared';
 
 /**
  * One membership row as the board lists want it.

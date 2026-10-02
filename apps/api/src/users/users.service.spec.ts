@@ -136,7 +136,10 @@ describe('UsersService.me — multi-board', () => {
         {
           id: 'm1',
           role: 'ADMIN',
-          board: { ...board('b1', 'Neon Harbor'), theme: { palette: 'forest' } },
+          board: {
+            ...board('b1', 'Neon Harbor'),
+            theme: { palette: 'forest' },
+          },
         },
         { id: 'm2', role: 'USER', board: board('b2', 'Weekend Duo') },
       ],
