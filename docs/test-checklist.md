@@ -286,8 +286,8 @@ bytes, so it is stored in chunks. These boxes are what prove the chunking:
 - [x] 🔵 ★ Sign in, then **force-quit** the app (swipe up, don't just background it) and reopen → Still signed in — no sign-in screen flash
 - [x] 🔵 ★ Reopen and watch closely on a cold start → No flash of the sign-in screen before the board; the splash holds until the session is read
 - [x] ★ Sign out, force-quit, reopen → Sign-in screen, and no stale name or band from the previous account anywhere
-- [ ] 🔵 ★ Sign in as A, sign out, sign in as B → B's name and bands, never A's — the query cache is cleared on sign-out
-- [ ] 🔵 ★ Lock the phone, leave it over an hour, unlock and reopen the app → Still signed in and requests still work — the token refreshed despite the OS suspending timers
+- [x] 🔵 ★ Sign in as A, sign out, sign in as B → B's name and bands, never A's — the query cache is cleared on sign-out
+- [x] 🔵 ★ Lock the phone, leave it over an hour, unlock and reopen the app → Still signed in and requests still work — the token refreshed despite the OS suspending timers
 
 
 
@@ -363,10 +363,10 @@ number is the failure mode here, and only you can spot it.
 ### The hub reads correctly — ★ new
 
 - [ ] ★ Open the Board tab → Cards appear in the same order as the web dashboard, hidden widgets absent
-- [ ] 🔵 ★ Count the open to-dos on web, compare the To-Do's card → Same number. Subtasks must **not** be counted — only top-level tasks
+- [x] 🔵 ★ Count the open to-dos on web, compare the To-Do's card → Same number. Subtasks must **not** be counted — only top-level tasks
 - [ ] ★ Give a task a due date of today → To-Do's qualifier reads "1 due today" and the urgency dot appears
-- [ ] 🔵 ★ Assign yourself a task → My Tasks goes up by one; a task assigned to someone else does not move it
-- [ ] 🔵 ★ Complete a goal on web, pull to refresh → Goals count drops, the percentage rises
+- [x] 🔵 ★ Assign yourself a task → My Tasks goes up by one; a task assigned to someone else does not move it
+- [x] 🔵 ★ Complete a goal on web, pull to refresh → Goals count drops, the percentage rises
 - [ ] ★ Add a show for next week → Shows card shows its weekday; the qualifier shows the venue, or "N more" if it has no location
 - [ ] ★ Add a show for today → Card reads "Today" with the urgency dot
 - [ ] ★ Set the week's focus on web → Focus hero shows that text and "this week". Setting only the year's focus shows that instead
@@ -379,9 +379,9 @@ number is the failure mode here, and only you can spot it.
 ### Colour and layout — ★ new
 
 - [ ] ★ Compare the hub's card colours with the web dashboard → Focus coral, Goals lilac, Reminders lime, Shows ink — the same slots, in the board's palette
-- [ ] 🔵 ★ Change the board palette on web, pull to refresh → Hub cards follow
-- [ ] 🔵 ★ Hide a widget on web, pull to refresh → Its card disappears from the hub
-- [ ] 🔵 ★ Reorder widgets on web, pull to refresh → Hub order follows
+- [x] 🔵 ★ Change the board palette on web, pull to refresh → Hub cards follow
+- [x] 🔵 ★ Hide a widget on web, pull to refresh → Its card disappears from the hub
+- [x] 🔵 ★ Reorder widgets on web, pull to refresh → Hub order follows
 - [ ] ★ An odd number of stat cards → The last one stays half-width — it must not stretch across the row
 - [ ] ★ Rotate the phone, and try a large text size → Cards grow, numbers do not clip
 
@@ -420,8 +420,8 @@ it, that is a bug, not an early P10.
 
 ### Getting there and moving around — ★ new
 
-- [ ] 🔵 ★ Tap a hub card → Its widget opens, titled, with the strip above it
-- [ ] 🔵 ★ Swipe left and right → Moves to the next and previous widget; the strip follows
+- [x] 🔵 ★ Tap a hub card → Its widget opens, titled, with the strip above it
+- [x] 🔵 ★ Swipe left and right → Moves to the next and previous widget; the strip follows
 - [ ] ★ Swipe to the last widget → The strip has scrolled along — the active chip must be visible, not off-screen
 - [ ] ★ Tap a chip several along → Jumps there
 - [ ] ★ Tap the card for the *last* widget, then swipe right → Starts on the right widget, not the first one
@@ -443,15 +443,15 @@ it, that is a bug, not an early P10.
 - [ ] ★ Scroll the activity feed to the bottom → More loads; it does not stop at one page
 - [ ] ★ Notes → The note's text, paragraph by paragraph, with when it was edited
 - [ ] ★ A widget with nothing in it → A designed empty state saying why — never a blank area or a spinner
-- [ ] 🔵 ★ Stop the API and open a spoke → "Could not load this" with a working Try again
+- [x] 🔵 ★ Stop the API and open a spoke → "Could not load this" with a working Try again
 
 
 
 ### Task detail — ★ new
 
-- [ ] 🔵 ★ Tap a task row → Opens the task: title, status, priority, due date, description
+- [x] 🔵 ★ Tap a task row → Opens the task: title, status, priority, due date, description
 - [ ] ★ A task with assignees, a checklist, subtasks, and a linked goal or event → All four sections present; the checklist shows done/total
-- [ ] 🔵 ★ Tap a subtask → Opens it; back returns to the parent
+- [x] 🔵 ★ Tap a subtask → Opens it; back returns to the parent
 - [ ] ★ A task that is archived or deleted on web, then opened on the phone → "Task not found", with a way back
 
 
@@ -479,7 +479,7 @@ which delete notification rows, not comments.
 
 ### The band filter — ★ new
 
-- [ ] 🔵 ★ With one band only, open Calendar and Inbox → **No filter row at all** — not a greyed-out one, not a row with a single chip
+- [x] 🔵 ★ With one band only, open Calendar and Inbox → **No filter row at all** — not a greyed-out one, not a row with a single chip
 - [ ] ★ With two bands, open Calendar → `All · <band> · <band>`, All selected, each band with its own colour dot
 - [ ] ★ Tap a band → The list narrows to it; the chip is filled, not just tinted
 - [ ] ★ Filter the Calendar, then open the Inbox → The Inbox is **still on All** — the filter is per tab
@@ -496,28 +496,28 @@ which delete notification rows, not comments.
 - [ ] ★ Scroll a long day → The date heading stays stuck at the top while its items scroll
 - [ ] ★ A show and a rehearsal on the same day → In time order, each with its clock time on the right
 - [ ] ★ A task due that same day → Listed **first** on the day, with no invented time next to it
-- [ ] 🔵 ★ A task due on the 1st of a month, viewed from a phone set to a US timezone → On the 1st — **not** the last day of the previous month
+- [x] 🔵 ★ A task due on the 1st of a month, viewed from a phone set to a US timezone → On the 1st — **not** the last day of the previous month
 - [ ] ★ Every row's meta line → Band (two bands only), kind, status for a task, location for an event
 - [ ] ★ Step forward and back a month → Content changes; the stepper does not skip or repeat a month at a year boundary
 - [ ] ★ Tap the month name → Returns to the current month
 - [ ] ★ A month with nothing in it → "Nothing in " — a designed state, not a blank screen
-- [ ] 🔵 ★ Tap a task row → Opens that task, in the band the row belongs to
+- [x] 🔵 ★ Tap a task row → Opens that task, in the band the row belongs to
 - [ ] ★ Tap a show, rehearsal, meeting, reminder or goal row → Opens that band's matching widget — never a dead tap
 - [ ] ★ With two bands on All, check items from both → Both bands' items in one list, each naming its band
 - [ ] ★ Pull down to refresh → Reloads; a change made on web appears
-- [ ] 🔵 ★ Compare against web's calendar for the same month → Same items on the same days
+- [x] 🔵 ★ Compare against web's calendar for the same month → Same items on the same days
 
 
 
 ### Inbox — ★ new
 
-- [ ] 🔵 ★ Have someone @mention you on web, then open the Inbox → The mention, newest first, reading "X mentioned you in …" with the excerpt
+- [x] 🔵 ★ Have someone @mention you on web, then open the Inbox → The mention, newest first, reading "X mentioned you in …" with the excerpt
 - [ ] ★ The Inbox tab icon → A badge with the count; `9+` past nine, and **no badge at all** at zero
-- [ ] 🔵 ★ Get mentioned while the app is open on another tab → The badge appears within 30s without reopening the app
+- [x] 🔵 ★ Get mentioned while the app is open on another tab → The badge appears within 30s without reopening the app
 - [ ] ★ Tap a mention → Opens that task in that band — and the mention **stays** in the list
-- [ ] 🔵 ★ Tap the × on a row → That row goes, the badge drops by one, the comment on web is untouched
+- [x] 🔵 ★ Tap the × on a row → That row goes, the badge drops by one, the comment on web is untouched
 - [ ] ★ "Clear all" with no filter → Confirmation names the total and says "every band"
-- [ ] 🔵 ★ "Clear all" filtered to one band → Confirmation names **that band**, and only its mentions go
+- [x] 🔵 ★ "Clear all" filtered to one band → Confirmation names **that band**, and only its mentions go
 - [ ] ★ An empty inbox → "Nothing for you", and no "Clear all" in the header
 - [ ] ★ Stop the API, pull to refresh → "Could not load this" with a working Try again
 
@@ -525,9 +525,9 @@ which delete notification rows, not comments.
 
 ### Scoping — the checks that matter most
 
-- [ ] 🔵 ★ On All, read every item's band label → Only bands you are a member of. Anything else is a leak
-- [ ] 🔵 ★ Have an admin remove you from a band where you were mentioned, then refresh the Inbox → Those mentions are gone — membership is re-checked per request, not trusted from before
-- [ ] 🔵 ★ Note a band's name, leave it, reopen the Calendar → Nothing from it remains, including in a month you had already loaded
+- [x] 🔵 ★ On All, read every item's band label → Only bands you are a member of. Anything else is a leak
+- [x] 🔵 ★ Have an admin remove you from a band where you were mentioned, then refresh the Inbox → Those mentions are gone — membership is re-checked per request, not trusted from before
+- [x] 🔵 ★ Note a band's name, leave it, reopen the Calendar → Nothing from it remains, including in a month you had already loaded
 
 
 
