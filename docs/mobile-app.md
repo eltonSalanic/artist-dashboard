@@ -103,11 +103,11 @@ deliberately scheduled after mobile rather than blocking it.
 | **P2** | [Notification channels + push transport](#p2--notification-channels--push-transport) | api, shared | ☑ |
 | **P3** | [Multi-board API](#p3--multi-board-api) | api, shared | ☑ |
 | **P4** | [Cross-board calendar + inbox](#p4--cross-board-calendar--inbox) | api, shared | ☑ |
-| **P5** | [Expo skeleton + auth on a real device](#p5--expo-skeleton--auth-on-a-real-device) | mobile | ◐ |
-| **P6** | [Primitives + design tokens](#p6--primitives--design-tokens) | mobile, **shared** | ◐ |
-| **P7** | [Board hub (stat cards)](#p7--board-hub-stat-cards) | mobile, **shared** | ◐ |
-| **P8** | [Spokes (expanded widgets)](#p8--spokes-expanded-widgets) | mobile, **shared** | ◐ |
-| **P9** | [Calendar + Inbox screens](#p9--calendar--inbox-screens) | mobile, api | ◐ |
+| **P5** | [Expo skeleton + auth on a real device](#p5--expo-skeleton--auth-on-a-real-device) | mobile | ☑ |
+| **P6** | [Primitives + design tokens](#p6--primitives--design-tokens) | mobile, **shared** | ☑ |
+| **P7** | [Board hub (stat cards)](#p7--board-hub-stat-cards) | mobile, **shared** | ☑ |
+| **P8** | [Spokes (expanded widgets)](#p8--spokes-expanded-widgets) | mobile, **shared** | ☑ |
+| **P9** | [Calendar + Inbox screens](#p9--calendar--inbox-screens) | mobile, api | ☑ |
 | **P10** | [Write parity](#p10--write-parity) | mobile | ☐ |
 | **P11** | [Notes widget](#p11--notes-widget) | mobile | ☐ |
 | **P12** | [Mobile layout editor](#p12--mobile-layout-editor) | mobile | ☐ |
@@ -935,6 +935,16 @@ deferred again.
   screens that own a virtualised list, which cannot live inside `SpokeList`'s
   scroll view.
 - The placeholder tab screen is deleted — all four tabs are real.
+
+#### Found in verification: the badge has to be a direct child
+
+The first Inbox badge never appeared. It lived in an `InboxBadge` component that
+returned `Trigger.Badge`, or `null` at zero — but `NativeTabs` reads its
+triggers' children as configuration, not as rendered output, and recognises a
+`Badge` only as a **direct** child of the `Trigger`. A wrapper is silently
+dropped. The count now comes from a hook in the component that renders the
+whole tab bar, and the `Badge` is always mounted, `hidden` at zero. Keep
+`Trigger.Icon` and `Trigger.Label` as direct children for the same reason.
 
 ### P10 — Write parity
 
