@@ -542,7 +542,84 @@ which delete notification rows, not comments.
 
 
 
-## P10–P15 — not yet built
+## P10 — Write parity
+
+The phone writes for the first time: status, checklist ticks, comments with
+mentions, attachments, and reorder. Every write must land on web exactly as if
+it had been made there, and every control must answer for **the task's own
+band** — which is not always the selected one. Use two accounts and two bands,
+one where you are admin and one where you are a member.
+
+Expo Go is still enough for this phase. Before testing attachments, make sure
+`apps/mobile/.env` points `EXPO_PUBLIC_SUPABASE_URL` at your LAN address — uploads
+go straight to Storage, not through the API.
+
+### Web must be unchanged — ↻ regression, do this first
+
+Mention parsing and the upload flow moved into the shared packages.
+
+- [ ] 🔵 ↻ On web, comment "@" + a bandmate's name → The suggestion list appears, picking one inserts it, and they get an inbox row
+- [ ] ↻ On web, a comment mentioning "@sam.jones" when "sam" is also a member → Only sam.jones is notified
+- [ ] 🔵 ↻ On web, upload a file to a task → It appears, previews, downloads
+- [ ] ↻ On web, attach a file to a comment, then delete it → It disappears from the comment **without a reload** (it used to linger — fixed here)
+
+### Permissions follow the task's band — ★ new, the check that matters most
+
+- [ ] 🔵 ★ Select a band where you are **admin**, then open a task from the Calendar or Inbox that belongs to a band where you are a **member** → Behaves as a member: no drag, status only changeable if you are assigned
+- [ ] 🔵 ★ The reverse — select the member band, open a task in your admin band → Behaves as an admin
+- [ ] ★ As a member, a task you are **not** assigned to → Status pill has no chevron and does nothing; a task you **are** assigned to → Chevron, opens the sheet
+
+### Status — ★ new
+
+- [ ] 🔵 ★ Tap the status pill on a task → A sheet lists the board's statuses with their colours, the current one ticked
+- [ ] 🔵 ★ Pick another → The sheet closes and the task already shows the new status; web shows it after a refresh
+- [ ] ★ Tap the status dot on a To-Do row → The same sheet opens; tapping the row elsewhere still opens the task
+- [ ] ★ Change a subtask's status from the subtask's own screen, go back → Both the subtask and the parent's subtask list show the new status
+
+### Checklist — ★ new
+
+- [ ] 🔵 ★ Tick an item → It ticks at once, with no flicker back while it saves; web agrees
+- [ ] ★ Tick as a **member** (not admin) → Allowed — web and the API allow it too
+
+### Comments and mentions — ★ new
+
+- [ ] 🔵 ★ Comment on a task from the phone → It appears; web shows it, with the same author and time
+- [ ] 🔵 ★ Type "@" and the start of a bandmate's name → Their name appears as a chip above the field; tapping it inserts "@Name " with the cursor after it
+- [ ] 🔵 ★ Send a comment mentioning them → They get an inbox row (and an email, per their settings) exactly as from web
+- [ ] ★ The comment field near the bottom of a long task, keyboard open → The field and the Comment button stay visible above the keyboard (check **both** iOS and Android)
+- [ ] ★ Edit your own comment via ⋯ → Saves, shows "edited"
+- [ ] ★ Someone else's comment, as a member → No ⋯ at all. As an admin → ⋯ offers Delete only
+
+### Attachments — ★ new
+
+- [ ] 🔵 ★ Photos → pick a picture → It uploads ("Uploading…"), then lists with its size; web shows and previews it
+- [ ] 🔵 ★ Camera → take a photo → First time asks for camera access; the photo uploads as a JPEG that **web can preview** (not HEIC)
+- [ ] ★ Files → pick a PDF or an audio file → Uploads and lists with the right icon
+- [ ] 🔵 ★ Tap any attachment → Opens in the in-app browser sheet and renders; share/save works from there
+- [ ] ★ Deny camera access, then tap Camera again → An alert offers Open Settings rather than failing silently
+- [ ] ★ A video over 50MB → "File is larger than the 50MB limit", and nothing half-uploaded appears
+- [ ] ★ Delete your own upload → Confirm prompt, then gone; someone else's upload as a member → no trash icon
+
+### Reorder — ★ new
+
+- [ ] 🔵 ★ As an admin, open the To-Do spoke → Same order as web's To-Do widget (it used to show newest first), with "Hold a task to move it."
+- [ ] 🔵 ★ Hold a row, drag it, let go → It stays where dropped, with a light tap of haptics on pick-up; web's order matches after a refresh
+- [ ] 🔵 ★ Swipe sideways on the To-Do spoke without holding → Still pages to the next widget — the drag must not steal the swipe
+- [ ] ★ Drag to the very top, and to the very bottom → Both stick
+- [ ] ★ As a member → No hint and no drag; holding a row does nothing
+- [ ] ★ With VoiceOver/TalkBack on, a row's actions → Move up / Move down, and they work
+
+### Deliberately not in this phase
+
+- [ ] ⊘ Editing a task's title, description, priority, due date or assignees; creating tasks or subtasks → Admin work, still on web
+- [ ] ⊘ Attaching a file to a *comment* from the phone → Comment attachments show and can be deleted; new files go on the task
+- [ ] ⊘ Creating or editing events, reminders and goals (deferred here by P9), Archive and Board settings (labelled P10 in the board menu) → Not built; where they go is an open decision
+
+---
+
+
+
+## P11–P15 — not yet built
 
 Sections get added as each phase lands. Known in advance:
 

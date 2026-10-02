@@ -108,7 +108,7 @@ deliberately scheduled after mobile rather than blocking it.
 | **P7** | [Board hub (stat cards)](#p7--board-hub-stat-cards) | mobile, **shared** | ☑ |
 | **P8** | [Spokes (expanded widgets)](#p8--spokes-expanded-widgets) | mobile, **shared** | ☑ |
 | **P9** | [Calendar + Inbox screens](#p9--calendar--inbox-screens) | mobile, api | ☑ |
-| **P10** | [Write parity](#p10--write-parity) | mobile | ☐ |
+| **P10** | [Write parity](#p10--write-parity) | mobile, **shared**, web | ◐ |
 | **P11** | [Notes widget](#p11--notes-widget) | mobile | ☐ |
 | **P12** | [Mobile layout editor](#p12--mobile-layout-editor) | mobile | ☐ |
 | **P13** | [Push client](#p13--push-client) | mobile, api | ☐ |
@@ -956,6 +956,103 @@ attachments from camera or photo roll against the private `attachments` bucket.
 Permissions come from the shared `can()` map — never a hardcoded role check.
 Reorder in particular is ADMIN-gated on web to match the endpoint's
 `@BoardRoles('ADMIN')`; mobile must match.
+
+**Built.** Four commits: two lifts into the shared packages, then status and
+checklist, comments and attachments, and reorder. Plus checklist ticking, which
+the list above omits but the task screen already drew as checkboxes — a box
+that looks tickable and is not would be worse than no box.
+
+#### Permissions answer for the route's board, not the selected one
+
+The tab chrome mounts `PermissionsProvider` with the *selected* board's role.
+While every screen only read, that was harmless. A task opened from the Calendar
+or the Inbox can belong to another band, where the person's role differs —
+admin of their own project, a member of a friend's. Every screen under
+`/board/:boardId/…` now wraps itself in `BoardPermissions`, which takes the role
+from `me.boards` for the board in the path. Not a member (removed since the
+link was made) reads as `USER`; the API's 404 does the rest.
+
+#### Two more things lifted, for the usual reason
+
+- **Mention parsing** moved from `apps/web` to `packages/shared/src/mentions.ts`
+  (with its test). Which names count as a mention decides who gets an inbox
+  row, and "@sam.jones" parsed two ways would notify the wrong person with
+  nothing failing.
+- **The upload flow** moved to `@artist/api-client` (`useAttachments`,
+  `useUploadAttachment`, `useDeleteAttachment`, `uploadAttachment`,
+  `fetchAttachmentUrl`). Only the PUT differs by platform, so the caller
+  supplies it as `UploadSource.put`: web wraps a `File` (`fromFile`), mobile
+  hands the URI to `expo-file-system`'s native `File.upload` so a 40MB video
+  never crosses into JS. The size cap, the signed URL and the board-prefixed
+  path now exist once.
+
+Two api-client fixes fell out of it. Deleting a comment's file now refreshes the
+comment, which carries its attachments inline (web had shown it until the next
+refetch). And `useUpdateTask` refreshed only the *parent* when a subtask
+changed — enough for web, which edits subtasks inside the parent's modal, but
+on mobile a subtask is its own screen and stayed stale.
+
+Task mutations now return their refetch from `onSuccess`, so a mutation stays
+pending until fresh data has landed. That is what lets a checklist tick (and a
+drag) render the pending value without flickering back between "saved" and
+"refetched".
+
+#### Storage signs URLs a phone cannot reach
+
+The API signs upload and view URLs with *its* `SUPABASE_URL`, which in local
+development is `127.0.0.1:54321` — the phone itself, from the phone. The
+signature is a query-string token, not bound to the host, so
+`lib/storage-url.ts` swaps a loopback origin for the LAN one the app already
+uses for Supabase. Public origins are left alone, so a deployed API needs
+nothing. It is string surgery rather than `URL` setters, which React Native's
+`URL` does not reliably implement; the first draft's test also caught that
+setting `host` without a port keeps the old one.
+
+#### The interaction choices
+
+- **Status is a native `formSheet`** at `/board/:boardId/status/:taskId`,
+  opened from task detail's status pill or a todo row's dot. Statuses are the
+  board's own — any number, each with a colour — and a list is the one control
+  that shows all of that on both platforms. It closes once the change has been
+  refetched, so the screen underneath is already right.
+- **Mention suggestions are chips above the field**, not a floating popup: a
+  popup over a scroll view covers the text being typed, and the keyboard's own
+  suggestion bar already taught the chip row.
+- **Attachments are three buttons — Camera, Photos, Files** — not one "Attach"
+  behind a menu. Android's alert holds three buttons, one short of three sources
+  plus cancel. Camera is stills only (video would add a microphone prompt);
+  photos are re-encoded to JPEG because a bandmate opening an iPhone HEIC on web
+  sees nothing.
+- **Files open in the system browser sheet** (`expo-web-browser` — Safari View
+  Controller / Custom Tabs, not an embedded webview). It renders images, PDFs,
+  audio and video, and its share button covers saving, so it replaces web's
+  separate view and download buttons.
+- **Reorder is hold-then-drag** with `react-native-reorderable-list` (pure
+  gesture-handler + Reanimated, maintained; `draggable-flatlist` has not shipped
+  since May 2025). The pan activates only after the long press, so swiping to the
+  next widget still pages. Screen readers get Move up / Move down actions.
+  ADMIN-only via `task.editFields`, matching `@BoardRoles('ADMIN')`.
+
+#### Found along the way
+
+- **The Todos spoke was in the wrong order since P8.** It never passed a sort,
+  so it showed the API default — newest first — while web's To-Do widget shows
+  the board's manual order. Reordering a list that ignores the order would have
+  been meaningless; it now asks for `sort: 'order'`.
+- **There was no `GestureHandlerRootView`.** Only expo-router's JS stack
+  supplies one; this app uses the native stack. Gesture Handler without its root
+  does nothing and reports nothing — the drag would simply never have picked up.
+- **Android keyboard:** edge-to-edge means the window no longer resizes for the
+  keyboard, so task detail wraps in a `KeyboardAvoidingView` on Android only;
+  iOS's scroll view insets itself (`automaticallyAdjustKeyboardInsets`).
+
+#### Pointed here by earlier phases, and not built
+
+P7's board menu labels **Archive** and **Board settings** as P10, and P9 deferred
+**creating and editing events, reminders and goals** to P10. None is in the list
+above, and none was built; nor were the task's own fields (title, description,
+priority, due date, assignees), new tasks or subtasks — admin work that stays on
+web for now. Where they belong is an open decision, not a silent drop.
 
 ### P11 — Notes widget
 
