@@ -344,12 +344,74 @@ Nothing in `apps/web` was edited except a new test file. These boxes confirm it.
 
 ---
 
-## P7–P15 — not yet built
+## P7 — Board hub
+
+The first phase with real UI, so most of this is "does it say the right number".
+
+**Do the counting checks with the demo board** (`npm run db:seed -w apps/api`)
+or a board you know the contents of — a card showing a plausible-looking wrong
+number is the failure mode here, and only you can spot it.
+
+### The hub reads correctly — ★ new
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ★ Open the Board tab | Cards appear in the same order as the web dashboard, hidden widgets absent |
+| ☐ | ★ Count the open to-dos on web, compare the To-Do's card | Same number. Subtasks must **not** be counted — only top-level tasks |
+| ☐ | ★ Give a task a due date of today | To-Do's qualifier reads "1 due today" and the urgency dot appears |
+| ☐ | ★ Assign yourself a task | My Tasks goes up by one; a task assigned to someone else does not move it |
+| ☐ | ★ Complete a goal on web, pull to refresh | Goals count drops, the percentage rises |
+| ☐ | ★ Add a show for next week | Shows card shows its weekday; the qualifier shows the venue, or "N more" if it has no location |
+| ☐ | ★ Add a show for today | Card reads "Today" with the urgency dot |
+| ☐ | ★ Set the week's focus on web | Focus hero shows that text and "this week". Setting only the year's focus shows that instead |
+| ☐ | ★ Type a bulleted note in the Notes widget on web | The hero shows the first line as plain text, items separated by spaces |
+| ☐ | ★ A widget with nothing in it | Reads "Nothing yet", **not** "0" |
+| ☐ | ★ Pull down on the hub | Everything refetches |
+
+### Colour and layout — ★ new
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ★ Compare the hub's card colours with the web dashboard | Focus coral, Goals lilac, Reminders lime, Shows ink — the same slots, in the board's palette |
+| ☐ | ★ Change the board palette on web, pull to refresh | Hub cards follow |
+| ☐ | ★ Hide a widget on web, pull to refresh | Its card disappears from the hub |
+| ☐ | ★ Reorder widgets on web, pull to refresh | Hub order follows |
+| ☐ | ★ An odd number of stat cards | The last one stays half-width — it must not stretch across the row |
+| ☐ | ★ Rotate the phone, and try a large text size | Cards grow, numbers do not clip |
+
+### Navigation — ★ new
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ★ All four tabs | Board, Calendar, Inbox, You. Calendar and Inbox say what lands there; You shows your account |
+| ☐ | ★ Tap the board name in the header | A sheet from the bottom, grabber visible, listing your bands with the current one ticked |
+| ☐ | ★ With two bands, pick the other one | Header name changes, cards reload, palette follows |
+| ☐ | ★ **Force-quit and reopen** | Still on the band you picked |
+| ☐ | ★ Remove yourself from that band on web, reopen the app | Falls back to a band you are still in — never a stuck empty board |
+| ☐ | ★ Tap `⋯` | A sheet listing Manage widgets, Archive and Board settings, each marked with its phase |
+| ☐ | ★ Sign in as a **member**, not an admin, and tap `⋯` | Board settings is absent; Archive is present |
+| ☐ | ★ Switch to Calendar, back to Board | The board tab is where you left it |
+| ☐ | ★ An account in no bands at all | "No band yet", not a crash or an endless spinner |
+
+### Deliberately not in this phase
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ⊘ Tapping a card | Nothing happens yet — the spokes are P8 |
+| ☐ | ⊘ The `⋯` entries | Non-interactive on purpose, rather than opening a dead end |
+| ☐ | ⊘ Editing anything | P10 |
+| ☐ | ⊘ Activity reading "N new since last visit" | Shows today's count and when the newest entry was; unread needs a marker that P9 defines |
+
+---
+
+## P8–P15 — not yet built
 
 Sections get added as each phase lands. Known in advance:
 
-- **P7** will hit the `BoardSummaryDto` gap: it carries no theme, so the board
-  switcher cannot colour-code the boards it lists.
 - **P13** is the other risky one, and the first phase that needs a real
   development build rather than Expo Go.
 - **P15** is the only phase that intentionally changes web behaviour.
+
+> **Lesson from P7, for every phase left:** bundling is not running.
+> `expo export` proves resolution and types; `expo start` is what proves the
+> toolchain, and only a phone proves the app.

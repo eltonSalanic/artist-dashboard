@@ -1,8 +1,8 @@
 # Mobile App (React Native + Expo)
 
-> **Status:** in progress. P0–P4 done and verified; **P5 and P6 built, awaiting
-> verification on a phone** — `apps/mobile/` is an Expo app that signs in, with
-> a token layer wired to the shared board palettes. P7 (board hub) is next.
+> **Status:** in progress. P0–P4 done and verified; **P5–P7 built, awaiting
+> verification on a phone** — `apps/mobile/` signs in, has its four tabs, and
+> the board hub renders every widget as a card. P8 (spokes) is next.
 >
 > **Progress is tracked in [the phase table](#phases).** Update the Status
 > column in the same commit that lands the work. ☑ done and user-verified ·
@@ -104,7 +104,7 @@ deliberately scheduled after mobile rather than blocking it.
 | **P4** | [Cross-board calendar + inbox](#p4--cross-board-calendar--inbox) | api, shared | ☑ |
 | **P5** | [Expo skeleton + auth on a real device](#p5--expo-skeleton--auth-on-a-real-device) | mobile | ◐ |
 | **P6** | [Primitives + design tokens](#p6--primitives--design-tokens) | mobile, **shared** | ◐ |
-| **P7** | [Board hub (stat cards)](#p7--board-hub-stat-cards) | mobile | ☐ |
+| **P7** | [Board hub (stat cards)](#p7--board-hub-stat-cards) | mobile, **shared** | ◐ |
 | **P8** | [Spokes (expanded widgets)](#p8--spokes-expanded-widgets) | mobile | ☐ |
 | **P9** | [Calendar + Inbox screens](#p9--calendar--inbox-screens) | mobile | ☐ |
 | **P10** | [Write parity](#p10--write-parity) | mobile | ☐ |
@@ -703,6 +703,66 @@ split gives the grid a rhythm instead of a uniform wall of numbers.
 
 This is **new UI, not a port** — no existing `Collapsed` variant renders as a
 stat.
+
+**Built.** Three commits: the shared widget metadata, the tab navigation, then
+the cards. 19 new units (mobile's suite is now 32).
+
+#### What the design got right, and the one thing it could not
+
+The grid-as-index, the header-as-switcher and the fixed card anatomy all came
+through as designed. The numbers were matched to what the web widgets already
+mean rather than invented — root tasks only for To-Do's, the caller's own id
+for My Tasks, the completed share of live goals for the percentage, and one
+event factory over three `Event.type`s.
+
+**Activity cannot show "N new since your last visit."** That needs a
+per-device last-seen marker nothing writes, and opening the hub would zero it
+immediately. The card counts today's entries and dates the newest instead,
+which says something true with no hidden state. The unread version belongs with
+the Inbox in P9, where "unread" has to be defined anyway.
+
+#### Navigation shape
+
+`(tabs)/(index,calendar,inbox,you)/` is **one stack definition instantiated four
+times**. That is for P8: a task opened from the board, the calendar or the inbox
+is written once and pushes onto whichever stack the person is in, instead of
+yanking them to another tab.
+
+Both the switcher and the `⋯` are native `formSheet` routes. On iOS a
+`Stack.Toolbar.Menu` would be more idiomatic for three actions, but it is
+iOS-only, and one implementation both platforms get beats the perfect menu on
+half of them — the same reasoning that kept `@expo/ui` out.
+
+The selected board is persisted in AsyncStorage, because "you land in your
+last-opened board" does not survive a process otherwise. The stored id is
+**re-validated against live membership on every load**: someone removed from a
+band keeps the id on their phone, and trusting it would leave the app asking
+for a board the API will refuse.
+
+#### `BoardSummaryDto` still has no theme
+
+Flagged at the end of P6, and it stayed true: the switcher lists bands by name
+and role with no colour of their own. Rather than widen the DTO, `useBoard`
+moved into `@artist/api-client` (keeping web's `["board", boardId]` key exactly
+— several web mutations invalidate it directly) and the hub reads the selected
+board's palette from it. Colour-coding the *list* is still unavailable, and is
+only worth doing if the switcher grows past a handful of bands.
+
+#### `npm run mobile` was broken from P5 until here
+
+`expo start` crashed on startup: typed-route generation runs inside `@expo/cli`,
+which npm installs under the repo root, and it `require`s
+`expo-router/_ctx-shared` — which npm nests in `apps/mobile/node_modules` over
+a `react-is` conflict with the root's test tooling, so Node walking up from the
+CLI never reaches it. **P5 only ever ran `expo export`**, which does not touch
+that path, so the command P5's own instructions told you to run had never been
+run. `experiments.typedRoutes` is now off, which is what triggers it.
+
+Cost: `<Link href>` strings are no longer checked against the route tree, so a
+typo is a dead tap rather than a compile error. An `overrides` entry was tried
+first and did not move the hoist. Lesson for the remaining phases: **bundling is
+not running.** `expo export` proves resolution and types; only `expo start`
+proves the toolchain.
 
 ### P8 — Spokes (expanded widgets)
 
