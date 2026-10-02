@@ -1,8 +1,8 @@
 # Mobile App (React Native + Expo)
 
-> **Status:** in progress. P0–P4 done; P5 (Expo skeleton + auth on a real
-> device) is next and is the riskiest phase. `apps/mobile/` still holds only
-> skills and agent docs.
+> **Status:** in progress. P0–P4 done and verified; **P5 built, awaiting
+> verification on a phone** — `apps/mobile/` is now a real Expo app that signs
+> in and does nothing else. P6 (primitives + design tokens) is next.
 >
 > **Progress is tracked in [the phase table](#phases).** Update the Status
 > column in the same commit that lands the work. ☑ done and user-verified ·
@@ -102,7 +102,7 @@ deliberately scheduled after mobile rather than blocking it.
 | **P2** | [Notification channels + push transport](#p2--notification-channels--push-transport) | api, shared | ☑ |
 | **P3** | [Multi-board API](#p3--multi-board-api) | api, shared | ☑ |
 | **P4** | [Cross-board calendar + inbox](#p4--cross-board-calendar--inbox) | api, shared | ☑ |
-| **P5** | [Expo skeleton + auth on a real device](#p5--expo-skeleton--auth-on-a-real-device) | mobile | ☐ |
+| **P5** | [Expo skeleton + auth on a real device](#p5--expo-skeleton--auth-on-a-real-device) | mobile | ◐ |
 | **P6** | [Primitives + design tokens](#p6--primitives--design-tokens) | mobile | ☐ |
 | **P7** | [Board hub (stat cards)](#p7--board-hub-stat-cards) | mobile | ☐ |
 | **P8** | [Spokes (expanded widgets)](#p8--spokes-expanded-widgets) | mobile | ☐ |
@@ -482,6 +482,73 @@ will not do.
 **Done means: magic-link sign-in works end to end on a physical phone, and the
 session survives force-quitting the app.**
 
+**Built.** Expo SDK 57 / React Native 0.86, expo-router, `StyleSheet`, routes in
+`src/app` holding nothing but a screen. Metro bundles 1277 modules for iOS and
+1423 for Android including `@artist/api-client` and `@artist/shared` as
+TypeScript source; `expo-doctor` passes 21/21; 13 new units. The authed screen
+reads `/me/bootstrap` through the shared hooks, so one screen proves the
+keychain session, the injected token, the package under Metro, and the phone's
+route to the API all at once.
+
+Two things above turned out to be wrong, both in the direction of less work:
+
+- **Magic links are not the sharp edge — they are not in the product.** The web
+  app signs in with **email and password** (`login-page.tsx`), and the only
+  magic link sent anywhere is a Supabase *invite*, whose redirect
+  `SupabaseAdminService` hardcodes to `WEB_URL/auth/callback`. Mobile therefore
+  has password sign-in, and an invited bandmate accepts on the web, sets a
+  password, and signs in here with it. Items 1–3 of the list above (custom
+  scheme, allow-list, `expo-auth-session`) are **not built**: the `scheme` is
+  declared in `app.json` because P13 needs it for a notification tap, but
+  nothing consumes it yet. A mobile-native invite flow would need the API to
+  know which channel a person is accepting on — that is a feature, not plumbing,
+  and no phase owns it.
+- **No dev client is needed yet.** Every native module here ships inside Expo
+  Go, so verification is a QR code. That holds until P13: `expo-notifications`
+  cannot receive remote push in Expo Go, so the dev client moves there.
+
+The JWT path needed no changes, which was worth confirming rather than
+assuming: `SupabaseJwtStrategy` checks `audience` but not `issuer`, so a token
+minted through the LAN URL verifies against JWKS fetched over `127.0.0.1` —
+same GoTrue instance, same keys. CORS is a non-issue too; React Native's
+`fetch` sends no `Origin`.
+
+#### Four things that were not going to be guessed right
+
+- **`expo-secure-store` caps a value at 2048 bytes** (Android's KeyStore) and a
+  Supabase session is a few kilobytes of JSON carrying two JWTs. The documented
+  `storage: SecureStore` wiring works right up until a token grows, then fails
+  as a mysterious "signed out on relaunch". `src/lib/chunked-store.ts` splits
+  values across `key.0`, `key.1`, … with a manifest at `key` recording the part
+  count **and** the total length. The length is the load-bearing half: without
+  it, an app killed between writing part 0 and the manifest would splice a
+  fresh first part onto a stale second one and hand Supabase a plausible but
+  corrupt session. Splitting is on code-point boundaries measured in **UTF-8
+  bytes** — `string.length` counts UTF-16 units and can cut a surrogate pair in
+  half. The backend is injected, so all of it is unit-tested without a device.
+- **`resolver.disableHierarchicalLookup` is wrong in an npm workspace**, even
+  though Expo's monorepo guide suggests it. npm hoists what it can and nests
+  what it cannot: `expo-router` itself lands in `apps/mobile/node_modules` with
+  `@expo/metro-runtime` nested beneath it. Switching off the walk-up made that
+  unresolvable — "Unable to resolve module" for a package that is plainly
+  installed. The setting belongs to pnpm-style isolated installs.
+- **Two copies of React, which is the real monorepo trap.** The SDK pins
+  `19.2.3`, `apps/web` pins `19.2.4`, so npm installed both — and app code
+  would have resolved the nested one while `packages/api-client` resolved the
+  hoisted one. Hooks from the shared package and the component tree rendering
+  them would have come from different React instances: an "Invalid hook call"
+  with a long fuse, invisible to every check that passes here. Pinned to web's
+  `19.2.4`, which sits inside React Native 0.86's `^19.2.3` peer range, so one
+  copy serves everything.
+- **`expo-linking` had to be declared** although it resolves fine from the root.
+  It is a non-optional peer of `expo-router`, and **autolinking reads
+  `package.json`, not the resolver** — so a native build would have shipped
+  without the module while the bundle looked healthy.
+
+Known gaps, deliberate: the notifier is an `Alert` for errors and silence for
+successes (a toast is a design-system component, so P6 owns it), and
+`src/theme.ts` is a placeholder palette, not tokens.
+
 ### P6 — Primitives + design tokens
 
 Build the token layer and base components in `StyleSheet`: `Card`, `Text`,
@@ -490,6 +557,17 @@ Build the token layer and base components in `StyleSheet`: `Card`, `Text`,
 Tokens consume `packages/shared/src/theme.ts` and `resolveBoardTheme()`, the
 same source the web app uses for per-board palettes — so a board's colours are
 identical on both platforms, and board colour-coding in P9 comes free.
+
+**Correction from P5:** that is more work than this says.
+`packages/shared/src/theme.ts` holds palette *metadata* — ids, labels, and
+which slots a palette fills — and says so in its own comment: "Deliberately
+holds no color values: the actual colors live in `globals.css` under
+`[data-palette="<id>"]`". Metro cannot read CSS. Matching palettes across
+platforms means **lifting those values out of `apps/web/src/app/globals.css`
+into `packages/shared` first**, with web reading them from there too, or the two
+platforms will drift the first time a colour is tweaked. Until that lands,
+`apps/mobile/src/theme.ts` is a neutral placeholder with no board palette in
+it.
 
 Use the `expo-design-system` skill: it explicitly covers auditing for
 hardcoded colours/spacing/fonts and the "looks AI-generated instead of native"

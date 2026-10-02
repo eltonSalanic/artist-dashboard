@@ -20,7 +20,7 @@ still have every box here unticked.
 |---|---|
 | **Web** | `npm run dev` → http://localhost:3000 |
 | **API** | `curl` with a bearer token, or the web UI exercising it |
-| **Mobile** | a physical device running the dev client (from P5) |
+| **Mobile** | a physical phone running **Expo Go** — `npm run mobile`, scan the QR code. A development build is only needed from P13. |
 | **Mail** | Mailpit at http://127.0.0.1:54324 |
 
 ---
@@ -237,10 +237,69 @@ cannot prove a tenancy boundary; only two accounts can.
 
 ---
 
-## P5–P15 — not yet built
+## P5 — Expo skeleton + auth on a real device
+
+**All of this is on a physical phone.** A simulator shares the laptop's network
+and its keychain behaves differently, so it cannot prove either of the two
+things this phase exists to prove.
+
+Setup first, because the usual failure is here and not in the app:
+`cp apps/mobile/.env.example apps/mobile/.env`, fill in your **LAN IP** (not
+`localhost` — see [the app's README](../apps/mobile/README.md)) and the anon key
+from `npx supabase status`. Then `npx supabase start`, `npm run dev`, and
+`npm run mobile` in a third terminal.
+
+### It runs at all — ★ new
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ★ Scan the QR code with Expo Go on a phone | App loads to the sign-in screen, no red screen |
+| ☐ | ★ Delete a line from `apps/mobile/.env` and reload | A readable error naming the missing variable, not a blank screen or `undefined` in a URL |
+| ☐ | ★ Edit `src/screens/sign-in.tsx` | Fast Refresh updates the phone |
+| ☐ | ★ Edit something in `packages/shared` or `packages/api-client` | Also refreshes — this is what the Metro `watchFolders` wiring buys |
+
+### Signing in — ★ new
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ★ Sign in with the smoke-test account | Lands on the authed screen |
+| ☐ | ★ That screen shows your display name, email, and your band with its role | Proves the token reached the API and `@artist/api-client` works under Metro |
+| ☐ | ★ Sign in with a wrong password | Inline error under the fields, **the email you typed is still there**, button re-enabled |
+| ☐ | ★ Tap sign in twice quickly | Only one attempt; the button is disabled while pending |
+| ☐ | ★ Create an account with a new email | Signs straight in (local Supabase has confirmations off) |
+| ☐ | ★ Stop the API, then open the app signed in | "Could not reach the API" with a working Try again, not a crash |
+| ☐ | ★ Put the phone in airplane mode and tap Try again | Same — an error state, not a hang |
+
+### The session survives — ★ new, the point of the phase
+
+The Supabase session is several kilobytes and SecureStore caps a value at 2048
+bytes, so it is stored in chunks. These boxes are what prove the chunking:
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ★ Sign in, then **force-quit** the app (swipe up, don't just background it) and reopen | Still signed in — no sign-in screen flash |
+| ☐ | ★ Reopen and watch closely on a cold start | No flash of the sign-in screen before the board; the splash holds until the session is read |
+| ☐ | ★ Sign out, force-quit, reopen | Sign-in screen, and no stale name or band from the previous account anywhere |
+| ☐ | ★ Sign in as A, sign out, sign in as B | B's name and bands, never A's — the query cache is cleared on sign-out |
+| ☐ | ★ Lock the phone, leave it over an hour, unlock and reopen the app | Still signed in and requests still work — the token refreshed despite the OS suspending timers |
+
+### Deliberately not in this phase
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ⊘ Opening an invite email on the phone | Lands in the mobile **web** browser, not the app. The API hardcodes the invite redirect to `WEB_URL/auth/callback`; accept on web, set a password, then sign in here |
+| ☐ | ⊘ Any board UI — widgets, calendar, tabs | Nothing but sign-in and a one-screen proof. Starts at P6 |
+| ☐ | ⊘ Dark mode looking designed | Readable in both, but the token layer is P6 |
+
+---
+
+## P6–P15 — not yet built
 
 Sections get added as each phase lands. Known in advance:
 
-- **P5** is the riskiest: magic-link sign-in on a **physical** device, and the
-  session surviving a force-quit.
+- **P6** has more to do than planned: `packages/shared/src/theme.ts` holds
+  palette *metadata*, not colours — the actual values live in web's
+  `globals.css`, which Metro cannot read.
+- **P13** is the other risky one, and the first phase that needs a real
+  development build rather than Expo Go.
 - **P15** is the only phase that intentionally changes web behaviour.

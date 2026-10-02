@@ -2,19 +2,20 @@
 
 A shared workspace for a band or artist to run the business side of making music: a customizable dashboard of tasks, goals, shows, rehearsals, reminders, and notes, scoped to a board the whole group shares.
 
-npm-workspaces monorepo: NestJS API + Next.js web app + shared TypeScript package, backed by local Supabase (Postgres, Auth, Mailpit).
+npm-workspaces monorepo: NestJS API + Next.js web app + Expo mobile app + shared TypeScript packages, backed by local Supabase (Postgres, Auth, Mailpit).
 
 ```
 apps/api            NestJS 11 + Prisma 7
 apps/web            Next.js 16 (client-only; Next is used for routing/SEO metadata, not RSC)
+apps/mobile         Expo 57 / React Native (in progress — see docs/mobile-app.md)
 packages/shared     DTOs and layout logic, consumed as TS source
-packages/api-client apiFetch + the React Query hooks, shared by web and the planned mobile app
+packages/api-client apiFetch + the React Query hooks, shared by web and mobile
 supabase/           local stack config (config.toml)
 ```
 
 ## What it does
 
-- **Boards & membership** — magic-link auth; each board has ADMIN and USER roles. Admins invite members (by email), manage the board, and remove members; a single shared `can()` map (`packages/shared/src/permissions.ts`) is the source of truth for every permission, enforced server-side and mirrored in the UI.
+- **Boards & membership** — email and password sign-in, with invites arriving as Supabase magic links; each board has ADMIN and USER roles. Admins invite members (by email), manage the board, and remove members; a single shared `can()` map (`packages/shared/src/permissions.ts`) is the source of truth for every permission, enforced server-side and mirrored in the UI.
 - **Tasks** — statuses (customizable per board), priorities, due dates, assignees, nested subtasks, and per-task checklists. Members can only restatus tasks assigned to them; admins edit everything.
 - **Planning** — goals (yearly/monthly/daily), events (shows, rehearsals, meetings), reminders, and per-period focus pins, all surfaced on a combined month **calendar** with type filters.
 - **Customizable dashboard** — a drag-and-drop widget grid (react-grid-layout). Each member arranges their own layout; admins set the board default. Widgets: My Tasks, To-Dos, Goals, Focus, Shows/Rehearsals/Meetings, Reminders, Activity Feed, and a rich-text Custom (TipTap) widget.
