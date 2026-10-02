@@ -639,7 +639,7 @@ date bugs show.
 - [ ] 🔵 ★ Task detail → **Edit** → change the title → Save → The task screen already shows it; web agrees after refresh
 - [ ] ★ Task detail → Subtasks → **Add** → Save → The subtask is listed under its parent
 - [ ] ★ Open a subtask → No "Add" — subtasks only go one level, as on web
-- [ ] ★ Edit → Archive → The form *and* the task screen close; the task is gone from To-Do and is in web's Archive
+- [ ] 🔵 ★ Edit → Archive → The form *and* the task screen close; the task is gone from To-Do and is in web's Archive
 - [ ] ★ Edit → Delete → "Delete forever" → Same, and it's not in the Archive either
 - [ ] ★ As a **member**, open a task → No Edit button; "Add" under Subtasks is there, and creating one works
 
@@ -652,13 +652,13 @@ date bugs show.
 - [ ] 🔵 ★ Tap a goal's circle → Completes it; the Goals card's count drops
 - [ ] ★ Archive a goal that has linked tasks → The alert offers "Archive" *and* "Archive with N tasks"; plain Archive leaves the tasks
 - [ ] ★ Focus spoke → **Edit** → set the week's focus → The hub's Focus card shows it. Clear it and save → "Not set"
-- [ ] ★ As a **member**, every spoke → No **+**, no Edit, and tapping an event/reminder/goal does nothing
+- [ ] 🔵 ★ As a **member**, every spoke → No **+**, no Edit, and tapping an event/reminder/goal does nothing
 
 ### Unsaved work — ★ new
 
 - [ ] 🔵 ★ Type into a form, then swipe it down (iOS) → It won't go; Cancel asks "Discard changes?"
-- [ ] ★ Same on Android with the **back button** → "Discard changes?"
-- [ ] ★ Save a change → It closes without asking
+- [ ] 🔵 ★ Same on Android with the **back button** → "Discard changes?"
+- [ ] 🔵 ★ Save a change → It closes without asking
 
 ### Regressions — ↻
 
