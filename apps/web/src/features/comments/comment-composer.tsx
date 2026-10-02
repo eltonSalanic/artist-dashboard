@@ -8,7 +8,7 @@ import {
   findMentionQuery,
   matchMembers,
   type MentionTarget,
-} from "./mentions";
+} from "@artist/shared";
 
 /**
  * A textarea with `@`-mention autocomplete. The parent owns the text so it can

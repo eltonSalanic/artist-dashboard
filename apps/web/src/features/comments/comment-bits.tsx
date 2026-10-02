@@ -9,7 +9,7 @@ import {
   Paperclip,
   Trash2,
 } from "lucide-react";
-import { splitMentions, type MentionTarget } from "./mentions";
+import { splitMentions, type MentionTarget } from "@artist/shared";
 import type { AttachmentDto } from "@artist/api-client";
 import { AttachmentViewer } from "./attachment-viewer";
 import { downloadAttachment, isPreviewable } from "./use-attachments";

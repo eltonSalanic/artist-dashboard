@@ -24,6 +24,7 @@ export * from './activity/use-activity';
 export * from './appearance/use-board-theme';
 export * from './archive/types';
 export * from './archive/use-archive';
+export * from './attachments/use-attachments';
 export * from './auth/types';
 export * from './auth/use-board';
 export * from './auth/use-me';

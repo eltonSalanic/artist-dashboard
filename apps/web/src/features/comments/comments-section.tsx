@@ -15,7 +15,7 @@ import {
   CommentBody,
   relativeTime,
 } from "./comment-bits";
-import { collectMentionIds } from "./mentions";
+import { collectMentionIds } from "@artist/shared";
 import type { CommentDto } from "@artist/api-client";
 import {
   useComments,
@@ -26,7 +26,8 @@ import {
 import {
   useDeleteAttachment,
   useUploadAttachment,
-} from "./use-attachments";
+} from "@artist/api-client";
+import { fromFile } from "./use-attachments";
 
 export function CommentsSection({
   boardId,
@@ -239,7 +240,7 @@ function CommentItem({
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];
-            if (file) upload.mutate(file);
+            if (file) upload.mutate(fromFile(file));
             e.target.value = "";
           }}
         />

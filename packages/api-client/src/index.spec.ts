@@ -24,6 +24,8 @@ describe('package barrel', () => {
       // The cross-board pair the mobile Calendar and Inbox tabs read.
       'useInbox', 'useDismissInboxItem', 'useClearInbox',
       'useAllBoardsCalendar',
+      // Lifted from apps/web when the phone gained uploads.
+      'useAttachments', 'useUploadAttachment', 'useDeleteAttachment',
     ];
     for (const name of hooks) {
       expect(typeof (api as Record<string, unknown>)[name]).toBe('function');

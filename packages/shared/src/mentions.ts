@@ -1,3 +1,10 @@
+/**
+ * `@mention` parsing, shared by every client that writes or renders a comment.
+ *
+ * Lifted out of `apps/web` when the phone gained a composer: which names count
+ * as a mention decides who gets an inbox row, and two clients disagreeing about
+ * "@sam.jones" would notify the wrong person with nothing failing.
+ */
 export interface MentionTarget {
   id: string;
   displayName: string;
@@ -5,8 +12,8 @@ export interface MentionTarget {
 
 /** A run of a comment body: either plain text or a resolved `@mention`. */
 export type CommentSegment =
-  | { type: "text"; value: string }
-  | { type: "mention"; value: string; id: string };
+  | { type: 'text'; value: string }
+  | { type: 'mention'; value: string; id: string };
 
 /**
  * The `@…` token being typed at the caret, if there is one.
@@ -20,8 +27,8 @@ export function findMentionQuery(
 ): { start: number; query: string } | null {
   for (let i = caret - 1; i >= 0; i--) {
     const char = text[i];
-    if (char === "@") {
-      const before = i > 0 ? text[i - 1] : "";
+    if (char === '@') {
+      const before = i > 0 ? text[i - 1] : '';
       if (before && !/\s/.test(before)) return null;
       return { start: i, query: text.slice(i + 1, caret) };
     }
@@ -78,13 +85,13 @@ export function splitMentions(
   let cursor = 0;
   for (const { id, match, index } of eachMention(body, members)) {
     if (index > cursor) {
-      segments.push({ type: "text", value: body.slice(cursor, index) });
+      segments.push({ type: 'text', value: body.slice(cursor, index) });
     }
-    segments.push({ type: "mention", value: match, id });
+    segments.push({ type: 'mention', value: match, id });
     cursor = index + match.length;
   }
   if (cursor < body.length) {
-    segments.push({ type: "text", value: body.slice(cursor) });
+    segments.push({ type: 'text', value: body.slice(cursor) });
   }
   return segments;
 }
@@ -102,11 +109,11 @@ function* eachMention(
   );
   if (byLength.length === 0) return;
 
-  const names = byLength.map((m) => escapeRegExp(m.displayName)).join("|");
+  const names = byLength.map((m) => escapeRegExp(m.displayName)).join('|');
   const idsByName = new Map(
     byLength.map((m) => [m.displayName.toLowerCase(), m.id]),
   );
-  const pattern = new RegExp(`(^|\\s)@(${names})(?![\\w.@-])`, "gi");
+  const pattern = new RegExp(`(^|\\s)@(${names})(?![\\w.@-])`, 'gi');
 
   for (const match of body.matchAll(pattern)) {
     const id = idsByName.get(match[2].toLowerCase());
@@ -120,5 +127,5 @@ function* eachMention(
 }
 
 function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

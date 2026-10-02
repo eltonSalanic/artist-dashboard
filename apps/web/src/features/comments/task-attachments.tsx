@@ -12,7 +12,8 @@ import {
   useAttachments,
   useDeleteAttachment,
   useUploadAttachment,
-} from "./use-attachments";
+} from "@artist/api-client";
+import { fromFile } from "./use-attachments";
 
 /** Files attached directly to the task (not to a comment). */
 export function TaskAttachments({
@@ -78,7 +79,7 @@ export function TaskAttachments({
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
-          if (file) upload.mutate(file);
+          if (file) upload.mutate(fromFile(file));
           e.target.value = "";
         }}
       />

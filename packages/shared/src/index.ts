@@ -7,6 +7,7 @@ export * from './palettes';
 export * from './widgets';
 export * from './activity-text';
 export * from './calendar';
+export * from './mentions';
 export * from './statuses';
 export * from './dto/invite.dto';
 export * from './dto/board.dto';
