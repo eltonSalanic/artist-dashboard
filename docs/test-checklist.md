@@ -188,13 +188,59 @@ service's `where: { userId }` is the only thing keeping bands apart.
 
 ---
 
-## P4–P15 — not yet built
+## P4 — Cross-board calendar + inbox
+
+**Do this section with two real accounts in different boards.** Unit mocks
+cannot prove a tenancy boundary; only two accounts can.
+
+### The boundary — ★ new, highest priority in this document
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ★ A and B in **different** boards. `GET /calendar?from=…&to=…` as A | **None of B's** events, tasks, goals or reminders |
+| ☐ | ★ `GET /mentions` as A | **None of B's** mentions — no `taskTitle`, no `excerpt` |
+| ☐ | ★ `GET /calendar?boardId=<B's board id>` as A | Empty list — **not** B's data, and not an error confirming the board exists |
+| ☐ | ★ `GET /mentions?boardId=<B's board id>` as A | Empty list |
+| ☐ | ★ `DELETE /mentions?boardId=<B's board id>` as A | B's mentions **still there** |
+| ☐ | ★ `DELETE /mentions/<id of B's row>` as A | B's row **still there**, response still `{ deleted: true }` |
+| ☐ | ★ Either route with no bearer token | 401 |
+
+### The ex-member case — ★ new, the leak that was nearly shipped
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ★ `@mention` B, confirm B sees it, then **remove B from that board** | B's `GET /mentions` no longer shows it |
+| ☐ | ★ Check the database directly after removing B | B has **no** `MentionNotification` rows for that board |
+| ☐ | ★ Also check `NotificationPreference` | B has no preference rows for that board |
+| ☐ | ★ Re-invite B, then open their notification settings | All four categories back to default on, not their old muted values |
+
+### Normal behaviour — ★ new
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ★ One account in two boards, `GET /calendar` | Items from both, date-sorted, each with `boardId` **and** `boardName` |
+| ☐ | ★ `GET /calendar?boardId=<one of them>` | Only that board's items |
+| ☐ | ★ `GET /mentions` across two boards | Merged, newest first, each labelled with its board |
+| ☐ | ★ `DELETE /mentions` with no filter | Every board's mentions cleared — confirm that is the blast radius you want |
+| ☐ | ★ `GET /calendar` as an account with no boards | `[]`, HTTP 200 |
+| ☐ | ★ `GET /calendar?from=0001-01-01T00:00:00Z&to=9999-01-01T00:00:00Z` | 400 — range capped at 370 days |
+| ☐ | ★ `from` later than `to` | 400 |
+
+### Regressions — ↻ the single-board routes must be unchanged
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ↻ Web `/calendar`, page through months | Identical to before |
+| ☐ | ↻ Web mentions indicator | Still polls and shows mentions |
+| ☐ | ↻ Clear mentions from the web indicator | Clears **only** the current board |
+| ☐ | ↻ A non-member calling `GET /boards/:id/calendar` | Still 404, not 403 |
+
+---
+
+## P5–P15 — not yet built
 
 Sections get added as each phase lands. Known in advance:
 
-- **P4** needs the one test that matters most in this project: **a member of
-  board A must never see board B's calendar items or mentions.** Try it with
-  two real accounts, not just unit mocks.
 - **P5** is the riskiest: magic-link sign-in on a **physical** device, and the
   session surviving a force-quit.
 - **P15** is the only phase that intentionally changes web behaviour.

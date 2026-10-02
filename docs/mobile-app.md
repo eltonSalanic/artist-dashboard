@@ -1,8 +1,8 @@
 # Mobile App (React Native + Expo)
 
-> **Status:** in progress. P0–P3 done; P4 (cross-board calendar + inbox) is
-> next and is the phase where a mistake leaks another band's data. No Expo app
-> exists yet — `apps/mobile/` holds only skills and agent docs.
+> **Status:** in progress. P0–P4 done; P5 (Expo skeleton + auth on a real
+> device) is next and is the riskiest phase. `apps/mobile/` still holds only
+> skills and agent docs.
 >
 > **Progress is tracked in [the phase table](#phases).** Update the Status
 > column in the same commit that lands the work. ☑ done and user-verified ·
@@ -101,7 +101,7 @@ deliberately scheduled after mobile rather than blocking it.
 | **P1** | [`packages/api-client` extraction](#p1--packagesapi-client-extraction) | shared, **web** | ☑ |
 | **P2** | [Notification channels + push transport](#p2--notification-channels--push-transport) | api, shared | ☑ |
 | **P3** | [Multi-board API](#p3--multi-board-api) | api, shared | ☑ |
-| **P4** | [Cross-board calendar + inbox](#p4--cross-board-calendar--inbox) | api, shared | ☐ |
+| **P4** | [Cross-board calendar + inbox](#p4--cross-board-calendar--inbox) | api, shared | ☑ |
 | **P5** | [Expo skeleton + auth on a real device](#p5--expo-skeleton--auth-on-a-real-device) | mobile | ☐ |
 | **P6** | [Primitives + design tokens](#p6--primitives--design-tokens) | mobile | ☐ |
 | **P7** | [Board hub (stat cards)](#p7--board-hub-stat-cards) | mobile | ☐ |
@@ -402,6 +402,61 @@ natural shape, no migration. `Event` and `Reminder` are board-first
 `boardId IN (...) AND startsAt BETWEEN ...`; Postgres serves that with an index
 scan per board value and nobody in 1–5 bands will notice. No new index needed —
 just don't let the client turn it into an N+1 of per-board calls.
+
+**Built.** `GET /calendar`, `GET /mentions` and `DELETE /mentions`, each behind
+`UserBoardsGuard` + `@UserBoards()`. 64 new API tests; every leak path
+mutation-tested.
+
+### The leak this phase nearly introduced
+
+An audit of the existing scoping found it, and it is worth recording because the
+wrong answer looked like the obvious one.
+
+`MentionNotification` rows carry a **snapshotted `taskTitle` and comment
+`excerpt`** — the board's own text, stored so the row survives the comment being
+edited. `removeMember` cleaned `membership`, `userLayout` and `taskAssignee`,
+but **not** these rows. That was invisible because `BoardRolesGuard` 404s on the
+missing membership before `MentionsService` ever runs: the guard was *masking*
+stale rows, not an absence of them.
+
+These rows are addressed to a person, so scoping the new route by `userId` alone
+reads as complete — and the existing code's own framing ("the recipient's
+notifications", "scoped to the recipient so ids can't leak") invites exactly
+that. It would have handed an **ex-member another band's content indefinitely**,
+re-fetched every thirty seconds by the polling client already in production.
+
+Both fixes landed: `removeMember` now deletes those rows, and every mentions
+query filters on `userId` **and** the board set. The board filter is the
+load-bearing one — it re-derives access from live membership on every request
+rather than trusting a cleanup to have happened, the same reasoning as the
+dispatcher's send-time membership re-check.
+
+### Why the seam is shaped the way it is
+
+**`{ in: undefined }` is not an empty filter — it is no filter.** Verified
+against the dev database: it returned every board, while `{ in: [] }` returned
+none. So a handler that received `undefined` would silently query every band in
+the system. Three things make that unexpressible:
+
+- `resolveUserBoards()` **throws** rather than return `undefined`, turning a
+  forgotten `@UseGuards` into a 500 on the first request instead of a leak.
+- Both services take `boardIds: string[]` — never `string`, never optional — so
+  the type system rejects the unsafe call. It rejected all five existing callers
+  on the first compile.
+- `narrowToBoard()` applies the optional `?boardId=` filter by **intersection**,
+  so an id the caller does not belong to yields `[]`. The tempting
+  `query.boardId ?? boardIds` would hand a client value straight into the
+  `where` clause.
+
+Calendar items and mention rows now carry `boardId` and `boardName`: merged
+across bands, two items called "Load in" are otherwise indistinguishable, and
+neither can be linked to.
+
+Also fixed in passing — `CurrentUser()` cast away an optional, so a misplaced
+`@Public()` produced a confusing 500 far from its cause; the calendar window was
+unbounded and now caps at 370 days, which matters more now the range fans out
+per board; and its `to > from` check compared ISO *strings*, which only tracks
+chronological order while both sides have equal precision.
 
 ### P5 — Expo skeleton + auth on a real device
 
