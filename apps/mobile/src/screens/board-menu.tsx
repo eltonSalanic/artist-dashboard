@@ -31,7 +31,7 @@ export function BoardMenuSheet() {
       icon: { sf: 'square.grid.2x2', md: 'dashboard-customize' },
       title: 'Manage widgets',
       body: 'Choose which cards you see and in what order.',
-      phase: 'P12',
+      href: base ? `${base}/form/widgets` : undefined,
       visible: true,
     },
     {

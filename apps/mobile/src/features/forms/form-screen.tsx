@@ -39,6 +39,7 @@ export function FormScreen({
   canSave,
   saving,
   onSave,
+  scrollable = true,
   children,
 }: {
   title: string;
@@ -46,6 +47,11 @@ export function FormScreen({
   canSave: boolean;
   saving: boolean;
   onSave: () => Promise<unknown>;
+  /**
+   * False when the content brings its own scroller — a virtualised or
+   * reorderable list cannot sit inside a ScrollView.
+   */
+  scrollable?: boolean;
   children: ReactNode;
 }) {
   const colors = useThemeColors();
@@ -98,16 +104,20 @@ export function FormScreen({
               ),
           }}
         />
-        <ScrollView
-          style={{ flex: 1 }}
-          contentInsetAdjustmentBehavior="automatic"
-          automaticallyAdjustKeyboardInsets
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="interactive"
-          contentContainerStyle={{ padding: spacing.md, gap: spacing.lg }}
-        >
-          {children}
-        </ScrollView>
+        {scrollable ? (
+          <ScrollView
+            style={{ flex: 1 }}
+            contentInsetAdjustmentBehavior="automatic"
+            automaticallyAdjustKeyboardInsets
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            contentContainerStyle={{ padding: spacing.md, gap: spacing.lg }}
+          >
+            {children}
+          </ScrollView>
+        ) : (
+          children
+        )}
       </KeyboardAvoidingView>
     </LeaveContext>
   );
