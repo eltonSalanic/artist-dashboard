@@ -1,5 +1,5 @@
 import { toast } from "sonner";
-import { configureApiClient } from "@artist/api-client";
+import { configureApiClient, configureSessionSource } from "@artist/api-client";
 import { supabase } from "./supabase";
 
 /**
@@ -24,3 +24,5 @@ configureApiClient({
     success: (message) => toast.success(message),
   },
 });
+
+configureSessionSource(supabase.auth);

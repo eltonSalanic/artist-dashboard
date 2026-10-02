@@ -26,6 +26,7 @@ export * from './archive/types';
 export * from './archive/use-archive';
 export * from './auth/types';
 export * from './auth/use-me';
+export * from './auth/use-session';
 export * from './comments/types';
 export * from './comments/use-comments';
 export * from './custom-widget/use-custom-widget';

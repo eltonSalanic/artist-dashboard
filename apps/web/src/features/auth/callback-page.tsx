@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useSession } from "@artist/api-client";
 import { supabase } from "@/lib/supabase";
-import { useSession } from "./use-session";
 import { Button } from "@/components/ui/button";
 import {
   Card,

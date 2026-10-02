@@ -12,11 +12,11 @@ import {
   Settings,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { useSession } from "@/features/auth/use-session";
-import { useMe } from "@artist/api-client";
 import {
   PermissionsProvider,
+  useMe,
   usePermissions,
+  useSession,
 } from "@artist/api-client";
 import type { MeResponse } from "@artist/api-client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
