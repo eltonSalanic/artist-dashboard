@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from 'react-native';
+import { Button } from '@/components/button';
+import { TextField } from '@/components/text-field';
+import { ThemedText } from '@/components/themed-text';
 import { supabase } from '@/lib/supabase';
-import { radius, spacing, useTheme } from '@/theme';
+import { spacing, useThemeColors } from '@/theme';
 
 type Mode = 'signin' | 'signup';
 
@@ -24,7 +24,7 @@ type Mode = 'signin' | 'signup';
  * accepts on the web, sets a password, and signs in here with it.
  */
 export function SignInScreen() {
-  const theme = useTheme();
+  const colors = useThemeColors();
   const [mode, setMode] = useState<Mode>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -61,21 +61,21 @@ export function SignInScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.root, { backgroundColor: theme.background }]}
+      style={[styles.root, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.form}>
-        <Text style={[styles.title, { color: theme.text }]}>
+        <ThemedText variant="title">
           {mode === 'signin' ? 'Welcome back' : 'Create your account'}
-        </Text>
-        <Text style={[styles.subtitle, { color: theme.muted }]}>
+        </ThemedText>
+        <ThemedText variant="subhead" tone="muted" style={styles.subtitle}>
           {mode === 'signin'
             ? "Sign in to your band's dashboard."
             : 'Start a dashboard for your band.'}
-        </Text>
+        </ThemedText>
 
-        <Text style={[styles.label, { color: theme.muted }]}>Email</Text>
-        <TextInput
+        <TextField
+          label="Email"
           value={email}
           onChangeText={setEmail}
           editable={!pending}
@@ -85,19 +85,10 @@ export function SignInScreen() {
           keyboardType="email-address"
           textContentType="emailAddress"
           placeholder="you@band.com"
-          placeholderTextColor={theme.muted}
-          style={[
-            styles.input,
-            {
-              color: theme.text,
-              borderColor: theme.border,
-              backgroundColor: theme.card,
-            },
-          ]}
         />
 
-        <Text style={[styles.label, { color: theme.muted }]}>Password</Text>
-        <TextInput
+        <TextField
+          label="Password"
           value={password}
           onChangeText={setPassword}
           editable={!pending}
@@ -105,47 +96,26 @@ export function SignInScreen() {
           autoCapitalize="none"
           autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
           textContentType={mode === 'signin' ? 'password' : 'newPassword'}
+          returnKeyType="go"
           onSubmitEditing={() => {
             if (canSubmit) void submit();
           }}
-          returnKeyType="go"
-          style={[
-            styles.input,
-            {
-              color: theme.text,
-              borderColor: theme.border,
-              backgroundColor: theme.card,
-            },
-          ]}
+          error={error}
         />
 
-        {error !== null && (
-          <Text style={[styles.message, { color: theme.danger }]}>{error}</Text>
-        )}
         {notice !== null && (
-          <Text style={[styles.message, { color: theme.muted }]}>{notice}</Text>
+          <ThemedText variant="footnote" tone="muted">
+            {notice}
+          </ThemedText>
         )}
 
-        <Pressable
-          accessibilityRole="button"
+        <Button
+          title={mode === 'signin' ? 'Sign in' : 'Create account'}
+          loading={pending}
           disabled={!canSubmit}
           onPress={() => void submit()}
-          style={({ pressed }) => [
-            styles.button,
-            {
-              backgroundColor: theme.accent,
-              opacity: !canSubmit ? 0.5 : pressed ? 0.85 : 1,
-            },
-          ]}
-        >
-          {pending ? (
-            <ActivityIndicator color={theme.onAccent} />
-          ) : (
-            <Text style={[styles.buttonLabel, { color: theme.onAccent }]}>
-              {mode === 'signin' ? 'Sign in' : 'Create account'}
-            </Text>
-          )}
-        </Pressable>
+          style={styles.submit}
+        />
 
         <Pressable
           accessibilityRole="button"
@@ -157,11 +127,11 @@ export function SignInScreen() {
           }}
           style={styles.link}
         >
-          <Text style={[styles.linkLabel, { color: theme.accent }]}>
+          <ThemedText variant="subhead" tone="accent">
             {mode === 'signin'
               ? 'New here? Create an account'
               : 'Already have an account? Sign in'}
-          </Text>
+          </ThemedText>
         </Pressable>
       </View>
     </KeyboardAvoidingView>
@@ -170,27 +140,8 @@ export function SignInScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, justifyContent: 'center' },
-  form: { padding: spacing.lg, gap: spacing.xs },
-  title: { fontSize: 26, fontWeight: '700' },
-  subtitle: { fontSize: 15, marginBottom: spacing.md },
-  label: { fontSize: 13, fontWeight: '600', marginTop: spacing.sm },
-  input: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 4,
-    fontSize: 16,
-  },
-  message: { fontSize: 14, marginTop: spacing.sm },
-  button: {
-    marginTop: spacing.lg,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 50,
-  },
-  buttonLabel: { fontSize: 16, fontWeight: '600' },
-  link: { marginTop: spacing.md, alignItems: 'center' },
-  linkLabel: { fontSize: 14, fontWeight: '500' },
+  form: { padding: spacing.lg, gap: spacing.md },
+  subtitle: { marginTop: -spacing.sm },
+  submit: { marginTop: spacing.sm },
+  link: { alignItems: 'center', paddingVertical: spacing.sm },
 });

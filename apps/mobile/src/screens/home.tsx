@@ -1,127 +1,117 @@
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { resolveBoardTheme } from '@artist/shared';
 import { useMe } from '@artist/api-client';
+import { Badge } from '@/components/badge';
+import { Button } from '@/components/button';
+import { Card } from '@/components/card';
+import { Skeleton } from '@/components/skeleton';
+import { ThemedText } from '@/components/themed-text';
 import { supabase } from '@/lib/supabase';
-import { radius, spacing, useTheme } from '@/theme';
+import { BoardPaletteProvider, spacing, useThemeColors } from '@/theme';
+
+/** Rotated per row so neighbouring cards never land on the same weight. */
+const slots = ['c1', 'c2', 'c3', 'c4'] as const;
 
 /**
  * P5's only authed screen, and it exists to prove the seam rather than to be
  * used: if this renders the signed-in email and the caller's bands, then the
  * keychain session, the injected token, `@artist/api-client` under Metro and
- * the phone's route to the API are all working. The board UI starts at P7.
+ * the phone's route to the API are all working.
+ *
+ * P6 added the second job — the band list is painted from the board's palette,
+ * which is the first thing in the app to render out of the shared colour
+ * tables. The board UI proper starts at P7.
  */
 export function HomeScreen() {
-  const theme = useTheme();
+  const colors = useThemeColors();
   const me = useMe(true);
+  const palette = resolveBoardTheme(me.data?.board?.theme).palette;
 
   return (
     <ScrollView
-      style={{ backgroundColor: theme.background }}
+      style={{ backgroundColor: colors.background }}
       contentContainerStyle={styles.content}
     >
       {me.isPending ? (
-        <ActivityIndicator color={theme.muted} />
+        <>
+          <Card>
+            <Skeleton width="60%" height={20} />
+            <Skeleton width="80%" height={14} />
+          </Card>
+          <Card>
+            <Skeleton width="45%" height={20} />
+          </Card>
+        </>
       ) : me.isError ? (
-        <View style={[styles.card, { backgroundColor: theme.card }]}>
-          <Text style={[styles.cardTitle, { color: theme.danger }]}>
+        <Card>
+          <ThemedText variant="headline" tone="destructive">
             Could not reach the API
-          </Text>
-          <Text style={[styles.body, { color: theme.muted }]}>
+          </ThemedText>
+          <ThemedText variant="subhead" tone="muted">
             {me.error.message}
-          </Text>
-          <Pressable
-            accessibilityRole="button"
+          </ThemedText>
+          <Button
+            title="Try again"
+            variant="ghost"
+            size="sm"
             onPress={() => void me.refetch()}
-            style={styles.inlineAction}
-          >
-            <Text style={[styles.inlineActionLabel, { color: theme.accent }]}>
-              Try again
-            </Text>
-          </Pressable>
-        </View>
+            style={styles.retry}
+          />
+        </Card>
       ) : (
         <>
-          <View style={[styles.card, { backgroundColor: theme.card }]}>
-            <Text style={[styles.cardTitle, { color: theme.text }]}>
+          <Card>
+            <ThemedText variant="headline">
               {me.data.user.displayName}
-            </Text>
-            <Text style={[styles.body, { color: theme.muted }]}>
+            </ThemedText>
+            <ThemedText variant="subhead" tone="muted">
               {me.data.user.email}
-            </Text>
-          </View>
+            </ThemedText>
+          </Card>
 
-          <Text style={[styles.sectionTitle, { color: theme.muted }]}>
-            {me.data.boards.length === 1 ? 'Your band' : 'Your bands'}
-          </Text>
+          <ThemedText variant="caption" tone="muted" style={styles.section}>
+            {me.data.boards.length === 1 ? 'YOUR BAND' : 'YOUR BANDS'}
+          </ThemedText>
 
           {me.data.boards.length === 0 ? (
-            <View style={[styles.card, { backgroundColor: theme.card }]}>
-              <Text style={[styles.body, { color: theme.muted }]}>
+            <Card>
+              <ThemedText variant="subhead" tone="muted">
                 No bands yet. Signing in creates your first board, so this
                 normally means the bootstrap call did not run.
-              </Text>
-            </View>
+              </ThemedText>
+            </Card>
           ) : (
-            me.data.boards.map((board) => (
-              <View
-                key={board.id}
-                style={[styles.card, { backgroundColor: theme.card }]}
-              >
-                <Text style={[styles.cardTitle, { color: theme.text }]}>
-                  {board.name}
-                </Text>
-                <Text style={[styles.body, { color: theme.muted }]}>
-                  {board.role.toLowerCase()}
-                </Text>
-              </View>
-            ))
+            // One palette for the list: `BoardSummaryDto` carries id, name and
+            // role and deliberately no theme, so listing twenty bands does not
+            // fetch twenty palettes. The current board's palette is the one
+            // `/me` returns in full, and the slot rotates so rows alternate
+            // weight the way the web grid does.
+            <BoardPaletteProvider palette={palette}>
+              {me.data.boards.map((board, index) => (
+                <Card key={board.id} slot={slots[index % slots.length]}>
+                  <ThemedText variant="headline">{board.name}</ThemedText>
+                  <Badge label={board.role.toLowerCase()} />
+                </Card>
+              ))}
+            </BoardPaletteProvider>
           )}
         </>
       )}
 
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => void supabase.auth.signOut()}
-        style={({ pressed }) => [
-          styles.signOut,
-          { borderColor: theme.border, opacity: pressed ? 0.6 : 1 },
-        ]}
-      >
-        <Text style={[styles.signOutLabel, { color: theme.danger }]}>
-          Sign out
-        </Text>
-      </Pressable>
+      <View style={styles.footer}>
+        <Button
+          title="Sign out"
+          variant="destructive"
+          onPress={() => void supabase.auth.signOut()}
+        />
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   content: { padding: spacing.md, gap: spacing.sm },
-  card: { borderRadius: radius.lg, padding: spacing.md, gap: spacing.xs },
-  cardTitle: { fontSize: 18, fontWeight: '600' },
-  body: { fontSize: 14 },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    marginTop: spacing.md,
-    marginLeft: spacing.xs,
-  },
-  inlineAction: { marginTop: spacing.sm },
-  inlineActionLabel: { fontSize: 14, fontWeight: '600' },
-  signOut: {
-    marginTop: spacing.xl,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-  },
-  signOutLabel: { fontSize: 15, fontWeight: '600' },
+  section: { marginTop: spacing.md, marginLeft: spacing.xs },
+  retry: { alignSelf: 'flex-start', paddingHorizontal: 0 },
+  footer: { marginTop: spacing.xl },
 });
