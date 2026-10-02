@@ -10,7 +10,7 @@ import { Section } from '@/components/section';
 import { Skeleton } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { TaskAttachments } from '@/features/attachments/task-attachments';
-import { shortDate } from '@/features/board/format';
+import { dueDay, shortDate } from '@/features/board/format';
 import { CommentsSection } from '@/features/comments/comments-section';
 import { radius, spacing, useThemeColors } from '@/theme';
 
@@ -72,7 +72,7 @@ export function TaskDetailScreen({
   const t = task.data;
   const meta = [
     t.priority !== 'MEDIUM' ? `${t.priority.toLowerCase()} priority` : null,
-    t.dueDate ? `due ${shortDate(t.dueDate)}` : null,
+    t.dueDate ? `due ${shortDate(dueDay(t.dueDate))}` : null,
   ].filter((part): part is string => part !== null);
 
   return (
@@ -213,7 +213,7 @@ export function TaskDetailScreen({
                 meta={subtask.status.name}
                 dim={subtask.status.isDone}
                 lead={<Dot color={subtask.status.color} />}
-                trailing={subtask.dueDate ? shortDate(subtask.dueDate) : undefined}
+                trailing={subtask.dueDate ? shortDate(dueDay(subtask.dueDate)) : undefined}
                 onPress={() => router.push(`/board/${boardId}/task/${subtask.id}`)}
               />
             ))}

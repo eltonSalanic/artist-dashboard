@@ -18,7 +18,7 @@ import {
   type WidgetType,
 } from '@artist/shared';
 import type { IconName } from '@/components/icon';
-import { count, isThisWeek, isToday, shortAgo, shortDate } from './format';
+import { count, dueDay, isThisWeek, isToday, shortAgo, shortDate } from './format';
 import { notePreview } from './note-preview';
 import { useVisibleWidgets } from './use-visible-widgets';
 import { WIDGET_ICONS } from './widget-icons';
@@ -123,7 +123,7 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
       const roots = (tasks.data ?? []).filter((t) => t.parentTaskId === null);
       const open = roots.filter((t) => !t.status.isDone);
       const dueToday = open.filter(
-        (t) => t.dueDate !== null && isToday(t.dueDate),
+        (t) => t.dueDate !== null && isToday(dueDay(t.dueDate)),
       ).length;
       return {
         primary: open.length === 0 ? null : count(open.length),
@@ -138,12 +138,12 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
         (t) => t.parentTaskId === null && !t.status.isDone,
       );
       const thisWeek = mine.filter(
-        (t) => t.dueDate !== null && isThisWeek(t.dueDate),
+        (t) => t.dueDate !== null && isThisWeek(dueDay(t.dueDate)),
       ).length;
       return {
         primary: mine.length === 0 ? null : count(mine.length),
         qualifier: thisWeek > 0 ? `${thisWeek} this week` : null,
-        urgent: mine.some((t) => t.dueDate !== null && isToday(t.dueDate)),
+        urgent: mine.some((t) => t.dueDate !== null && isToday(dueDay(t.dueDate))),
         loading: myTasks.isPending || me.isPending,
       };
     })(),

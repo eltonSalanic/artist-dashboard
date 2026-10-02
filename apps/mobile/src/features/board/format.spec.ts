@@ -2,6 +2,7 @@ import {
   count,
   dayHeading,
   daysFromToday,
+  dueDay,
   fileSize,
   isThisWeek,
   isToday,
@@ -127,5 +128,27 @@ describe('fileSize', () => {
     expect(fileSize(1024)).toBe('1 KB');
     expect(fileSize(34 * 1024 + 300)).toBe('34 KB');
     expect(fileSize(4.2 * 1024 * 1024)).toBe('4.2 MB');
+  });
+});
+
+// Runs in America/Los_Angeles (the test script pins it): in UTC a due date
+// read raw and read correctly agree, and this test would prove nothing.
+describe('dueDay', () => {
+  const noon = new Date(2026, 9, 2, 12, 0);
+  const dueToday = '2026-10-02T00:00:00.000Z';
+
+  it('reads a due date as the day it is due', () => {
+    expect(shortDate(dueDay(dueToday), noon)).toBe('Today');
+    expect(isToday(dueDay(dueToday), noon)).toBe(true);
+  });
+
+  it('is what stops it landing a day early', () => {
+    expect(shortDate(dueToday, noon)).toBe('Yesterday');
+  });
+
+  it('keeps the 1st of the month on the 1st', () => {
+    const day = new Date(dueDay('2026-11-01T00:00:00.000Z'));
+    expect(day.getDate()).toBe(1);
+    expect(day.getMonth()).toBe(10);
   });
 });

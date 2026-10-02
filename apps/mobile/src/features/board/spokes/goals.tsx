@@ -2,7 +2,7 @@ import { useGoals } from '@artist/api-client';
 import { Icon } from '@/components/icon';
 import { Row } from '@/components/row';
 import { SpokeList } from '@/components/spoke-list';
-import { shortDate } from '../format';
+import { dueDay, shortDate } from '../format';
 
 /** Goals, open ones first, each showing its period and when it is due. */
 export function GoalsSpoke({ boardId }: { boardId: string }) {
@@ -30,7 +30,7 @@ export function GoalsSpoke({ boardId }: { boardId: string }) {
           title={goal.title}
           meta={goal.period.toLowerCase()}
           dim={goal.completedAt !== null}
-          trailing={goal.dueDate ? shortDate(goal.dueDate) : undefined}
+          trailing={goal.dueDate ? shortDate(dueDay(goal.dueDate)) : undefined}
           lead={
             goal.completedAt !== null ? (
               <Icon

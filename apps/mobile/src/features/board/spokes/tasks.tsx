@@ -17,7 +17,7 @@ import { Dot, Row } from '@/components/row';
 import { SpokeList } from '@/components/spoke-list';
 import { ThemedText } from '@/components/themed-text';
 import { spacing } from '@/theme';
-import { shortDate } from '../format';
+import { dueDay, shortDate } from '../format';
 import { planMove } from '../reorder';
 
 /** Priority is only worth saying when it is not the middle. */
@@ -61,7 +61,7 @@ function TaskRow({
           <Dot color={task.status.color} />
         )
       }
-      trailing={task.dueDate ? shortDate(task.dueDate) : undefined}
+      trailing={task.dueDate ? shortDate(dueDay(task.dueDate)) : undefined}
       onPress={() => router.push(`/board/${boardId}/task/${task.id}`)}
       onLongPress={onLongPress}
       accessibilityActions={accessibilityActions}

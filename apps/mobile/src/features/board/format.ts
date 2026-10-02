@@ -8,6 +8,8 @@
  * and someone on tour is in their own day, not the band's.
  */
 
+import { localDayFromDueDate } from '@artist/shared';
+
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
@@ -58,6 +60,19 @@ export function shortDate(iso: string, now = new Date()): string {
     month: 'short',
     ...(then.getFullYear() === now.getFullYear() ? {} : { year: 'numeric' }),
   });
+}
+
+/**
+ * A task's or goal's due date, made safe for the helpers above.
+ *
+ * Those read an instant in local time, which is right for a show and wrong for
+ * a due date: that is a calendar day stored as UTC midnight, and in Los Angeles
+ * UTC midnight is 5pm the day before — so every due date read raw lands a day
+ * early. This hands back local midnight of the *same* day. Wrap every due date
+ * in it before `shortDate`, `isToday` or `isThisWeek`.
+ */
+export function dueDay(iso: string): string {
+  return localDayFromDueDate(iso).toISOString();
 }
 
 /** "just now", "12m", "3h", "2d" — compact enough for a qualifier line. */
