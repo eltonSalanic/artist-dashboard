@@ -59,6 +59,14 @@ export default function TabStackLayout({ segment }: { segment: string }) {
         }}
       />
       <Stack.Screen
+        name="board/[boardId]/form/[kind]"
+        options={{
+          // A page sheet on iOS, full screen on Android. The form sets its
+          // own title and Cancel/Save, and locks the swipe while dirty.
+          presentation: 'modal',
+        }}
+      />
+      <Stack.Screen
         name="board-menu"
         options={{
           presentation: 'formSheet',

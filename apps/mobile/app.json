@@ -40,7 +40,8 @@
           "cameraPermission": "Lets you take a photo and attach it to a task.",
           "microphonePermission": false
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": false,

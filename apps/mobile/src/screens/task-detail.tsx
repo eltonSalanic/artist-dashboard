@@ -1,7 +1,12 @@
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { KeyboardAvoidingView, Pressable, ScrollView, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { useCanChangeStatus, useChecklist, useTask } from '@artist/api-client';
+import {
+  useCanChangeStatus,
+  useChecklist,
+  usePermissions,
+  useTask,
+} from '@artist/api-client';
 import { Badge } from '@/components/badge';
 import { Button } from '@/components/button';
 import { Icon } from '@/components/icon';
@@ -34,6 +39,7 @@ export function TaskDetailScreen({
   const task = useTask(boardId, taskId);
   const checklist = useChecklist(boardId, taskId);
   const canChangeStatus = useCanChangeStatus();
+  const { can } = usePermissions();
 
   if (task.isPending) {
     return (
@@ -83,6 +89,24 @@ export function TaskDetailScreen({
       style={{ flex: 1, backgroundColor: colors.background }}
       behavior={process.env.EXPO_OS === 'android' ? 'padding' : undefined}
     >
+      <Stack.Screen
+        options={{
+          headerRight: can('task.editFields')
+            ? () => (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Edit task"
+                  hitSlop={10}
+                  onPress={() => router.push(`/board/${boardId}/form/task?id=${t.id}`)}
+                >
+                  <ThemedText variant="body" style={{ color: colors.primary }}>
+                    Edit
+                  </ThemedText>
+                </Pressable>
+              )
+            : undefined,
+        }}
+      />
       <ScrollView
         style={{ flex: 1 }}
         contentInsetAdjustmentBehavior="automatic"
@@ -203,8 +227,27 @@ export function TaskDetailScreen({
           </Section>
         )}
 
-        {t.subtasks.length > 0 && (
-          <Section title={`SUBTASKS · ${t.subtasks.length}`}>
+        {/* Web offers subtasks on root tasks only; so does this. */}
+        {(t.subtasks.length > 0 || (t.parentTaskId === null && can('task.createSubtask'))) && (
+          <Section
+            title={t.subtasks.length > 0 ? `SUBTASKS · ${t.subtasks.length}` : 'SUBTASKS'}
+            action={
+              t.parentTaskId === null && can('task.createSubtask') ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Add subtask"
+                  hitSlop={10}
+                  onPress={() =>
+                    router.push(`/board/${boardId}/form/task?parentTaskId=${t.id}`)
+                  }
+                >
+                  <ThemedText variant="subhead" style={{ color: colors.primary }}>
+                    Add
+                  </ThemedText>
+                </Pressable>
+              ) : undefined
+            }
+          >
             {t.subtasks.map((subtask, index) => (
               <Row
                 key={subtask.id}

@@ -6,9 +6,12 @@ import {
   useWindowDimensions,
   type ViewToken,
 } from 'react-native';
-import { Stack } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { WIDGET_META, type WidgetType } from '@artist/shared';
+import { usePermissions } from '@artist/api-client';
+import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
+import { spokeAction } from '@/features/board/spoke-actions';
 import { SPOKES } from '@/features/board/spoke-registry';
 import { useVisibleWidgets } from '@/features/board/use-visible-widgets';
 import { radius, spacing, useThemeColors } from '@/theme';
@@ -31,6 +34,7 @@ export function WidgetSpokeScreen({
   const colors = useThemeColors();
   const { width } = useWindowDimensions();
   const { widgets } = useVisibleWidgets(boardId);
+  const { can } = usePermissions();
 
   // Fall back to the one widget that was asked for: a deep link can land here
   // before the layout has loaded, and paging through an empty list is worse
@@ -108,6 +112,27 @@ export function WidgetSpokeScreen({
         options={{
           title: WIDGET_META[pages[index] ?? widgetType].title,
           headerBackTitle: 'Board',
+          // Follows the page you have swiped to: a + on Shows adds a show.
+          headerRight: () => {
+            const action = spokeAction(pages[index] ?? widgetType, boardId, can);
+            if (!action) return null;
+            return (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={action.label}
+                hitSlop={10}
+                onPress={() => router.push(action.href)}
+              >
+                {action.edit ? (
+                  <ThemedText variant="body" style={{ color: colors.primary }}>
+                    Edit
+                  </ThemedText>
+                ) : (
+                  <Icon name={{ sf: 'plus', md: 'add' }} size={22} color={colors.primary} />
+                )}
+              </Pressable>
+            );
+          },
         }}
       />
     </View>

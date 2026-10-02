@@ -1,12 +1,18 @@
-import { useReminders } from '@artist/api-client';
-import { Icon } from '@/components/icon';
+import { router } from 'expo-router';
+import { usePermissions, useReminders, useUpdateReminder } from '@artist/api-client';
 import { Row } from '@/components/row';
 import { SpokeList } from '@/components/spoke-list';
 import { shortDate } from '../format';
+import { ToggleLead } from './toggle-lead';
 
 /** Reminders, soonest first, with standing notes (no date) at the end. */
 export function RemindersSpoke({ boardId }: { boardId: string }) {
   const reminders = useReminders(boardId);
+  const update = useUpdateReminder(boardId);
+  const { can } = usePermissions();
+  const canManage = can('reminder.manage');
+  // A tick in flight shows where it is going.
+  const pending = update.isPending ? update.variables : null;
   const items = [...(reminders.data ?? [])].sort((a, b) => {
     const done = Number(a.done) - Number(b.done);
     if (done !== 0) return done;
@@ -25,17 +31,19 @@ export function RemindersSpoke({ boardId }: { boardId: string }) {
       emptyBody="Reminders are board-wide — everyone sees the same list."
     >
       {items.map((reminder, index) => {
+        const done =
+          pending?.reminderId === reminder.id
+            ? (pending.dto.done ?? reminder.done)
+            : reminder.done;
         const overdue =
-          !reminder.done &&
-          reminder.remindAt !== null &&
-          new Date(reminder.remindAt) <= now;
+          !done && reminder.remindAt !== null && new Date(reminder.remindAt) <= now;
         return (
           <Row
             key={reminder.id}
             first={index === 0}
             title={reminder.title}
             meta={reminder.description}
-            dim={reminder.done}
+            dim={done}
             trailing={
               reminder.remindAt
                 ? overdue
@@ -44,14 +52,25 @@ export function RemindersSpoke({ boardId }: { boardId: string }) {
                 : 'no date'
             }
             lead={
-              <Icon
-                name={
-                  reminder.done
-                    ? { sf: 'checkmark.circle.fill', md: 'check-circle' }
-                    : { sf: 'bell', md: 'notifications-none' }
+              <ToggleLead
+                done={done}
+                label={`Reminder: ${reminder.title}`}
+                idle={{ sf: 'bell', md: 'notifications-none' }}
+                onToggle={
+                  canManage
+                    ? () =>
+                        update.mutate({
+                          reminderId: reminder.id,
+                          dto: { done: !reminder.done },
+                        })
+                    : undefined
                 }
-                size={16}
               />
+            }
+            onPress={
+              canManage
+                ? () => router.push(`/board/${boardId}/form/reminder?id=${reminder.id}`)
+                : undefined
             }
           />
         );
