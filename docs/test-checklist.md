@@ -707,7 +707,33 @@ sections in one pass.
 
 
 
-## P11–P15 — not yet built
+## P11 — Notes widget
+
+The Notes widget can now be edited on the phone by an admin. Reading draws it
+with real formatting; editing shows markers (`**bold**`) that turn into
+formatting on save. What matters most is that **nothing written on web is ever
+lost by a phone save**.
+
+### Reading — ★ new
+
+- [ ] 🔵 ★ On web, write a note with a heading, **bold**, *italic*, a bulleted and a numbered list, and a link → The phone's Notes spoke shows all of it formatted, not as markers
+- [ ] ★ Tap the link → Opens in the browser
+
+### Editing — ★ new
+
+- [ ] 🔵 ★ As admin, Notes spoke → **Edit** → the note opens as text with markers → change a word → Save → The spoke shows the change, formatted; web shows it after a refresh, with **all its formatting intact**
+- [ ] 🔵 ★ Select a word → **B** → it gets `**` either side → Save → Bold on both
+- [ ] ★ Caret on a line → **•** → it becomes `- ` → Save → A bullet on web
+- [ ] ★ Type `5 * 3` and save → Stays `5 * 3` on web — not italics
+- [ ] 🔵 ★ Underline a word on web (Cmd+U), then try to edit on the phone → "Edit this one on web", read-only — and the note on web is untouched
+- [ ] 🔵 ★ Open Edit on the phone, change the note on **web** and save there, then save on the phone → It asks "Someone else changed this note" before replacing
+- [ ] ★ As a **member** → No Edit button; the note reads normally
+
+---
+
+
+
+## P12–P15 — not yet built
 
 Sections get added as each phase lands. Known in advance:
 

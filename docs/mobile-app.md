@@ -111,7 +111,7 @@ deliberately scheduled after mobile rather than blocking it.
 | **P10** | [Write parity](#p10--write-parity) | mobile, **shared**, web | ☑ |
 | **P10b** | [Content editing](#p10b--content-editing) | mobile, shared, api-client | ◐ |
 | **P10c** | [Board admin](#p10c--board-admin) | mobile, api-client, web | ◐ |
-| **P11** | [Notes widget](#p11--notes-widget) | mobile | ☐ |
+| **P11** | [Notes widget](#p11--notes-widget) | mobile, shared | ◐ |
 | **P12** | [Mobile layout editor](#p12--mobile-layout-editor) | mobile | ☐ |
 | **P13** | [Push client](#p13--push-client) | mobile, api | ☐ |
 | **P14** | [Store builds](#p14--store-builds) | mobile, CI | ☐ |
@@ -1186,11 +1186,64 @@ phone's band dots and filter chips.
 
 ### P11 — Notes widget
 
-`@tiptap` has no React Native port. Use **`@10play/tentap-editor`**, a real RN
+~~`@tiptap` has no React Native port. Use **`@10play/tentap-editor`**, a real RN
 bridge to the same ProseMirror/Tiptap core, so the stored document JSON stays
-compatible with what web reads and writes. Needs a mobile toolbar.
+compatible with what web reads and writes. Needs a mobile toolbar.~~
 
-Medium risk and deliberately late — nothing else depends on it.
+**Changed at build time, by decision:** tentap runs ProseMirror inside a
+**WebView**, which `apps/mobile/AGENTS.md` rules out — Expo was chosen over a
+Capacitor wrapper precisely to avoid one. Asked, the user chose a native
+editor over the WebView and over plain-text-only.
+
+**Built.** The note is still stored as the same TipTap JSON; the phone never
+writes anything else.
+
+- **Reading** draws the document natively (`features/notes/note-view.tsx`):
+  bold as bold, lists as lists, links tappable (http/https only — anyone in the
+  band writes the note). Unknown node types render their text.
+- **Editing** is a native text field in a small markdown dialect, converted
+  both ways by `packages/shared/src/note-markdown.ts`. A toolbar (B, I, S,
+  bullets, numbers) places the markers — the pure logic is in
+  `features/notes/editing.ts`, tested — so nobody types `**`. Admin-only,
+  `widget.manage`, as on web; reached from the Notes spoke's Edit.
+- **The safety rule is `isMarkdownEditable`.** A note the dialect cannot carry
+  exactly — underline (TipTap v3's StarterKit enables it, markdown has no
+  spelling for it), a list inside a quote, a node from an extension web adds
+  later — opens read-only with "Edit this one on web". The phone never
+  flattens what web wrote.
+- **A save checks for a concurrent edit.** The note is last-write-wins on web
+  too; the phone refetches before saving and, if someone saved elsewhere since
+  it opened, asks before replacing their words.
+
+#### How the converter was made trustworthy
+
+The dialect is this module's own, not CommonMark: both directions live in one
+file and only have to agree with each other. Three layers of tests:
+
+1. **Fixtures** for every construct and the escapes a phone user would hit.
+2. **A seeded fuzz** of 500 documents over an alphabet that is mostly markup,
+   escapes, tabs and URLs, asserting each round-trips (and that most were
+   actually editable, so it cannot pass vacuously). Run at 120,000 documents
+   across six seeds while building, it found five bugs the fixtures had not:
+   bracket-style marker nesting writing `****`, a lone `~` beside a `~~`
+   marker, code and links spanning a line break, a backslash at the end of
+   code, and an unlinked URL turning into a link.
+3. **A web test** (`apps/web/src/features/custom-widget/note-schema.test.ts`)
+   loads the phone's output into the real StarterKit schema and round-trips
+   documents in the exact shape TipTap stores them, default attributes and all.
+
+Two design rules came out of the fuzzing and are worth not relitigating: markers
+are **toggles**, so the serializer writes only the marks that change between
+runs; and a marker **opens only before non-space** (markdown's flanking rule),
+which is what keeps "5 * 3" typed on a phone literal.
+
+#### Known limits
+
+- The person sees markers while editing; formatting appears once saved.
+- The toolbar sits at the top of the form and scrolls away in a long note — a
+  keyboard-attached toolbar is iOS-only (`InputAccessoryView`).
+- Underline cannot be added from the phone, and a note that has any is
+  read-only there.
 
 ### P12 — Mobile layout editor
 
@@ -1241,7 +1294,7 @@ so it is a deliberate feature rather than collateral damage from mobile work.
 | shadcn/ui + Tailwind + `@base-ui/react` | `StyleSheet` primitives + shared theme tokens | Low — 23 small `components/ui` files |
 | `react-grid-layout` (dashboard grid) | Custom `reanimated` + `gesture-handler`; layout maths reused from `packages/shared` | **High** |
 | `@dnd-kit` (todos reorder only) | `reanimated` drag list / `draggable-flatlist` | Low — one file |
-| `@tiptap` (notes widget) | `@10play/tentap-editor` — same ProseMirror core | Medium |
+| `@tiptap` (notes widget) | Native view + text field over a shared markdown converter (`note-markdown.ts`); not tentap, which is a WebView | Medium |
 | `next/navigation`, `next/link` | `expo-router` — maps near 1:1 onto the 4 routes | Low |
 | `next/font`, `next-themes` | `expo-font`, theme context over shared tokens | Low |
 | `@supabase/supabase-js` on `localStorage` | same, with `expo-secure-store` storage adapter | Medium — see P5 |
