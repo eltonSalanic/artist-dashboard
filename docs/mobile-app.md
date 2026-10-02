@@ -112,7 +112,7 @@ deliberately scheduled after mobile rather than blocking it.
 | **P10b** | [Content editing](#p10b--content-editing) | mobile, shared, api-client | ◐ |
 | **P10c** | [Board admin](#p10c--board-admin) | mobile, api-client, web | ◐ |
 | **P11** | [Notes widget](#p11--notes-widget) | mobile, shared | ◐ |
-| **P12** | [Mobile layout editor](#p12--mobile-layout-editor) | mobile | ☐ |
+| **P12** | [Mobile layout editor](#p12--mobile-layout-editor) | mobile, shared | ◐ |
 | **P13** | [Push client](#p13--push-client) | mobile, api | ☐ |
 | **P14** | [Store builds](#p14--store-builds) | mobile, CI | ☐ |
 | **P15** | [Web board switcher](#p15--web-board-switcher) | **web** | ☐ |
@@ -1258,6 +1258,42 @@ layout maths in `packages/shared/src/layout.ts` (`mergeLayouts`,
 
 Highest UI risk in the project — `react-grid-layout` has no RN equivalent, so
 whatever this becomes is custom `reanimated` + `gesture-handler` work.
+
+**Built.** Manage widgets in the board menu opens a reorderable list (the same
+`react-native-reorderable-list` the Todos spoke uses — the risk this section
+predicted did not materialise, because a list is not a grid) with a show/hide
+switch per widget. It saves the same **personal** layout web edits, so it moves
+your web dashboard too, and nobody else's. Reset to the band's default is there
+for everyone; admins can also make an arrangement the band's default.
+
+#### The phone had been ignoring the web arrangement since P7
+
+`GET /layout` returns the merged layout in the *shipped default's* array
+order — `mergeLayouts` maps over the default — and the person's arrangement
+lives in `x`/`y`. The hub and the spoke pager read the array, so a reorder on
+web never reached the phone. (P7's checklist item for exactly this was ticked;
+by the code it cannot have followed, so that pass was a coincidence of which
+widgets were moved.) `readingOrder` in `packages/shared/src/layout.ts` sorts by
+position, top to bottom then left to right, and `useVisibleWidgets` uses it.
+
+#### No width control, on purpose
+
+The plan suggested snapping widths to full or half. But since P7 the hub sizes
+cards by **what they hold** (prose full width, counts two-up), not by layout
+width, so a width control on the phone would only ever change web — a setting
+whose effect you cannot see where you set it. `packInOrder` writes a reorder
+back by laying widgets out on the 12-column grid in the new order, keeping
+every widget's `w` and `h`: a two-thirds To-Do on web stays two-thirds. Hidden
+widgets go last so they cannot leave a gap.
+
+#### Smaller decisions
+
+- The last visible widget cannot be switched off — a board showing nothing reads
+  as broken, not as a choice.
+- The Calendar entry (a tab, not a widget) is never offered but is kept in the
+  saved layout untouched.
+- `FormScreen` gained `scrollable={false}` so a reorderable list can be the
+  form's scroller instead of nesting inside a ScrollView.
 
 ### P13 — Push client
 

@@ -733,7 +733,32 @@ lost by a phone save**.
 
 
 
-## P12–P15 — not yet built
+## P12 — Mobile layout editor
+
+**Manage widgets** in the board menu now works. It edits your *own*
+arrangement, the same one web edits.
+
+### The hub follows web — ★ new (a fix)
+
+- [ ] 🔵 ★ On web, drag the Shows widget to the top-left of your dashboard, then pull to refresh the phone's hub → Shows is the **first** card. (Before P12 the phone always showed the original order)
+- [ ] ★ Swipe through the spokes → Same order as the hub
+
+### Editing — ★ new
+
+- [ ] 🔵 ★ ⋯ → Manage widgets → hold a widget, drag it to the top → Save → The hub shows it first; web shows it top-left after a refresh, **at the width it had on web**
+- [ ] 🔵 ★ Switch a widget off → Save → Gone from the hub and from web; switch it back on → back
+- [ ] ★ Switch everything off → The last one's switch won't turn off
+- [ ] ★ Change something, then swipe the sheet away → "Discard changes?"
+- [ ] 🔵 ★ Reset to the band's default → Confirm → Your arrangement is gone here and on web; the band's default shows
+- [ ] ★ Arrange as one member → A second member's hub and web are unchanged
+- [ ] ★ As admin, "Make this the band's default" → A member with no arrangement of their own now sees it
+- [ ] ★ As a member → No "Make this the band's default" button
+
+---
+
+
+
+## P13–P15 — not yet built
 
 Sections get added as each phase lands. Known in advance:
 
