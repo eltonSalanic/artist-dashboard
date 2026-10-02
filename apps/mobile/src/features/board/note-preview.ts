@@ -43,23 +43,32 @@ function textOf(node: unknown): string {
 }
 
 /**
- * The first block that has any text in it, trimmed and collapsed to one line.
- * Leading empty paragraphs are skipped — a note that opens with a blank line
- * would otherwise preview as nothing.
+ * Every block of the note as a line of plain text, empties dropped. This is
+ * what the read-only spoke renders — one paragraph per `<Text>`, which is a
+ * faithful enough rendering of a shared note without bringing an editor along.
+ */
+export function noteBlocks(
+  content: Record<string, unknown> | undefined | null,
+): string[] {
+  if (!content) return [];
+  const blocks = Array.isArray(content.content) ? content.content : [content];
+  return blocks
+    .map((block) => textOf(block).replace(/\s+/g, ' ').trim())
+    .filter((line) => line !== '');
+}
+
+/**
+ * The first block that has any text in it, for a hub card. Leading empty
+ * paragraphs are skipped — a note that opens with a blank line would otherwise
+ * preview as nothing.
  */
 export function notePreview(
   content: Record<string, unknown> | undefined | null,
   maxLength = 140,
 ): string | null {
-  if (!content) return null;
-
-  const blocks = Array.isArray(content.content) ? content.content : [content];
-  for (const block of blocks) {
-    const line = textOf(block).replace(/\s+/g, ' ').trim();
-    if (line === '') continue;
-    return line.length > maxLength
-      ? `${line.slice(0, maxLength - 1).trimEnd()}…`
-      : line;
-  }
-  return null;
+  const first = noteBlocks(content)[0];
+  if (first === undefined) return null;
+  return first.length > maxLength
+    ? `${first.slice(0, maxLength - 1).trimEnd()}…`
+    : first;
 }

@@ -1,4 +1,4 @@
-import { notePreview } from './note-preview';
+import { noteBlocks, notePreview } from './note-preview';
 
 const doc = (...blocks: unknown[]) => ({ type: 'doc', content: blocks });
 const para = (...text: string[]) => ({
@@ -73,5 +73,23 @@ describe('notePreview', () => {
   it('does not throw on a document shaped nothing like one', () => {
     expect(notePreview({ content: 'not an array' })).toBeNull();
     expect(notePreview({ content: [null, 7, 'x'] })).toBeNull();
+  });
+});
+
+describe('noteBlocks', () => {
+  it('returns one line per block, empties dropped', () => {
+    expect(
+      noteBlocks(doc(para('Load in at 4'), para(), para('Soundcheck at 5'))),
+    ).toEqual(['Load in at 4', 'Soundcheck at 5']);
+  });
+
+  it('does not truncate — only the card preview does', () => {
+    const long = 'word '.repeat(60).trim();
+    expect(noteBlocks(doc(para(long)))[0]).toBe(long);
+  });
+
+  it('returns nothing for an absent note', () => {
+    expect(noteBlocks(null)).toEqual([]);
+    expect(noteBlocks(doc())).toEqual([]);
   });
 });

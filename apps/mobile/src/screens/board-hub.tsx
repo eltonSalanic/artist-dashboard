@@ -1,4 +1,4 @@
-import { Link, Stack } from 'expo-router';
+import { Link, Stack, router } from 'expo-router';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useBoard } from '@artist/api-client';
@@ -112,7 +112,12 @@ function HubGrid({ boardId }: { boardId: string }) {
                 key={card.widgetType}
                 style={card.kind === 'hero' ? styles.hero : styles.stat}
               >
-                <HubStatCard card={card} />
+                <HubStatCard
+                  card={card}
+                  onPress={() =>
+                    router.push(`/board/${boardId}/w/${card.widgetType}`)
+                  }
+                />
               </View>
             ))}
       </View>

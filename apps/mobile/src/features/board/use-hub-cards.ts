@@ -5,7 +5,6 @@ import {
   useEvents,
   useFocus,
   useGoals,
-  useLayout,
   useMe,
   useReminders,
   useTasks,
@@ -21,6 +20,7 @@ import {
 import type { IconName } from '@/components/icon';
 import { count, isThisWeek, isToday, shortAgo, shortDate } from './format';
 import { notePreview } from './note-preview';
+import { useVisibleWidgets } from './use-visible-widgets';
 import { WIDGET_ICONS } from './widget-icons';
 
 /**
@@ -69,7 +69,7 @@ export interface HubCards {
  * an `enabled` parameter to nine shared hooks to save nothing today.
  */
 export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
-  const layout = useLayout(boardId);
+  const layout = useVisibleWidgets(boardId);
   const me = useMe(true);
 
   // Recomputed per mount rather than per render: `from` is part of the query
@@ -207,27 +207,20 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
     },
   };
 
-  const cards = (layout.data?.layout ?? [])
-    .filter((item) => item.hidden !== true)
-    .filter((item) => item.widgetType !== 'CALENDAR')
-    .map<HubCard>((item) => ({
-      widgetType: item.widgetType,
-      title: WIDGET_META[item.widgetType].title,
-      slot: resolveWidgetColor(
-        theme,
-        item.widgetType,
-        WIDGET_META[item.widgetType].defaultColor ?? 'base',
-      ),
-      icon: WIDGET_ICONS[item.widgetType],
-      kind: HERO_WIDGETS.includes(item.widgetType) ? 'hero' : 'stat',
-      ...summaries[item.widgetType],
-    }));
+  const cards = layout.widgets.map<HubCard>((widgetType) => ({
+    widgetType,
+    title: WIDGET_META[widgetType].title,
+    slot: resolveWidgetColor(
+      theme,
+      widgetType,
+      WIDGET_META[widgetType].defaultColor ?? 'base',
+    ),
+    icon: WIDGET_ICONS[widgetType],
+    kind: HERO_WIDGETS.includes(widgetType) ? 'hero' : 'stat',
+    ...summaries[widgetType],
+  }));
 
-  return {
-    cards,
-    loading: layout.isPending,
-    error: layout.error,
-  };
+  return { cards, loading: layout.loading, error: layout.error };
 }
 
 /** The fields the layout supplies, which each summary does not. */

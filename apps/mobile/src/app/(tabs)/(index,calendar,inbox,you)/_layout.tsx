@@ -42,6 +42,13 @@ export default function TabStackLayout({ segment }: { segment: string }) {
           title: 'Your bands',
         }}
       />
+      {/* Spokes and task detail: pushed, titled by the screen itself. They are
+          declared here only so the stack knows they are not sheets. */}
+      <Stack.Screen name="board/[boardId]/w/[widgetType]" />
+      <Stack.Screen
+        name="board/[boardId]/task/[taskId]"
+        options={{ title: 'Task' }}
+      />
       <Stack.Screen
         name="board-menu"
         options={{
