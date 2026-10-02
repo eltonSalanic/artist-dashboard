@@ -3,7 +3,9 @@ import {
   CalendarCategories,
   calendarCategory,
   calendarDayKey,
+  dueDateFromLocalDay,
   groupCalendarByDay,
+  localDayFromDueDate,
   type CalendarItemLike,
 } from './calendar';
 
@@ -137,5 +139,38 @@ describe('groupCalendarByDay', () => {
 
   it('has no days at all for an empty list', () => {
     expect(groupCalendarByDay([])).toEqual([]);
+  });
+});
+
+// These run in America/Los_Angeles (see the test script), where a local
+// midnight is 07:00 or 08:00 UTC — the zone in which getting this wrong shows.
+describe('dueDateFromLocalDay', () => {
+  it('stores the picked day as UTC midnight of that day', () => {
+    expect(dueDateFromLocalDay(new Date(2026, 9, 2))).toBe('2026-10-02T00:00:00.000Z');
+  });
+
+  // A picker can return the day with the current time still on it.
+  it('ignores the time of day, late evening included', () => {
+    expect(dueDateFromLocalDay(new Date(2026, 9, 2, 23, 30))).toBe(
+      '2026-10-02T00:00:00.000Z',
+    );
+  });
+
+  it('is not what toISOString would give west of UTC', () => {
+    const evening = new Date(2026, 9, 2, 20, 0);
+    expect(evening.toISOString().slice(0, 10)).toBe('2026-10-03');
+    expect(dueDateFromLocalDay(evening).slice(0, 10)).toBe('2026-10-02');
+  });
+});
+
+describe('localDayFromDueDate', () => {
+  it('opens on the stored day, not the day before', () => {
+    const day = localDayFromDueDate('2026-11-01T00:00:00.000Z');
+    expect([day.getFullYear(), day.getMonth(), day.getDate()]).toEqual([2026, 10, 1]);
+  });
+
+  it('round-trips through dueDateFromLocalDay', () => {
+    const iso = '2027-01-01T00:00:00.000Z';
+    expect(dueDateFromLocalDay(localDayFromDueDate(iso))).toBe(iso);
   });
 });

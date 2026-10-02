@@ -108,7 +108,9 @@ deliberately scheduled after mobile rather than blocking it.
 | **P7** | [Board hub (stat cards)](#p7--board-hub-stat-cards) | mobile, **shared** | ☑ |
 | **P8** | [Spokes (expanded widgets)](#p8--spokes-expanded-widgets) | mobile, **shared** | ☑ |
 | **P9** | [Calendar + Inbox screens](#p9--calendar--inbox-screens) | mobile, api | ☑ |
-| **P10** | [Write parity](#p10--write-parity) | mobile, **shared**, web | ◐ |
+| **P10** | [Write parity](#p10--write-parity) | mobile, **shared**, web | ☑ |
+| **P10b** | [Content editing](#p10b--content-editing) | mobile, shared | ☐ |
+| **P10c** | [Board admin](#p10c--board-admin) | mobile, api-client | ☐ |
 | **P11** | [Notes widget](#p11--notes-widget) | mobile | ☐ |
 | **P12** | [Mobile layout editor](#p12--mobile-layout-editor) | mobile | ☐ |
 | **P13** | [Push client](#p13--push-client) | mobile, api | ☐ |
@@ -1053,6 +1055,42 @@ P7's board menu labels **Archive** and **Board settings** as P10, and P9 deferre
 above, and none was built; nor were the task's own fields (title, description,
 priority, due date, assignees), new tasks or subtasks — admin work that stays on
 web for now. Where they belong is an open decision, not a silent drop.
+
+### P10b — Content editing
+
+Decided after P10's verification: the work earlier phases had pointed at P10
+becomes two more gated phases before P11, because a phone that cannot add a
+show or fix a typo still sends its owner to web for half of what they open it
+for. Content first — it is what people do every day; settings are mostly done
+once.
+
+- **Tasks:** edit title, description, priority, due date and assignees; create
+  tasks and subtasks; delete. Admin-gated by the shared map exactly as web is
+  (`task.editFields`, `task.create`, `task.createSubtask`, `task.delete`).
+- **Events, reminders, goals:** create, edit, delete; complete a goal, tick a
+  reminder done (`event.manage`, `reminder.manage`, `goal.manage`).
+- **Focus:** set or clear the week's and the year's focus (`focus.manage`).
+- **Archive / unarchive** an item from its edit form (`item.archive`), with the
+  same "also take the N linked tasks" choice web offers, never on by default.
+
+One form route, `/board/:boardId/form/:kind`, create and edit, presented as a
+modal with Cancel and Save. Entry points: a **+** in each spoke's header, **Edit**
+on task detail, **Add subtask**, and tapping an event, reminder or goal row.
+
+**The date trap, again.** A task's or goal's due date is a calendar day stored
+as UTC midnight. Web gets that for free — `new Date("2026-10-02")` parses a
+date-only string as UTC — but a native picker returns a *local* `Date`, and its
+`toISOString()` lands on the wrong day west of UTC. The write side of P9's rule
+is in `packages/shared/src/calendar.ts` (`dueDateFromLocalDay`,
+`localDayFromDueDate`), tested in Los Angeles. Events and reminders are instants
+and convert normally.
+
+### P10c — Board admin
+
+The **Archive** screen (browse, restore, delete forever) and **Board settings**:
+palette, statuses, members and invites, and the person's notification
+preferences. The invites and members queries live inline in web's settings
+page, so they move into `@artist/api-client` first.
 
 ### P11 — Notes widget
 

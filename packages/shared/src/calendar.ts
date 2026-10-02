@@ -134,3 +134,29 @@ function timeWithinDay(a: CalendarItemLike, b: CalendarItemLike): number {
   if (aWhole && bWhole) return 0;
   return new Date(a.date).getTime() - new Date(b.date).getTime();
 }
+
+/**
+ * The write side of the rule above: a day picked on a local calendar, as the
+ * UTC-midnight instant the API stores for a due date.
+ *
+ * A date picker hands back a local `Date` — midnight, or whatever time it was
+ * when the picker opened. `toISOString()` on that converts the *instant*, so in
+ * Los Angeles "October 2nd" becomes 07:00Z on the 2nd at best and the 1st at
+ * worst, depending on the hour. Taking the local year/month/day and building
+ * UTC midnight from them is what web gets for free from `new Date("2026-10-02")`.
+ */
+export function dueDateFromLocalDay(day: Date): string {
+  return new Date(
+    Date.UTC(day.getFullYear(), day.getMonth(), day.getDate()),
+  ).toISOString();
+}
+
+/**
+ * The inverse, for seeding a date picker: a stored due date as local midnight
+ * on the same calendar day, so the picker opens on the day the task is due
+ * rather than the day before.
+ */
+export function localDayFromDueDate(iso: string): Date {
+  const date = new Date(iso);
+  return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+}
