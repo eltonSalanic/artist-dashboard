@@ -1,9 +1,9 @@
 # Mobile App (React Native + Expo)
 
-> **Status:** in progress. P0–P4 done and verified; **P5–P8 built, awaiting
-> verification on a phone** — `apps/mobile/` signs in, has its four tabs, and
-> every widget reads end to end: hub card → spoke → task. Nothing writes yet.
-> P9 (calendar + inbox) is next.
+> **Status:** in progress. P0–P4 done and verified; **P5–P9 built, awaiting
+> verification on a phone** — `apps/mobile/` signs in, has its four tabs, every
+> widget reads end to end (hub card → spoke → task), and the Calendar and Inbox
+> span every band you are in. Nothing writes yet. P10 (write parity) is next.
 >
 > **Progress is tracked in [the phase table](#phases).** Update the Status
 > column in the same commit that lands the work. ☑ done and user-verified ·
@@ -107,7 +107,7 @@ deliberately scheduled after mobile rather than blocking it.
 | **P6** | [Primitives + design tokens](#p6--primitives--design-tokens) | mobile, **shared** | ◐ |
 | **P7** | [Board hub (stat cards)](#p7--board-hub-stat-cards) | mobile, **shared** | ◐ |
 | **P8** | [Spokes (expanded widgets)](#p8--spokes-expanded-widgets) | mobile, **shared** | ◐ |
-| **P9** | [Calendar + Inbox screens](#p9--calendar--inbox-screens) | mobile | ☐ |
+| **P9** | [Calendar + Inbox screens](#p9--calendar--inbox-screens) | mobile, api | ◐ |
 | **P10** | [Write parity](#p10--write-parity) | mobile | ☐ |
 | **P11** | [Notes widget](#p11--notes-widget) | mobile | ☐ |
 | **P12** | [Mobile layout editor](#p12--mobile-layout-editor) | mobile | ☐ |
@@ -846,6 +846,95 @@ Three readability rules:
    band must not silently filter the Inbox. They are separate reading tasks.
 
 Board colours come from `resolveBoardTheme()` via the P6 tokens.
+
+**Built.** Three commits: the board palette, the shared day rule, then the two
+screens. All three readability rules above hold as written. One API change and
+one shared-logic lift were needed first, both below.
+
+#### The calendar is an agenda, not a month grid
+
+Web draws 42 cells with chips in them. At 390pt a cell is 50pt wide, and
+"Bowery Ballroom" does not fit in 50pt — a phone month grid can show *that*
+something is on the 14th and never *what*. The same month read as a list of days
+loses nothing a phone could have displayed anyway, and gains the time, the band
+and the status on every row.
+
+It stays bounded to one month rather than scrolling endlessly in both
+directions, because the request has to have an end — the API caps a range at 370
+days — and because "what is in March" is the question a month stepper answers in
+one tap. Days with nothing in them are left out: a grid must draw empty cells to
+keep its shape, but a list that printed 19 empty headings would bury the five
+days that matter.
+
+#### `BoardSummaryDto` gained a palette, which was P6's recorded gap
+
+P6 noted that `BoardSummaryDto` carries no theme, so the switcher could not
+colour-code the bands it lists. P9 needs the same thing twice over — a filter
+chip per band, and a dot per row — so the field landed here: **just
+`palette`**, one enum member off the board row the query already joins. The
+expensive half (`widgets`) stays behind `GET /boards/:id`, so the "listing twenty
+bands must not fetch twenty themes" rule the DTO's comment states is intact.
+
+Two endpoints answer "which bands am I in" — `GET /boards` and the `boards`
+array on `GET /me/bootstrap` — and they built that object independently. Adding
+the field to one would have coloured the switcher and left the filter row grey,
+with nothing failing to say so. They share a mapper now.
+
+A **band's colour is not on the calendar item.** The response already carries
+`boardId` and `boardName`, because a merged item is otherwise unidentifiable and
+unlinkable — but a palette is per board, not per item, and the board list is
+already loaded and already says it. Putting it on every row would repeat one
+fact a hundred times and create a second place for it to go stale.
+
+#### Which day an item falls on is now shared, and the test needed a timezone
+
+`calendarCategory` and the day-bucketing rule moved to
+`packages/shared/src/calendar.ts`, joining `activityText` and `WIDGET_META`. The
+bucketing is the load-bearing one: an event happens at an **instant** and belongs
+on the local day that instant falls in, while a task's due date is a **calendar
+day** stored as UTC midnight that must not be read locally at all. Web had this
+right, in one private function — exactly the shape that gets reimplemented
+slightly differently next door, where the symptom is a deadline off by a day.
+
+The shared suite now runs in `America/Los_Angeles`. In UTC the two readings
+agree, so with the distinction deleted **all twelve of these tests pass in UTC
+and four fail in LA** — a suite that only ran in UTC would have been decoration.
+Switching zones inside a test does not work: Jest hands tests a *copy* of
+`process.env`, so assigning `TZ` never reaches the `tzset` that `Date` reads, and
+the assertion silently checks the host's zone instead of the named one. Pinning
+it in the test script is what works.
+
+#### "Unread" got its definition, and the activity feed does not get one
+
+P7 deferred Activity's "N new since last visit" to here, on the grounds that
+P9 had to define "unread" anyway. It did, and the answer rules the feed out: a
+**mention is a row that exists until it is dismissed**, so a count of them is a
+fact, needing no per-device marker and no guess about what has been looked at.
+That is why the Inbox gets a tab badge. An activity feed is a log of what
+happened, not a list addressed to anyone, so the same badge there would need a
+last-seen marker per device to mean anything — and would then claim things are
+"new" that the person has already seen on web. Left unbuilt deliberately, not
+deferred again.
+
+#### Smaller decisions worth not relitigating
+
+- **The filter is sticky per tab, and re-validated against live membership.** A
+  stored id outlives the membership it refers to; sending it anyway asks the
+  server to intersect by a board it will reduce to nothing, giving a silently,
+  permanently empty list. An unknown id reads as "All".
+- **`Stack.Toolbar` was not used** for "Clear all", despite being the native
+  idiom the `expo-router` skill leads with: it is iOS-only (SDK 55+), and this
+  app ships Android. `headerRight` is the cross-platform half.
+- **No category filter**, although web has one. The plan specifies a band filter
+  for this phase, and two filter rows above a list on a phone is one too many.
+- **The lead slot shows whichever of band or kind is doing work** — the band's
+  dot with several bands on screen, the kind's icon with one, since in a
+  single-band account the band carries no information. The kind is named in the
+  meta line either way, so nothing is carried by colour.
+- **`ListState`** joins `SpokeList`: the same loading/failed/empty states for
+  screens that own a virtualised list, which cannot live inside `SpokeList`'s
+  scroll view.
+- The placeholder tab screen is deleted — all four tabs are real.
 
 ### P10 — Write parity
 

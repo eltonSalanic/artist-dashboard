@@ -459,7 +459,82 @@ it, that is a bug, not an early P10.
 
 ---
 
-## P9–P15 — not yet built
+## P9 — Calendar + Inbox
+
+The first screens that **aggregate across bands**, which makes this the phase
+where a scoping mistake shows up as another band's data on your phone. Several
+checks below need **two bands**: either join a second one, or create one on web
+and invite yourself.
+
+Still read-only — nothing here writes except dismissing and clearing mentions,
+which delete notification rows, not comments.
+
+### The band filter — ★ new
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ★ With one band only, open Calendar and Inbox | **No filter row at all** — not a greyed-out one, not a row with a single chip |
+| ☐ | ★ With two bands, open Calendar | `All · <band> · <band>`, All selected, each band with its own colour dot |
+| ☐ | ★ Tap a band | The list narrows to it; the chip is filled, not just tinted |
+| ☐ | ★ Filter the Calendar, then open the Inbox | The Inbox is **still on All** — the filter is per tab |
+| ☐ | ★ Filter the Inbox, force-quit the app, reopen | The Inbox is still filtered to that band, and the Calendar is still on All |
+| ☐ | ★ Leave a band on web (or have an admin remove you), reopen the filtered tab | Falls back to All rather than showing an empty list |
+| ☐ | ★ Compare a band's dot with that band's hub | Same colour the board leads with when opened |
+
+### Calendar — ★ new
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ★ Open Calendar | This month, as a list of days, each day's items under its date |
+| ☐ | ★ A day heading for today | Reads `Today · <date>` — the date is there as well as the word |
+| ☐ | ★ Scroll a long day | The date heading stays stuck at the top while its items scroll |
+| ☐ | ★ A show and a rehearsal on the same day | In time order, each with its clock time on the right |
+| ☐ | ★ A task due that same day | Listed **first** on the day, with no invented time next to it |
+| ☐ | ★ A task due on the 1st of a month, viewed from a phone set to a US timezone | On the 1st — **not** the last day of the previous month |
+| ☐ | ★ Every row's meta line | Band (two bands only), kind, status for a task, location for an event |
+| ☐ | ★ Step forward and back a month | Content changes; the stepper does not skip or repeat a month at a year boundary |
+| ☐ | ★ Tap the month name | Returns to the current month |
+| ☐ | ★ A month with nothing in it | "Nothing in <month>" — a designed state, not a blank screen |
+| ☐ | ★ Tap a task row | Opens that task, in the band the row belongs to |
+| ☐ | ★ Tap a show, rehearsal, meeting, reminder or goal row | Opens that band's matching widget — never a dead tap |
+| ☐ | ★ With two bands on All, check items from both | Both bands' items in one list, each naming its band |
+| ☐ | ★ Pull down to refresh | Reloads; a change made on web appears |
+| ☐ | ★ Compare against web's calendar for the same month | Same items on the same days |
+
+### Inbox — ★ new
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ★ Have someone @mention you on web, then open the Inbox | The mention, newest first, reading "X mentioned you in …" with the excerpt |
+| ☐ | ★ The Inbox tab icon | A badge with the count; `9+` past nine, and **no badge at all** at zero |
+| ☐ | ★ Get mentioned while the app is open on another tab | The badge appears within 30s without reopening the app |
+| ☐ | ★ Tap a mention | Opens that task in that band — and the mention **stays** in the list |
+| ☐ | ★ Tap the × on a row | That row goes, the badge drops by one, the comment on web is untouched |
+| ☐ | ★ "Clear all" with no filter | Confirmation names the total and says "every band" |
+| ☐ | ★ "Clear all" filtered to one band | Confirmation names **that band**, and only its mentions go |
+| ☐ | ★ An empty inbox | "Nothing for you", and no "Clear all" in the header |
+| ☐ | ★ Stop the API, pull to refresh | "Could not load this" with a working Try again |
+
+### Scoping — the checks that matter most
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ★ On All, read every item's band label | Only bands you are a member of. Anything else is a leak |
+| ☐ | ★ Have an admin remove you from a band where you were mentioned, then refresh the Inbox | Those mentions are gone — membership is re-checked per request, not trusted from before |
+| ☐ | ★ Note a band's name, leave it, reopen the Calendar | Nothing from it remains, including in a month you had already loaded |
+
+### Deliberately not in this phase
+
+| | Check | Expected |
+|---|---|---|
+| ☐ | ⊘ Creating or editing an event, reminder or goal from the calendar | P10 |
+| ☐ | ⊘ Replying to a mention from the Inbox | P10 — comments are write parity |
+| ☐ | ⊘ A category filter (shows / tasks / goals …) like web's | Not built: the plan specifies a band filter for this phase, and two filter rows on a phone is one too many |
+| ☐ | ⊘ A month *grid* | Deliberately an agenda — see the phase notes |
+
+---
+
+## P10–P15 — not yet built
 
 Sections get added as each phase lands. Known in advance:
 
