@@ -67,3 +67,49 @@ function mergeInto(
     return placed;
   });
 }
+
+/**
+ * The order a layout reads in: top to bottom, then left to right — the order
+ * a phone, which has no grid, should list the widgets.
+ *
+ * The merged layout's array order is *not* that: `mergeLayouts` returns items
+ * in the shipped default's order, whatever positions the person gave them on
+ * web. Anything that turns a layout into a list must go through this.
+ */
+export function readingOrder(layout: LayoutItem[]): LayoutItem[] {
+  return [...layout].sort((a, b) => a.y - b.y || a.x - b.x);
+}
+
+const GRID_COLUMNS = 12;
+
+/**
+ * Lay widgets out on web's 12-column grid in the order given, keeping each
+ * one's width and height: left to right, wrapping to a new row when the next
+ * one does not fit. `readingOrder` of the result is the order given.
+ *
+ * This is how a phone writes a reorder back. The phone has no grid and does
+ * not size cards by layout width, so it keeps the widths web chose — a
+ * two-thirds To-Do stays two-thirds — and changes only where things sit.
+ * Hidden widgets go last, where they cannot leave a gap web would draw.
+ */
+export function packInOrder(items: LayoutItem[]): LayoutItem[] {
+  const ordered = [
+    ...items.filter((item) => !item.hidden),
+    ...items.filter((item) => item.hidden),
+  ];
+  let x = 0;
+  let y = 0;
+  let rowHeight = 0;
+  return ordered.map((item) => {
+    const w = Math.min(Math.max(1, item.w), GRID_COLUMNS);
+    if (x + w > GRID_COLUMNS) {
+      y += rowHeight;
+      x = 0;
+      rowHeight = 0;
+    }
+    const placed = { ...item, w, x, y };
+    x += w;
+    rowHeight = Math.max(rowHeight, item.h);
+    return placed;
+  });
+}
