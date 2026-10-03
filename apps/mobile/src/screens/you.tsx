@@ -69,7 +69,7 @@ export function YouScreen() {
             <Badge label={board.role.toLowerCase()} />
             {boards.length > 1 && (
               <ThemedText variant="footnote" tone="muted">
-                {boards.length} bands — switch from the board name on the Board
+                {boards.length} bands. Switch from the board name on the Board
                 tab.
               </ThemedText>
             )}

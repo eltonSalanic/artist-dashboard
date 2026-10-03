@@ -47,7 +47,7 @@ export function BoardMenuSheet() {
       // Notifications are personal, so everyone gets this; what is inside
       // depends on the role.
       body: can('member.invite')
-        ? 'Members, invites, statuses, palette — and your notifications.'
+        ? 'Members, invites, statuses and palette, plus your notifications.'
         : 'What this band may email you about.',
       href: base ? `${base}/settings` : undefined,
       visible: true,

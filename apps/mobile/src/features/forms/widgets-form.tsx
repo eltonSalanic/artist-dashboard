@@ -104,7 +104,7 @@ function WidgetsFields({ boardId, layout }: { boardId: string; layout: LayoutIte
             tone="muted"
             style={{ paddingHorizontal: spacing.sm, paddingBottom: spacing.sm }}
           >
-            Hold a widget to move it. This is your own arrangement — it changes
+            Hold a widget to move it. This is your own arrangement. It changes
             your web dashboard too, but no one else&apos;s.
           </ThemedText>
         }

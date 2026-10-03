@@ -69,7 +69,7 @@ export function ItemActions({
       archived ? `Put this ${itemLabel} back?` : `Archive this ${itemLabel}?`,
       archived
         ? 'It returns to your dashboard and leaves the archive.'
-        : "It comes off your dashboard, but it isn't gone — you'll find it in the Archive, and you can put it back any time.",
+        : "It comes off your dashboard, but it isn't gone. You'll find it in the Archive, and you can put it back any time.",
       [
         { text: 'Cancel', style: 'cancel' },
         { text: archived ? 'Restore' : 'Archive', onPress: () => run(false) },

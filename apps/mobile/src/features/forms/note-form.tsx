@@ -65,7 +65,7 @@ function NotEditable() {
         Edit this one on web
       </ThemedText>
       <ThemedText variant="subhead" tone="muted" style={{ textAlign: 'center' }}>
-        It uses formatting the phone can&apos;t edit without losing — underline, say,
+        It uses formatting the phone can&apos;t edit without losing, such as underline
         or a list inside a quote. You can still read it here.
       </ThemedText>
       <Button title="Close" variant="ghost" size="sm" onPress={() => router.back()} />

@@ -185,7 +185,7 @@ function InviteSection({ boardId }: { boardId: string }) {
           Alert.alert(
             invite.delivery === 'already_registered' ? 'Invite saved' : 'Invite sent',
             invite.delivery === 'already_registered'
-              ? `${invite.email} already has an account — they'll join next time they sign in.`
+              ? `${invite.email} already has an account, so they'll join next time they sign in.`
               : `${invite.email} has been emailed a link to join.`,
           );
         },

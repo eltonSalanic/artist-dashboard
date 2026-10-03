@@ -28,7 +28,7 @@ export function RemindersSpoke({ boardId }: { boardId: string }) {
       empty={items.length === 0}
       emptyIcon={{ sf: 'bell', md: 'notifications-none' }}
       emptyTitle="Nothing to remember"
-      emptyBody="Reminders are board-wide — everyone sees the same list."
+      emptyBody="Reminders are board-wide, so everyone sees the same list."
     >
       {items.map((reminder, index) => {
         const done =
