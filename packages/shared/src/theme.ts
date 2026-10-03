@@ -48,7 +48,7 @@ export const BOARD_PALETTES: readonly BoardPaletteInfo[] = [
   {
     id: 'playful',
     label: 'Playful Cards',
-    description: 'The signature look — coral, lilac, lime and ink.',
+    description: 'The signature look: coral, lilac, lime and ink.',
     slots: [
       { key: 'c1', label: 'Coral' },
       { key: 'c2', label: 'Lilac' },
@@ -92,7 +92,7 @@ export const BOARD_PALETTES: readonly BoardPaletteInfo[] = [
   {
     id: 'mono',
     label: 'Mono',
-    description: 'No color at all — four steps of graphite.',
+    description: 'No color at all, just four steps of graphite.',
     slots: [
       { key: 'c1', label: 'Fog' },
       { key: 'c2', label: 'Slate' },

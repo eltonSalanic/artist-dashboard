@@ -40,7 +40,7 @@ export class StatusesService {
     const inUse = await this.prisma.task.count({ where: { statusId } });
     if (inUse > 0) {
       throw new ConflictException(
-        `${inUse} task(s) still use this status — move them first`,
+        `${inUse} task(s) still use this status. Move them first`,
       );
     }
     const remaining = await this.prisma.taskStatus.count({

@@ -32,7 +32,7 @@ export function useSendInvite(boardId: string) {
       // next sign-in — so the confirmation has to say which happened.
       notify.success(
         invite.delivery === "already_registered"
-          ? "Invite saved — they'll join next time they sign in"
+          ? "Invite saved. They'll join next time they sign in"
           : "Invite email sent",
       );
     },
