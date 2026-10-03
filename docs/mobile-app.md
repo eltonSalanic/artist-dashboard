@@ -1303,6 +1303,27 @@ to the right spoke or entity** using P8's addressable routes.
 
 No skill exists for this. Expo docs only.
 
+**Also in P13: a Notes-style editor for the Notes widget.** Raised while
+verifying P11 (2026-10-03): the marker editor (`**bold**` while typing) is too
+technical for most of the people this app is for, who expect the Notes app.
+React Native's own text field cannot style text as it is typed, and the TipTap
+port is a WebView, so a real one needs a native module, which Expo Go cannot
+load. The user chose to wait for P13's development build rather than ship a
+fragile pure-JS editor in Expo Go now.
+
+- Candidate: **`react-native-enriched`** (Software Mansion). Native input on
+  iOS and Android, New Architecture only, reads and writes HTML. Bold, italic,
+  strikethrough, underline, bulleted and numbered lists, headings, links.
+  Check its React Native compatibility table against the SDK at the time.
+- The note stays TipTap JSON. The editor needs an HTML ↔ TipTap converter in
+  `packages/shared`, held to the same bar as `note-markdown.ts`: fixtures, the
+  seeded fuzz, and the web schema test. `isMarkdownEditable`'s safety rule
+  carries over: what the editor cannot represent stays read-only.
+- Underline becomes editable, so a note with underline stops being read-only.
+- Toolbar: bold, italic, strikethrough, bullets, numbers, as asked. The P11
+  toolbar's limits (scrolls away in a long note) are worth fixing at the same
+  time.
+
 ### P14 — Store builds
 
 EAS Build, icons, splash, app store metadata, TestFlight and Play internal
