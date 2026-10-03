@@ -1,5 +1,6 @@
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePermissions } from '@artist/api-client';
 import { Icon, type IconName } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
@@ -16,6 +17,7 @@ export function BoardMenuSheet() {
   const colors = useThemeColors();
   const { can } = usePermissions();
   const { board } = useSelectedBoard();
+  const insets = useSafeAreaInsets();
   const base = board ? `/board/${board.id}` : null;
 
   const items: {
@@ -55,10 +57,19 @@ export function BoardMenuSheet() {
   ];
 
   return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={{ padding: spacing.md, gap: spacing.xs }}
+    // A plain View, not a ScrollView, on purpose. Every row here dismisses
+    // this sheet and pushes a screen in the same action, and on iOS a sheet
+    // that holds a ScrollView then clips the pushed screen's scroll view to
+    // the sheet's height: half of Settings drawn, the rest black, and later
+    // screens can inherit it until a restart. react-native-screens#4651, fixed
+    // upstream after 4.28.0; three rows never needed to scroll anyway.
+    <View
+      style={{
+        backgroundColor: colors.background,
+        padding: spacing.md,
+        paddingBottom: spacing.md + insets.bottom,
+        gap: spacing.xs,
+      }}
     >
       {items
         .filter((item) => item.visible)
@@ -111,6 +122,6 @@ export function BoardMenuSheet() {
             )}
           </Pressable>
         ))}
-    </ScrollView>
+    </View>
   );
 }
