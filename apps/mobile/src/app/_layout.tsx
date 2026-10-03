@@ -4,7 +4,11 @@ import '@/lib/api-client-setup';
 
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {
+  QueryClient,
+  QueryClientProvider,
+  focusManager,
+} from '@tanstack/react-query';
 import { Stack } from 'expo-router/stack';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -33,7 +37,12 @@ export default function RootLayout() {
     // supabase-js refreshes the access token on a `setTimeout`, and the OS
     // suspends timers in the background. Without this, an app left alone for
     // an hour wakes up holding an expired token and every request 401s.
+    //
+    // The same event stands in for the browser's window focus, which React
+    // Native does not have: coming back to the app refetches stale queries,
+    // so changes made on web meanwhile show up without a pull-to-refresh.
     const subscription = AppState.addEventListener('change', (state) => {
+      focusManager.setFocused(state === 'active');
       if (state === 'active') void supabase.auth.startAutoRefresh();
       else void supabase.auth.stopAutoRefresh();
     });

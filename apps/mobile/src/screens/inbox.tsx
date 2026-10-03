@@ -16,6 +16,7 @@ import { ThemedText } from '@/components/themed-text';
 import { useBoardScope } from '@/features/boards/use-board-scope';
 import { shortAgo } from '@/features/board/format';
 import { boardAccent, spacing, useScheme, useThemeColors } from '@/theme';
+import { useRefetchOnFocus } from '@/lib/refetch-on-focus';
 
 /**
  * Every comment that mentions you, across every band, newest first.
@@ -29,6 +30,7 @@ import { boardAccent, spacing, useScheme, useThemeColors } from '@/theme';
 export function InboxScreen() {
   const colors = useThemeColors();
   const scope = useBoardScope('inbox');
+  useRefetchOnFocus();
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>

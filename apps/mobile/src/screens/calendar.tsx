@@ -22,6 +22,7 @@ import { Dot, Row } from '@/components/row';
 import { ThemedText } from '@/components/themed-text';
 import { useBoardScope } from '@/features/boards/use-board-scope';
 import { dayHeading, timeOfDay } from '@/features/board/format';
+import { useRefetchOnFocus } from '@/lib/refetch-on-focus';
 import {
   boardAccent,
   radius,
@@ -48,6 +49,7 @@ import {
 export function CalendarScreen() {
   const colors = useThemeColors();
   const scope = useBoardScope('calendar');
+  useRefetchOnFocus();
   const [cursor, setCursor] = useState(() => {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };

@@ -8,6 +8,7 @@ import { HubCardSkeleton, HubStatCard } from '@/components/stat-card';
 import { ThemedText } from '@/components/themed-text';
 import { useSelectedBoard } from '@/features/board/selected-board';
 import { useHubCards } from '@/features/board/use-hub-cards';
+import { useRefetchOnFocus } from '@/lib/refetch-on-focus';
 import { spacing, useThemeColors } from '@/theme';
 
 /**
@@ -61,6 +62,7 @@ export function BoardHubScreen() {
 function HubGrid({ boardId }: { boardId: string }) {
   const colors = useThemeColors();
   const queryClient = useQueryClient();
+  useRefetchOnFocus();
   const detail = useBoard(boardId);
   const { cards, loading, error } = useHubCards(
     boardId,
