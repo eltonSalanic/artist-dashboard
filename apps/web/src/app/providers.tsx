@@ -2,7 +2,9 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { clearCacheOnUserChange } from "@/lib/clear-cache-on-user-change";
+import { supabase } from "@/lib/supabase";
 
 // Side-effect import: configures @artist/api-client before any hook requests.
 import "@/lib/api-client-setup";
@@ -15,6 +17,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
           queries: { staleTime: 30_000, retry: 1 },
         },
       }),
+  );
+
+  useEffect(
+    () => clearCacheOnUserChange(supabase.auth, queryClient),
+    [queryClient],
   );
 
   return (

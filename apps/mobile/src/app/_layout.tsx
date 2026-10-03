@@ -50,9 +50,9 @@ export default function RootLayout() {
   }, [loading]);
 
   useEffect(() => {
-    // The app is not reloaded between accounts the way a browser navigation
-    // reloads the web app, so without this the next person to sign in on this
-    // phone would briefly see the previous one's board out of the cache.
+    // The app is not reloaded between accounts, so without this the next
+    // person to sign in on this phone would see the previous one's board out
+    // of the cache. Web does the same in `clearCacheOnUserChange`.
     if (session === null) queryClient.clear();
   }, [session]);
 
