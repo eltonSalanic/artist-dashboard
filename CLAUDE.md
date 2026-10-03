@@ -98,6 +98,8 @@ npm run db:seed -w apps/api # (re)seed the demo board — DESTRUCTIVE, dev only
 npx prisma migrate dev      # from apps/api — new migration in dev
 npx prisma migrate deploy   # from apps/api — apply migrations in prod/CI
 npx supabase start|stop     # local Supabase stack
+npm run mobile              # Expo for the phone — same Wi-Fi as this machine
+npm run mobile:tunnel       # Expo + API + Supabase over ngrok — any network (tunnel.sh)
 ```
 
 Local Supabase runs in Docker (`supabase_db_artist-dashboard`, `supabase_storage_artist-dashboard`); mail is caught by Mailpit at `127.0.0.1:54324`.

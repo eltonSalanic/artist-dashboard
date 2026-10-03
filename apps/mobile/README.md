@@ -35,6 +35,42 @@ Phone and laptop must be on the same Wi-Fi. CORS is not involved: React
 Native's `fetch` is not a browser and sends no `Origin`, so the API's
 `enableCors({ origin: WEB_URL })` does not need to know about the phone.
 
+### On any other network: `npm run mobile:tunnel`
+
+Public Wi-Fi usually isolates devices from each other, and an IPv6-only
+hotspot (T-Mobile's, for one) gives the laptop an IPv4 address — `192.0.0.2` —
+that nothing else can dial. Expo Go then fails with "There was a problem
+running the requested project". Tunnel instead:
+
+```bash
+npm run mobile:tunnel           # from the repo root; stop `npm run mobile` first
+```
+
+[`tunnel.sh`](../../tunnel.sh) starts Supabase and the API if they are not
+already up, opens ngrok tunnels for the API (3001), Supabase (54321) and Metro
+(8081), starts Expo with those URLs, and prints its own QR code — scan that one
+(iOS: the Camera app). Ctrl+C stops everything it started.
+
+- **Needs ngrok, logged in:** `brew install ngrok`, then
+  `ngrok config add-authtoken <token>`. It runs three tunnels at once. Your
+  own `ngrok.yml` is read for the token, never edited.
+- **Supabase is tunnelled too**, because the phone signs in against Supabase
+  directly, not through the API.
+- **`.env` is not edited.** The tunnel URLs are set on Expo's process, and Expo
+  never lets `.env` overwrite a variable that is already set — `.env` still
+  supplies the anon key. `EXPO_PACKAGER_PROXY_URL` points the manifest at the
+  Metro tunnel.
+- **The QR code is `exps://`** (Expo Go's https scheme): ngrok serves https
+  only, and Expo's own QR would be `exp://…:443`, plain http. That is why Expo
+  runs in the background and its QR is not shown.
+- **No keyboard shortcuts** — shake the phone → Reload. Each run starts Metro
+  with `--clear`, since the URLs are new every time and inlined at bundle time,
+  so the first load is slow.
+- Logs (API, ngrok, Expo) go to a temp folder whose path is printed.
+
+⚠️ This puts your local Supabase and API on the public internet, and the local
+Supabase stack runs on well-known default secrets. Stop it when you're done.
+
 ## How this app is wired
 
 | Concern | Where | Note |
