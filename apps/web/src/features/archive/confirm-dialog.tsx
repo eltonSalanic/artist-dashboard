@@ -21,7 +21,7 @@ const COPY = {
     title: (label: string) => `Archive this ${label}?`,
     body: (
       <>
-        It comes off your dashboard, but it isn&apos;t gone — you&apos;ll find
+        It comes off your dashboard, but it isn&apos;t gone. You&apos;ll find
         it on the <strong>Archive</strong> page, and you can put it back any
         time.
       </>
@@ -43,7 +43,7 @@ const COPY = {
       <>
         <strong>This cannot be undone.</strong> It disappears from your
         dashboard and the archive alike. If you only want it out of the way,
-        archive it instead — archived items stay readable on the{" "}
+        archive it instead. Archived items stay readable on the{" "}
         <strong>Archive</strong> page.
       </>
     ),

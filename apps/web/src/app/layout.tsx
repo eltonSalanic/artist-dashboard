@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     template: "%s · Artist Dashboard",
   },
   description:
-    "Visibility, collaboration, and organization for bands and artists — tasks, goals, shows, rehearsals, and more in one dashboard.",
+    "Visibility, collaboration, and organization for bands and artists. Tasks, goals, shows, rehearsals, and more in one dashboard.",
 };
 
 export default function RootLayout({

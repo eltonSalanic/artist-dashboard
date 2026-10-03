@@ -65,7 +65,7 @@ function AppearanceEditor({
 
   const resetToDefault = () => {
     setTheme(DEFAULT_BOARD_THEME);
-    toast.message("Back to the standard palette — save to apply for the board");
+    toast.message("Back to the standard palette. Save to apply it for the board");
   };
 
   const widgetTypes = Object.keys(widgetRegistry) as WidgetType[];

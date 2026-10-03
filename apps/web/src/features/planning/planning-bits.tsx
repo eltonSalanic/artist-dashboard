@@ -47,7 +47,7 @@ export function formatDateTime(iso: string): string {
 
 /** "Mar 14" — local calendar day for real timestamps (e.g. completedAt). */
 export function formatLocalDate(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "No date";
   return new Date(iso).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
@@ -59,7 +59,7 @@ export function formatLocalDate(iso: string | null): string {
  * UTC midnight. Uses UTC so local TZ doesn't shift the day.
  */
 export function formatDate(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "No due date";
   return new Date(iso).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",

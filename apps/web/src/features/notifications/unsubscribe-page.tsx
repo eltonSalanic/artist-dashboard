@@ -57,8 +57,8 @@ export function UnsubscribePage() {
                 {NOTIFICATION_CATEGORY_COPY[
                   result.category
                 ].label.toLowerCase()}{" "}
-                emails from {result.boardName}. Other kinds still reach you —
-                you can change any of it in board settings.
+                emails from {result.boardName}. Other kinds still reach you,
+                and you can change any of it in board settings.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -74,7 +74,7 @@ export function UnsubscribePage() {
               <CardDescription>
                 {token
                   ? "This turns off one kind of email for one board. Everything else keeps working, and you can turn it back on in settings."
-                  : "This link is missing its token — open the link from the email again, or change your preferences in board settings."}
+                  : "This link is missing its token. Open the link from the email again, or change your preferences in board settings."}
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
@@ -89,7 +89,7 @@ export function UnsubscribePage() {
                 <p className="text-sm text-destructive">
                   {unsubscribe.error instanceof ApiError
                     ? unsubscribe.error.message
-                    : "Couldn't unsubscribe — try the link from the email again."}
+                    : "Couldn't unsubscribe. Try the link from the email again."}
                 </p>
               )}
             </CardContent>

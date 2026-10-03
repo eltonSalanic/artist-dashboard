@@ -207,7 +207,7 @@ function EventDetailBody({
             />
           ) : (
             <span className="text-sm text-muted-foreground">
-              {data.location || "—"}
+              {data.location || "No location"}
             </span>
           )}
         </Field>
@@ -250,7 +250,7 @@ function EventDetailBody({
             />
           ) : (
             <span className="text-sm text-muted-foreground">
-              {data.endsAt ? formatDateTime(data.endsAt) : "—"}
+              {data.endsAt ? formatDateTime(data.endsAt) : "No end time"}
             </span>
           )}
         </Field>

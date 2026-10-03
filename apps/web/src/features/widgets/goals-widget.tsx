@@ -168,7 +168,7 @@ function GoalRow({
       </button>
       <Badge variant="outline">{goalPeriodLabel[goal.period]}</Badge>
       <span className="w-16 shrink-0 text-right text-xs text-muted-foreground">
-        {formatDate(goal.dueDate)}
+        {goal.dueDate ? formatDate(goal.dueDate) : "No date"}
       </span>
       <span className="w-16 shrink-0 text-right text-xs text-muted-foreground">
         {goal.taskCount} {goal.taskCount === 1 ? "task" : "tasks"}

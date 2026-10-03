@@ -188,7 +188,7 @@ export function BoardDemoInner() {
                 <FauxRows rows={[...expandedDef.rows, ...expandedDef.rows]} />
               </div>
               <p className="text-sm text-muted-foreground">
-                On your own board this is the full list — every row editable,
+                On your own board this is the full list, with every row editable,
                 filterable, and yours to reorder.
               </p>
             </>

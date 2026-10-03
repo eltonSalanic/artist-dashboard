@@ -162,7 +162,7 @@ export function AssigneeAvatars({
  * Format in UTC so local timezones west of UTC don't shift the day back.
  */
 export function formatDueDate(dueDate: string | null): string {
-  if (!dueDate) return "—";
+  if (!dueDate) return "No due date";
   return new Date(dueDate).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",

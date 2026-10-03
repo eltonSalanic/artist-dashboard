@@ -99,7 +99,7 @@ function DefaultLayoutEditor({
 
   const resetToPreset = () => {
     setLayout(DEFAULT_BOARD_LAYOUT.map((item) => ({ ...item })));
-    toast.message("Reset to the standard preset — save to apply for the board");
+    toast.message("Reset to the standard preset. Save to apply it for the board");
   };
 
   return (
@@ -144,7 +144,7 @@ function DefaultLayoutEditor({
       <CardContent>
         {knownItems.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No widgets yet — add one above.
+            No widgets yet. Add one above.
           </p>
         ) : (
           <div data-palette={theme.palette}>

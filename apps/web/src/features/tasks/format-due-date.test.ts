@@ -12,7 +12,7 @@ describe("formatDueDate", () => {
     );
   });
 
-  it("returns an em dash when missing", () => {
-    expect(formatDueDate(null)).toBe("—");
+  it("says there is no due date when missing", () => {
+    expect(formatDueDate(null)).toBe("No due date");
   });
 });

@@ -138,7 +138,7 @@ function Preview({
   }
   return (
     <p className="text-sm text-muted-foreground">
-      This file type can&apos;t be previewed — download it to open it.
+      This file type can&apos;t be previewed. Download it to open it.
     </p>
   );
 }

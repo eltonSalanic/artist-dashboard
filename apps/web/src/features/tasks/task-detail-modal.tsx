@@ -218,7 +218,7 @@ function TaskLinks({
             {data.goal.title}
           </button>
         ) : (
-          <span className="text-sm text-muted-foreground">—</span>
+          <span className="text-sm text-muted-foreground">No goal</span>
         )}
         {canEdit && data.goal && (
           <button
@@ -269,7 +269,7 @@ function TaskLinks({
             {data.event.title} · {formatDateTime(data.event.startsAt)}
           </button>
         ) : (
-          <span className="text-sm text-muted-foreground">—</span>
+          <span className="text-sm text-muted-foreground">No event</span>
         )}
         {canEdit && data.event && (
           <button
