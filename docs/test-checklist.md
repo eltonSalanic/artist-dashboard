@@ -563,11 +563,15 @@ Mention parsing and the upload flow moved into the shared packages.
 - [x] 🔵 ↻ On web, upload a file to a task → It appears, previews, downloads
 - [ ] ↻ On web, attach a file to a comment, then delete it → It disappears from the comment **without a reload** (it used to linger — fixed here)
 
+
+
 ### Permissions follow the task's band — ★ new, the check that matters most
 
 - [x] 🔵 ★ Select a band where you are **admin**, then open a task from the Calendar or Inbox that belongs to a band where you are a **member** → Behaves as a member: no drag, status only changeable if you are assigned
 - [x] 🔵 ★ The reverse — select the member band, open a task in your admin band → Behaves as an admin
 - [ ] ★ As a member, a task you are **not** assigned to → Status pill has no chevron and does nothing; a task you **are** assigned to → Chevron, opens the sheet
+
+
 
 ### Status — ★ new
 
@@ -576,10 +580,14 @@ Mention parsing and the upload flow moved into the shared packages.
 - [ ] ★ Tap the status dot on a To-Do row → The same sheet opens; tapping the row elsewhere still opens the task
 - [ ] ★ Change a subtask's status from the subtask's own screen, go back → Both the subtask and the parent's subtask list show the new status
 
+
+
 ### Checklist — ★ new
 
 - [x] 🔵 ★ Tick an item → It ticks at once, with no flicker back while it saves; web agrees
 - [ ] ★ Tick as a **member** (not admin) → Allowed — web and the API allow it too
+
+
 
 ### Comments and mentions — ★ new
 
@@ -589,6 +597,8 @@ Mention parsing and the upload flow moved into the shared packages.
 - [ ] ★ The comment field near the bottom of a long task, keyboard open → The field and the Comment button stay visible above the keyboard (check **both** iOS and Android)
 - [ ] ★ Edit your own comment via ⋯ → Saves, shows "edited"
 - [ ] ★ Someone else's comment, as a member → No ⋯ at all. As an admin → ⋯ offers Delete only
+
+
 
 ### Attachments — ★ new
 
@@ -600,6 +610,8 @@ Mention parsing and the upload flow moved into the shared packages.
 - [ ] ★ A video over 50MB → "File is larger than the 50MB limit", and nothing half-uploaded appears
 - [ ] ★ Delete your own upload → Confirm prompt, then gone; someone else's upload as a member → no trash icon
 
+
+
 ### Reorder — ★ new
 
 - [x] 🔵 ★ As an admin, open the To-Do spoke → Same order as web's To-Do widget (it used to show newest first), with "Hold a task to move it."
@@ -608,6 +620,8 @@ Mention parsing and the upload flow moved into the shared packages.
 - [ ] ★ Drag to the very top, and to the very bottom → Both stick
 - [ ] ★ As a member → No hint and no drag; holding a row does nothing
 - [ ] ★ With VoiceOver/TalkBack on, a row's actions → Move up / Move down, and they work
+
+
 
 ### Deliberately not in this phase
 
@@ -628,20 +642,24 @@ date bugs show.
 
 ### Dates — ★ new, highest priority
 
-- [ ] 🔵 ★ Look at a task due **today** on the phone → Reads "Today", and the hub's To-Do card says "1 due today". (It said "Yesterday" before this phase)
-- [ ] 🔵 ★ Set a task's due date to the 2nd on the phone → Web shows the 2nd, and so does the phone
-- [ ] 🔵 ★ Create a show at 9pm on the phone → Web shows 9pm on the same day
+- [x] 🔵 ★ Look at a task due **today** on the phone → Reads "Today", and the hub's To-Do card says "1 due today". (It said "Yesterday" before this phase)
+- [x] 🔵 ★ Set a task's due date to the 2nd on the phone → Web shows the 2nd, and so does the phone
+- [x] 🔵 ★ Create a show at 9pm on the phone → Web shows 9pm on the same day
 - [ ] ★ Set a goal's target to the 1st of next month → It sits on the 1st in the Calendar tab and on web
+
+
 
 ### Tasks — ★ new
 
-- [ ] 🔵 ★ To-Do spoke → **+** → title, priority, due, assignees → Save → It appears in the list and on web, assigned
-- [ ] 🔵 ★ Task detail → **Edit** → change the title → Save → The task screen already shows it; web agrees after refresh
+- [x] 🔵 ★ To-Do spoke → **+** → title, priority, due, assignees → Save → It appears in the list and on web, assigned
+- [x] 🔵 ★ Task detail → **Edit** → change the title → Save → The task screen already shows it; web agrees after refresh
 - [ ] ★ Task detail → Subtasks → **Add** → Save → The subtask is listed under its parent
 - [ ] ★ Open a subtask → No "Add" — subtasks only go one level, as on web
-- [ ] 🔵 ★ Edit → Archive → The form *and* the task screen close; the task is gone from To-Do and is in web's Archive
+- [x] 🔵 ★ Edit → Archive → The form *and* the task screen close; the task is gone from To-Do and is in web's Archive
 - [ ] ★ Edit → Delete → "Delete forever" → Same, and it's not in the Archive either
 - [ ] ★ As a **member**, open a task → No Edit button; "Add" under Subtasks is there, and creating one works
+
+
 
 ### Events, reminders, goals, focus — ★ new
 
@@ -654,11 +672,15 @@ date bugs show.
 - [ ] ★ Focus spoke → **Edit** → set the week's focus → The hub's Focus card shows it. Clear it and save → "Not set"
 - [ ] 🔵 ★ As a **member**, every spoke → No **+**, no Edit, and tapping an event/reminder/goal does nothing
 
+
+
 ### Unsaved work — ★ new
 
 - [ ] 🔵 ★ Type into a form, then swipe it down (iOS) → It won't go; Cancel asks "Discard changes?"
 - [ ] 🔵 ★ Same on Android with the **back button** → "Discard changes?"
 - [ ] 🔵 ★ Save a change → It closes without asking
+
+
 
 ### Regressions — ↻
 
@@ -679,6 +701,8 @@ sections in one pass.
 - [ ] 🔵 ★ Board header → ⋯ → Archive → The sheet closes and the Archive opens; back returns to the board
 - [ ] 🔵 ★ ⋯ → Settings, as a **member** → Only "Email notifications"; no members, invites, statuses or palette
 
+
+
 ### Archive — ★ new
 
 - [ ] 🔵 ★ Archive a show on web, open the phone's Archive → It's listed as a Show, with when it was archived
@@ -686,6 +710,8 @@ sections in one pass.
 - [ ] ★ Tap an archived task → The task screen opens and says "archived"; Edit → Unarchive brings it back
 - [ ] ★ Tap the "Tasks" chip, then "Goals" too → The list narrows to both; untick both → Everything again
 - [ ] ★ As a **member**, tap an archived show → Nothing (a record, not a door); an archived task still opens read-only
+
+
 
 ### Settings — ★ new
 
@@ -698,6 +724,8 @@ sections in one pass.
 - [ ] ★ Add a status → It's offered in the status sheet straight away
 - [ ] ★ Delete a status that tasks still use → Refused with how many tasks use it
 - [ ] 🔵 ★ Pick another palette → The hub's cards recolour; web shows the new palette too, and any per-card colours set on web are kept
+
+
 
 ### Regressions — ↻
 
@@ -718,6 +746,8 @@ lost by a phone save**.
 
 - [ ] 🔵 ★ On web, write a note with a heading, **bold**, *italic*, a bulleted and a numbered list, and a link → The phone's Notes spoke shows all of it formatted, not as markers
 - [ ] ★ Tap the link → Opens in the browser
+
+
 
 ### Editing — ★ new
 
@@ -742,6 +772,8 @@ arrangement, the same one web edits.
 
 - [ ] 🔵 ★ On web, drag the Shows widget to the top-left of your dashboard, then pull to refresh the phone's hub → Shows is the **first** card. (Before P12 the phone always showed the original order)
 - [ ] ★ Swipe through the spokes → Same order as the hub
+
+
 
 ### Editing — ★ new
 
