@@ -3,7 +3,9 @@ import { DEFAULT_BOARD_LAYOUT, mergeLayouts, type LayoutItem } from './layout';
 import {
   mergeMobileLayout,
   mobileLayoutFromWeb,
+  moveCard,
   packMobileGrid,
+  resizeCard,
   stretchLoneCards,
   type MobileLayoutItem,
   type MobilePlacement,
@@ -176,6 +178,36 @@ describe('stretchLoneCards', () => {
   it('stretches a tall card only if nothing is beside it for its whole height', () => {
     expect(stretch([card('TODOS', 1, 2), card('GOALS')])).toEqual(['TODOS 0:1', 'GOALS 1:1']);
     expect(stretch([card('TODOS', 1, 2)])).toEqual(['TODOS 0:2']);
+  });
+});
+
+describe('moveCard', () => {
+  const items = [card('GOALS'), card('SHOWS'), card('REMINDERS', 1, 1, true), card('MY_TASKS')];
+
+  it('dragged forward, lands after the card it was dropped on', () => {
+    expect(types(moveCard(items, 'GOALS', 'SHOWS'))).toEqual(['SHOWS', 'GOALS', 'REMINDERS', 'MY_TASKS']);
+  });
+
+  it('dragged back, lands before it', () => {
+    expect(types(moveCard(items, 'MY_TASKS', 'SHOWS'))).toEqual(['GOALS', 'MY_TASKS', 'SHOWS', 'REMINDERS']);
+  });
+
+  it('keeps hidden cards in their place in the order', () => {
+    const moved = moveCard(items, 'GOALS', 'MY_TASKS');
+    expect(types(moved)).toEqual(['SHOWS', 'REMINDERS', 'MY_TASKS', 'GOALS']);
+    expect(moved[1]).toEqual(card('REMINDERS', 1, 1, true));
+  });
+
+  it('leaves the list alone for an unknown card or a drop on itself', () => {
+    expect(moveCard(items, 'GOALS', 'GOALS')).toBe(items);
+    expect(moveCard(items, 'FOCUS', 'GOALS')).toBe(items);
+  });
+});
+
+describe('resizeCard', () => {
+  it('changes only the one card', () => {
+    const items = [card('GOALS'), card('SHOWS')];
+    expect(resizeCard(items, 'SHOWS', { w: 2, h: 2 })).toEqual([card('GOALS'), card('SHOWS', 2, 2)]);
   });
 });
 

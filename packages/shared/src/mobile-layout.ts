@@ -153,3 +153,32 @@ export function stretchLoneCards(placements: MobilePlacement[]): MobilePlacement
     return { ...p, col: 0, w: 2 };
   });
 }
+
+/**
+ * Move a card to where another one is in the order. Dragging forward lands
+ * after the card you dropped on, dragging back lands before it, which is how
+ * a dragged card reads as taking that card's place. Hidden cards keep their
+ * spot in the list, so showing one again puts it back where it was.
+ */
+export function moveCard(
+  items: MobileLayoutItem[],
+  widgetType: CardWidgetType,
+  onto: CardWidgetType,
+): MobileLayoutItem[] {
+  const from = items.findIndex((item) => item.widgetType === widgetType);
+  const to = items.findIndex((item) => item.widgetType === onto);
+  if (from === -1 || to === -1 || from === to) return items;
+  const next = [...items];
+  const [moved] = next.splice(from, 1);
+  next.splice(to, 0, moved);
+  return next;
+}
+
+/** Change one card's size, keeping everything else as it is. */
+export function resizeCard(
+  items: MobileLayoutItem[],
+  widgetType: CardWidgetType,
+  size: { w: MobileSpan; h: MobileSpan },
+): MobileLayoutItem[] {
+  return items.map((item) => (item.widgetType === widgetType ? { ...item, ...size } : item));
+}
