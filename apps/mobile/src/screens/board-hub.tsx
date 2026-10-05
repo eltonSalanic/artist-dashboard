@@ -64,7 +64,7 @@ function HubGrid({ boardId }: { boardId: string }) {
   const queryClient = useQueryClient();
   useRefetchOnFocus();
   const detail = useBoard(boardId);
-  const { cards, loading, error } = useHubCards(
+  const { rows, loading, error } = useHubCards(
     boardId,
     resolveBoardTheme(detail.data?.theme),
   );
@@ -109,17 +109,20 @@ function HubGrid({ boardId }: { boardId: string }) {
                 <HubCardSkeleton />
               </View>
             ))
-          : cards.map((card) => (
-              <View
-                key={card.widgetType}
-                style={card.kind === 'hero' ? styles.hero : styles.stat}
-              >
-                <HubStatCard
-                  card={card}
-                  onPress={() =>
-                    router.push(`/board/${boardId}/w/${card.widgetType}`)
-                  }
-                />
+          : rows.map((row) => (
+              // A row is one card at full width or two side by side: a half
+              // card without a half partner stretches, so there are no gaps.
+              <View key={row.map((card) => card.widgetType).join()} style={styles.row}>
+                {row.map((card) => (
+                  <View key={card.widgetType} style={styles.cell}>
+                    <HubStatCard
+                      card={card}
+                      onPress={() =>
+                        router.push(`/board/${boardId}/w/${card.widgetType}`)
+                      }
+                    />
+                  </View>
+                ))}
               </View>
             ))}
       </View>
@@ -181,9 +184,10 @@ const styles = {
     justifyContent: 'space-between' as const,
     rowGap: spacing.sm,
   },
-  /** Prose: the full width. */
-  hero: { width: '100%' as const },
-  /** Countable: two up, and a lone trailing card stays half-width. */
+  /** One card, or two sharing the width equally. */
+  row: { width: '100%' as const, flexDirection: 'row' as const, gap: spacing.sm },
+  cell: { flex: 1 },
+  /** Loading placeholders: two up, before the arrangement is known. */
   stat: { width: '48.5%' as const },
   centered: (background: string) => ({
     flex: 1,

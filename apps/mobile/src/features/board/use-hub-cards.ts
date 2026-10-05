@@ -33,7 +33,7 @@ import { WIDGET_ICONS } from './widget-icons';
  */
 export interface HubCard {
   widgetType: WidgetType;
-  /** Prose widgets get the full width; countable ones sit two-up. */
+  /** Prose or a count: decides what the card draws, not how wide it is. */
   kind: 'hero' | 'stat';
   title: string;
   slot: WidgetColor;
@@ -51,18 +51,16 @@ export interface HubCard {
 const HERO_WIDGETS: readonly WidgetType[] = ['FOCUS', 'CUSTOM'];
 
 export interface HubCards {
-  cards: HubCard[];
+  /** One or two cards per row, as the phone arrangement lays them out. */
+  rows: HubCard[][];
   /** True until the layout is known; the cards themselves load individually. */
   loading: boolean;
   error: Error | null;
 }
 
 /**
- * Every widget on the hub, in the order the board's layout puts them.
- *
- * The layout comes back from the API already merged — `GET /boards/:id/layout`
- * applies the user's arrangement over the board default server-side — so this
- * reads `hidden` and order straight off it.
+ * Every widget on the hub, in the rows the phone arrangement puts them in
+ * (`useVisibleWidgets`): order, width and hidden all come from it.
  *
  * Every query runs whether or not its widget is visible. Hiding is a P12
  * feature and the shipped default shows all ten, so gating each hook would add
@@ -207,7 +205,7 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
     },
   };
 
-  const cards = layout.widgets.map<HubCard>((widgetType) => ({
+  const card = (widgetType: WidgetType): HubCard => ({
     widgetType,
     title: WIDGET_META[widgetType].title,
     slot: resolveWidgetColor(
@@ -218,9 +216,11 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
     icon: WIDGET_ICONS[widgetType],
     kind: HERO_WIDGETS.includes(widgetType) ? 'hero' : 'stat',
     ...summaries[widgetType],
-  }));
+  });
 
-  return { cards, loading: layout.loading, error: layout.error };
+  const rows = layout.rows.map((row) => row.map((item) => card(item.widgetType)));
+
+  return { rows, loading: layout.loading, error: layout.error };
 }
 
 /** The fields the layout supplies, which each summary does not. */

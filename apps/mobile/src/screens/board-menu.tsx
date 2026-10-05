@@ -32,7 +32,7 @@ export function BoardMenuSheet() {
     {
       icon: { sf: 'square.grid.2x2', md: 'dashboard-customize' },
       title: 'Manage widgets',
-      body: 'Choose which cards you see and in what order.',
+      body: 'Choose which cards your phone shows, how wide, and in what order.',
       href: base ? `${base}/form/widgets` : undefined,
       visible: true,
     },
