@@ -73,18 +73,22 @@ const MORPH = {
  * first moment of the press is the one being watched.
  */
 const SINK_SCALE = 0.95;
-const sinkOver = (duration: number) =>
-  ({
-    duration,
-    easing: Easing.bezier(0.23, 1, 0.32, 1),
-    reduceMotion: ReduceMotion.System,
-  }) as const;
+/** In edit mode, how long a card is held before it lifts and follows the finger. */
+const DRAG_HOLD = 150;
+
+// Constants, not a helper that builds them: the drag's touch-down runs on the
+// UI thread, and calling a plain function there crashes the app.
+const SINK_EASE = Easing.bezier(0.23, 1, 0.32, 1);
+const SINK_TO_EDIT = {
+  duration: HOLD_TO_EDIT,
+  easing: SINK_EASE,
+  reduceMotion: ReduceMotion.System,
+};
+const SINK_TO_DRAG = { duration: DRAG_HOLD, easing: SINK_EASE, reduceMotion: ReduceMotion.System };
 
 /** How far from the screen's edge a dragged card starts scrolling it, and how fast. */
 const EDGE = 96;
 const MAX_SCROLL_STEP = 14;
-/** In edit mode, how long a card is held before it lifts and follows the finger. */
-const DRAG_HOLD = 150;
 
 type Frame = { x: number; y: number; width: number; height: number };
 type Rect = Frame & { widgetType: CardWidgetType };
@@ -435,7 +439,7 @@ function GridCard({
         .simultaneousWithExternalGesture(resize)
         .onBegin(() => {
           if (resizing.get()) return;
-          press.set(withTiming(SINK_SCALE, sinkOver(DRAG_HOLD)));
+          press.set(withTiming(SINK_SCALE, SINK_TO_DRAG));
         })
         .onStart((event) => {
           // A touch that began on the corner is a resize, not a move.
@@ -556,9 +560,7 @@ function GridCard({
                   onStartEditing();
                 }
           }
-          onPressIn={
-            editing ? undefined : () => press.set(withTiming(SINK_SCALE, sinkOver(HOLD_TO_EDIT)))
-          }
+          onPressIn={editing ? undefined : () => press.set(withTiming(SINK_SCALE, SINK_TO_EDIT))}
           onPressOut={editing ? undefined : () => press.set(withSpring(1, SETTLE))}
         />
 

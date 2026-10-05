@@ -212,18 +212,21 @@ function BoardHub({ boardId, name }: { boardId: string; name: string }) {
           contentInsetAdjustmentBehavior="automatic"
           contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}
           refreshControl={
-            editing ? undefined : (
-              <RefreshControl
-                refreshing={false}
-                onRefresh={() => {
-                  // Pull-to-refresh is the gesture people already try on a phone;
-                  // invalidating the board's whole subtree is cheaper to reason
-                  // about than listing nine keys that must stay in sync with the hook.
-                  void queryClient.invalidateQueries();
-                }}
-                tintColor={colors.mutedForeground}
-              />
-            )
+            // Always mounted, even while editing. On iOS the control is the
+            // scroll view's first child, so removing it shifts the content to
+            // a new slot and React rebuilds every card: edit mode flashed in,
+            // and nothing could animate. Editing just switches it off.
+            <RefreshControl
+              refreshing={false}
+              onRefresh={() => {
+                if (editing) return;
+                // Pull-to-refresh is the gesture people already try on a phone;
+                // invalidating the board's whole subtree is cheaper to reason
+                // about than listing nine keys that must stay in sync with the hook.
+                void queryClient.invalidateQueries();
+              }}
+              tintColor={editing ? 'transparent' : colors.mutedForeground}
+            />
           }
         >
           {editing && (
