@@ -16,10 +16,13 @@ export type MobileCardSize = (typeof MobileCardSizes)[number];
 // A type alias, not an interface: an alias is assignable to the Prisma `Json`
 // the API stores it as, an interface is not.
 export type MobileLayoutItem = {
-  widgetType: WidgetType;
+  widgetType: CardWidgetType;
   size: MobileCardSize;
   hidden?: boolean;
 };
+
+/** Every widget but the Calendar, which is a tab on the phone, never a card. */
+export type CardWidgetType = Exclude<WidgetType, 'CALENDAR'>;
 
 /** Where a phone arrangement came from: derived from web, or saved on a phone. */
 export type MobileLayoutSource = 'web' | 'phone';
@@ -37,7 +40,8 @@ export function defaultMobileSize(widgetType: WidgetType): MobileCardSize {
 }
 
 /** A tab, not a widget: it is in web's layout but never a card. */
-const isCard = (widgetType: WidgetType) => widgetType !== 'CALENDAR';
+const isCard = (item: LayoutItem): item is LayoutItem & { widgetType: CardWidgetType } =>
+  item.widgetType !== 'CALENDAR';
 
 /**
  * A phone arrangement that follows web: web's reading order (top to bottom,
@@ -48,8 +52,8 @@ const isCard = (widgetType: WidgetType) => widgetType !== 'CALENDAR';
  */
 export function mobileLayoutFromWeb(web: LayoutItem[]): MobileLayoutItem[] {
   return readingOrder(web)
-    .filter((item) => isCard(item.widgetType))
-    .map((item) => ({
+    .filter(isCard)
+    .map((item): MobileLayoutItem => ({
       widgetType: item.widgetType,
       size: defaultMobileSize(item.widgetType),
       ...(item.hidden ? { hidden: true } : {}),

@@ -1,5 +1,10 @@
 import { Body, Controller, Delete, Get, Param, Put } from '@nestjs/common';
-import { updateLayoutSchema, type UpdateLayoutDto } from '@artist/shared';
+import {
+  updateLayoutSchema,
+  updateMobileLayoutSchema,
+  type UpdateLayoutDto,
+  type UpdateMobileLayoutDto,
+} from '@artist/shared';
 import { CurrentUser, type AuthUser } from '../auth/current-user.decorator';
 import { BoardRoles } from '../common/board-roles.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
@@ -29,6 +34,32 @@ export class LayoutsController {
   @BoardRoles('USER')
   reset(@Param('boardId') boardId: string, @CurrentUser() user: AuthUser) {
     return this.layouts.resetForUser(boardId, user.userId);
+  }
+
+  @Get('mobile-layout')
+  @BoardRoles('USER')
+  getMobile(@Param('boardId') boardId: string, @CurrentUser() user: AuthUser) {
+    return this.layouts.getMobileForUser(boardId, user.userId);
+  }
+
+  @Put('mobile-layout')
+  @BoardRoles('USER')
+  updateMobile(
+    @Param('boardId') boardId: string,
+    @CurrentUser() user: AuthUser,
+    @Body(new ZodValidationPipe(updateMobileLayoutSchema))
+    dto: UpdateMobileLayoutDto,
+  ) {
+    return this.layouts.saveMobileForUser(boardId, user.userId, dto);
+  }
+
+  @Delete('mobile-layout')
+  @BoardRoles('USER')
+  resetMobile(
+    @Param('boardId') boardId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.layouts.resetMobileForUser(boardId, user.userId);
   }
 
   @Put('default-layout')

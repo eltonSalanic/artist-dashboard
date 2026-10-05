@@ -1,5 +1,9 @@
 import { NotFoundException } from '@nestjs/common';
-import { DEFAULT_BOARD_LAYOUT, type LayoutItem } from '@artist/shared';
+import {
+  DEFAULT_BOARD_LAYOUT,
+  type LayoutItem,
+  type MobileLayoutItem,
+} from '@artist/shared';
 import { LayoutsService } from './layouts.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -7,6 +11,11 @@ describe('LayoutsService', () => {
   const prisma = {
     board: { findUnique: jest.fn(), update: jest.fn() },
     userLayout: {
+      findUnique: jest.fn(),
+      upsert: jest.fn(),
+      deleteMany: jest.fn(),
+    },
+    mobileLayout: {
       findUnique: jest.fn(),
       upsert: jest.fn(),
       deleteMany: jest.fn(),
@@ -112,6 +121,82 @@ describe('LayoutsService', () => {
       y: 0,
       w: 8,
       h: 6,
+    });
+  });
+
+  it("leaves the phone's arrangement alone when the web layout is reset", async () => {
+    prisma.board.findUnique.mockResolvedValue({ defaultLayout: [] });
+    prisma.userLayout.findUnique.mockResolvedValue(null);
+    await service.resetForUser('b1', 'u1');
+    expect(prisma.mobileLayout.deleteMany).not.toHaveBeenCalled();
+  });
+
+  describe('the phone arrangement', () => {
+    const web: LayoutItem[] = [
+      { widgetType: 'GOALS', x: 0, y: 4, w: 4, h: 4 },
+      { widgetType: 'SHOWS', x: 0, y: 0, w: 4, h: 4 },
+      { widgetType: 'FOCUS', x: 4, y: 0, w: 8, h: 3 },
+    ];
+
+    beforeEach(() => {
+      prisma.board.findUnique.mockResolvedValue({ defaultLayout: web });
+      prisma.userLayout.findUnique.mockResolvedValue(null);
+    });
+
+    it('follows the web arrangement until one is saved on a phone', async () => {
+      prisma.mobileLayout.findUnique.mockResolvedValue(null);
+
+      const result = await service.getMobileForUser('b1', 'u1');
+
+      expect(result.source).toBe('web');
+      expect(result.items.slice(0, 3)).toEqual([
+        { widgetType: 'SHOWS', size: 'half' },
+        { widgetType: 'FOCUS', size: 'full' },
+        { widgetType: 'GOALS', size: 'half' },
+      ]);
+    });
+
+    it('serves the saved arrangement, with widgets added since at the end', async () => {
+      const items: MobileLayoutItem[] = [
+        { widgetType: 'GOALS', size: 'full' },
+        { widgetType: 'SHOWS', size: 'half', hidden: true },
+      ];
+      prisma.mobileLayout.findUnique.mockResolvedValue({ items });
+
+      const result = await service.getMobileForUser('b1', 'u1');
+
+      expect(result.source).toBe('phone');
+      expect(result.items.slice(0, 2)).toEqual(items);
+      // Shipped widgets the board's default predates still reach the phone.
+      expect(result.items.map((i) => i.widgetType)).toEqual(
+        expect.arrayContaining(['FOCUS', 'TODOS']),
+      );
+    });
+
+    it('upserts the arrangement for the current user and returns it', async () => {
+      const items: MobileLayoutItem[] = [{ widgetType: 'SHOWS', size: 'full' }];
+      prisma.mobileLayout.findUnique.mockResolvedValue({ items });
+
+      const result = await service.saveMobileForUser('b1', 'u1', { items });
+
+      expect(prisma.mobileLayout.upsert).toHaveBeenCalledWith({
+        where: { boardId_userId: { boardId: 'b1', userId: 'u1' } },
+        create: { boardId: 'b1', userId: 'u1', items },
+        update: { items },
+      });
+      expect(result.source).toBe('phone');
+    });
+
+    it('drops the arrangement on reset, so the phone follows web again', async () => {
+      prisma.mobileLayout.findUnique.mockResolvedValue(null);
+
+      const result = await service.resetMobileForUser('b1', 'u1');
+
+      expect(prisma.mobileLayout.deleteMany).toHaveBeenCalledWith({
+        where: { boardId: 'b1', userId: 'u1' },
+      });
+      expect(prisma.userLayout.deleteMany).not.toHaveBeenCalled();
+      expect(result.source).toBe('web');
     });
   });
 });

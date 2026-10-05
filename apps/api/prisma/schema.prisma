@@ -34,6 +34,7 @@ model User {
   createdTasks  Task[]                   @relation("TaskCreatedBy")
   taskAssignees TaskAssignee[]
   layouts       UserLayout[]
+  mobileLayouts MobileLayout[]
   comments      Comment[]
   attachments   Attachment[]
   activities    Activity[]
@@ -59,6 +60,7 @@ model Board {
   statuses      TaskStatus[]
   tasks         Task[]
   userLayouts   UserLayout[]
+  mobileLayouts MobileLayout[]
   goals         Goal[]
   events        Event[]
   focusPins     FocusPin[]
@@ -371,6 +373,23 @@ model UserLayout {
   boardId   String   @db.Uuid
   userId    String   @db.Uuid
   layout    Json
+  updatedAt DateTime @updatedAt
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId, userId])
+}
+
+/// The phone's own arrangement of a board: an ordered list of
+/// `{ widgetType, size: 'full' | 'half', hidden? }` (`MobileLayoutItem` in
+/// packages/shared). No row means the phone follows the web arrangement.
+/// Its own table, not a column on UserLayout, because resetting the web
+/// layout deletes that row.
+model MobileLayout {
+  id        String   @id @default(uuid()) @db.Uuid
+  boardId   String   @db.Uuid
+  userId    String   @db.Uuid
+  items     Json
   updatedAt DateTime @updatedAt
   board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)

@@ -1,9 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   mergeLayouts,
+  mergeMobileLayout,
+  mobileLayoutFromWeb,
   withShippedWidgets,
   type LayoutItem,
+  type MobileLayoutItem,
+  type MobileLayoutResponse,
   type UpdateLayoutDto,
+  type UpdateMobileLayoutDto,
 } from '@artist/shared';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -53,5 +58,47 @@ export class LayoutsService {
       data: { defaultLayout: dto.layout },
     });
     return { layout: dto.layout };
+  }
+
+  /**
+   * The phone's arrangement: the one saved on a phone, kept up to date with
+   * the board's widgets, or, until there is one, derived from the user's web
+   * layout. Both rules are in packages/shared so the phone cannot disagree.
+   */
+  async getMobileForUser(
+    boardId: string,
+    userId: string,
+  ): Promise<MobileLayoutResponse> {
+    const { layout: web } = await this.getForUser(boardId, userId);
+    const saved = await this.prisma.mobileLayout.findUnique({
+      where: { boardId_userId: { boardId, userId } },
+    });
+    if (!saved) return { items: mobileLayoutFromWeb(web), source: 'web' };
+    return {
+      items: mergeMobileLayout(
+        saved.items as unknown as MobileLayoutItem[],
+        web,
+      ),
+      source: 'phone',
+    };
+  }
+
+  async saveMobileForUser(
+    boardId: string,
+    userId: string,
+    dto: UpdateMobileLayoutDto,
+  ) {
+    await this.prisma.mobileLayout.upsert({
+      where: { boardId_userId: { boardId, userId } },
+      create: { boardId, userId, items: dto.items },
+      update: { items: dto.items },
+    });
+    return this.getMobileForUser(boardId, userId);
+  }
+
+  /** Drop the phone's arrangement so it follows the web one again. */
+  async resetMobileForUser(boardId: string, userId: string) {
+    await this.prisma.mobileLayout.deleteMany({ where: { boardId, userId } });
+    return this.getMobileForUser(boardId, userId);
   }
 }
