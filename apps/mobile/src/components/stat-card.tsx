@@ -5,6 +5,9 @@ import { Icon } from './icon';
 import { Skeleton } from './skeleton';
 import { ThemedText } from './themed-text';
 
+/** How long a card is held before the hub goes into edit mode. */
+export const HOLD_TO_EDIT = 400;
+
 /**
  * One widget as a summary. The anatomy is fixed — icon + title, one value, one
  * qualifier — because ten cards that each decide their own shape stop reading
@@ -19,12 +22,17 @@ export function HubStatCard({
   tall = false,
   onPress,
   onLongPress,
+  onPressIn,
+  onPressOut,
 }: {
   card: HubCard;
   tall?: boolean;
   onPress?: () => void;
   /** Holding a card is how the hub enters edit mode. */
   onLongPress?: () => void;
+  /** So the grid can shrink the card while it is held, as a phone's home screen does. */
+  onPressIn?: () => void;
+  onPressOut?: () => void;
 }) {
   const tokens = useSlotTokens(card.slot);
   const hero = card.kind === 'hero';
@@ -41,7 +49,9 @@ export function HubStatCard({
         }
         onPress={onPress}
         onLongPress={onLongPress}
-        delayLongPress={400}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+        delayLongPress={HOLD_TO_EDIT}
         style={({ pressed }) => ({
           flex: 1,
           overflow: 'hidden',

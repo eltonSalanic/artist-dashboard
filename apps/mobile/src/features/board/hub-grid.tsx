@@ -3,6 +3,9 @@ import { Pressable, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
+  Easing,
+  FadeIn,
+  FadeOut,
   ReduceMotion,
   scrollTo,
   useAnimatedReaction,
@@ -26,7 +29,7 @@ import {
   type MobileSpan,
 } from '@artist/shared';
 import { Icon, type IconName } from '@/components/icon';
-import { HubStatCard } from '@/components/stat-card';
+import { HOLD_TO_EDIT, HubStatCard } from '@/components/stat-card';
 import { radius, spacing, useThemeColors } from '@/theme';
 import type { HubCard } from './use-hub-cards';
 
@@ -58,9 +61,30 @@ const SETTLE = {
   dampingRatio: 1,
   reduceMotion: ReduceMotion.System,
 } as const;
+/** A card changing size or column on screen: a morph, so ease-in-out. */
+const MORPH = {
+  duration: 300,
+  easing: Easing.bezier(0.77, 0, 0.175, 1),
+  reduceMotion: ReduceMotion.System,
+} as const;
+/**
+ * A held card sinks while it is held, so the hold reads as doing something
+ * before it takes, the way a phone's home screen icon does. Ease-out: the
+ * first moment of the press is the one being watched.
+ */
+const SINK_SCALE = 0.95;
+const sinkOver = (duration: number) =>
+  ({
+    duration,
+    easing: Easing.bezier(0.23, 1, 0.32, 1),
+    reduceMotion: ReduceMotion.System,
+  }) as const;
+
 /** How far from the screen's edge a dragged card starts scrolling it, and how fast. */
 const EDGE = 96;
 const MAX_SCROLL_STEP = 14;
+/** In edit mode, how long a card is held before it lifts and follows the finger. */
+const DRAG_HOLD = 150;
 
 type Frame = { x: number; y: number; width: number; height: number };
 type Rect = Frame & { widgetType: CardWidgetType };
@@ -342,6 +366,13 @@ function GridCard({
   // springs between cells, and while it is under the finger.
   const x = useSharedValue(frame.x);
   const y = useSharedValue(frame.y);
+  // Size changes too (entering edit mode undoes the stretch; a resize lands),
+  // and is animated rather than snapped. Width and height are a layout pass
+  // per frame, which is fine for something this occasional; a scale would
+  // smear the text.
+  const width = useSharedValue(frame.width);
+  const height = useSharedValue(frame.height);
+  const press = useSharedValue(1);
   const slot = useSharedValue(frame);
   const size = useSharedValue({ w: placement.w, h: placement.h });
   const scale = useSharedValue(1);
@@ -358,6 +389,8 @@ function GridCard({
         .hitSlop(12)
         .onBegin(() => {
           resizing.set(true);
+          // The corner is not a hold on the card: undo any sink it started.
+          press.set(withSpring(1, SETTLE));
           snapW.set(size.get().w);
           snapH.set(size.get().h);
         })
@@ -379,16 +412,18 @@ function GridCard({
           const h = snapH.get();
           if (w !== size.get().w || h !== size.get().h) scheduleOnRN(onResize, type, w, h);
         }),
-    [resizing, snapW, snapH, size, slot, cell, type, onResize],
+    [resizing, snapW, snapH, size, slot, cell, type, onResize, press],
   );
 
   useEffect(() => {
     slot.set(frame);
     size.set({ w: placement.w, h: placement.h });
+    width.set(withTiming(frame.width, MORPH));
+    height.set(withTiming(frame.height, MORPH));
     if (drag.type.get() === type) return;
     x.set(withSpring(frame.x, SETTLE));
     y.set(withSpring(frame.y, SETTLE));
-  }, [frame, placement.w, placement.h, slot, size, drag, type, x, y]);
+  }, [frame, placement.w, placement.h, slot, size, drag, type, x, y, width, height]);
 
   // Memoised on what cannot change mid-drag: a gesture rebuilt while active
   // is cancelled, and every reorder re-renders this card.
@@ -396,11 +431,16 @@ function GridCard({
     () =>
       Gesture.Pan()
         .enabled(editing)
-        .activateAfterLongPress(150)
+        .activateAfterLongPress(DRAG_HOLD)
         .simultaneousWithExternalGesture(resize)
+        .onBegin(() => {
+          if (resizing.get()) return;
+          press.set(withTiming(SINK_SCALE, sinkOver(DRAG_HOLD)));
+        })
         .onStart((event) => {
           // A touch that began on the corner is a resize, not a move.
           if (resizing.get()) return;
+          press.set(withSpring(1, SNAP));
           drag.type.set(type);
           drag.startX.set(x.get());
           drag.startY.set(y.get());
@@ -421,6 +461,8 @@ function GridCard({
           drag.absY.set(event.absoluteY);
         })
         .onFinalize(() => {
+          // Let go before the hold took, or a scroll took the touch over.
+          press.set(withSpring(1, SETTLE));
           if (drag.type.get() !== type) return;
           scale.set(withTiming(1, { duration: 150 }));
           // Hand the drawn position over from the finger to the spring.
@@ -431,7 +473,7 @@ function GridCard({
           y.set(withSpring(slot.get().y, SNAP));
           scheduleOnRN(onDragging, false);
         }),
-    [editing, type, drag, x, y, slot, scale, resizing, resize, scrollOffset, onDragging],
+    [editing, type, drag, x, y, slot, scale, press, resizing, resize, scrollOffset, onDragging],
   );
 
   const animated = useAnimatedStyle(() => {
@@ -446,8 +488,10 @@ function GridCard({
             ? drag.startY.get() + drag.ty.get() + scrollOffset.get() - drag.scrollStart.get()
             : y.get(),
         },
-        { scale: scale.get() },
+        { scale: scale.get() * press.get() },
       ],
+      width: width.get(),
+      height: height.get(),
     };
   });
 
@@ -462,11 +506,13 @@ function GridCard({
             position: 'absolute',
             left: 0,
             top: 0,
-            width: frame.width,
-            height: frame.height,
           },
           animated,
         ]}
+        // A card appears or goes only in edit mode (showing or hiding it);
+        // on load and when leaving the board, cards are just there.
+        entering={editing ? FadeIn.duration(200) : undefined}
+        exiting={editing ? FadeOut.duration(150) : undefined}
         // While editing, the card is one control with actions, because a
         // screen reader cannot drag or pull a corner.
         accessible={editing}
@@ -501,7 +547,19 @@ function GridCard({
           card={card}
           tall={placement.h === 2}
           onPress={editing ? undefined : () => onOpen(type)}
-          onLongPress={editing ? undefined : onStartEditing}
+          onLongPress={
+            editing
+              ? undefined
+              : () => {
+                  // The hold took: pop back up as edit mode starts.
+                  press.set(withSpring(1, SNAP));
+                  onStartEditing();
+                }
+          }
+          onPressIn={
+            editing ? undefined : () => press.set(withTiming(SINK_SCALE, sinkOver(HOLD_TO_EDIT)))
+          }
+          onPressOut={editing ? undefined : () => press.set(withSpring(1, SETTLE))}
         />
 
         {editing && (

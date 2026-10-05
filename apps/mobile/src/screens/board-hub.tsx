@@ -3,6 +3,11 @@ import { Link, Stack, router } from 'expo-router';
 import { Alert, Pressable, RefreshControl, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import Animated, {
+  Easing,
+  FadeIn,
+  FadeOut,
+  LinearTransition,
+  ReduceMotion,
   useAnimatedRef,
   useAnimatedScrollHandler,
   useScrollOffset,
@@ -66,6 +71,17 @@ export function BoardHubScreen() {
     </>
   );
 }
+
+/**
+ * Entering and leaving edit mode adds and removes a hint, the hidden cards and
+ * a button around the grid. They fade, and everything they push slides, so
+ * the hub changes into edit mode rather than cutting to it.
+ */
+const SLIDE = LinearTransition.duration(300)
+  .easing(Easing.bezier(0.77, 0, 0.175, 1))
+  .reduceMotion(ReduceMotion.System);
+const APPEAR = FadeIn.duration(200).reduceMotion(ReduceMotion.System);
+const VANISH = FadeOut.duration(150).reduceMotion(ReduceMotion.System);
 
 /** Roughly the tab bar's height above the home indicator. */
 const TAB_BAR = 49;
@@ -211,7 +227,12 @@ function BoardHub({ boardId, name }: { boardId: string; name: string }) {
           }
         >
           {editing && (
-            <View style={{ gap: spacing.sm }}>
+            <Animated.View
+              entering={APPEAR}
+              exiting={VANISH}
+              layout={SLIDE}
+              style={{ gap: spacing.sm }}
+            >
               <ThemedText variant="footnote" tone="muted">
                 Hold a card to move it. Drag its corner to resize it, or tap its eye to hide it.
                 {hub.source === 'web'
@@ -219,42 +240,48 @@ function BoardHub({ boardId, name }: { boardId: string; name: string }) {
                   : " This is your phone's own arrangement; it doesn't change web."}
               </ThemedText>
               {hidden.length > 0 && (
-                <View style={styles.chips}>
+                <Animated.View layout={SLIDE} style={styles.chips}>
                   <ThemedText variant="caption" tone="muted">
                     HIDDEN
                   </ThemedText>
                   {hidden.map((item) => (
-                    <Pressable
+                    <Animated.View
                       key={item.widgetType}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Show ${WIDGET_META[item.widgetType].title}`}
-                      onPress={() =>
-                        change((list) =>
-                          list.map((i) =>
-                            i.widgetType === item.widgetType ? { ...i, hidden: false } : i,
-                          ),
-                        )
-                      }
-                      style={({ pressed }) => ({
-                        ...styles.chip,
-                        backgroundColor: colors.card,
-                        borderColor: colors.border,
-                        opacity: pressed ? 0.7 : 1,
-                      })}
+                      entering={APPEAR}
+                      exiting={VANISH}
+                      layout={SLIDE}
                     >
-                      <ThemedText variant="footnote">
-                        {WIDGET_META[item.widgetType].title}
-                      </ThemedText>
-                      <Icon
-                        name={{ sf: 'eye', md: 'visibility' }}
-                        size={13}
-                        color={colors.primary}
-                      />
-                    </Pressable>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Show ${WIDGET_META[item.widgetType].title}`}
+                        onPress={() =>
+                          change((list) =>
+                            list.map((i) =>
+                              i.widgetType === item.widgetType ? { ...i, hidden: false } : i,
+                            ),
+                          )
+                        }
+                        style={({ pressed }) => ({
+                          ...styles.chip,
+                          backgroundColor: colors.card,
+                          borderColor: colors.border,
+                          opacity: pressed ? 0.7 : 1,
+                        })}
+                      >
+                        <ThemedText variant="footnote">
+                          {WIDGET_META[item.widgetType].title}
+                        </ThemedText>
+                        <Icon
+                          name={{ sf: 'eye', md: 'visibility' }}
+                          size={13}
+                          color={colors.primary}
+                        />
+                      </Pressable>
+                    </Animated.View>
                   ))}
-                </View>
+                </Animated.View>
               )}
-            </View>
+            </Animated.View>
           )}
 
           {hub.loading ? (
@@ -268,32 +295,36 @@ function BoardHub({ boardId, name }: { boardId: string; name: string }) {
               ))}
             </View>
           ) : (
-            <HubGrid
-              cards={hub.cards}
-              items={items}
-              editing={editing}
-              scroll={{
-                ref: scrollRef,
-                offset,
-                min: minOffset,
-                max: maxOffset,
-                top: viewTop,
-                bottom: viewBottom,
-              }}
-              onOpen={(type) => router.push(`/board/${boardId}/w/${type}`)}
-              onStartEditing={startEditing}
-              onChange={change}
-              onDragging={setDragging}
-            />
+            <Animated.View layout={SLIDE}>
+              <HubGrid
+                cards={hub.cards}
+                items={items}
+                editing={editing}
+                scroll={{
+                  ref: scrollRef,
+                  offset,
+                  min: minOffset,
+                  max: maxOffset,
+                  top: viewTop,
+                  bottom: viewBottom,
+                }}
+                onOpen={(type) => router.push(`/board/${boardId}/w/${type}`)}
+                onStartEditing={startEditing}
+                onChange={change}
+                onDragging={setDragging}
+              />
+            </Animated.View>
           )}
 
           {editing && hub.source === 'phone' && (
-            <Button
-              title="Follow my web dashboard"
-              variant="secondary"
-              loading={reset.isPending}
-              onPress={followWeb}
-            />
+            <Animated.View entering={APPEAR} exiting={VANISH} layout={SLIDE}>
+              <Button
+                title="Follow my web dashboard"
+                variant="secondary"
+                loading={reset.isPending}
+                onPress={followWeb}
+              />
+            </Animated.View>
           )}
         </Animated.ScrollView>
       </View>
