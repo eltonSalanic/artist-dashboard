@@ -784,34 +784,38 @@ rewritten, in the P12b section below.
 
 ## P12b — Phone arrangement
 
-The phone now has its **own** arrangement: an order, a width per card (full or
-half) and which cards show. Until you save one on the phone, it **follows your
-web dashboard**. Restart the API first (`npm run dev`), since it has a new
-endpoint and a new table.
+The phone now has its **own** arrangement, edited on the hub itself: hold a
+card (or ⋯ → Edit widgets) to start, then move, resize (up to 2×2) and hide
+cards. Until you save one, the phone **follows your web dashboard**. Restart
+the API (`npm run dev`) and Expo (`npm run mobile`) first.
 
 ### Following web — ★ new
 
 - [ ] 🔵 ★ Without arranging the phone, drag Shows to the top-left on web, wait a second, then pull to refresh the phone's hub (check the header says the right band) → Shows is the **first** card
 - [ ] ★ Swipe through the spokes → Same order as the hub
-- [ ] ★ ⋯ → Manage widgets, before any save → The note says your phone follows your web dashboard, and there's no "Follow my web dashboard" button
 - [ ] ★ Hide a widget on web → Also gone from the phone's hub (it's still following)
 
-### Arranging the phone — ★ new
+### Editing on the hub — ★ new
 
-- [ ] 🔵 ★ Manage widgets → hold a widget, drag it to the top → Save → The hub shows it first. **Web is unchanged** after a refresh
-- [ ] 🔵 ★ Set a card to **Full** and its neighbour to **Half** → Save → The full card spans the row; the half card has no partner, so it stretches to the full width too. No gaps anywhere
-- [ ] ★ Two **Half** cards next to each other → They share a row
-- [ ] 🔵 ★ Switch a widget off → Save → Gone from the hub, **still on web**
+- [ ] 🔵 ★ Hold a card → Edit mode: every card gets an eye (top right) and a corner handle; the header says Cancel and Done. ⋯ → Edit widgets does the same
+- [ ] 🔵 ★ Hold a card and drag it over another → The others slide out of the way; let go and it settles in its new place. Done → It stays there. **Web is unchanged** after a refresh
+- [ ] 🔵 ★ Drag a card's corner right and down → A dashed outline shows the new size; let go → The card is 2×2, and the cards around it re-flow with no overlap
+- [ ] 🔵 ★ A card two rows tall → Lists a few items under its number (Shows lists the next shows, To-Do the top tasks)
+- [ ] ★ Drag a card towards the bottom (or top) edge of the screen → The hub scrolls with it
+- [ ] ★ Hold the corner handle still for a moment, then drag → It resizes; it does not start moving the card
+- [ ] 🔵 ★ Tap a card's eye → It disappears and shows under "Hidden" at the top; tap it there → It's back where it was
+- [ ] ★ Hide all but one card → The last card's eye is greyed out
+- [ ] ★ Out of edit mode, a one-column card with nothing beside it → Drawn across the full width (no half-empty rows)
+- [ ] ★ Change something, then Cancel → "Discard changes?"
 - [ ] ★ After a phone save, rearrange on web → The phone doesn't move
-- [ ] ★ Switch everything off → The last one's switch won't turn off
-- [ ] ★ Change something, then swipe the sheet away → "Discard changes?"
-- [ ] 🔵 ★ "Follow my web dashboard" → Confirm → The hub goes back to web's order; web is unchanged
+- [ ] 🔵 ★ Edit mode → "Follow my web dashboard" (only shown once the phone has its own arrangement) → Confirm → The hub goes back to web's order; web is unchanged
 - [ ] ★ Arrange as one member → A second member's phone and web are unchanged
-- [ ] ★ No "Make this the band's default" on the phone, for anyone (it's web-only now)
+- [ ] ★ With VoiceOver on, edit mode → Each card offers Move earlier/later, Make wider/taller, Hide
 
 ### Regressions — ↻
 
 - [ ] 🔵 ↻ On web, drag and resize widgets, then Reset layout → Same as before; and a phone that has its own arrangement keeps it
+- [ ] ↻ Tap a card outside edit mode → Its spoke opens, as before
 
 ---
 

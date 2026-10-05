@@ -1309,38 +1309,79 @@ shared one arrangement between the two, which cut both ways:
 
 **Decisions (asked, answered):**
 
-- **The phone gets its own arrangement**, an ordered list of cards, each
-  **full** or **half** width, each shown or hidden. Until the person first
-  saves on the phone, it **follows web**: web's reading order, default widths,
-  web's hidden widgets, exactly as P12 behaved. The first phone save makes it
-  independent; **Reset** makes it follow web again. Neither ever moves the other.
-- **Width is the person's choice**, defaulting to full for Focus, Notes, To-Do
-  and Activity, and half for the counts.
-- **A half card without a half partner stretches to full width.** Order is kept
-  exactly as arranged and there are never gaps; the alternatives (pulling a
-  later card up, or leaving half a row empty) were declined.
+- **The phone gets its own arrangement**, an ordered list of cards, each shown
+  or hidden. Until the person first saves on the phone, it **follows web**:
+  web's reading order, default sizes, web's hidden widgets, exactly as P12
+  behaved. The first phone save makes it independent; "Follow my web
+  dashboard" makes it follow web again. Neither ever moves the other.
 - **No band default for phones.** A member who has not arranged their phone
   follows their own web arrangement, which itself falls back to the band's web
   default. "Make this the band's default" leaves the phone and stays on web.
+
+**Revised the same day, before verification: editing moves onto the hub.**
+The first build had a Manage widgets sheet with a Full | Half switch per row.
+The user asked instead for **web's widget controls on the hub itself**, on a
+two-column grid where a card can be **up to 2×2**. Asked, they chose:
+
+- **Order + auto-fill**, like a phone's home screen, over web's free
+  positions: the arrangement stays an ordered list, and `packMobileGrid` flows
+  each card into the first free spot it fits. Dragging is reordering, and a
+  later small card fills a hole a wide one left. Free positions were declined
+  because on two columns they mostly make holes.
+- **Edit mode** entered by holding a card or ⋯ → Edit widgets, with Cancel
+  and Done in the header, over always-editable cards (which fight scrolling
+  and tap-to-open on a touchscreen).
+- **Resize by dragging the corner**, as on web, snapping between one and two
+  cells each way.
+- **A two-row card lists the first few things** behind its number (the next
+  shows, the top tasks), like a large phone widget, over the same summary with
+  more room.
+
+Outside edit mode a one-column card with nothing beside it for its whole
+height is drawn across the row (`stretchLoneCards`), keeping the earlier
+no-gaps decision; in edit mode cards show their true size, so what you resize
+is what you see.
 
 **Storage.** A `MobileLayout` table (board, user, items), not a column on
 `UserLayout`: web's Reset deletes the `UserLayout` row, and would take the
 phone's arrangement with it. Widgets the board no longer has drop out of a
 saved phone arrangement; widgets shipped after it was saved are added at the
 end, in web's order. Both rules live in `packages/shared/src/mobile-layout.ts`
-with the row packing, so the API and the phone cannot disagree.
+with the grid packing, so the API and the phone cannot disagree. An item is
+`{ widgetType, w: 1 | 2, h: 1 | 2, hidden? }`; a stored row that no longer
+parses (the first draft's `size: 'full' | 'half'`) is ignored, so that phone
+follows web again rather than breaking.
 
 **API.** `GET / PUT / DELETE /boards/:id/mobile-layout`, personal like
 `/layout`, open to any member. `GET` returns `{ items, source }`, where
 `source` is `web` or `phone`, so the editor can say which it is showing.
 
-**Built** (commits `6ceac42` shared, `3303aa2` API + migration, `01769a6`
-api-client, `c6b79b7` mobile).
+**Built** (first draft: `6ceac42` shared, `3303aa2` API + migration,
+`01769a6` api-client, `c6b79b7` mobile; revision: `519c44d` grid model + API,
+`4593401` move/resize helpers, `0659bcc` hub editor).
 
-- **Width control is a native segmented control**, Full | Half, per row of
-  Manage widgets. `@react-native-segmented-control/segmented-control` ships in
-  Expo Go, so it needs no development build. A hidden card shows none: it has
-  no width to choose.
+- **The editor is `features/board/hub-grid.tsx`.** Cards are absolutely
+  positioned and moved by transform. Under a drag, the card follows the finger
+  on the UI thread; a `useAnimatedReaction` hit-tests its centre against the
+  other cards and reaches React only when the card it is over changes, which
+  reorders the list and springs the rest to their new cells. The middle 60% of
+  a card is the target, so two cards of different sizes do not swap back and
+  forth under a still finger.
+- **Gestures are memoised** on what cannot change mid-drag: a gesture rebuilt
+  while active is cancelled, and every reorder re-renders every card.
+- **The corner handle's gesture lives on the card**, simultaneous with the
+  card's drag, which ignores a touch that began on the corner. Otherwise a
+  finger held still on the corner for 150 ms would start a move instead.
+- **Auto-scroll:** a card held within 96 pt of the top or bottom scrolls the
+  hub (`useFrameCallback` + `scrollTo`), clamped to the range the scroll
+  events report, since the header and tab bar insets are only known there.
+- **Resize preview** is a childless dashed outline whose size animates; the
+  card itself only changes size when you let go.
+- **The board menu's item is now "Edit widgets"**: it closes the menu and
+  raises an event the hub underneath listens for (`features/board/hub-edit.ts`).
+  The segmented-control package and the Manage widgets sheet are removed.
+- **Screen readers** get the card as one control in edit mode, with Move
+  earlier/later, Make wider/narrower, taller/shorter and Hide actions.
 - **The card type excludes Calendar** (`CardWidgetType`). The request schema
   already refused it, and Zod infers the narrower type from that refinement,
   so the stored type had to agree.
