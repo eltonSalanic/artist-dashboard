@@ -663,22 +663,22 @@ date bugs show.
 
 ### Events, reminders, goals, focus — ★ new
 
-- [ ] 🔵 ★ Shows spoke → **+** → It opens as a new *show*; save it → It appears in Shows, the Calendar tab **without pulling to refresh**, and web
+- [x] 🔵 ★ Shows spoke → **+** → It opens as a new *show*; save it → It appears in Shows, the Calendar tab **without pulling to refresh**, and web
 - [ ] ★ Swipe to Rehearsals, tap **+** → It opens as a new *rehearsal* (the + follows the page)
 - [ ] ★ An end time before the start → Save is disabled with "It can't end before it starts."
-- [ ] 🔵 ★ Tap a reminder's bell → Ticks done immediately; web agrees. Tap the row → Edit form
-- [ ] 🔵 ★ Tap a goal's circle → Completes it; the Goals card's count drops
+- [x] 🔵 ★ Tap a reminder's bell → Ticks done immediately; web agrees. Tap the row → Edit form
+- [x] 🔵 ★ Tap a goal's circle → Completes it; the Goals card's count drops
 - [ ] ★ Archive a goal that has linked tasks → The alert offers "Archive" *and* "Archive with N tasks"; plain Archive leaves the tasks
 - [ ] ★ Focus spoke → **Edit** → set the week's focus → The hub's Focus card shows it. Clear it and save → "Not set"
-- [ ] 🔵 ★ As a **member**, every spoke → No **+**, no Edit, and tapping an event/reminder/goal does nothing
+- [x] 🔵 ★ As a **member**, every spoke → No **+**, no Edit, and tapping an event/reminder/goal does nothing
 
 
 
 ### Unsaved work — ★ new
 
-- [ ] 🔵 ★ Type into a form, then swipe it down (iOS) → It won't go; Cancel asks "Discard changes?"
+- [x] 🔵 ★ Type into a form, then swipe it down (iOS) → It won't go; Cancel asks "Discard changes?"
 - [ ] 🔵 ★ Same on Android with the **back button** → "Discard changes?"
-- [ ] 🔵 ★ Save a change → It closes without asking
+- [x] 🔵 ★ Save a change → It closes without asking
 
 
 
@@ -698,8 +698,8 @@ sections in one pass.
 
 ### Reaching them — ★ new
 
-- [ ] 🔵 ★ Board header → ⋯ → Archive → The sheet closes and the Archive opens; back returns to the board
-- [ ] 🔵 ★ ⋯ → Settings, as a **member** → Only "Email notifications"; no members, invites, statuses or palette
+- [x] 🔵 ★ Board header → ⋯ → Archive → The sheet closes and the Archive opens; back returns to the board
+- [x] 🔵 ★ ⋯ → Settings, as a **member** → Only "Email notifications"; no members, invites, statuses or palette
 
 
 
@@ -715,15 +715,15 @@ sections in one pass.
 
 ### Settings — ★ new
 
-- [ ] 🔵 ★ Toggle an email notification off → It flips at once; web's Settings shows it off
-- [ ] 🔵 ★ Invite an email address → An alert says whether an email went out or they'll join on sign-in; it's listed under Pending, and Mailpit has the email
+- [x] 🔵 ★ Toggle an email notification off → It flips at once; web's Settings shows it off
+- [x] 🔵 ★ Invite an email address → An alert says whether an email went out or they'll join on sign-in; it's listed under Pending, and Mailpit has the email
 - [ ] ★ Revoke a pending invite → Confirm, then gone; web agrees
 - [ ] ★ Remove a member → Confirm with web's wording; they disappear, and tasks they were on show them unassigned
 - [ ] ★ Your own row in Members → No remove button
-- [ ] 🔵 ★ Tap a status → rename it, pick a new colour, toggle "Counts as done", Done → The To-Do rows and web show the new name and colour
+- [x] 🔵 ★ Tap a status → rename it, pick a new colour, toggle "Counts as done", Done → The To-Do rows and web show the new name and colour
 - [ ] ★ Add a status → It's offered in the status sheet straight away
 - [ ] ★ Delete a status that tasks still use → Refused with how many tasks use it
-- [ ] 🔵 ★ Pick another palette → The hub's cards recolour; web shows the new palette too, and any per-card colours set on web are kept
+- [x] 🔵 ★ Pick another palette → The hub's cards recolour; web shows the new palette too, and any per-card colours set on web are kept
 
 
 
@@ -744,20 +744,27 @@ lost by a phone save**.
 
 ### Reading — ★ new
 
-- [ ] 🔵 ★ On web, write a note with a heading, **bold**, *italic*, a bulleted and a numbered list, and a link → The phone's Notes spoke shows all of it formatted, not as markers
+- [x] 🔵 ★ On web, write a note with a heading, **bold**, *italic*, a bulleted and a numbered list, and a link → The phone's Notes spoke shows all of it formatted, not as markers
 - [ ] ★ Tap the link → Opens in the browser
 
 
 
-### Editing — ★ new
+### Editing — ⊘ deferred to P13
 
-- [ ] 🔵 ★ As admin, Notes spoke → **Edit** → the note opens as text with markers → change a word → Save → The spoke shows the change, formatted; web shows it after a refresh, with **all its formatting intact**
-- [ ] 🔵 ★ Select a word → **B** → it gets `**` either side → Save → Bold on both
-- [ ] ★ Caret on a line → **•** → it becomes `- ` → Save → A bullet on web
-- [ ] ★ Type `5 * 3` and save → Stays `5 * 3` on web — not italics
-- [ ] 🔵 ★ Underline a word on web (Cmd+U), then try to edit on the phone → "Edit this one on web", read-only — and the note on web is untouched
-- [ ] 🔵 ★ Open Edit on the phone, change the note on **web** and save there, then save on the phone → It asks "Someone else changed this note" before replacing
-- [ ] ★ As a **member** → No Edit button; the note reads normally
+The phone's editor is being replaced in P13 with a Notes-style one that formats
+as you type (see [the plan](mobile-app.md#p13--push-client)), so testing the
+current marker editor is skipped. These checks get rewritten for the new editor
+then. The ones that test *behaviour* rather than markers carry over: nothing
+written on web is lost by a phone save, the concurrent-edit warning, and
+members not being able to edit.
+
+- [ ] ⊘ As admin, Notes spoke → **Edit** → change a word → Save → The spoke shows the change, formatted; web shows it after a refresh, with **all its formatting intact**
+- [ ] ⊘ Select a word → **B** → Save → Bold on both
+- [ ] ⊘ Caret on a line → **•** → Save → A bullet on web
+- [ ] ⊘ Type `5 * 3` and save → Stays `5 * 3` on web, not italics
+- [ ] ⊘ Underline a word on web (Cmd+U), then try to edit on the phone → Today: "Edit this one on web", read-only. After P13: underline is editable
+- [ ] ⊘ Open Edit on the phone, change the note on **web** and save there, then save on the phone → It asks "Someone else changed this note" before replacing
+- [ ] ⊘ As a **member** → No Edit button; the note reads normally
 
 ---
 
@@ -796,6 +803,8 @@ Sections get added as each phase lands. Known in advance:
 
 - **P13** is the other risky one, and the first phase that needs a real
 development build rather than Expo Go.
+Its section also takes over P11's deferred editing checks, rewritten for
+the Notes-style editor.
 - **P15** is the only phase that intentionally changes web behaviour.
 
 > **Lesson from P7, for every phase left:** bundling is not running.
