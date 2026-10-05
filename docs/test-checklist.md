@@ -772,26 +772,46 @@ members not being able to edit.
 
 ## P12 — Mobile layout editor
 
-**Manage widgets** in the board menu now works. It edits your *own*
-arrangement, the same one web edits.
+**Replaced by P12b** before it was verified: the phone no longer shares web's
+arrangement, so these checks would test behaviour that is gone. They live on,
+rewritten, in the P12b section below.
 
-### The hub follows web — ★ new (a fix)
+- [ ] ⊘ The checks P12 shipped with (reorder moves web too, reset to the band's default, "Make this the band's default" on the phone) → Replaced by P12b
 
-- [ ] 🔵 ★ On web, drag the Shows widget to the top-left of your dashboard, then pull to refresh the phone's hub → Shows is the **first** card. (Before P12 the phone always showed the original order)
+---
+
+
+
+## P12b — Phone arrangement
+
+The phone now has its **own** arrangement: an order, a width per card (full or
+half) and which cards show. Until you save one on the phone, it **follows your
+web dashboard**. Restart the API first (`npm run dev`), since it has a new
+endpoint and a new table.
+
+### Following web — ★ new
+
+- [ ] 🔵 ★ Without arranging the phone, drag Shows to the top-left on web, wait a second, then pull to refresh the phone's hub (check the header says the right band) → Shows is the **first** card
 - [ ] ★ Swipe through the spokes → Same order as the hub
+- [ ] ★ ⋯ → Manage widgets, before any save → The note says your phone follows your web dashboard, and there's no "Follow my web dashboard" button
+- [ ] ★ Hide a widget on web → Also gone from the phone's hub (it's still following)
 
+### Arranging the phone — ★ new
 
-
-### Editing — ★ new
-
-- [ ] 🔵 ★ ⋯ → Manage widgets → hold a widget, drag it to the top → Save → The hub shows it first; web shows it top-left after a refresh, **at the width it had on web**
-- [ ] 🔵 ★ Switch a widget off → Save → Gone from the hub and from web; switch it back on → back
+- [ ] 🔵 ★ Manage widgets → hold a widget, drag it to the top → Save → The hub shows it first. **Web is unchanged** after a refresh
+- [ ] 🔵 ★ Set a card to **Full** and its neighbour to **Half** → Save → The full card spans the row; the half card has no partner, so it stretches to the full width too. No gaps anywhere
+- [ ] ★ Two **Half** cards next to each other → They share a row
+- [ ] 🔵 ★ Switch a widget off → Save → Gone from the hub, **still on web**
+- [ ] ★ After a phone save, rearrange on web → The phone doesn't move
 - [ ] ★ Switch everything off → The last one's switch won't turn off
 - [ ] ★ Change something, then swipe the sheet away → "Discard changes?"
-- [ ] 🔵 ★ Reset to the band's default → Confirm → Your arrangement is gone here and on web; the band's default shows
-- [ ] ★ Arrange as one member → A second member's hub and web are unchanged
-- [ ] ★ As admin, "Make this the band's default" → A member with no arrangement of their own now sees it
-- [ ] ★ As a member → No "Make this the band's default" button
+- [ ] 🔵 ★ "Follow my web dashboard" → Confirm → The hub goes back to web's order; web is unchanged
+- [ ] ★ Arrange as one member → A second member's phone and web are unchanged
+- [ ] ★ No "Make this the band's default" on the phone, for anyone (it's web-only now)
+
+### Regressions — ↻
+
+- [ ] 🔵 ↻ On web, drag and resize widgets, then Reset layout → Same as before; and a phone that has its own arrangement keeps it
 
 ---
 

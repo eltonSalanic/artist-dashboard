@@ -113,7 +113,7 @@ deliberately scheduled after mobile rather than blocking it.
 | **P10c** | [Board admin](#p10c--board-admin) | mobile, api-client, web | ◐ |
 | **P11** | [Notes widget](#p11--notes-widget) | mobile, shared | ◐ |
 | **P12** | [Mobile layout editor](#p12--mobile-layout-editor) | mobile, shared | ◐ |
-| **P12b** | [Phone arrangement](#p12b--phone-arrangement) | mobile, shared, api, api-client | ☐ |
+| **P12b** | [Phone arrangement](#p12b--phone-arrangement) | mobile, shared, api, api-client | ◐ |
 | **P13** | [Push client](#p13--push-client) | mobile, api | ☐ |
 | **P14** | [Store builds](#p14--store-builds) | mobile, CI | ☐ |
 | **P15** | [Web board switcher](#p15--web-board-switcher) | **web** | ☐ |
@@ -1333,6 +1333,24 @@ with the row packing, so the API and the phone cannot disagree.
 **API.** `GET / PUT / DELETE /boards/:id/mobile-layout`, personal like
 `/layout`, open to any member. `GET` returns `{ items, source }`, where
 `source` is `web` or `phone`, so the editor can say which it is showing.
+
+**Built** (commits `6ceac42` shared, `3303aa2` API + migration, `01769a6`
+api-client, `c6b79b7` mobile).
+
+- **Width control is a native segmented control**, Full | Half, per row of
+  Manage widgets. `@react-native-segmented-control/segmented-control` ships in
+  Expo Go, so it needs no development build. A hidden card shows none: it has
+  no width to choose.
+- **The card type excludes Calendar** (`CardWidgetType`). The request schema
+  already refused it, and Zod infers the narrower type from that refinement,
+  so the stored type had to agree.
+- **Web layout writes refresh the phone's arrangement** in `api-client`, for a
+  phone that is still following web. Across devices, the refetch on focus
+  (`f8e3c1d`) does the rest.
+- **`packInOrder` is deleted.** It existed only so the phone could write web's
+  grid, which the phone no longer does.
+- The editor's copy says which mode it is in, and "Follow my web dashboard"
+  only appears once there is a phone arrangement to drop.
 
 ### P13 — Push client
 
