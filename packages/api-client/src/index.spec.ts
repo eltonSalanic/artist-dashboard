@@ -30,6 +30,8 @@ describe('package barrel', () => {
       'useRemoveMember', 'useInvites', 'useSendInvite', 'useRevokeInvite',
       'useStatuses', 'useCreateStatus', 'useUpdateStatus', 'useDeleteStatus',
       'useNotificationPreferences', 'useSaveNotificationPreference',
+      // The phone's own arrangement (P12b).
+      'useMobileLayout', 'useSaveMobileLayout', 'useResetMobileLayout',
     ];
     for (const name of hooks) {
       expect(typeof (api as Record<string, unknown>)[name]).toBe('function');

@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { notify } from "../client";
 import type { LayoutItem } from "@artist/shared";
 import { apiFetch, ApiError } from "../client";
+import { mobileLayoutKey } from "./use-mobile-layout";
 
 interface LayoutResponse {
   layout: LayoutItem[];
@@ -34,8 +35,11 @@ export function useSaveLayout(boardId: string) {
     onMutate: (layout) => {
       queryClient.setQueryData(["layout", boardId], { layout });
     },
-    onSuccess: (data) =>
-      queryClient.setQueryData(["layout", boardId], data),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["layout", boardId], data);
+      // A phone that has not been arranged follows this layout.
+      queryClient.invalidateQueries({ queryKey: mobileLayoutKey(boardId) });
+    },
     onError: showError,
   });
 }
@@ -49,6 +53,7 @@ export function useResetLayout(boardId: string) {
       }),
     onSuccess: (data) => {
       queryClient.setQueryData(["layout", boardId], data);
+      queryClient.invalidateQueries({ queryKey: mobileLayoutKey(boardId) });
       notify.success("Layout reset to the board default");
     },
     onError: showError,
@@ -65,6 +70,7 @@ export function useSaveDefaultLayout(boardId: string) {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["layout", boardId] });
+      queryClient.invalidateQueries({ queryKey: mobileLayoutKey(boardId) });
       queryClient.invalidateQueries({ queryKey: ["board", boardId] });
       notify.success("Default layout saved for the board");
     },
