@@ -10,19 +10,25 @@ import { ThemedText } from './themed-text';
  * qualifier — because ten cards that each decide their own shape stop reading
  * as a grid and start reading as a list of unrelated boxes.
  *
- * `hero` spans the width and shows prose; `stat` sits two-up and shows a
- * number. Two prose cards among eight numbers is what gives the grid a rhythm
- * instead of a uniform wall of digits.
+ * `hero` shows prose, `stat` a number. A card two rows `tall` adds the first
+ * few things behind the number (the next shows, the top tasks), the way a
+ * large phone widget does. The grid sizes the card; it fills its cell.
  */
 export function HubStatCard({
   card,
+  tall = false,
   onPress,
+  onLongPress,
 }: {
   card: HubCard;
+  tall?: boolean;
   onPress?: () => void;
+  /** Holding a card is how the hub enters edit mode. */
+  onLongPress?: () => void;
 }) {
   const tokens = useSlotTokens(card.slot);
   const hero = card.kind === 'hero';
+  const lines = tall && !card.loading ? card.lines : [];
 
   return (
     <ThemeTokensProvider value={tokens}>
@@ -34,15 +40,18 @@ export function HubStatCard({
             : `${card.title}: nothing yet`
         }
         onPress={onPress}
+        onLongPress={onLongPress}
+        delayLongPress={400}
         style={({ pressed }) => ({
+          flex: 1,
+          overflow: 'hidden',
           backgroundColor: tokens.card,
           borderRadius: radius.lg,
           borderCurve: 'continuous',
           padding: spacing.md,
           gap: spacing.xs,
           boxShadow: shadows.card,
-          minHeight: hero ? 96 : 112,
-          justifyContent: 'space-between',
+          justifyContent: tall ? 'flex-start' : 'space-between',
           opacity: pressed ? 0.8 : 1,
         })}
       >
@@ -77,7 +86,7 @@ export function HubStatCard({
           <View style={{ gap: 2 }}>
             <ThemedText
               variant={hero ? 'body' : 'largeTitle'}
-              numberOfLines={hero ? 3 : 1}
+              numberOfLines={hero ? (tall ? 4 : 3) : 1}
             >
               {card.primary}
             </ThemedText>
@@ -86,6 +95,23 @@ export function HubStatCard({
                 {card.qualifier}
               </ThemedText>
             )}
+          </View>
+        )}
+
+        {lines.length > 0 && (
+          <View style={{ gap: 2, marginTop: spacing.xs }}>
+            {lines.map((line) => (
+              <View key={line.key} style={{ flexDirection: 'row', gap: spacing.xs }}>
+                <ThemedText variant="footnote" numberOfLines={1} style={{ flex: 1 }}>
+                  {line.text}
+                </ThemedText>
+                {line.meta !== null && (
+                  <ThemedText variant="footnote" tone="muted" numberOfLines={1}>
+                    {line.meta}
+                  </ThemedText>
+                )}
+              </View>
+            ))}
           </View>
         )}
       </Pressable>
@@ -109,7 +135,7 @@ export function HubCardSkeleton() {
         padding: spacing.md,
         gap: spacing.sm,
         boxShadow: shadows.card,
-        minHeight: 112,
+        flex: 1,
         justifyContent: 'space-between',
       }}
     >

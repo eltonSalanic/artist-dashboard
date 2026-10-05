@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePermissions } from '@artist/api-client';
 import { Icon, type IconName } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
+import { requestHubEdit } from '@/features/board/hub-edit';
 import { useSelectedBoard } from '@/features/board/selected-board';
 import { radius, spacing, useThemeColors } from '@/theme';
 
@@ -26,14 +27,16 @@ export function BoardMenuSheet() {
     body: string;
     /** Absent until the phase that builds the screen. */
     href?: string;
+    /** Instead of a screen: something the hub underneath does. */
+    action?: () => void;
     phase?: string;
     visible: boolean;
   }[] = [
     {
       icon: { sf: 'square.grid.2x2', md: 'dashboard-customize' },
-      title: 'Manage widgets',
-      body: 'Choose which cards your phone shows, how wide, and in what order.',
-      href: base ? `${base}/form/widgets` : undefined,
+      title: 'Edit widgets',
+      body: 'Move, resize and hide the cards on your phone. You can also hold any card.',
+      action: base ? requestHubEdit : undefined,
       visible: true,
     },
     {
@@ -79,13 +82,13 @@ export function BoardMenuSheet() {
             accessibilityRole="button"
             // Without a screen yet, left non-interactive rather than opening a
             // dead end.
-            disabled={!item.href}
+            disabled={!item.href && !item.action}
             onPress={() => {
-              if (!item.href) return;
               // Close the sheet first, so the screen pushes onto the stack
               // underneath instead of on top of a sheet.
               router.dismiss();
-              router.push(item.href);
+              if (item.action) item.action();
+              else if (item.href) router.push(item.href);
             }}
             style={({ pressed }) => ({
               flexDirection: 'row',
@@ -95,13 +98,13 @@ export function BoardMenuSheet() {
               borderRadius: radius.md,
               borderCurve: 'continuous',
               backgroundColor: pressed ? colors.accent : colors.card,
-              opacity: item.href ? 1 : 0.6,
+              opacity: item.href || item.action ? 1 : 0.6,
             })}
           >
             <Icon
               name={item.icon}
               size={22}
-              color={item.href ? colors.foreground : colors.mutedForeground}
+              color={item.href || item.action ? colors.foreground : colors.mutedForeground}
             />
             <View style={{ flex: 1, gap: 2 }}>
               <ThemedText variant="headline">{item.title}</ThemedText>

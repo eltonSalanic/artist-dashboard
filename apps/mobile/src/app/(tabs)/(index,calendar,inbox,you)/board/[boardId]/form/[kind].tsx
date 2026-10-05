@@ -7,7 +7,6 @@ import { GoalForm } from '@/features/forms/goal-form';
 import { NoteForm } from '@/features/forms/note-form';
 import { ReminderForm } from '@/features/forms/reminder-form';
 import { TaskForm } from '@/features/forms/task-form';
-import { WidgetsForm } from '@/features/forms/widgets-form';
 
 /**
  * `/board/:boardId/form/:kind` — every create and edit form, as a modal.
@@ -45,8 +44,6 @@ export default function Form() {
         return <FocusForm boardId={boardId} />;
       case 'note':
         return <NoteForm boardId={boardId} />;
-      case 'widgets':
-        return <WidgetsForm boardId={boardId} />;
       default:
         return <TaskForm boardId={boardId} taskId={id} parentTaskId={parentTaskId} />;
     }

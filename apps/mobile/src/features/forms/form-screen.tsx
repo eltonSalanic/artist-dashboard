@@ -123,7 +123,8 @@ export function FormScreen({
   );
 }
 
-function HeaderText({
+/** A text button in a native header: Cancel, Save, Done. */
+export function HeaderText({
   title,
   bold,
   disabled,

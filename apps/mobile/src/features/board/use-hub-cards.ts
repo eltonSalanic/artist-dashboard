@@ -12,14 +12,18 @@ import {
 import {
   FocusPeriods,
   WIDGET_META,
+  activityText,
   resolveWidgetColor,
   type BoardTheme,
+  type CardWidgetType,
+  type MobileLayoutItem,
+  type MobileLayoutSource,
   type WidgetColor,
   type WidgetType,
 } from '@artist/shared';
 import type { IconName } from '@/components/icon';
 import { count, dueDay, isThisWeek, isToday, shortAgo, shortDate } from './format';
-import { notePreview } from './note-preview';
+import { noteBlocks, notePreview } from './note-preview';
 import { useVisibleWidgets } from './use-visible-widgets';
 import { WIDGET_ICONS } from './widget-icons';
 
@@ -45,22 +49,39 @@ export interface HubCard {
   /** Something wants attention today — the card picks up an accent. */
   urgent: boolean;
   loading: boolean;
+  /**
+   * The first few things behind the number, for a card two rows tall: the
+   * next shows, the top tasks. Empty when there is nothing to list.
+   */
+  lines: HubLine[];
 }
+
+export interface HubLine {
+  key: string;
+  text: string;
+  meta: string | null;
+}
+
+/** A two-row card has room for about this many lines under its number. */
+const LINES = 4;
 
 /** Only these two are prose. The other eight are countable. */
 const HERO_WIDGETS: readonly WidgetType[] = ['FOCUS', 'CUSTOM'];
 
 export interface HubCards {
-  /** One or two cards per row, as the phone arrangement lays them out. */
-  rows: HubCard[][];
+  /** Every card, shown or not, so the editor can show hidden ones too. */
+  cards: Record<CardWidgetType, HubCard>;
+  /** The phone arrangement: order, sizes and hidden. */
+  items: MobileLayoutItem[];
+  source: MobileLayoutSource;
   /** True until the layout is known; the cards themselves load individually. */
   loading: boolean;
   error: Error | null;
 }
 
 /**
- * Every widget on the hub, in the rows the phone arrangement puts them in
- * (`useVisibleWidgets`): order, width and hidden all come from it.
+ * Every widget on the hub as a card, and the phone arrangement that places
+ * them (`useVisibleWidgets`): order, size and hidden all come from it.
  *
  * Every query runs whether or not its widget is visible. Hiding is a P12
  * feature and the shipped default shows all ten, so gating each hook would add
@@ -104,6 +125,13 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
         qualifier: pin ? `this ${pin.period.toLowerCase()}` : null,
         urgent: false,
         loading: focus.isPending,
+        // A tall card shows every horizon that is set, not just the nearest.
+        lines: FocusPeriods.flatMap((period) => {
+          const set = pins.find((p) => p.period === period && p.text.trim() !== '');
+          return set && set !== pin
+            ? [{ key: period, text: set.text, meta: `this ${period.toLowerCase()}` }]
+            : [];
+        }),
       };
     })(),
 
@@ -114,6 +142,10 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
         : null,
       urgent: false,
       loading: note.isPending,
+      // The paragraphs after the first, which `primary` already shows.
+      lines: noteBlocks(note.data?.content)
+        .slice(1, 1 + LINES)
+        .map((text, index) => ({ key: String(index), text, meta: null })),
     },
 
     TODOS: (() => {
@@ -128,6 +160,7 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
         qualifier: dueToday > 0 ? `${dueToday} due today` : null,
         urgent: dueToday > 0,
         loading: tasks.isPending,
+        lines: open.slice(0, LINES).map(taskLine),
       };
     })(),
 
@@ -143,6 +176,7 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
         qualifier: thisWeek > 0 ? `${thisWeek} this week` : null,
         urgent: mine.some((t) => t.dueDate !== null && isToday(dueDay(t.dueDate))),
         loading: myTasks.isPending || me.isPending,
+        lines: mine.slice(0, LINES).map(taskLine),
       };
     })(),
 
@@ -158,6 +192,11 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
             : null,
         urgent: false,
         loading: goals.isPending,
+        lines: active.slice(0, LINES).map((goal) => ({
+          key: goal.id,
+          text: goal.title,
+          meta: `this ${goal.period.toLowerCase()}`,
+        })),
       };
     })(),
 
@@ -178,6 +217,17 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
         qualifier: next?.remindAt ? shortDate(next.remindAt) : null,
         urgent: due.length > 0,
         loading: reminders.isPending,
+        lines: [...open]
+          // Timed ones first, soonest first; standing notes after.
+          .sort((a, b) =>
+            a.remindAt === null ? 1 : b.remindAt === null ? -1 : a.remindAt.localeCompare(b.remindAt),
+          )
+          .slice(0, LINES)
+          .map((reminder) => ({
+            key: reminder.id,
+            text: reminder.title,
+            meta: reminder.remindAt ? shortDate(reminder.remindAt) : null,
+          })),
       };
     })(),
 
@@ -193,6 +243,11 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
         qualifier: items[0] ? shortAgo(items[0].createdAt) : null,
         urgent: false,
         loading: activity.isPending,
+        lines: items.slice(0, LINES).map((item) => ({
+          key: item.id,
+          text: `${item.actor?.displayName ?? 'Someone'} ${activityText(item)}`,
+          meta: shortAgo(item.createdAt),
+        })),
       };
     })(),
 
@@ -202,10 +257,11 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
       qualifier: null,
       urgent: false,
       loading: false,
+      lines: [],
     },
   };
 
-  const card = (widgetType: WidgetType): HubCard => ({
+  const card = (widgetType: CardWidgetType): HubCard => ({
     widgetType,
     title: WIDGET_META[widgetType].title,
     slot: resolveWidgetColor(
@@ -218,9 +274,17 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
     ...summaries[widgetType],
   });
 
-  const rows = layout.rows.map((row) => row.map((item) => card(item.widgetType)));
+  const cards = Object.fromEntries(
+    layout.items.map((item) => [item.widgetType, card(item.widgetType)]),
+  ) as Record<CardWidgetType, HubCard>;
 
-  return { rows, loading: layout.loading, error: layout.error };
+  return {
+    cards,
+    items: layout.items,
+    source: layout.source,
+    loading: layout.loading,
+    error: layout.error,
+  };
 }
 
 /** The fields the layout supplies, which each summary does not. */
@@ -246,5 +310,18 @@ function nextEventCard(
     qualifier: next ? (qualify?.(next) ?? null) || fallback : null,
     urgent: next !== undefined && isToday(next.startsAt),
     loading: query.isPending,
+    lines: events.slice(0, LINES).map((event) => ({
+      key: event.id,
+      text: event.title,
+      meta: shortDate(event.startsAt),
+    })),
+  };
+}
+
+function taskLine(task: { id: string; title: string; dueDate: string | null }): HubLine {
+  return {
+    key: task.id,
+    text: task.title,
+    meta: task.dueDate ? shortDate(dueDay(task.dueDate)) : null,
   };
 }
