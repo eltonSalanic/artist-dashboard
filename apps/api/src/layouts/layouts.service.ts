@@ -3,9 +3,9 @@ import {
   mergeLayouts,
   mergeMobileLayout,
   mobileLayoutFromWeb,
+  mobileLayoutItemsSchema,
   withShippedWidgets,
   type LayoutItem,
-  type MobileLayoutItem,
   type MobileLayoutResponse,
   type UpdateLayoutDto,
   type UpdateMobileLayoutDto,
@@ -64,6 +64,9 @@ export class LayoutsService {
    * The phone's arrangement: the one saved on a phone, kept up to date with
    * the board's widgets, or, until there is one, derived from the user's web
    * layout. Both rules are in packages/shared so the phone cannot disagree.
+   *
+   * A stored row that no longer parses (an earlier shape, or a hand edit) is
+   * treated as no arrangement, so the phone follows web rather than breaking.
    */
   async getMobileForUser(
     boardId: string,
@@ -73,14 +76,11 @@ export class LayoutsService {
     const saved = await this.prisma.mobileLayout.findUnique({
       where: { boardId_userId: { boardId, userId } },
     });
-    if (!saved) return { items: mobileLayoutFromWeb(web), source: 'web' };
-    return {
-      items: mergeMobileLayout(
-        saved.items as unknown as MobileLayoutItem[],
-        web,
-      ),
-      source: 'phone',
-    };
+    const parsed = mobileLayoutItemsSchema.safeParse(saved?.items);
+    if (!parsed.success) {
+      return { items: mobileLayoutFromWeb(web), source: 'web' };
+    }
+    return { items: mergeMobileLayout(parsed.data, web), source: 'phone' };
   }
 
   async saveMobileForUser(

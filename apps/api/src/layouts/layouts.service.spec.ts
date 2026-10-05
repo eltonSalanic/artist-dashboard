@@ -150,16 +150,16 @@ describe('LayoutsService', () => {
 
       expect(result.source).toBe('web');
       expect(result.items.slice(0, 3)).toEqual([
-        { widgetType: 'SHOWS', size: 'half' },
-        { widgetType: 'FOCUS', size: 'full' },
-        { widgetType: 'GOALS', size: 'half' },
+        { widgetType: 'SHOWS', w: 1, h: 1 },
+        { widgetType: 'FOCUS', w: 2, h: 1 },
+        { widgetType: 'GOALS', w: 1, h: 1 },
       ]);
     });
 
     it('serves the saved arrangement, with widgets added since at the end', async () => {
       const items: MobileLayoutItem[] = [
-        { widgetType: 'GOALS', size: 'full' },
-        { widgetType: 'SHOWS', size: 'half', hidden: true },
+        { widgetType: 'GOALS', w: 2, h: 2 },
+        { widgetType: 'SHOWS', w: 1, h: 1, hidden: true },
       ];
       prisma.mobileLayout.findUnique.mockResolvedValue({ items });
 
@@ -174,7 +174,7 @@ describe('LayoutsService', () => {
     });
 
     it('upserts the arrangement for the current user and returns it', async () => {
-      const items: MobileLayoutItem[] = [{ widgetType: 'SHOWS', size: 'full' }];
+      const items: MobileLayoutItem[] = [{ widgetType: 'SHOWS', w: 2, h: 1 }];
       prisma.mobileLayout.findUnique.mockResolvedValue({ items });
 
       const result = await service.saveMobileForUser('b1', 'u1', { items });
@@ -185,6 +185,17 @@ describe('LayoutsService', () => {
         update: { items },
       });
       expect(result.source).toBe('phone');
+    });
+
+    it('follows web when the stored arrangement no longer parses', async () => {
+      prisma.mobileLayout.findUnique.mockResolvedValue({
+        items: [{ widgetType: 'SHOWS', size: 'half' }],
+      });
+
+      const result = await service.getMobileForUser('b1', 'u1');
+
+      expect(result.source).toBe('web');
+      expect(result.items[0]).toEqual({ widgetType: 'SHOWS', w: 1, h: 1 });
     });
 
     it('drops the arrangement on reset, so the phone follows web again', async () => {
