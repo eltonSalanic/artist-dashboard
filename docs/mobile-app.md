@@ -113,6 +113,7 @@ deliberately scheduled after mobile rather than blocking it.
 | **P10c** | [Board admin](#p10c--board-admin) | mobile, api-client, web | ◐ |
 | **P11** | [Notes widget](#p11--notes-widget) | mobile, shared | ◐ |
 | **P12** | [Mobile layout editor](#p12--mobile-layout-editor) | mobile, shared | ◐ |
+| **P12b** | [Phone arrangement](#p12b--phone-arrangement) | mobile, shared, api, api-client | ☐ |
 | **P13** | [Push client](#p13--push-client) | mobile, api | ☐ |
 | **P14** | [Store builds](#p14--store-builds) | mobile, CI | ☐ |
 | **P15** | [Web board switcher](#p15--web-board-switcher) | **web** | ☐ |
@@ -1294,6 +1295,44 @@ widgets go last so they cannot leave a gap.
   saved layout untouched.
 - `FormScreen` gained `scrollable={false}` so a reorderable list can be the
   form's scroller instead of nesting inside a ScrollView.
+
+### P12b — Phone arrangement
+
+Raised while verifying P12 (2026-10-05): a phone shows at most two columns, and
+web's freeform 12-column grid does not survive being flattened onto it. P12
+shared one arrangement between the two, which cut both ways:
+
+- **Web → phone:** side-by-side columns on web interleave by row on the phone,
+  in an order nobody chose.
+- **Phone → web:** a reorder on the phone rewrote web's grid row by row
+  (`packInOrder`), undoing a dashboard someone had arranged with care.
+
+**Decisions (asked, answered):**
+
+- **The phone gets its own arrangement**, an ordered list of cards, each
+  **full** or **half** width, each shown or hidden. Until the person first
+  saves on the phone, it **follows web**: web's reading order, default widths,
+  web's hidden widgets, exactly as P12 behaved. The first phone save makes it
+  independent; **Reset** makes it follow web again. Neither ever moves the other.
+- **Width is the person's choice**, defaulting to full for Focus, Notes, To-Do
+  and Activity, and half for the counts.
+- **A half card without a half partner stretches to full width.** Order is kept
+  exactly as arranged and there are never gaps; the alternatives (pulling a
+  later card up, or leaving half a row empty) were declined.
+- **No band default for phones.** A member who has not arranged their phone
+  follows their own web arrangement, which itself falls back to the band's web
+  default. "Make this the band's default" leaves the phone and stays on web.
+
+**Storage.** A `MobileLayout` table (board, user, items), not a column on
+`UserLayout`: web's Reset deletes the `UserLayout` row, and would take the
+phone's arrangement with it. Widgets the board no longer has drop out of a
+saved phone arrangement; widgets shipped after it was saved are added at the
+end, in web's order. Both rules live in `packages/shared/src/mobile-layout.ts`
+with the row packing, so the API and the phone cannot disagree.
+
+**API.** `GET / PUT / DELETE /boards/:id/mobile-layout`, personal like
+`/layout`, open to any member. `GET` returns `{ items, source }`, where
+`source` is `web` or `phone`, so the editor can say which it is showing.
 
 ### P13 — Push client
 

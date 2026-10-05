@@ -1,6 +1,7 @@
 export * from './enums';
 export * from './permissions';
 export * from './layout';
+export * from './mobile-layout';
 export * from './theme';
 export * from './colors';
 export * from './palettes';
@@ -15,6 +16,7 @@ export * from './dto/board.dto';
 export * from './dto/task.dto';
 export * from './dto/status.dto';
 export * from './dto/layout.dto';
+export * from './dto/mobile-layout.dto';
 export * from './dto/goal.dto';
 export * from './dto/event.dto';
 export * from './dto/focus.dto';
