@@ -8,11 +8,11 @@ import { ThemedText } from './themed-text';
  * All · Neon Harbor · Weekend Duo — the band filter the Calendar and Inbox
  * share.
  *
- * **It renders nothing in a single-board account.** Bootstrap creates exactly
- * one board, so most people have one; a filter with one option is a control
- * that cannot do anything, and nearly everyone would see it. Hiding the row
- * entirely is better than disabling it, because there is no state to
- * communicate — there is just nothing to choose.
+ * **A single-board account gets that band's chip alone, with no "All".**
+ * Bootstrap creates exactly one board, so most people have one, and "All" of
+ * one band is a choice that cannot change anything. The lone chip still says
+ * whose calendar this is, which is why it stays rather than the whole row
+ * going (the user asked for it on the board, 2026-10-07).
  *
  * A scroller rather than a segmented control: the number of bands is unbounded
  * and segments divide the width between them, so five bands would be five
@@ -30,10 +30,11 @@ export function BoardFilter({
   const colors = useThemeColors();
   const scheme = useScheme();
 
-  if (boards.length < 2) return null;
+  if (boards.length === 0) return null;
+  const only = boards.length === 1;
 
   // `null` is the "All" chip; board ids are strings, so the two cannot collide.
-  const chips: (BoardSummaryDto | null)[] = [null, ...boards];
+  const chips: (BoardSummaryDto | null)[] = only ? boards : [null, ...boards];
 
   return (
     <FlatList
@@ -51,7 +52,8 @@ export function BoardFilter({
         gap: spacing.xs,
       }}
       renderItem={({ item: board }) => {
-        const active = board === null ? boardId === undefined : boardId === board.id;
+        const active =
+          only || (board === null ? boardId === undefined : boardId === board.id);
         const accent = board === null ? null : boardAccent(board.palette, scheme);
 
         return (
@@ -59,6 +61,7 @@ export function BoardFilter({
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
             accessibilityLabel={board === null ? 'All bands' : board.name}
+            disabled={only}
             onPress={() => onSelect(board?.id)}
             style={({ pressed }) => ({
               flexDirection: 'row',
