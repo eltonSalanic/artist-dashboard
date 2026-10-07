@@ -41,7 +41,11 @@ export function BoardFilter({
       keyExtractor={(board) => board?.id ?? 'all'}
       horizontal
       showsHorizontalScrollIndicator={false}
+      // A ScrollView grows by default, so above the agenda's list it took half
+      // the leftover height and stretched every chip into a tall capsule.
+      style={{ flexGrow: 0 }}
       contentContainerStyle={{
+        alignItems: 'center',
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.sm,
         gap: spacing.xs,
