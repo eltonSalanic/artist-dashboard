@@ -114,6 +114,7 @@ deliberately scheduled after mobile rather than blocking it.
 | **P11** | [Notes widget](#p11--notes-widget) | mobile, shared | ☑ |
 | **P12** | [Mobile layout editor](#p12--mobile-layout-editor) | mobile, shared | ☑ |
 | **P12b** | [Phone arrangement](#p12b--phone-arrangement) | mobile, shared, api, api-client | ☑ |
+| **P12c** | [Polish](#p12c--polish) | mobile (mostly) | ◐ |
 | **P13** | [Push client](#p13--push-client) | mobile, api | ☐ |
 | **P14** | [Store builds](#p14--store-builds) | mobile, CI | ☐ |
 | **P15** | [Web board switcher](#p15--web-board-switcher) | **web** | ☐ |
@@ -1392,6 +1393,17 @@ follows web again rather than breaking.
   grid, which the phone no longer does.
 - The editor's copy says which mode it is in, and "Follow my web dashboard"
   only appears once there is a phone arrangement to drop.
+
+### P12c — Polish
+
+A UI polish pass before P13 adds more screens, so those get built to the
+polished standard. Added 2026-10-06, at the user's request.
+
+The user goes through the app, files each issue as a ticket on a **Trello
+board**, and the fixes are implemented from those tickets. Scope is whatever the
+tickets say; there is no fixed list up front. Each fix is committed on its own,
+naming what the ticket asked for. The phase ends, like every phase, with a hard
+stop for the user to check the fixes.
 
 ### P13 — Push client
 

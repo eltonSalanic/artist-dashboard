@@ -709,6 +709,15 @@ the API (`npm run dev`) and Expo (`npm run mobile`) first.
 
 
 
+## P12c — Polish
+
+Driven by tickets on the Trello board rather than a list here. Check each fix
+against its ticket, and move the ticket along on the board when it holds.
+
+---
+
+
+
 ## P13–P15 — not yet built
 
 Sections get added as each phase lands. Known in advance:
