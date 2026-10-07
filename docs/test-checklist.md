@@ -31,8 +31,6 @@ exactly as they did. If one of these fails, the refactor broke it.
 
 ---
 
-
-
 ## P1 — `packages/api-client` extraction
 
 The whole claim of this phase is **"web behaves exactly as it did."** Every box
@@ -55,8 +53,6 @@ physically moved files. The web test suite is only 6 files, so these matter.
 > a message, so any `toast.error(msg, { … })` call would have had its second
 > argument silently dropped. All 16 call sites were single-argument, but these
 > boxes are what confirm it.
-
-
 
 ### Data layer — each moved hook, exercised once
 
@@ -81,16 +77,12 @@ physically moved files. The web test suite is only 6 files, so these matter.
 - [ ] ↻ Toggle "User view" as an admin → Admin-only controls disappear
 - [ ] ↻ As a USER, confirm you cannot reorder or edit board settings → Controls absent, not just failing
 
-
-
 ### The two hooks that deliberately stayed in `apps/web`
 
 - [ ] ↻ Open and close a detail modal → `?task=` / `?goal=` / `?event=` set and cleared; modals never stack
 - [ ] ↻ Drag-resize a widget → No text gets selected mid-drag
 
 ---
-
-
 
 ## P2 — Notification channels + push transport
 
@@ -109,8 +101,6 @@ Email must be unchanged; push is plumbed but unreachable until P13.
 - [ ] ↻ `npm run mail:test -w apps/api` → Diagnostic mail lands in Mailpit
 - [ ] ↻ Every mail's timestamps → Rendered in board-local time with a zone abbreviation
 
-
-
 ### Preferences and unsubscribe — ↻ regression
 
 - [ ] ↻ Settings → Notifications shows four toggles → Mentions, Assignments, Schedule, Reminders
@@ -124,16 +114,12 @@ Email must be unchanged; push is plumbed but unreachable until P13.
 > preference rows yet, so a push row reads the email preference — otherwise a
 > mute would leave a phone buzzing with no way to stop it.
 
-
-
 ### Migration safety — ★ new, verify once
 
 - [ ] ★ `SELECT count(*) FROM "NotificationDelivery"` → Pre-migration rows still present (33 at the time)
 - [ ] ★ `npx prisma migrate status` → Up to date, no drift
 - [ ] ★ Trigger any notification → **Two** rows written — one `EMAIL`, one `PUSH`, sharing a `dedupeKey`
 - [ ] ★ Confirm already-sent mail doesn't resend → Dedupe history survived the table rename
-
-
 
 ### Device registration — ★ new
 
@@ -147,8 +133,6 @@ Email must be unchanged; push is plumbed but unreachable until P13.
 > The third and fourth boxes are the token-hijack fix. If a token *moves*
 > between users, that is the bug: knowing someone's token would be enough to
 > redirect their notifications and silence their phone.
-
-
 
 ### Push delivery — ⊘ blocked on P13
 
@@ -166,8 +150,6 @@ Email must be unchanged; push is plumbed but unreachable until P13.
 
 ---
 
-
-
 ## P3 — Multi-board API
 
 Additive by design, so the headline check is that **nothing in web changed.**
@@ -181,8 +163,6 @@ Additive by design, so the headline check is that **nothing in web changed.**
 - [ ] ★ `GET /boards` as a user who is admin of one board and member of another → `role` differs per entry, not one role for the user
 - [ ] ★ `GET /boards` as an account with **no** boards → `[]` and HTTP 200, not an error
 
-
-
 ### The authorisation check — ★ new, do this with two real accounts
 
 `GET /boards` has no board id, so `BoardRolesGuard` cannot run on it. The
@@ -193,8 +173,6 @@ service's `where: { userId }` is the only thing keeping bands apart.
 - [ ] ★ Call `GET /boards` with no bearer token → 401
 
 ---
-
-
 
 ## P4 — Cross-board calendar + inbox
 
@@ -211,16 +189,12 @@ cannot prove a tenancy boundary; only two accounts can.
 - [ ] ★ `DELETE /mentions/<id of B's row>` as A → B's row **still there**, response still `{ deleted: true }`
 - [ ] ★ Either route with no bearer token → 401
 
-
-
 ### The ex-member case — ★ new, the leak that was nearly shipped
 
 - [ ] ★ `@mention` B, confirm B sees it, then **remove B from that board** → B's `GET /mentions` no longer shows it
 - [ ] ★ Check the database directly after removing B → B has **no** `MentionNotification` rows for that board
 - [ ] ★ Also check `NotificationPreference` → B has no preference rows for that board
 - [ ] ★ Re-invite B, then open their notification settings → All four categories back to default on, not their old muted values
-
-
 
 ### Normal behaviour — ★ new
 
@@ -232,8 +206,6 @@ cannot prove a tenancy boundary; only two accounts can.
 - [ ] ★ `GET /calendar?from=0001-01-01T00:00:00Z&to=9999-01-01T00:00:00Z` → 400 — range capped at 370 days
 - [ ] ★ `from` later than `to` → 400
 
-
-
 ### Regressions — ↻ the single-board routes must be unchanged
 
 - [ ] ↻ Web `/calendar`, page through months → Identical to before
@@ -242,8 +214,6 @@ cannot prove a tenancy boundary; only two accounts can.
 - [ ] ↻ A non-member calling `GET /boards/:id/calendar` → Still 404, not 403
 
 ---
-
-
 
 ## P5 — Expo skeleton + auth on a real device
 
@@ -264,8 +234,6 @@ from `npx supabase status`. Then `npx supabase start`, `npm run dev`, and
 - [ ] ★ Edit `src/screens/sign-in.tsx` → Fast Refresh updates the phone
 - [ ] ★ Edit something in `packages/shared` or `packages/api-client` → Also refreshes — this is what the Metro `watchFolders` wiring buys
 
-
-
 ### Signing in — ★ new
 
 - [ ] ★ Sign in with the smoke-test account → Lands on the authed screen
@@ -275,8 +243,6 @@ from `npx supabase status`. Then `npx supabase start`, `npm run dev`, and
 - [ ] ★ Create an account with a new email → Signs straight in (local Supabase has confirmations off)
 - [ ] ★ Stop the API, then open the app signed in → "Could not reach the API" with a working Try again, not a crash
 - [ ] ★ Put the phone in airplane mode and tap Try again → Same — an error state, not a hang
-
-
 
 ### The session survives — ★ new, the point of the phase
 
@@ -289,8 +255,6 @@ bytes, so it is stored in chunks. These boxes are what prove the chunking:
 - [x] 🔵 ★ Sign in as A, sign out, sign in as B → B's name and bands, never A's — the query cache is cleared on sign-out
 - [x] 🔵 ★ Lock the phone, leave it over an hour, unlock and reopen the app → Still signed in and requests still work — the token refreshed despite the OS suspending timers
 
-
-
 ### Deliberately not in this phase
 
 - [ ] ⊘ Opening an invite email on the phone → Lands in the mobile **web** browser, not the app. The API hardcodes the invite redirect to `WEB_URL/auth/callback`; accept on web, set a password, then sign in here
@@ -298,8 +262,6 @@ bytes, so it is stored in chunks. These boxes are what prove the chunking:
 - [ ] ⊘ Dark mode looking designed → Readable in both, but the token layer is P6
 
 ---
-
-
 
 ## P6 — Primitives + design tokens
 
@@ -317,8 +279,6 @@ Nothing in `apps/web` was edited except a new test file. These boxes confirm it.
 - [ ] ↻ Settings → appearance, try all five palettes → Each looks exactly as it did; the staged preview still differs from the saved board
 - [ ] ↻ A coloured widget with muted text, a badge and a button inside → Text still legible, borders still faint — the `[data-wc]` formula untouched
 
-
-
 ### The phone, in both schemes — ★ new
 
 - [ ] ★ Sign-in screen in light mode → Warm cream background, not white — same canvas as web
@@ -329,8 +289,6 @@ Nothing in `apps/web` was edited except a new test file. These boxes confirm it.
 - [ ] ★ The `role` badge sitting on a coloured card → Readable on every slot, including the dark `c4` panel
 - [ ] ★ Sign out button → Reads as destructive without shouting
 
-
-
 ### It feels native — ★ new, judgement calls
 
 - [ ] ★ Press and hold a button → Visibly dims while held, springs back — no dead taps
@@ -340,8 +298,6 @@ Nothing in `apps/web` was edited except a new test file. These boxes confirm it.
 - [ ] ★ Tap into the email field on a short phone → The keyboard does not cover the password field or the button
 - [ ] ★ VoiceOver / TalkBack over the sign-in screen → Fields announce their labels; the button announces its name and its busy state while signing in
 
-
-
 ### Deliberately not in this phase
 
 - [ ] ⊘ A light/dark toggle inside the app → Follows the OS only. Web has its own toggle; the phone's setting is where people look
@@ -349,8 +305,6 @@ Nothing in `apps/web` was edited except a new test file. These boxes confirm it.
 - [ ] ⊘ Sheets → P8, and as a native `formSheet` route rather than a component
 
 ---
-
-
 
 ## P7 — Board hub
 
@@ -374,8 +328,6 @@ number is the failure mode here, and only you can spot it.
 - [ ] ★ A widget with nothing in it → Reads "Nothing yet", **not** "0"
 - [ ] ★ Pull down on the hub → Everything refetches
 
-
-
 ### Colour and layout — ★ new
 
 - [ ] ★ Compare the hub's card colours with the web dashboard → Focus coral, Goals lilac, Reminders lime, Shows ink — the same slots, in the board's palette
@@ -384,8 +336,6 @@ number is the failure mode here, and only you can spot it.
 - [x] 🔵 ★ Reorder widgets on web, pull to refresh → Hub order follows
 - [ ] ★ An odd number of stat cards → The last one stays half-width — it must not stretch across the row
 - [ ] ★ Rotate the phone, and try a large text size → Cards grow, numbers do not clip
-
-
 
 ### Navigation — ★ new
 
@@ -399,8 +349,6 @@ number is the failure mode here, and only you can spot it.
 - [ ] ★ Switch to Calendar, back to Board → The board tab is where you left it
 - [ ] ★ An account in no bands at all → "No band yet", not a crash or an endless spinner
 
-
-
 ### Deliberately not in this phase
 
 - [ ] ⊘ Tapping a card → Nothing happens yet — the spokes are P8
@@ -409,8 +357,6 @@ number is the failure mode here, and only you can spot it.
 - [ ] ⊘ Activity reading "N new since last visit" → Shows today's count and when the newest entry was; unread needs a marker that P9 defines
 
 ---
-
-
 
 ## P8 — Spokes
 
@@ -428,8 +374,6 @@ it, that is a bug, not an early P10.
 - [ ] ★ Back, then open a different card → Opens on that one
 - [ ] ★ Hide a widget on web, refresh the hub, open a spoke → The hidden widget is not in the strip either
 
-
-
 ### Each widget, against its web counterpart — ★ new
 
 - [ ] ★ Focus → All three horizons listed, unset ones reading "Not set" rather than being hidden
@@ -445,16 +389,12 @@ it, that is a bug, not an early P10.
 - [ ] ★ A widget with nothing in it → A designed empty state saying why — never a blank area or a spinner
 - [x] 🔵 ★ Stop the API and open a spoke → "Could not load this" with a working Try again
 
-
-
 ### Task detail — ★ new
 
 - [x] 🔵 ★ Tap a task row → Opens the task: title, status, priority, due date, description
 - [ ] ★ A task with assignees, a checklist, subtasks, and a linked goal or event → All four sections present; the checklist shows done/total
 - [x] 🔵 ★ Tap a subtask → Opens it; back returns to the parent
 - [ ] ★ A task that is archived or deleted on web, then opened on the phone → "Task not found", with a way back
-
-
 
 ### Deliberately not in this phase
 
@@ -464,8 +404,6 @@ it, that is a bug, not an early P10.
 - [ ] ⊘ Rich text in the note (bold, links, headings) → Rendered as plain text for now
 
 ---
-
-
 
 ## P9 — Calendar + Inbox
 
@@ -487,8 +425,6 @@ which delete notification rows, not comments.
 - [ ] ★ Leave a band on web (or have an admin remove you), reopen the filtered tab → Falls back to All rather than showing an empty list
 - [ ] ★ Compare a band's dot with that band's hub → Same colour the board leads with when opened
 
-
-
 ### Calendar — ★ new
 
 - [ ] ★ Open Calendar → This month, as a list of days, each day's items under its date
@@ -507,8 +443,6 @@ which delete notification rows, not comments.
 - [ ] ★ Pull down to refresh → Reloads; a change made on web appears
 - [x] 🔵 ★ Compare against web's calendar for the same month → Same items on the same days
 
-
-
 ### Inbox — ★ new
 
 - [x] 🔵 ★ Have someone @mention you on web, then open the Inbox → The mention, newest first, reading "X mentioned you in …" with the excerpt
@@ -521,15 +455,11 @@ which delete notification rows, not comments.
 - [ ] ★ An empty inbox → "Nothing for you", and no "Clear all" in the header
 - [ ] ★ Stop the API, pull to refresh → "Could not load this" with a working Try again
 
-
-
 ### Scoping — the checks that matter most
 
 - [x] 🔵 ★ On All, read every item's band label → Only bands you are a member of. Anything else is a leak
 - [x] 🔵 ★ Have an admin remove you from a band where you were mentioned, then refresh the Inbox → Those mentions are gone — membership is re-checked per request, not trusted from before
 - [x] 🔵 ★ Note a band's name, leave it, reopen the Calendar → Nothing from it remains, including in a month you had already loaded
-
-
 
 ### Deliberately not in this phase
 
@@ -539,8 +469,6 @@ which delete notification rows, not comments.
 - [ ] ⊘ A month *grid* → Deliberately an agenda — see the phase notes
 
 ---
-
-
 
 ## P10 — Write parity
 
@@ -563,15 +491,11 @@ Mention parsing and the upload flow moved into the shared packages.
 - [x] 🔵 ↻ On web, upload a file to a task → It appears, previews, downloads
 - [ ] ↻ On web, attach a file to a comment, then delete it → It disappears from the comment **without a reload** (it used to linger — fixed here)
 
-
-
 ### Permissions follow the task's band — ★ new, the check that matters most
 
 - [x] 🔵 ★ Select a band where you are **admin**, then open a task from the Calendar or Inbox that belongs to a band where you are a **member** → Behaves as a member: no drag, status only changeable if you are assigned
 - [x] 🔵 ★ The reverse — select the member band, open a task in your admin band → Behaves as an admin
 - [ ] ★ As a member, a task you are **not** assigned to → Status pill has no chevron and does nothing; a task you **are** assigned to → Chevron, opens the sheet
-
-
 
 ### Status — ★ new
 
@@ -580,14 +504,10 @@ Mention parsing and the upload flow moved into the shared packages.
 - [ ] ★ Tap the status dot on a To-Do row → The same sheet opens; tapping the row elsewhere still opens the task
 - [ ] ★ Change a subtask's status from the subtask's own screen, go back → Both the subtask and the parent's subtask list show the new status
 
-
-
 ### Checklist — ★ new
 
 - [x] 🔵 ★ Tick an item → It ticks at once, with no flicker back while it saves; web agrees
 - [ ] ★ Tick as a **member** (not admin) → Allowed — web and the API allow it too
-
-
 
 ### Comments and mentions — ★ new
 
@@ -597,8 +517,6 @@ Mention parsing and the upload flow moved into the shared packages.
 - [ ] ★ The comment field near the bottom of a long task, keyboard open → The field and the Comment button stay visible above the keyboard (check **both** iOS and Android)
 - [ ] ★ Edit your own comment via ⋯ → Saves, shows "edited"
 - [ ] ★ Someone else's comment, as a member → No ⋯ at all. As an admin → ⋯ offers Delete only
-
-
 
 ### Attachments — ★ new
 
@@ -610,8 +528,6 @@ Mention parsing and the upload flow moved into the shared packages.
 - [ ] ★ A video over 50MB → "File is larger than the 50MB limit", and nothing half-uploaded appears
 - [ ] ★ Delete your own upload → Confirm prompt, then gone; someone else's upload as a member → no trash icon
 
-
-
 ### Reorder — ★ new
 
 - [x] 🔵 ★ As an admin, open the To-Do spoke → Same order as web's To-Do widget (it used to show newest first), with "Hold a task to move it."
@@ -621,8 +537,6 @@ Mention parsing and the upload flow moved into the shared packages.
 - [ ] ★ As a member → No hint and no drag; holding a row does nothing
 - [ ] ★ With VoiceOver/TalkBack on, a row's actions → Move up / Move down, and they work
 
-
-
 ### Deliberately not in this phase
 
 - [ ] ⊘ Editing a task's title, description, priority, due date or assignees; creating tasks or subtasks → Admin work, still on web
@@ -630,8 +544,6 @@ Mention parsing and the upload flow moved into the shared packages.
 - [ ] ⊘ Creating or editing events, reminders and goals (deferred here by P9), Archive and Board settings (labelled P10 in the board menu) → Not built; where they go is an open decision
 
 ---
-
-
 
 ## P10b — Content editing
 
@@ -647,8 +559,6 @@ date bugs show.
 - [x] 🔵 ★ Create a show at 9pm on the phone → Web shows 9pm on the same day
 - [ ] ★ Set a goal's target to the 1st of next month → It sits on the 1st in the Calendar tab and on web
 
-
-
 ### Tasks — ★ new
 
 - [x] 🔵 ★ To-Do spoke → **+** → title, priority, due, assignees → Save → It appears in the list and on web, assigned
@@ -658,8 +568,6 @@ date bugs show.
 - [x] 🔵 ★ Edit → Archive → The form *and* the task screen close; the task is gone from To-Do and is in web's Archive
 - [ ] ★ Edit → Delete → "Delete forever" → Same, and it's not in the Archive either
 - [ ] ★ As a **member**, open a task → No Edit button; "Add" under Subtasks is there, and creating one works
-
-
 
 ### Events, reminders, goals, focus — ★ new
 
@@ -672,23 +580,17 @@ date bugs show.
 - [ ] ★ Focus spoke → **Edit** → set the week's focus → The hub's Focus card shows it. Clear it and save → "Not set"
 - [x] 🔵 ★ As a **member**, every spoke → No **+**, no Edit, and tapping an event/reminder/goal does nothing
 
-
-
 ### Unsaved work — ★ new
 
 - [x] 🔵 ★ Type into a form, then swipe it down (iOS) → It won't go; Cancel asks "Discard changes?"
 - [ ] 🔵 ★ Same on Android with the **back button** → "Discard changes?"
 - [x] 🔵 ★ Save a change → It closes without asking
 
-
-
 ### Regressions — ↻
 
 - [ ] ↻ On web, edit a show, then open the web Calendar page → Shows the change (calendar refresh widened in the shared hooks)
 
 ---
-
-
 
 ## P10c — Board admin
 
@@ -701,8 +603,6 @@ sections in one pass.
 - [x] 🔵 ★ Board header → ⋯ → Archive → The sheet closes and the Archive opens; back returns to the board
 - [x] 🔵 ★ ⋯ → Settings, as a **member** → Only "Email notifications"; no members, invites, statuses or palette
 
-
-
 ### Archive — ★ new
 
 - [ ] 🔵 ★ Archive a show on web, open the phone's Archive → It's listed as a Show, with when it was archived
@@ -710,8 +610,6 @@ sections in one pass.
 - [ ] ★ Tap an archived task → The task screen opens and says "archived"; Edit → Unarchive brings it back
 - [ ] ★ Tap the "Tasks" chip, then "Goals" too → The list narrows to both; untick both → Everything again
 - [ ] ★ As a **member**, tap an archived show → Nothing (a record, not a door); an archived task still opens read-only
-
-
 
 ### Settings — ★ new
 
@@ -725,15 +623,11 @@ sections in one pass.
 - [ ] ★ Delete a status that tasks still use → Refused with how many tasks use it
 - [x] 🔵 ★ Pick another palette → The hub's cards recolour; web shows the new palette too, and any per-card colours set on web are kept
 
-
-
 ### Regressions — ↻
 
 - [ ] 🔵 ↻ On web, Settings → toggle a notification, send and revoke an invite, rename a status → All behave as before, with the same toasts
 
 ---
-
-
 
 ## P11 — Notes widget
 
@@ -746,8 +640,6 @@ lost by a phone save**.
 
 - [x] 🔵 ★ On web, write a note with a heading, **bold**, *italic*, a bulleted and a numbered list, and a link → The phone's Notes spoke shows all of it formatted, not as markers
 - [ ] ★ Tap the link → Opens in the browser
-
-
 
 ### Editing — ⊘ deferred to P13
 
@@ -768,8 +660,6 @@ members not being able to edit.
 
 ---
 
-
-
 ## P12 — Mobile layout editor
 
 **Replaced by P12b** before it was verified: the phone no longer shares web's
@@ -780,8 +670,6 @@ rewritten, in the P12b section below.
 
 ---
 
-
-
 ## P12b — Phone arrangement
 
 The phone now has its **own** arrangement, edited on the hub itself: hold a
@@ -791,30 +679,30 @@ the API (`npm run dev`) and Expo (`npm run mobile`) first.
 
 ### Following web — ★ new
 
-- [ ] 🔵 ★ Without arranging the phone, drag Shows to the top-left on web, wait a second, then pull to refresh the phone's hub (check the header says the right band) → Shows is the **first** card
+- [x] 🔵 ★ Without arranging the phone, drag Shows to the top-left on web, wait a second, then pull to refresh the phone's hub (check the header says the right band) → Shows is the **first** card
 - [ ] ★ Swipe through the spokes → Same order as the hub
 - [ ] ★ Hide a widget on web → Also gone from the phone's hub (it's still following)
 
 ### Editing on the hub — ★ new
 
-- [ ] 🔵 ★ Hold a card → Edit mode: every card gets an eye (top right) and a corner handle; the header says Cancel and Done. ⋯ → Edit widgets does the same
-- [ ] 🔵 ★ Hold a card and drag it over another → The others slide out of the way; let go and it settles in its new place. Done → It stays there. **Web is unchanged** after a refresh
-- [ ] 🔵 ★ Drag a card's corner right and down → A dashed outline shows the new size; let go → The card is 2×2, and the cards around it re-flow with no overlap
-- [ ] 🔵 ★ A card two rows tall → Lists a few items under its number (Shows lists the next shows, To-Do the top tasks)
+- [x] 🔵 ★ Hold a card → Edit mode: every card gets an eye (top right) and a corner handle; the header says Cancel and Done. ⋯ → Edit widgets does the same
+- [x] 🔵 ★ Hold a card and drag it over another → The others slide out of the way; let go and it settles in its new place. Done → It stays there. **Web is unchanged** after a refresh
+- [x] 🔵 ★ Drag a card's corner right and down → A dashed outline shows the new size; let go → The card is 2×2, and the cards around it re-flow with no overlap
+- [x] 🔵 ★ A card two rows tall → Lists a few items under its number (Shows lists the next shows, To-Do the top tasks)
 - [ ] ★ Drag a card towards the bottom (or top) edge of the screen → The hub scrolls with it
 - [ ] ★ Hold the corner handle still for a moment, then drag → It resizes; it does not start moving the card
-- [ ] 🔵 ★ Tap a card's eye → It disappears and shows under "Hidden" at the top; tap it there → It's back where it was
+- [x] 🔵 ★ Tap a card's eye → It disappears and shows under "Hidden" at the top; tap it there → It's back where it was
 - [ ] ★ Hide all but one card → The last card's eye is greyed out
 - [ ] ★ Out of edit mode, a one-column card with nothing beside it → Drawn across the full width (no half-empty rows)
 - [ ] ★ Change something, then Cancel → "Discard changes?"
 - [ ] ★ After a phone save, rearrange on web → The phone doesn't move
-- [ ] 🔵 ★ Edit mode → "Follow my web dashboard" (only shown once the phone has its own arrangement) → Confirm → The hub goes back to web's order; web is unchanged
+- [x] 🔵 ★ Edit mode → "Follow my web dashboard" (only shown once the phone has its own arrangement) → Confirm → The hub goes back to web's order; web is unchanged
 - [ ] ★ Arrange as one member → A second member's phone and web are unchanged
 - [ ] ★ With VoiceOver on, edit mode → Each card offers Move earlier/later, Make wider/taller, Hide
 
 ### Regressions — ↻
 
-- [ ] 🔵 ↻ On web, drag and resize widgets, then Reset layout → Same as before; and a phone that has its own arrangement keeps it
+- [x] 🔵 ↻ On web, drag and resize widgets, then Reset layout → Same as before; and a phone that has its own arrangement keeps it
 - [ ] ↻ Tap a card outside edit mode → Its spoke opens, as before
 
 ---
