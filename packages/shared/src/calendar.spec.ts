@@ -3,6 +3,7 @@ import {
   CalendarCategories,
   calendarCategory,
   calendarDayKey,
+  daysFromToday,
   dueDateFromLocalDay,
   groupCalendarByDay,
   localDayFromDueDate,
@@ -172,5 +173,31 @@ describe('localDayFromDueDate', () => {
   it('round-trips through dueDateFromLocalDay', () => {
     const iso = '2027-01-01T00:00:00.000Z';
     expect(dueDateFromLocalDay(localDayFromDueDate(iso))).toBe(iso);
+  });
+});
+
+describe('daysFromToday', () => {
+  /** A fixed local noon, so nothing here depends on when the suite runs. */
+  const now = new Date(2026, 2, 14, 12, 0, 0); // Sat 14 Mar 2026
+  const at = (days: number, hour = 12) =>
+    new Date(2026, 2, 14 + days, hour, 0, 0).toISOString();
+
+  it('counts whole local days, not elapsed hours', () => {
+    // 23:00 tonight and 01:00 tomorrow are two hours apart but different days.
+    expect(daysFromToday(at(0, 23), now)).toBe(0);
+    expect(daysFromToday(at(1, 1), now)).toBe(1);
+    expect(daysFromToday(at(-1, 23), now)).toBe(-1);
+  });
+
+  it('calls a show later today "today", however few hours away', () => {
+    // The Trello ticket: 4pm seen at 11am read as "Tomorrow" on web.
+    expect(daysFromToday(at(0, 16), new Date(2026, 2, 14, 11, 0, 0))).toBe(0);
+  });
+
+  it('is unaffected by a daylight-saving change in between', () => {
+    // US DST started 8 Mar 2026; a naive divide by 86,400,000 across it is off
+    // by an hour and can round to the wrong day.
+    const before = new Date(2026, 2, 1, 12, 0, 0);
+    expect(daysFromToday(at(0, 12), before)).toBe(13);
   });
 });

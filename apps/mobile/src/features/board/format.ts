@@ -8,27 +8,11 @@
  * and someone on tour is in their own day, not the band's.
  */
 
-import { localDayFromDueDate } from '@artist/shared';
+import { daysFromToday, localDayFromDueDate } from '@artist/shared';
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
-
-function startOfLocalDay(date: Date): number {
-  return new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate(),
-  ).getTime();
-}
-
-/** Whole local days from today: 0 today, 1 tomorrow, -1 yesterday. */
-export function daysFromToday(iso: string, now = new Date()): number {
-  const then = new Date(iso);
-  return Math.round(
-    (startOfLocalDay(then) - startOfLocalDay(now)) / DAY,
-  );
-}
 
 export function isToday(iso: string, now = new Date()): boolean {
   return daysFromToday(iso, now) === 0;

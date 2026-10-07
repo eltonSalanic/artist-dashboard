@@ -160,3 +160,24 @@ export function localDayFromDueDate(iso: string): Date {
   const date = new Date(iso);
   return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
 }
+
+const DAY_MS = 86_400_000;
+
+function startOfLocalDay(date: Date): number {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+/**
+ * Whole local days from today: 0 today, 1 tomorrow, -1 yesterday.
+ *
+ * Calendar days, not elapsed time. A show at 4pm seen at 11am is five hours
+ * away and still today; dividing the gap by 24 hours and rounding up called it
+ * "Tomorrow" on web's greeting while the phone said "Today". Shared so that
+ * cannot happen again. Rounded rather than floored, because a day across a
+ * daylight-saving change is 23 or 25 hours long.
+ */
+export function daysFromToday(iso: string, now = new Date()): number {
+  return Math.round(
+    (startOfLocalDay(new Date(iso)) - startOfLocalDay(now)) / DAY_MS,
+  );
+}

@@ -1,7 +1,6 @@
 import {
   count,
   dayHeading,
-  daysFromToday,
   dueDay,
   fileSize,
   isThisWeek,
@@ -15,22 +14,6 @@ import {
 const now = new Date(2026, 2, 14, 12, 0, 0); // Sat 14 Mar 2026
 const at = (days: number, hour = 12) =>
   new Date(2026, 2, 14 + days, hour, 0, 0).toISOString();
-
-describe('daysFromToday', () => {
-  it('counts whole local days, not elapsed hours', () => {
-    // 23:00 tonight and 01:00 tomorrow are two hours apart but different days.
-    expect(daysFromToday(at(0, 23), now)).toBe(0);
-    expect(daysFromToday(at(1, 1), now)).toBe(1);
-    expect(daysFromToday(at(-1, 23), now)).toBe(-1);
-  });
-
-  it('is unaffected by a daylight-saving change in between', () => {
-    // US DST started 8 Mar 2026; a naive divide by 86,400,000 across it is off
-    // by an hour and can round to the wrong day.
-    const before = new Date(2026, 2, 1, 12, 0, 0);
-    expect(daysFromToday(at(0, 12), before)).toBe(13);
-  });
-});
 
 describe('isToday / isThisWeek', () => {
   it('reads today and the six days after as this week', () => {

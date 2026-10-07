@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Eye, RotateCcw } from "lucide-react";
 import {
+  daysFromToday,
   resolveWidgetColor,
   type LayoutItem,
   type WidgetColor,
@@ -242,10 +243,9 @@ function Greeting({ boardId }: { boardId: string }) {
 
   let subtitle = "Everything your band's working on, at a glance.";
   if (nextShow) {
-    const days = Math.ceil(
-      (new Date(nextShow.startsAt).getTime() - new Date(from).getTime()) /
-        86_400_000,
-    );
+    // Calendar days, shared with the phone: a show five hours away is still
+    // today, and rounding the gap up in 24-hour blocks called it "Tomorrow".
+    const days = daysFromToday(nextShow.startsAt);
     const when =
       days <= 0 ? "Today" : days === 1 ? "Tomorrow" : `In ${days} days`;
     subtitle = `${when} · ${nextShow.title}`;
