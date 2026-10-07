@@ -1,5 +1,7 @@
 import { router } from 'expo-router';
-import { Pressable, ScrollView, View } from 'react-native';
+import { useHeaderHeight } from 'expo-router/react-navigation';
+import { Pressable, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { useSelectedBoard } from '@/features/board/selected-board';
@@ -15,12 +17,24 @@ import { radius, spacing, useThemeColors } from '@/theme';
 export function BoardSwitcherSheet() {
   const colors = useThemeColors();
   const { boards, board, select } = useSelectedBoard();
+  const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
 
   return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={{ padding: spacing.md, gap: spacing.xs }}
+    // The sheet's header is drawn over its content, so the content steps
+    // below it with padding. This was a ScrollView inset natively for the
+    // header, and the native inset is invisible to React Native's own layout:
+    // each row's press area sat a header's height above the row
+    // (react-native#43546). A row lit up on touch, but a release the press area
+    // thought was outside it was dropped, so most taps never switched band.
+    <View
+      style={{
+        backgroundColor: colors.background,
+        padding: spacing.md,
+        paddingTop: headerHeight + spacing.sm,
+        paddingBottom: spacing.md + insets.bottom,
+        gap: spacing.xs,
+      }}
     >
       {boards.map((candidate) => {
         const current = candidate.id === board?.id;
@@ -66,6 +80,6 @@ export function BoardSwitcherSheet() {
           create one on the web.
         </ThemedText>
       )}
-    </ScrollView>
+    </View>
   );
 }

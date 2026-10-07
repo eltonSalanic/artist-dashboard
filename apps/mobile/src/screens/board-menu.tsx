@@ -1,5 +1,6 @@
 import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
+import { useHeaderHeight } from 'expo-router/react-navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePermissions } from '@artist/api-client';
 import { Icon, type IconName } from '@/components/icon';
@@ -19,6 +20,7 @@ export function BoardMenuSheet() {
   const { can } = usePermissions();
   const { board } = useSelectedBoard();
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const base = board ? `/board/${board.id}` : null;
 
   const items: {
@@ -66,10 +68,13 @@ export function BoardMenuSheet() {
     // the sheet's height: half of Settings drawn, the rest black, and later
     // screens can inherit it until a restart. react-native-screens#4651, fixed
     // upstream after 4.28.0; three rows never needed to scroll anyway.
+    // The sheet's header is drawn over its content, hence the top padding:
+    // without it the first row sat under the title.
     <View
       style={{
         backgroundColor: colors.background,
         padding: spacing.md,
+        paddingTop: headerHeight + spacing.sm,
         paddingBottom: spacing.md + insets.bottom,
         gap: spacing.xs,
       }}
