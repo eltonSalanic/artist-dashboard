@@ -109,11 +109,11 @@ deliberately scheduled after mobile rather than blocking it.
 | **P8** | [Spokes (expanded widgets)](#p8--spokes-expanded-widgets) | mobile, **shared** | ☑ |
 | **P9** | [Calendar + Inbox screens](#p9--calendar--inbox-screens) | mobile, api | ☑ |
 | **P10** | [Write parity](#p10--write-parity) | mobile, **shared**, web | ☑ |
-| **P10b** | [Content editing](#p10b--content-editing) | mobile, shared, api-client | ◐ |
-| **P10c** | [Board admin](#p10c--board-admin) | mobile, api-client, web | ◐ |
-| **P11** | [Notes widget](#p11--notes-widget) | mobile, shared | ◐ |
-| **P12** | [Mobile layout editor](#p12--mobile-layout-editor) | mobile, shared | ◐ |
-| **P12b** | [Phone arrangement](#p12b--phone-arrangement) | mobile, shared, api, api-client | ◐ |
+| **P10b** | [Content editing](#p10b--content-editing) | mobile, shared, api-client | ☑ |
+| **P10c** | [Board admin](#p10c--board-admin) | mobile, api-client, web | ☑ |
+| **P11** | [Notes widget](#p11--notes-widget) | mobile, shared | ☑ |
+| **P12** | [Mobile layout editor](#p12--mobile-layout-editor) | mobile, shared | ☑ |
+| **P12b** | [Phone arrangement](#p12b--phone-arrangement) | mobile, shared, api, api-client | ☑ |
 | **P13** | [Push client](#p13--push-client) | mobile, api | ☐ |
 | **P14** | [Store builds](#p14--store-builds) | mobile, CI | ☐ |
 | **P15** | [Web board switcher](#p15--web-board-switcher) | **web** | ☐ |

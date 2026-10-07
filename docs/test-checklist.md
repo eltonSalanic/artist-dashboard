@@ -583,7 +583,7 @@ date bugs show.
 ### Unsaved work — ★ new
 
 - [x] 🔵 ★ Type into a form, then swipe it down (iOS) → It won't go; Cancel asks "Discard changes?"
-- [ ] 🔵 ★ Same on Android with the **back button** → "Discard changes?"
+- [ ] 🔵 ★ Same on Android with the **back button** → "Discard changes?" — *not run: no Android phone in the P10b–P12b pass; carried to P14's Android build*
 - [x] 🔵 ★ Save a change → It closes without asking
 
 ### Regressions — ↻
@@ -605,8 +605,8 @@ sections in one pass.
 
 ### Archive — ★ new
 
-- [ ] 🔵 ★ Archive a show on web, open the phone's Archive → It's listed as a Show, with when it was archived
-- [ ] 🔵 ★ Tap it (as admin) → Its form opens with **Unarchive**; unarchive → It leaves the Archive and is back in Shows
+- [x] 🔵 ★ Archive a show on web, open the phone's Archive → It's listed as a Show, with when it was archived
+- [x] 🔵 ★ Tap it (as admin) → Its form opens with **Unarchive**; unarchive → It leaves the Archive and is back in Shows
 - [ ] ★ Tap an archived task → The task screen opens and says "archived"; Edit → Unarchive brings it back
 - [ ] ★ Tap the "Tasks" chip, then "Goals" too → The list narrows to both; untick both → Everything again
 - [ ] ★ As a **member**, tap an archived show → Nothing (a record, not a door); an archived task still opens read-only
@@ -625,7 +625,7 @@ sections in one pass.
 
 ### Regressions — ↻
 
-- [ ] 🔵 ↻ On web, Settings → toggle a notification, send and revoke an invite, rename a status → All behave as before, with the same toasts
+- [x] 🔵 ↻ On web, Settings → toggle a notification, send and revoke an invite, rename a status → All behave as before, with the same toasts
 
 ---
 
