@@ -263,25 +263,42 @@ export function HubGrid({
     },
     (centre) => {
       if (centre === null) return;
-      for (const rect of rects.get()) {
+      const all = rects.get();
+      // A full-width card's centre sits on the gap between the columns, inside
+      // neither half card, so it could only cross a row of them by being
+      // dragged off to one side. It goes by height alone instead.
+      const wide = drag.width.get() > cell.get() + GAP;
+      let from = -1;
+      for (let i = 0; i < all.length; i++) {
+        if (all[i].widgetType === centre.type) from = i;
+      }
+      let hit = '';
+      for (let i = 0; i < all.length; i++) {
+        const rect = all[i];
         if (rect.widgetType === centre.type) continue;
         // The middle of the card, not its edge, so two cards of different
         // sizes do not trade places back and forth under a still finger.
         const insetX = rect.width * 0.2;
         const insetY = rect.height * 0.2;
         const over =
-          centre.x > rect.x + insetX &&
-          centre.x < rect.x + rect.width - insetX &&
+          (wide ||
+            (centre.x > rect.x + insetX && centre.x < rect.x + rect.width - insetX)) &&
           centre.y > rect.y + insetY &&
           centre.y < rect.y + rect.height - insetY;
         if (!over) continue;
-        if (drag.target.get() !== rect.widgetType) {
-          drag.target.set(rect.widgetType);
-          scheduleOnRN(move, centre.type as CardWidgetType, rect.widgetType);
-        }
+        hit = rect.widgetType;
+        // Going up, take the row's first card, so the whole row goes under;
+        // going down, its last, so the whole row comes up above.
+        if (i < from) break;
+      }
+      if (hit === '') {
+        drag.target.set('');
         return;
       }
-      drag.target.set('');
+      if (drag.target.get() !== hit) {
+        drag.target.set(hit);
+        scheduleOnRN(move, centre.type as CardWidgetType, hit as CardWidgetType);
+      }
     },
   );
 
