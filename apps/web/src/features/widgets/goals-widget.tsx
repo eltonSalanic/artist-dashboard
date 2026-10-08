@@ -4,16 +4,10 @@ import { useState } from "react";
 import { GoalPeriods, type GoalPeriod } from "@artist/shared";
 import { Target } from "lucide-react";
 import { usePermissions } from "@artist/api-client";
-import {
-  useCreateGoal,
-  useGoals,
-  useUpdateGoal,
-} from "@artist/api-client";
+import { useCreateGoal, useGoals } from "@artist/api-client";
 import { useDetailParams } from "@/features/planning/use-detail-params";
-import {
-  formatDate,
-  goalPeriodLabel,
-} from "@/features/planning/planning-bits";
+import { useGoalCompletion } from "@/features/planning/goal-completion";
+import { formatDate, goalPeriodLabel } from "@/features/planning/planning-bits";
 import type { GoalDto } from "@artist/api-client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,7 +34,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function GoalsWidget({ boardId }: { boardId: string }) {
   const { can } = usePermissions();
   const goals = useGoals(boardId, { includeCompleted: false });
-  const updateGoal = useUpdateGoal(boardId);
+  const completion = useGoalCompletion(boardId);
   const { open } = useDetailParams();
 
   if (goals.isPending) return <Skeleton className="h-full min-h-24" />;
@@ -65,42 +59,42 @@ export function GoalsWidget({ boardId }: { boardId: string }) {
   }
 
   return (
-    <ul className="flex flex-col gap-1">
-      {items.map((goal) => (
-        <li
-          key={goal.id}
-          className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-accent/50"
-        >
-          <Checkbox
-            checked={goal.completedAt !== null}
-            aria-label={`Mark ${goal.title} complete`}
-            disabled={!can("goal.manage")}
-            onCheckedChange={(checked) =>
-              updateGoal.mutate({
-                goalId: goal.id,
-                dto: { completed: checked === true },
-              })
-            }
-          />
-          <button
-            type="button"
-            className="min-w-0 flex-1 truncate text-left text-sm"
-            onClick={() => open("goal", goal.id)}
+    <>
+      <ul className="flex flex-col gap-1">
+        {items.map((goal) => (
+          <li
+            key={goal.id}
+            className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-accent/50"
           >
-            {goal.title}
-          </button>
-          <Badge
-            variant="secondary"
-            className="shrink-0 rounded-full uppercase tracking-wide"
-          >
-            {goalPeriodLabel[goal.period]}
-          </Badge>
-          <span className="shrink-0 text-xs text-muted-foreground">
-            {formatDate(goal.dueDate)}
-          </span>
-        </li>
-      ))}
-    </ul>
+            <Checkbox
+              checked={goal.completedAt !== null}
+              aria-label={`Mark ${goal.title} complete`}
+              disabled={!can("goal.manage")}
+              onCheckedChange={(checked) =>
+                completion.setCompleted(goal, checked === true)
+              }
+            />
+            <button
+              type="button"
+              className="min-w-0 flex-1 truncate text-left text-sm"
+              onClick={() => open("goal", goal.id)}
+            >
+              {goal.title}
+            </button>
+            <Badge
+              variant="secondary"
+              className="shrink-0 rounded-full uppercase tracking-wide"
+            >
+              {goalPeriodLabel[goal.period]}
+            </Badge>
+            <span className="shrink-0 text-xs text-muted-foreground">
+              {formatDate(goal.dueDate)}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {completion.dialog}
+    </>
   );
 }
 
@@ -142,21 +136,19 @@ function GoalRow({
   goal: GoalDto;
   canManage: boolean;
 }) {
-  const updateGoal = useUpdateGoal(boardId);
+  const completion = useGoalCompletion(boardId);
   const { open } = useDetailParams();
   const completed = goal.completedAt !== null;
 
   return (
     <li className="flex items-center gap-2 py-2">
+      {completion.dialog}
       <Checkbox
         checked={completed}
         aria-label={`Mark ${goal.title} complete`}
         disabled={!canManage}
         onCheckedChange={(checked) =>
-          updateGoal.mutate({
-            goalId: goal.id,
-            dto: { completed: checked === true },
-          })
+          completion.setCompleted(goal, checked === true)
         }
       />
       <button

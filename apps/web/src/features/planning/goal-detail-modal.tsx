@@ -7,6 +7,7 @@ import { ArchivedBanner } from "@/features/archive/archived-banner";
 import { ItemActions } from "@/features/archive/item-actions";
 import { useTasks } from "@artist/api-client";
 import { useDeleteGoal, useGoal, useUpdateGoal } from "@artist/api-client";
+import { useGoalCompletion } from "./goal-completion";
 import { useDetailParams } from "./use-detail-params";
 import { formatDate, formatLocalDate, goalPeriodLabel } from "./planning-bits";
 import { LinkedTasks } from "./linked-tasks";
@@ -103,6 +104,7 @@ function GoalDetailBody({
 }) {
   const { can } = usePermissions();
   const updateGoal = useUpdateGoal(boardId);
+  const completion = useGoalCompletion(boardId);
   const deleteGoal = useDeleteGoal(boardId);
   // An archived goal keeps its tasks — showing them is the whole point of
   // looking one up in the archive.
@@ -219,12 +221,10 @@ function GoalDetailBody({
               checked={completed}
               disabled={!canManage}
               onCheckedChange={(checked) =>
-                updateGoal.mutate({
-                  goalId: data.id,
-                  dto: { completed: checked === true },
-                })
+                completion.setCompleted(data, checked === true)
               }
             />
+            {completion.dialog}
             {completed ? "Completed" : "In progress"}
           </label>
         </Field>
