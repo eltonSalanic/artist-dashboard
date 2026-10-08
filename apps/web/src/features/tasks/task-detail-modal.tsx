@@ -563,7 +563,9 @@ function TaskDetailBody({
                     updateTask.mutate({ taskId: subtask.id, dto: { statusId } })
                   }
                 />
-                <span className="min-w-0 flex-1 truncate text-sm">
+                <span
+                  className={`min-w-0 flex-1 truncate text-sm ${subtask.status.isDone ? "text-muted-foreground line-through" : ""}`}
+                >
                   {subtask.title}
                 </span>
               </div>

@@ -75,7 +75,7 @@ export function MyTasksWidget({ boardId }: { boardId: string }) {
         >
           <button
             type="button"
-            className="min-w-0 flex-1 truncate text-left text-sm"
+            className={`min-w-0 flex-1 truncate text-left text-sm ${task.status.isDone ? "text-muted-foreground line-through" : ""}`}
             onClick={() => openTask(task.id)}
           >
             {task.title}

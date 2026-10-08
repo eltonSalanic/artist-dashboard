@@ -241,7 +241,11 @@ export function TasksTable({
                 >
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <span className="truncate font-medium">{task.title}</span>
+                      <span
+                        className={`truncate font-medium ${task.status.isDone ? "text-muted-foreground line-through" : ""}`}
+                      >
+                        {task.title}
+                      </span>
                       <SubtaskCount count={task.subtaskCount} />
                     </div>
                   </TableCell>
