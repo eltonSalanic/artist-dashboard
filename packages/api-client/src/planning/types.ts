@@ -14,6 +14,11 @@ export interface GoalDto {
   updatedAt: string;
   /** Live tasks only — the number the "also archive N tasks" prompt shows. */
   taskCount: number;
+  /**
+   * Live tasks not yet done. Completing the goal finishes them, which the
+   * confirmation names before asking.
+   */
+  openTaskCount: number;
   /** Tasks archived as part of this goal. Detail responses only. */
   archivedTaskCount?: number;
   /** Every linked task, archived or not — what a cascading delete takes. */

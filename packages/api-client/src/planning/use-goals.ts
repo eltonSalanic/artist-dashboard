@@ -70,6 +70,7 @@ export function useCreateGoal(boardId: string) {
 }
 
 export function useUpdateGoal(boardId: string) {
+  const queryClient = useQueryClient();
   const invalidate = useInvalidateGoals(boardId);
   return useMutation({
     mutationFn: ({ goalId, dto }: { goalId: string; dto: UpdateGoalDto }) =>
@@ -77,7 +78,19 @@ export function useUpdateGoal(boardId: string) {
         method: "PATCH",
         body: dto,
       }),
-    onSuccess: invalidate,
+    // Completing a goal also finishes its open tasks on the server, so every
+    // task list and the feed are stale along with the goals.
+    onSuccess: (_goal, { dto }) =>
+      Promise.all([
+        invalidate(),
+        ...(dto.completed
+          ? [
+              queryClient.invalidateQueries({ queryKey: ["tasks", boardId] }),
+              queryClient.invalidateQueries({ queryKey: ["task", boardId] }),
+              queryClient.invalidateQueries({ queryKey: ["activity", boardId] }),
+            ]
+          : []),
+      ]),
     onError: showError,
   });
 }
