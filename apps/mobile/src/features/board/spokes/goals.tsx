@@ -1,5 +1,11 @@
+import { Alert } from 'react-native';
 import { router } from 'expo-router';
-import { useGoals, usePermissions, useUpdateGoal } from '@artist/api-client';
+import {
+  useGoals,
+  usePermissions,
+  useUpdateGoal,
+  type GoalDto,
+} from '@artist/api-client';
 import { Row } from '@/components/row';
 import { SpokeList } from '@/components/spoke-list';
 import { dueDay, shortDate } from '../format';
@@ -12,6 +18,34 @@ export function GoalsSpoke({ boardId }: { boardId: string }) {
   const { can } = usePermissions();
   const canManage = can('goal.manage');
   const pending = update.isPending ? update.variables : null;
+
+  /**
+   * Completing a goal finishes its open tasks on the server, with no "goal
+   * only" option, so it asks first and says how many. Reopening goes straight
+   * through.
+   */
+  const toggle = (goal: GoalDto) => {
+    if (goal.completedAt !== null) {
+      update.mutate({ goalId: goal.id, dto: { completed: false } });
+      return;
+    }
+    const open = goal.openTaskCount;
+    const noun = open === 1 ? 'task' : 'tasks';
+    Alert.alert(
+      'Complete this goal?',
+      open > 0
+        ? `"${goal.title}" still has ${open} open ${noun}. Completing the goal marks ${open === 1 ? 'it' : 'them'} done too.`
+        : `"${goal.title}" will be marked complete.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: open > 0 ? `Complete goal and ${open} ${noun}` : 'Complete goal',
+          onPress: () => update.mutate({ goalId: goal.id, dto: { completed: true } }),
+        },
+      ],
+    );
+  };
+
   const items = [...(goals.data ?? [])].sort((a, b) => {
     const done = Number(a.completedAt !== null) - Number(b.completedAt !== null);
     if (done !== 0) return done;
@@ -46,15 +80,7 @@ export function GoalsSpoke({ boardId }: { boardId: string }) {
                 done={done}
                 label={`Goal: ${goal.title}`}
                 idle={{ sf: 'circle', md: 'radio-button-unchecked' }}
-                onToggle={
-                  canManage
-                    ? () =>
-                        update.mutate({
-                          goalId: goal.id,
-                          dto: { completed: goal.completedAt === null },
-                        })
-                    : undefined
-                }
+                onToggle={canManage ? () => toggle(goal) : undefined}
               />
             }
             onPress={
