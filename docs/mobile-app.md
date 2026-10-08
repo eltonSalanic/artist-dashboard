@@ -1405,6 +1405,31 @@ tickets say; there is no fixed list up front. Each fix is committed on its own,
 naming what the ticket asked for. The phase ends, like every phase, with a hard
 stop for the user to check the fixes.
 
+**First pass, 2026-10-07/08** (each ticket's card carries its commit and how
+to test it): band filter chips stretched tall, one-band accounts get their
+band's chip alone, web's next-show line called later today "Tomorrow"
+(`daysFromToday` moved to `packages/shared`), full-width cards could not cross
+a row of half cards, the band switcher dropped most taps, done tasks struck
+through on web too, completing a goal asks first and **always finishes its
+open tasks** (no "goal only" — the user's call), and files on events with a
+new phone event screen open to every member (`Attachment.eventId`).
+
+Traps:
+
+- **A sheet's header is drawn over its content.** A ScrollView with
+  `contentInsetAdjustmentBehavior="automatic"` steps below it natively, but
+  React Native's own layout never hears of the inset, so every Pressable's
+  press area sits a header's height off its row (react-native#43546). The row
+  lights up on touch and the release is thrown away as "outside": the band
+  switcher switched on perhaps one tap in three. The switcher and board menu
+  are plain Views padded by `useHeaderHeight()`; the status sheet still uses
+  the inset (a ScrollView is inset natively even without the prop) and has
+  not been reported.
+- **A blank white app after the Mac changes network** is
+  `apps/mobile/.env` pointing at the old LAN address: the startup session
+  check hangs rather than failing. Metro picks up an edited `.env` without a
+  restart.
+
 ### P13 — Push client
 
 Register device tokens against P2's `DeviceToken`, request permissions at a
