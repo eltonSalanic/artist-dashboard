@@ -269,7 +269,7 @@ export function TaskDetailScreen({
           Created by {t.createdBy.displayName}.
         </ThemedText>
 
-        <TaskAttachments boardId={boardId} taskId={t.id} />
+        <TaskAttachments boardId={boardId} parent={{ taskId: t.id }} />
 
         <CommentsSection boardId={boardId} taskId={t.id} />
       </ScrollView>

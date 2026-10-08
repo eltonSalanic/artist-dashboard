@@ -49,6 +49,7 @@ export default function TabStackLayout({ segment }: { segment: string }) {
         name="board/[boardId]/task/[taskId]"
         options={{ title: 'Task' }}
       />
+      <Stack.Screen name="board/[boardId]/event/[eventId]" options={{ title: 'Event' }} />
       <Stack.Screen name="board/[boardId]/archive" options={{ title: 'Archive' }} />
       <Stack.Screen name="board/[boardId]/settings" options={{ title: 'Settings' }} />
       <Stack.Screen

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { router } from 'expo-router';
-import { useEvents, usePermissions } from '@artist/api-client';
+import { useEvents } from '@artist/api-client';
 import type { EventType } from '@artist/shared';
 import { Row } from '@/components/row';
 import { SpokeList } from '@/components/spoke-list';
@@ -21,7 +21,6 @@ export function makeEventsSpoke(type: EventType) {
     // Part of the query key: a fresh `new Date()` per render refetches forever.
     const from = useMemo(() => new Date().toISOString(), []);
     const events = useEvents(boardId, { type, from, limit: 50 });
-    const { can } = usePermissions();
     const items = events.data ?? [];
 
     return (
@@ -41,11 +40,8 @@ export function makeEventsSpoke(type: EventType) {
             title={event.title}
             meta={event.location}
             trailing={shortDate(event.startsAt)}
-            onPress={
-              can('event.manage')
-                ? () => router.push(`/board/${boardId}/form/event?id=${event.id}`)
-                : undefined
-            }
+            // Everyone, not only admins: the event's files are for the band.
+            onPress={() => router.push(`/board/${boardId}/event/${event.id}`)}
           />
         ))}
       </SpokeList>

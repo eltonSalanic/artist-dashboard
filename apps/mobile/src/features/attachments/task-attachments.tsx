@@ -16,7 +16,8 @@ import { AttachmentRow } from './attachment-row';
 import { pickUpload, type PickFrom } from './pick';
 
 /**
- * Files attached to the task itself (a comment's files show under the comment).
+ * Files attached to a task itself (a comment's files show under the comment),
+ * or to an event: a show's rider, stage plot or setlist.
  *
  * Three plain buttons rather than one "Attach" behind a menu: the choice is the
  * whole interaction, a cross-platform menu would need its own sheet, and on
@@ -25,17 +26,19 @@ import { pickUpload, type PickFrom } from './pick';
  */
 export function TaskAttachments({
   boardId,
-  taskId,
+  parent,
 }: {
   boardId: string;
-  taskId: string;
+  parent: { taskId: string } | { eventId: string };
 }) {
   const { can } = usePermissions();
   const me = useMe(true);
-  const attachments = useAttachments(boardId, { taskId });
-  const upload = useUploadAttachment(boardId, { taskId });
-  const remove = useDeleteAttachment(boardId, { taskId });
+  const attachments = useAttachments(boardId, parent);
+  const upload = useUploadAttachment(boardId, parent);
+  const remove = useDeleteAttachment(boardId, parent);
   const myId = me.data?.user.id;
+  // Whoever manages the parent may delete anyone's upload.
+  const manages = can('eventId' in parent ? 'event.manage' : 'task.editFields');
 
   const add = async (from: PickFrom) => {
     try {
@@ -61,7 +64,7 @@ export function TaskAttachments({
             first={index === 0}
             // The API's rule: your own uploads, or anything if you are an admin.
             onDelete={
-              attachment.uploadedBy.id === myId || can('task.editFields')
+              attachment.uploadedBy.id === myId || manages
                 ? () => remove.mutate(attachment.id)
                 : undefined
             }
