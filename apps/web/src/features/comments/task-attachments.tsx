@@ -15,19 +15,24 @@ import {
 } from "@artist/api-client";
 import { fromFile } from "./use-attachments";
 
-/** Files attached directly to the task (not to a comment). */
+/**
+ * Files attached directly to a task (not to one of its comments), or to an
+ * event — a show's rider, stage plot or setlist.
+ */
 export function TaskAttachments({
   boardId,
-  taskId,
+  parent,
 }: {
   boardId: string;
-  taskId: string;
+  parent: { taskId: string } | { eventId: string };
 }) {
   const { can } = usePermissions();
   const me = useMe(true);
-  const attachments = useAttachments(boardId, { taskId });
-  const upload = useUploadAttachment(boardId, { taskId });
-  const deleteAttachment = useDeleteAttachment(boardId, { taskId });
+  const attachments = useAttachments(boardId, parent);
+  const upload = useUploadAttachment(boardId, parent);
+  const deleteAttachment = useDeleteAttachment(boardId, parent);
+  // Anyone may delete their own upload; whoever manages the parent, anyone's.
+  const manages = can("eventId" in parent ? "event.manage" : "task.editFields");
   const fileInput = useRef<HTMLInputElement>(null);
   const canUpload = can("file.upload");
   const myId = me.data?.user.id;
@@ -59,7 +64,7 @@ export function TaskAttachments({
               boardId={boardId}
               attachment={attachment}
               onDelete={
-                attachment.uploadedBy.id === myId || can("task.editFields")
+                attachment.uploadedBy.id === myId || manages
                   ? () => deleteAttachment.mutate(attachment.id)
                   : undefined
               }

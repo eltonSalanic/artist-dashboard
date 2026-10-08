@@ -16,6 +16,7 @@ import {
   toLocalInputValue,
 } from "./planning-bits";
 import { LinkedTasks } from "./linked-tasks";
+import { TaskAttachments } from "@/features/comments/task-attachments";
 import type { EventDto } from "@artist/api-client";
 import {
   Dialog,
@@ -283,6 +284,10 @@ function EventDetailBody({
         isPending={tasks.isPending}
         link={{ eventId: data.id }}
       />
+
+      <Separator />
+
+      <TaskAttachments boardId={boardId} parent={{ eventId: data.id }} />
 
       {canManage && (
         <>

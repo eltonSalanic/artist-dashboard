@@ -601,7 +601,7 @@ function TaskDetailBody({
       )}
 
       <Separator />
-      <TaskAttachments boardId={boardId} taskId={taskId} />
+      <TaskAttachments boardId={boardId} parent={{ taskId }} />
 
       <Separator />
       <CommentsSection boardId={boardId} taskId={taskId} members={members} />
