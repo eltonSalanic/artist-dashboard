@@ -15,6 +15,7 @@ describe('TasksService', () => {
       update: jest.fn(),
       delete: jest.fn(),
       findUniqueOrThrow: jest.fn(),
+      updateMany: jest.fn(),
     },
     taskStatus: { findFirst: jest.fn() },
     membership: { findMany: jest.fn() },
@@ -423,6 +424,62 @@ describe('TasksService', () => {
           assigneeIds: ['u1', 'stranger'],
         }),
       ).rejects.toBeInstanceOf(BadRequestException);
+    });
+  });
+
+  describe('completeForGoal', () => {
+    const tx = prisma as never;
+
+    it("moves the goal's open tasks to the first done status and logs each", async () => {
+      prisma.task.findMany.mockResolvedValueOnce([
+        { id: 't1', title: 'Book the van' },
+        { id: 't2', title: 'Print setlists' },
+      ]);
+      prisma.taskStatus.findFirst.mockResolvedValueOnce({ id: 'done' });
+
+      const finished = await service.completeForGoal(tx, 'b1', 'g1', 'u1');
+
+      expect(finished).toBe(2);
+      expect(prisma.task.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            boardId: 'b1',
+            goalId: 'g1',
+            archivedAt: null,
+            status: { isDone: false },
+          },
+        }),
+      );
+      expect(prisma.taskStatus.findFirst).toHaveBeenCalledWith({
+        where: { boardId: 'b1', isDone: true },
+        orderBy: { sortOrder: 'asc' },
+      });
+      expect(prisma.task.updateMany).toHaveBeenCalledWith({
+        where: { id: { in: ['t1', 't2'] } },
+        data: { statusId: 'done' },
+      });
+      const logged = (
+        prisma.activity.create.mock.calls as [{ data: { type: string } }][]
+      ).map(([call]) => call.data.type);
+      expect(logged).toEqual(['TASK_COMPLETED', 'TASK_COMPLETED']);
+    });
+
+    it('does nothing when every task is already done', async () => {
+      prisma.task.findMany.mockResolvedValueOnce([]);
+
+      expect(await service.completeForGoal(tx, 'b1', 'g1', 'u1')).toBe(0);
+      expect(prisma.task.updateMany).not.toHaveBeenCalled();
+      expect(prisma.activity.create).not.toHaveBeenCalled();
+    });
+
+    it('refuses when the board has no done status to finish them into', async () => {
+      prisma.task.findMany.mockResolvedValueOnce([{ id: 't1', title: 'T' }]);
+      prisma.taskStatus.findFirst.mockResolvedValueOnce(null);
+
+      await expect(
+        service.completeForGoal(tx, 'b1', 'g1', 'u1'),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.task.updateMany).not.toHaveBeenCalled();
     });
   });
 });

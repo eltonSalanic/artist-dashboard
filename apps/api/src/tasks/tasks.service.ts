@@ -282,6 +282,53 @@ export class TasksService {
     return this.toDto(task);
   }
 
+  /**
+   * Finish every open task linked to a goal, which completing the goal does:
+   * a goal is not done while its to-dos are not. Each one moves to the board's
+   * first done status. Runs in the goal's transaction, so the two land
+   * together or not at all. Returns how many were finished.
+   *
+   * Logged as one completion per task, without the STATUS_CHANGED line a
+   * single change also writes: ten tasks finished by one goal would otherwise
+   * be twenty lines of feed for one thing someone did.
+   */
+  async completeForGoal(
+    tx: Prisma.TransactionClient,
+    boardId: string,
+    goalId: string,
+    actorId: string,
+  ): Promise<number> {
+    const open = await tx.task.findMany({
+      where: { boardId, goalId, archivedAt: null, status: { isDone: false } },
+      select: { id: true, title: true },
+    });
+    if (open.length === 0) return 0;
+
+    const done = await tx.taskStatus.findFirst({
+      where: { boardId, isDone: true },
+      orderBy: { sortOrder: 'asc' },
+    });
+    if (!done) {
+      throw new BadRequestException(
+        "This band has no done status to move the goal's tasks to",
+      );
+    }
+
+    await tx.task.updateMany({
+      where: { id: { in: open.map((task) => task.id) } },
+      data: { statusId: done.id },
+    });
+    for (const task of open) {
+      await this.activity.log(tx, {
+        boardId,
+        type: 'TASK_COMPLETED',
+        actorId,
+        meta: { taskId: task.id, taskTitle: task.title },
+      });
+    }
+    return open.length;
+  }
+
   async remove(boardId: string, taskId: string) {
     await this.getOwned(boardId, taskId);
     await this.removeMany(boardId, [taskId]);

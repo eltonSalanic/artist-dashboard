@@ -13,7 +13,11 @@ describe('GoalsService', () => {
       update: jest.fn(),
       delete: jest.fn(),
     },
-    task: { findMany: jest.fn(), count: jest.fn() },
+    task: {
+      findMany: jest.fn(),
+      count: jest.fn(),
+      groupBy: jest.fn().mockResolvedValue([]),
+    },
     activity: { create: jest.fn() },
     $transaction: jest.fn(),
   };
@@ -22,7 +26,7 @@ describe('GoalsService', () => {
   prisma.$transaction.mockImplementation((fn: (tx: unknown) => unknown) =>
     fn(prisma),
   );
-  const tasks = { removeMany: jest.fn() };
+  const tasks = { removeMany: jest.fn(), completeForGoal: jest.fn() };
   const service = new GoalsService(
     prisma as unknown as PrismaService,
     new ActivityService(prisma as unknown as PrismaService),
@@ -123,6 +127,56 @@ describe('GoalsService', () => {
     await service.update('b1', 'g1', 'u1', { title: 'New title' });
 
     expect(lastUpdateData()).not.toHaveProperty('completedAt');
+  });
+
+  it("finishes the goal's open tasks when it is first completed", async () => {
+    prisma.goal.findFirst.mockResolvedValue({ id: 'g1', completedAt: null });
+    prisma.goal.update.mockResolvedValue({ _count: { tasks: 2 } });
+
+    await service.update('b1', 'g1', 'u1', { completed: true });
+
+    expect(tasks.completeForGoal).toHaveBeenCalledWith(
+      prisma,
+      'b1',
+      'g1',
+      'u1',
+    );
+  });
+
+  it('leaves tasks alone when re-completing or reopening a goal', async () => {
+    prisma.goal.findFirst.mockResolvedValue({
+      id: 'g1',
+      completedAt: new Date(),
+    });
+    prisma.goal.update.mockResolvedValue({ _count: { tasks: 2 } });
+
+    await service.update('b1', 'g1', 'u1', { completed: true });
+    await service.update('b1', 'g1', 'u1', { completed: false });
+
+    expect(tasks.completeForGoal).not.toHaveBeenCalled();
+  });
+
+  it('reports how many live tasks are still open on each goal', async () => {
+    prisma.goal.findMany.mockResolvedValue([
+      { id: 'g1', _count: { tasks: 3 } },
+      { id: 'g2', _count: { tasks: 0 } },
+    ]);
+    prisma.task.groupBy.mockResolvedValueOnce([
+      { goalId: 'g1', _count: { _all: 2 } },
+    ]);
+
+    const goals = await service.list('b1', { includeCompleted: true });
+
+    expect(goals.map((goal) => goal.openTaskCount)).toEqual([2, 0]);
+    expect(prisma.task.groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          goalId: { in: ['g1', 'g2'] },
+          archivedAt: null,
+          status: { isDone: false },
+        },
+      }),
+    );
   });
 
   it('refuses to touch a goal on another board', async () => {

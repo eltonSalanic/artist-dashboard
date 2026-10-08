@@ -38,7 +38,8 @@ export class GoalsService {
         { createdAt: 'asc' },
       ],
     });
-    return goals.map(this.toDto);
+    const open = await this.openTaskCounts(goals.map((goal) => goal.id));
+    return goals.map((goal) => this.toDto(goal, open.get(goal.id) ?? 0));
   }
 
   /** Archived goals stay fetchable — the archive page opens this same detail. */
@@ -48,13 +49,18 @@ export class GoalsService {
       include: goalInclude,
     });
     if (!goal) throw new NotFoundException('Goal not found');
-    const [archivedTaskCount, linkedTaskCount] = await Promise.all([
+    const [archivedTaskCount, linkedTaskCount, open] = await Promise.all([
       // What went down with this goal — the "also restore" prompt.
       this.prisma.task.count({ where: { boardId, archivedWithId: goalId } }),
       // Everything a cascading delete would take, archived or not.
       this.prisma.task.count({ where: { boardId, goalId } }),
+      this.openTaskCounts([goalId]),
     ]);
-    return { ...this.toDto(goal), archivedTaskCount, linkedTaskCount };
+    return {
+      ...this.toDto(goal, open.get(goalId) ?? 0),
+      archivedTaskCount,
+      linkedTaskCount,
+    };
   }
 
   async create(boardId: string, dto: CreateGoalDto) {
@@ -68,7 +74,7 @@ export class GoalsService {
       },
       include: goalInclude,
     });
-    return this.toDto(goal);
+    return this.toDto(goal, 0);
   }
 
   async update(
@@ -101,6 +107,9 @@ export class GoalsService {
       // Only the first completion is news; re-completing keeps the original
       // timestamp and doesn't repeat itself in the feed.
       if (completed && existing.completedAt === null) {
+        // Completing a goal always finishes its open tasks — there is no
+        // "complete the goal only". The clients say so before asking.
+        await this.tasks.completeForGoal(tx, boardId, goalId, actorId);
         await this.activity.log(tx, {
           boardId,
           type: 'GOAL_COMPLETED',
@@ -114,7 +123,8 @@ export class GoalsService {
       }
       return updated;
     });
-    return this.toDto(goal);
+    const open = await this.openTaskCounts([goalId]);
+    return this.toDto(goal, open.get(goalId) ?? 0);
   }
 
   /**
@@ -143,19 +153,42 @@ export class GoalsService {
     return { deleted: true };
   }
 
-  private toDto = (goal: {
-    id: string;
-    boardId: string;
-    title: string;
-    description: string | null;
-    period: string;
-    dueDate: Date | null;
-    completedAt: Date | null;
-    archivedAt: Date | null;
-    createdAt: Date;
-    updatedAt: Date;
-    _count: { tasks: number };
-  }) => ({
+  /**
+   * Live tasks not yet done, per goal: what completing the goal will finish,
+   * which the clients' confirmation names before asking.
+   */
+  private async openTaskCounts(
+    goalIds: string[],
+  ): Promise<Map<string, number>> {
+    if (goalIds.length === 0) return new Map();
+    const rows = await this.prisma.task.groupBy({
+      by: ['goalId'],
+      where: {
+        goalId: { in: goalIds },
+        archivedAt: null,
+        status: { isDone: false },
+      },
+      _count: { _all: true },
+    });
+    return new Map(rows.map((row) => [row.goalId as string, row._count._all]));
+  }
+
+  private toDto = (
+    goal: {
+      id: string;
+      boardId: string;
+      title: string;
+      description: string | null;
+      period: string;
+      dueDate: Date | null;
+      completedAt: Date | null;
+      archivedAt: Date | null;
+      createdAt: Date;
+      updatedAt: Date;
+      _count: { tasks: number };
+    },
+    openTaskCount: number,
+  ) => ({
     id: goal.id,
     boardId: goal.boardId,
     title: goal.title,
@@ -167,5 +200,6 @@ export class GoalsService {
     createdAt: goal.createdAt,
     updatedAt: goal.updatedAt,
     taskCount: goal._count.tasks,
+    openTaskCount,
   });
 }
