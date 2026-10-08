@@ -18,6 +18,7 @@ describe('AttachmentsService', () => {
     },
     task: { findFirst: jest.fn() },
     comment: { findFirst: jest.fn() },
+    event: { findFirst: jest.fn() },
     activity: { create: jest.fn() },
     $transaction: jest.fn(),
   };
@@ -50,6 +51,7 @@ describe('AttachmentsService', () => {
     size: 1024,
     taskId: 't1',
     commentId: null,
+    eventId: null,
     createdAt: new Date(),
     uploadedBy: { id: 'u1', displayName: 'sam' },
   };
@@ -69,6 +71,52 @@ describe('AttachmentsService', () => {
           data: expect.objectContaining({ type: 'FILE_UPLOADED' }),
         }),
       );
+    });
+
+    it('attaches to an event and names it in the feed', async () => {
+      prisma.event.findFirst.mockResolvedValue({ title: 'The Echo' });
+      prisma.attachment.create.mockResolvedValue({
+        ...stored,
+        taskId: null,
+        eventId: 'e1',
+      });
+      const result = await service.create('b1', 'u1', {
+        ...dto,
+        taskId: undefined,
+        eventId: 'e1',
+      });
+
+      expect(result.eventId).toBe('e1');
+      expect(prisma.event.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'e1', boardId: 'b1' } }),
+      );
+      expect(prisma.attachment.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ eventId: 'e1', taskId: null }),
+        }),
+      );
+      expect(prisma.activity.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            meta: expect.objectContaining({
+              eventTitle: 'The Echo',
+              taskTitle: null,
+            }),
+          }),
+        }),
+      );
+    });
+
+    it('refuses an event on another board', async () => {
+      prisma.event.findFirst.mockResolvedValue(null);
+      await expect(
+        service.create('b1', 'u1', {
+          ...dto,
+          taskId: undefined,
+          eventId: 'e1',
+        }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(prisma.attachment.create).not.toHaveBeenCalled();
     });
 
     it("rejects a path pointing at another board's prefix", async () => {

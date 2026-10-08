@@ -8,6 +8,7 @@ import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TasksService } from '../tasks/tasks.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { StorageService } from '../attachments/storage.service';
 
 const eventInclude = {
   // Archived tasks belong to the archive page, not to their event's count —
@@ -21,6 +22,7 @@ export class EventsService {
     private readonly prisma: PrismaService,
     private readonly tasks: TasksService,
     private readonly notifications: NotificationsService,
+    private readonly storage: StorageService,
   ) {}
 
   async list(boardId: string, query: EventQueryDto) {
@@ -185,7 +187,14 @@ export class EventsService {
       );
     }
 
+    // The event's own files: their rows cascade in the database, but the
+    // stored objects don't, so the paths are collected before the rows go.
+    const files = await this.prisma.attachment.findMany({
+      where: { boardId, eventId },
+      select: { storagePath: true },
+    });
     await this.prisma.event.delete({ where: { id: eventId } });
+    await this.storage.remove(files.map((file) => file.storagePath));
     return { deleted: true };
   }
 

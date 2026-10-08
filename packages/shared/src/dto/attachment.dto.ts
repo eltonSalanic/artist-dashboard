@@ -19,15 +19,20 @@ export const createAttachmentSchema = z
     size: z.number().int().positive().max(MAX_ATTACHMENT_BYTES),
     taskId: z.uuid().optional(),
     commentId: z.uuid().optional(),
+    eventId: z.uuid().optional(),
   })
-  .refine((dto) => !!dto.taskId !== !!dto.commentId, {
-    message: 'An attachment belongs to exactly one task or one comment',
-    path: ['taskId'],
-  });
+  .refine(
+    (dto) => [dto.taskId, dto.commentId, dto.eventId].filter(Boolean).length === 1,
+    {
+      message: 'An attachment belongs to exactly one task, comment or event',
+      path: ['taskId'],
+    },
+  );
 export type CreateAttachmentDto = z.infer<typeof createAttachmentSchema>;
 
 export const attachmentQuerySchema = z.object({
   taskId: z.uuid().optional(),
   commentId: z.uuid().optional(),
+  eventId: z.uuid().optional(),
 });
 export type AttachmentQueryDto = z.infer<typeof attachmentQuerySchema>;

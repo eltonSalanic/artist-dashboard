@@ -52,6 +52,8 @@ describe('activityText', () => {
       .toBe('attached rider.pdf');
     expect(activityText(row('FILE_UPLOADED', { fileName: 'rider.pdf', taskTitle: 'Advance' })))
       .toBe('attached rider.pdf to “Advance”');
+    expect(activityText(row('FILE_UPLOADED', { fileName: 'rider.pdf', eventTitle: 'The Echo' })))
+      .toBe('attached rider.pdf to “The Echo”');
   });
 
   // `meta` is whatever the build that wrote the row put there. A missing field

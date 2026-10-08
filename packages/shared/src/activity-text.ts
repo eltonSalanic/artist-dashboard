@@ -42,7 +42,11 @@ export function activityText(item: ActivityRow): string {
       return `completed goal “${str(m.goalTitle, 'a goal')}”`;
     case 'FILE_UPLOADED':
       return `attached ${str(m.fileName, 'a file')}${
-        m.taskTitle ? ` to “${str(m.taskTitle)}”` : ''
+        m.taskTitle
+          ? ` to “${str(m.taskTitle)}”`
+          : m.eventTitle
+            ? ` to “${str(m.eventTitle)}”`
+            : ''
       }`;
     case 'COMMENT_ADDED':
       return `commented on “${str(m.taskTitle, 'a task')}”`;

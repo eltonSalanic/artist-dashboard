@@ -200,8 +200,8 @@ model Goal {
 }
 
 model Event {
-  id          String    @id @default(uuid()) @db.Uuid
-  boardId     String    @db.Uuid
+  id          String       @id @default(uuid()) @db.Uuid
+  boardId     String       @db.Uuid
   type        EventType
   title       String
   description String?
@@ -209,10 +209,11 @@ model Event {
   startsAt    DateTime
   endsAt      DateTime?
   archivedAt  DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  board       Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  board       Board        @relation(fields: [boardId], references: [id], onDelete: Cascade)
   tasks       Task[]
+  attachments Attachment[]
 
   @@index([boardId, startsAt])
   @@index([boardId, archivedAt])
@@ -300,15 +301,19 @@ model Attachment {
   size         Int
   taskId       String?  @db.Uuid
   commentId    String?  @db.Uuid
+  /// A show's rider, stage plot or setlist — any event can carry files.
+  eventId      String?  @db.Uuid
   uploadedById String   @db.Uuid
   createdAt    DateTime @default(now())
   board        Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
   task         Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
   comment      Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  event        Event?   @relation(fields: [eventId], references: [id], onDelete: Cascade)
   uploadedBy   User     @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
 
   @@index([taskId])
   @@index([commentId])
+  @@index([eventId])
   @@index([boardId, createdAt])
 }
 

@@ -28,14 +28,15 @@ export class AttachmentsService {
   ) {}
 
   async list(boardId: string, query: AttachmentQueryDto) {
-    if (!query.taskId && !query.commentId) {
-      throw new BadRequestException('Pass a taskId or a commentId');
+    if (!query.taskId && !query.commentId && !query.eventId) {
+      throw new BadRequestException('Pass a taskId, commentId or eventId');
     }
     const rows = await this.prisma.attachment.findMany({
       where: {
         boardId,
         ...(query.taskId ? { taskId: query.taskId } : {}),
         ...(query.commentId ? { commentId: query.commentId } : {}),
+        ...(query.eventId ? { eventId: query.eventId } : {}),
       },
       include: attachmentInclude,
       orderBy: { createdAt: 'asc' },
@@ -56,9 +57,16 @@ export class AttachmentsService {
       );
     }
 
-    const parentTitle = dto.taskId
+    // A task's or a comment's files are "attached to" the task; an event's to
+    // the event. The feed names whichever it was.
+    const taskTitle = dto.taskId
       ? await this.assertTaskInBoard(boardId, dto.taskId)
-      : await this.assertCommentInBoard(boardId, dto.commentId!);
+      : dto.commentId
+        ? await this.assertCommentInBoard(boardId, dto.commentId)
+        : null;
+    const eventTitle = dto.eventId
+      ? await this.assertEventInBoard(boardId, dto.eventId)
+      : null;
 
     return this.prisma.$transaction(async (tx) => {
       const attachment = await tx.attachment.create({
@@ -70,6 +78,7 @@ export class AttachmentsService {
           size: dto.size,
           taskId: dto.taskId ?? null,
           commentId: dto.commentId ?? null,
+          eventId: dto.eventId ?? null,
           uploadedById: userId,
         },
         include: attachmentInclude,
@@ -82,7 +91,9 @@ export class AttachmentsService {
           attachmentId: attachment.id,
           fileName: attachment.fileName,
           taskId: dto.taskId ?? null,
-          taskTitle: parentTitle,
+          taskTitle,
+          eventId: dto.eventId ?? null,
+          eventTitle,
         },
       });
       return toDto(attachment);
@@ -139,6 +150,16 @@ export class AttachmentsService {
     return task.title;
   }
 
+  /** Returns the event title so the activity entry can name it. */
+  private async assertEventInBoard(boardId: string, eventId: string) {
+    const event = await this.prisma.event.findFirst({
+      where: { id: eventId, boardId },
+      select: { title: true },
+    });
+    if (!event) throw new NotFoundException('Event not found');
+    return event.title;
+  }
+
   private async assertCommentInBoard(boardId: string, commentId: string) {
     const comment = await this.prisma.comment.findFirst({
       where: { id: commentId, boardId },
@@ -156,6 +177,7 @@ function toDto(attachment: {
   size: number;
   taskId: string | null;
   commentId: string | null;
+  eventId: string | null;
   createdAt: Date;
   uploadedBy: { id: string; displayName: string };
 }) {
@@ -166,6 +188,7 @@ function toDto(attachment: {
     size: attachment.size,
     taskId: attachment.taskId,
     commentId: attachment.commentId,
+    eventId: attachment.eventId,
     createdAt: attachment.createdAt,
     uploadedBy: attachment.uploadedBy,
   };

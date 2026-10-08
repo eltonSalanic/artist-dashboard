@@ -2,6 +2,7 @@ import { EventsService } from './events.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { TasksService } from '../tasks/tasks.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { StorageService } from '../attachments/storage.service';
 
 describe('EventsService notifications', () => {
   const startsAt = new Date('2026-09-04T20:00:00Z');
@@ -21,8 +22,15 @@ describe('EventsService notifications', () => {
     _count: { tasks: 0 },
   };
 
+  const storage = { remove: jest.fn() };
   const prisma = {
-    event: { create: jest.fn(), update: jest.fn(), findFirst: jest.fn() },
+    event: {
+      create: jest.fn(),
+      update: jest.fn(),
+      findFirst: jest.fn(),
+      delete: jest.fn(),
+    },
+    attachment: { findMany: jest.fn() },
     membership: { findMany: jest.fn() },
     notificationDelivery: { createMany: jest.fn() },
     $transaction: jest.fn(),
@@ -34,6 +42,7 @@ describe('EventsService notifications', () => {
     prisma as unknown as PrismaService,
     { removeMany: jest.fn() } as unknown as TasksService,
     new NotificationsService(prisma as unknown as PrismaService),
+    storage as unknown as StorageService,
   );
 
   /** Rows the outbox was asked to write on the last call. */
@@ -155,6 +164,24 @@ describe('EventsService notifications', () => {
       await service.update('b1', 'e1', {}, 'u1');
 
       expect(queued()).toHaveLength(2);
+    });
+  });
+
+  describe('remove', () => {
+    it("purges the event's stored files along with it", async () => {
+      prisma.event.findFirst.mockResolvedValue(stored);
+      prisma.attachment.findMany.mockResolvedValue([
+        { storagePath: 'b1/x/rider.pdf' },
+      ]);
+
+      await service.remove('b1', 'e1');
+
+      expect(prisma.attachment.findMany).toHaveBeenCalledWith({
+        where: { boardId: 'b1', eventId: 'e1' },
+        select: { storagePath: true },
+      });
+      expect(prisma.event.delete).toHaveBeenCalledWith({ where: { id: 'e1' } });
+      expect(storage.remove).toHaveBeenCalledWith(['b1/x/rider.pdf']);
     });
   });
 });
