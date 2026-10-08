@@ -5,6 +5,7 @@ export interface AttachmentDto {
   size: number;
   taskId?: string | null;
   commentId?: string | null;
+  eventId?: string | null;
   createdAt: string;
   uploadedBy: { id: string; displayName: string };
 }

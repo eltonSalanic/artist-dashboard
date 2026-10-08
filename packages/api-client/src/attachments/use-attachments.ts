@@ -18,10 +18,11 @@ interface UploadUrlResponse {
   signedUrl: string;
 }
 
-/** An attachment belongs to exactly one task or one comment. */
+/** An attachment belongs to exactly one task, comment or event. */
 export interface AttachmentParent {
   taskId?: string;
   commentId?: string;
+  eventId?: string;
 }
 
 /**
@@ -42,7 +43,11 @@ export interface UploadSource {
 }
 
 const parentQuery = (parent: AttachmentParent) =>
-  parent.taskId ? `taskId=${parent.taskId}` : `commentId=${parent.commentId}`;
+  parent.taskId
+    ? `taskId=${parent.taskId}`
+    : parent.eventId
+      ? `eventId=${parent.eventId}`
+      : `commentId=${parent.commentId}`;
 
 export function useAttachments(boardId: string, parent: AttachmentParent) {
   const key = parentQuery(parent);
@@ -50,7 +55,7 @@ export function useAttachments(boardId: string, parent: AttachmentParent) {
     queryKey: ["attachments", boardId, key],
     queryFn: () =>
       apiFetch<AttachmentDto[]>(`/boards/${boardId}/attachments?${key}`),
-    enabled: !!(parent.taskId || parent.commentId),
+    enabled: !!(parent.taskId || parent.commentId || parent.eventId),
   });
 }
 
