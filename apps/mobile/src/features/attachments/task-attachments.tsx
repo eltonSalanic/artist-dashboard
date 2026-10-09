@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { View } from 'react-native';
 import {
   notify,
   useAttachments,
@@ -17,17 +16,16 @@ import { ThemedText } from '@/components/themed-text';
 import { spacing } from '@/theme';
 import { AttachmentGrid } from './attachment-grid';
 import { NameSheet } from './name-sheet';
-import { pickUpload, type PickFrom } from './pick';
+import { chooseSource, pickUpload } from './pick';
 
 /**
  * Files attached to a task itself (a comment's files show under the comment),
  * or to an event: a show's rider, stage plot or setlist.
  *
- * Three plain buttons rather than one "Attach" behind a menu: the choice is the
- * whole interaction, a cross-platform menu would need its own sheet, and on
- * Android an alert holds only three buttons — one short of three sources and a
- * cancel. Whatever is picked is named before it uploads: a camera photo
- * otherwise arrives called "photo-2026-10-08-14-02-11.jpg".
+ * One "Add Attachment" button opens the phone's own source menu (camera,
+ * library, files); see `chooseSource`. Whatever is picked is named before it
+ * uploads: a camera photo otherwise arrives called
+ * "photo-2026-10-08-14-02-11.jpg".
  */
 export function TaskAttachments({
   boardId,
@@ -47,8 +45,10 @@ export function TaskAttachments({
   // Whoever manages the parent may rename or delete anyone's upload.
   const manages = can('eventId' in parent ? 'event.manage' : 'task.editFields');
 
-  const add = async (from: PickFrom) => {
+  const add = async () => {
     try {
+      const from = await chooseSource();
+      if (!from) return;
       const picked = await pickUpload(from);
       if (picked) setPicked(picked);
     } catch (error) {
@@ -86,25 +86,14 @@ export function TaskAttachments({
       )}
 
       {can('file.upload') && (
-        <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs }}>
-          {(
-            [
-              ['camera', 'Camera'],
-              ['photos', 'Photos'],
-              ['files', 'Files'],
-            ] as const
-          ).map(([from, title]) => (
-            <Button
-              key={from}
-              title={title}
-              variant="secondary"
-              size="sm"
-              disabled={upload.isPending}
-              onPress={() => void add(from)}
-              style={{ flex: 1 }}
-            />
-          ))}
-        </View>
+        <Button
+          title="Add Attachment"
+          variant="secondary"
+          size="sm"
+          disabled={upload.isPending}
+          onPress={() => void add()}
+          style={{ marginTop: spacing.xs }}
+        />
       )}
 
       {picked && (

@@ -1,4 +1,4 @@
-import { Alert, Linking } from 'react-native';
+import { ActionSheetIOS, Alert, Linking, Platform } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { File, UploadType } from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
@@ -13,6 +13,39 @@ export interface PickedUpload {
   source: UploadSource;
   /** Set for images only: the file on the phone, drawable before upload. */
   preview?: string;
+}
+
+const SOURCES: readonly [PickFrom, string][] = [
+  ['camera', 'Take Photo'],
+  ['photos', 'Photo Library'],
+  ['files', 'Choose File'],
+];
+
+/**
+ * The phone's own "where from?" menu: the system action sheet on iOS. Android
+ * has no native equivalent, so it gets an alert. Three buttons is that alert's
+ * limit, which leaves no room for Cancel, so tapping outside dismisses it.
+ * Null when dismissed.
+ */
+export function chooseSource(): Promise<PickFrom | null> {
+  return new Promise((resolve) => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: [...SOURCES.map(([, label]) => label), 'Cancel'],
+          cancelButtonIndex: SOURCES.length,
+        },
+        (index) => resolve(SOURCES[index]?.[0] ?? null),
+      );
+      return;
+    }
+    Alert.alert(
+      'Add attachment',
+      undefined,
+      SOURCES.map(([from, label]) => ({ text: label, onPress: () => resolve(from) })),
+      { cancelable: true, onDismiss: () => resolve(null) },
+    );
+  });
 }
 
 /**
