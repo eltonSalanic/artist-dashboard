@@ -14,6 +14,7 @@ describe('AttachmentsService', () => {
       findMany: jest.fn(),
       findFirst: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
       delete: jest.fn(),
     },
     task: { findFirst: jest.fn() },
@@ -210,5 +211,48 @@ describe('AttachmentsService', () => {
     await expect(service.list('b1', {})).rejects.toBeInstanceOf(
       BadRequestException,
     );
+  });
+
+  describe('rename', () => {
+    const owned = { id: 'a1', boardId: 'b1', uploadedById: 'u1' };
+
+    it('renames your own upload, leaving the stored object alone', async () => {
+      prisma.attachment.findFirst.mockResolvedValue(owned);
+      prisma.attachment.update.mockResolvedValue({
+        ...stored,
+        fileName: 'Stage plot.pdf',
+      });
+
+      const result = await service.rename('b1', 'a1', 'u1', 'USER', {
+        fileName: 'Stage plot.pdf',
+      });
+
+      expect(result.fileName).toBe('Stage plot.pdf');
+      expect(prisma.attachment.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'a1' },
+          data: { fileName: 'Stage plot.pdf' },
+        }),
+      );
+      expect(storage.remove).not.toHaveBeenCalled();
+    });
+
+    it("lets an admin rename someone else's upload", async () => {
+      prisma.attachment.findFirst.mockResolvedValue(owned);
+      prisma.attachment.update.mockResolvedValue(stored);
+
+      await service.rename('b1', 'a1', 'u2', 'ADMIN', { fileName: 'x.pdf' });
+
+      expect(prisma.attachment.update).toHaveBeenCalled();
+    });
+
+    it("refuses a member renaming someone else's upload", async () => {
+      prisma.attachment.findFirst.mockResolvedValue(owned);
+
+      await expect(
+        service.rename('b1', 'a1', 'u2', 'USER', { fileName: 'x.pdf' }),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+      expect(prisma.attachment.update).not.toHaveBeenCalled();
+    });
   });
 });

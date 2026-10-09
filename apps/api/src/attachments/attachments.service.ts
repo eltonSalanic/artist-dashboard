@@ -8,6 +8,7 @@ import type {
   AttachmentQueryDto,
   BoardRole,
   CreateAttachmentDto,
+  RenameAttachmentDto,
   UploadUrlDto,
 } from '@artist/shared';
 import { Prisma } from '../../generated/prisma/client';
@@ -115,6 +116,30 @@ export class AttachmentsService {
     );
     // The client renders by type, so it needs the stored content-type back.
     return { url, expiresIn, mimeType: attachment.mimeType };
+  }
+
+  /**
+   * The stored object keeps its key: only the name people see changes, and
+   * with it what a download saves as. Same rule as deleting — your own
+   * uploads, or anyone's if you are an admin.
+   */
+  async rename(
+    boardId: string,
+    attachmentId: string,
+    userId: string,
+    role: BoardRole,
+    dto: RenameAttachmentDto,
+  ) {
+    const attachment = await this.getOwned(boardId, attachmentId);
+    if (role !== 'ADMIN' && attachment.uploadedById !== userId) {
+      throw new ForbiddenException('You can only rename your own uploads');
+    }
+    const updated = await this.prisma.attachment.update({
+      where: { id: attachmentId },
+      data: { fileName: dto.fileName },
+      include: attachmentInclude,
+    });
+    return toDto(updated);
   }
 
   async remove(

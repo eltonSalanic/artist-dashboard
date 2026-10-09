@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   Req,
@@ -11,10 +12,12 @@ import {
 import {
   attachmentQuerySchema,
   createAttachmentSchema,
+  renameAttachmentSchema,
   uploadUrlSchema,
   type AttachmentQueryDto,
   type BoardRole,
   type CreateAttachmentDto,
+  type RenameAttachmentDto,
   type UploadUrlDto,
 } from '@artist/shared';
 import { CurrentUser, type AuthUser } from '../auth/current-user.decorator';
@@ -73,6 +76,24 @@ export class AttachmentsController {
     @Param('attachmentId') attachmentId: string,
   ) {
     return this.attachments.viewUrl(boardId, attachmentId);
+  }
+
+  @Patch(':attachmentId')
+  rename(
+    @Param('boardId') boardId: string,
+    @Param('attachmentId') attachmentId: string,
+    @CurrentUser() user: AuthUser,
+    @Req() req: RequestWithMembership,
+    @Body(new ZodValidationPipe(renameAttachmentSchema))
+    dto: RenameAttachmentDto,
+  ) {
+    return this.attachments.rename(
+      boardId,
+      attachmentId,
+      user.userId,
+      req.membership.role,
+      dto,
+    );
   }
 
   @Delete(':attachmentId')

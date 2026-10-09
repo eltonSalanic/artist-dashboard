@@ -30,6 +30,12 @@ export const createAttachmentSchema = z
   );
 export type CreateAttachmentDto = z.infer<typeof createAttachmentSchema>;
 
+/** Renaming changes what people see and what a download saves as, not the stored object. */
+export const renameAttachmentSchema = z.object({
+  fileName: z.string().trim().min(1).max(255),
+});
+export type RenameAttachmentDto = z.infer<typeof renameAttachmentSchema>;
+
 export const attachmentQuerySchema = z.object({
   taskId: z.uuid().optional(),
   commentId: z.uuid().optional(),
