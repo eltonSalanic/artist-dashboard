@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   MAX_ATTACHMENT_BYTES,
   type CreateAttachmentDto,
+  type RenameAttachmentDto,
   type UploadUrlDto,
 } from "@artist/shared";
 import { apiFetch, ApiError, notify } from "../client";
@@ -139,6 +140,61 @@ export function useDeleteAttachment(boardId: string, parent: AttachmentParent) {
       }
     },
     onError: showError,
+  });
+}
+
+export function useRenameAttachment(boardId: string, parent: AttachmentParent) {
+  const queryClient = useQueryClient();
+  const key = parentQuery(parent);
+  return useMutation({
+    mutationFn: ({
+      attachmentId,
+      dto,
+    }: {
+      attachmentId: string;
+      dto: RenameAttachmentDto;
+    }) =>
+      apiFetch<AttachmentDto>(
+        `/boards/${boardId}/attachments/${attachmentId}`,
+        { method: "PATCH", body: dto },
+      ),
+    // Returned, so the mutation stays pending until the new name has landed.
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["attachments", boardId, key],
+        }),
+        ...(parent.commentId
+          ? [queryClient.invalidateQueries({ queryKey: ["comments", boardId] })]
+          : []),
+      ]),
+    onError: (error: unknown) =>
+      notify.error(
+        error instanceof ApiError ? error.message : "Could not rename the file",
+      ),
+  });
+}
+
+/** Signed links live a minute; refetch a little before that. */
+const SIGNED_URL_FRESH_MS = 45_000;
+
+/**
+ * A signed URL to show an attachment, held for most of its minute so a list of
+ * thumbnails does not sign every file again on each render. Disabled until
+ * `enabled`, so a grid can sign only what it actually draws.
+ */
+export function useAttachmentUrl(
+  boardId: string,
+  attachmentId: string,
+  kind: "view" | "download",
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ["attachment-url", boardId, attachmentId, kind],
+    queryFn: () => fetchAttachmentUrl(boardId, attachmentId, kind),
+    enabled,
+    staleTime: SIGNED_URL_FRESH_MS,
+    gcTime: SIGNED_URL_FRESH_MS,
   });
 }
 
