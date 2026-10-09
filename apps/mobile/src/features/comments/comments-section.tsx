@@ -10,6 +10,7 @@ import {
   useComments,
   useCreateComment,
   useDeleteAttachment,
+  useRenameAttachment,
   useDeleteComment,
   useMe,
   usePermissions,
@@ -20,7 +21,7 @@ import { Icon } from '@/components/icon';
 import { Section } from '@/components/section';
 import { Skeleton } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
-import { AttachmentRow } from '@/features/attachments/attachment-row';
+import { AttachmentGrid } from '@/features/attachments/attachment-grid';
 import { shortAgo } from '@/features/board/format';
 import { spacing, useThemeColors } from '@/theme';
 import { CommentComposer } from './comment-composer';
@@ -114,6 +115,7 @@ function CommentItem({
   const update = useUpdateComment(boardId, taskId);
   const remove = useDeleteComment(boardId, taskId);
   const removeFile = useDeleteAttachment(boardId, { commentId: comment.id });
+  const renameFile = useRenameAttachment(boardId, { commentId: comment.id });
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(comment.body);
 
@@ -221,19 +223,20 @@ function CommentItem({
         </ThemedText>
       )}
 
-      {comment.attachments.map((attachment, index) => (
-        <AttachmentRow
-          key={attachment.id}
+      {comment.attachments.length > 0 && (
+        <AttachmentGrid
           boardId={boardId}
-          attachment={attachment}
-          first={index === 0}
-          onDelete={
+          attachments={comment.attachments}
+          // The API's rule: your own uploads, or anything as an admin.
+          canManage={(attachment) =>
             attachment.uploadedBy.id === myId || can('task.editFields')
-              ? () => removeFile.mutate(attachment.id)
-              : undefined
           }
+          onRename={(attachmentId, fileName) =>
+            renameFile.mutateAsync({ attachmentId, dto: { fileName } })
+          }
+          onDelete={(attachmentId) => removeFile.mutateAsync(attachmentId)}
         />
-      ))}
+      )}
     </View>
   );
 }

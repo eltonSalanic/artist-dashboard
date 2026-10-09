@@ -8,6 +8,13 @@ import { reachableStorageUrl } from '@/lib/storage-url';
 
 export type PickFrom = 'camera' | 'photos' | 'files';
 
+/** What was picked, plus a local picture of it for the naming sheet. */
+export interface PickedUpload {
+  source: UploadSource;
+  /** Set for images only: the file on the phone, drawable before upload. */
+  preview?: string;
+}
+
 /**
  * Asks the person for one file and describes it as an `UploadSource` — the
  * phone's half of `@artist/api-client`'s upload flow. Null when they cancel or
@@ -17,7 +24,7 @@ export type PickFrom = 'camera' | 'photos' | 'files';
  * a second prompt for something a band dashboard rarely needs. Videos already
  * on the phone come in through Photos.
  */
-export async function pickUpload(from: PickFrom): Promise<UploadSource | null> {
+export async function pickUpload(from: PickFrom): Promise<PickedUpload | null> {
   if (from === 'files') {
     const result = await DocumentPicker.getDocumentAsync({
       // Copied into the app's cache so the native uploader can read it after
@@ -27,7 +34,10 @@ export async function pickUpload(from: PickFrom): Promise<UploadSource | null> {
     });
     if (result.canceled) return null;
     const asset = result.assets[0];
-    return fromUri(asset.uri, asset.name, asset.mimeType, asset.size);
+    return {
+      source: fromUri(asset.uri, asset.name, asset.mimeType, asset.size),
+      preview: asset.mimeType?.startsWith('image/') ? asset.uri : undefined,
+    };
   }
 
   if (from === 'camera') {
@@ -55,13 +65,16 @@ export async function pickUpload(from: PickFrom): Promise<UploadSource | null> {
   const asset = result.assets[0];
   const mimeType =
     asset.mimeType ?? (asset.type === 'video' ? 'video/mp4' : 'image/jpeg');
-  return fromUri(
-    asset.uri,
-    // The camera hands back no name at all; a dated one beats "image".
-    asset.fileName ?? defaultName(mimeType),
-    mimeType,
-    asset.fileSize,
-  );
+  return {
+    source: fromUri(
+      asset.uri,
+      // The camera hands back no name at all; a dated one beats "image".
+      asset.fileName ?? defaultName(mimeType),
+      mimeType,
+      asset.fileSize,
+    ),
+    preview: asset.type === 'video' ? undefined : asset.uri,
+  };
 }
 
 function fromUri(
