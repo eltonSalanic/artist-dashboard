@@ -25,9 +25,10 @@ import {
 } from "@artist/api-client";
 import {
   useDeleteAttachment,
+  useRenameAttachment,
   useUploadAttachment,
 } from "@artist/api-client";
-import { fromFile } from "./use-attachments";
+import { useNamedUpload } from "./file-name-dialog";
 
 export function CommentsSection({
   boardId,
@@ -118,6 +119,10 @@ function CommentItem({
   const deleteAttachment = useDeleteAttachment(boardId, {
     commentId: comment.id,
   });
+  const renameAttachment = useRenameAttachment(boardId, {
+    commentId: comment.id,
+  });
+  const named = useNamedUpload((source) => upload.mutate(source));
   const fileInput = useRef<HTMLInputElement>(null);
 
   const [editing, setEditing] = useState(false);
@@ -229,6 +234,18 @@ function CommentItem({
                     ? () => deleteAttachment.mutate(attachment.id)
                     : undefined
                 }
+                // The API's rule: your own upload, or anyone's as an admin.
+                onRename={
+                  attachment.uploadedBy.id === me.data?.user.id ||
+                  can("task.editFields")
+                    ? (fileName) =>
+                        renameAttachment.mutateAsync({
+                          attachmentId: attachment.id,
+                          dto: { fileName },
+                        })
+                    : undefined
+                }
+                renaming={renameAttachment.isPending}
               />
             ))}
           </div>
@@ -240,10 +257,11 @@ function CommentItem({
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];
-            if (file) upload.mutate(fromFile(file));
+            if (file) named.pick(file);
             e.target.value = "";
           }}
         />
+        {named.dialog}
       </div>
     </li>
   );

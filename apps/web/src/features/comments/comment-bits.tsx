@@ -7,11 +7,13 @@ import {
   FileAudio,
   FileText,
   Paperclip,
+  Pencil,
   Trash2,
 } from "lucide-react";
 import { splitMentions, type MentionTarget } from "@artist/shared";
 import type { AttachmentDto } from "@artist/api-client";
 import { AttachmentViewer } from "./attachment-viewer";
+import { FileNameDialog } from "./file-name-dialog";
 import { downloadAttachment, isPreviewable } from "./use-attachments";
 import { Button } from "@/components/ui/button";
 
@@ -86,12 +88,18 @@ export function AttachmentRow({
   boardId,
   attachment,
   onDelete,
+  onRename,
+  renaming = false,
 }: {
   boardId: string;
   attachment: AttachmentDto;
   onDelete?: () => void;
+  /** Absent when the viewer may not rename it — the same rule as deleting. */
+  onRename?: (fileName: string) => Promise<unknown>;
+  renaming?: boolean;
 }) {
   const [viewing, setViewing] = useState(false);
+  const [naming, setNaming] = useState(false);
   const canPreview = isPreviewable(attachment.mimeType);
 
   // Clicking the name previews when we can render the type, else downloads.
@@ -137,6 +145,16 @@ export function AttachmentRow({
       >
         <Download />
       </Button>
+      {onRename && (
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label={`Rename ${attachment.fileName}`}
+          onClick={() => setNaming(true)}
+        >
+          <Pencil />
+        </Button>
+      )}
       {onDelete && (
         <Button
           variant="ghost"
@@ -148,6 +166,19 @@ export function AttachmentRow({
         </Button>
       )}
 
+      {onRename && naming && (
+        <FileNameDialog
+          open
+          onOpenChange={setNaming}
+          title="Rename file"
+          fileName={attachment.fileName}
+          confirmLabel="Rename"
+          pending={renaming}
+          onConfirm={(fileName) =>
+            void onRename(fileName).then(() => setNaming(false))
+          }
+        />
+      )}
       {canPreview && (
         <AttachmentViewer
           boardId={boardId}

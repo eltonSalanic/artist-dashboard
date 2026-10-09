@@ -11,9 +11,10 @@ import { AttachmentRow } from "./comment-bits";
 import {
   useAttachments,
   useDeleteAttachment,
+  useRenameAttachment,
   useUploadAttachment,
 } from "@artist/api-client";
-import { fromFile } from "./use-attachments";
+import { useNamedUpload } from "./file-name-dialog";
 
 /**
  * Files attached directly to a task (not to one of its comments), or to an
@@ -31,6 +32,8 @@ export function TaskAttachments({
   const attachments = useAttachments(boardId, parent);
   const upload = useUploadAttachment(boardId, parent);
   const deleteAttachment = useDeleteAttachment(boardId, parent);
+  const rename = useRenameAttachment(boardId, parent);
+  const named = useNamedUpload((source) => upload.mutate(source));
   // Anyone may delete their own upload; whoever manages the parent, anyone's.
   const manages = can("eventId" in parent ? "event.manage" : "task.editFields");
   const fileInput = useRef<HTMLInputElement>(null);
@@ -68,6 +71,16 @@ export function TaskAttachments({
                   ? () => deleteAttachment.mutate(attachment.id)
                   : undefined
               }
+              onRename={
+                attachment.uploadedBy.id === myId || manages
+                  ? (fileName) =>
+                      rename.mutateAsync({
+                        attachmentId: attachment.id,
+                        dto: { fileName },
+                      })
+                  : undefined
+              }
+              renaming={rename.isPending}
             />
           ))}
         </div>
@@ -84,10 +97,11 @@ export function TaskAttachments({
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
-          if (file) upload.mutate(fromFile(file));
+          if (file) named.pick(file);
           e.target.value = "";
         }}
       />
+      {named.dialog}
     </section>
   );
 }
