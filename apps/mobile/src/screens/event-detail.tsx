@@ -7,12 +7,14 @@ import { Skeleton } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { TaskAttachments } from '@/features/attachments/task-attachments';
 import { dayHeading, timeOfDay } from '@/features/board/format';
+import { LinkedTasks } from '@/features/links/linked-tasks';
 import { spacing, useThemeColors } from '@/theme';
 
 const TYPE_TITLE = { SHOW: 'Show', REHEARSAL: 'Rehearsal', MEETING: 'Meeting' } as const;
 
 /**
- * One show, rehearsal or meeting: when, where, the notes, and its files.
+ * One show, rehearsal or meeting: when, where, the notes, its tasks, and its
+ * files.
  *
  * It exists for the files. A show's rider, stage plot and setlist are what
  * the whole band needs on the day, and before this the only way into an event
@@ -122,6 +124,12 @@ export function EventDetailScreen({
         {e.description !== null && e.description.trim() !== '' && (
           <ThemedText variant="body">{e.description}</ThemedText>
         )}
+
+        <LinkedTasks
+          boardId={boardId}
+          link={{ eventId: e.id }}
+          archived={e.archivedAt !== null}
+        />
 
         <TaskAttachments boardId={boardId} parent={{ eventId: e.id }} />
       </ScrollView>

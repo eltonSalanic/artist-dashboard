@@ -168,13 +168,21 @@ export function TaskDetailScreen({
 
         {(t.goal !== null || t.event !== null) && (
           <Section title="PART OF">
-            {t.goal && <Row first title={t.goal.title} meta="goal" />}
+            {t.goal && (
+              <Row
+                first
+                title={t.goal.title}
+                meta="goal"
+                onPress={() => router.push(`/board/${boardId}/goal/${t.goal!.id}`)}
+              />
+            )}
             {t.event && (
               <Row
                 first={t.goal === null}
                 title={t.event.title}
                 meta={t.event.type.toLowerCase()}
                 trailing={shortDate(t.event.startsAt)}
+                onPress={() => router.push(`/board/${boardId}/event/${t.event!.id}`)}
               />
             )}
           </Section>

@@ -1,50 +1,17 @@
-import { Alert } from 'react-native';
 import { router } from 'expo-router';
-import {
-  useGoals,
-  usePermissions,
-  useUpdateGoal,
-  type GoalDto,
-} from '@artist/api-client';
+import { useGoals, usePermissions } from '@artist/api-client';
 import { Row } from '@/components/row';
 import { SpokeList } from '@/components/spoke-list';
 import { dueDay, shortDate } from '../format';
+import { useGoalCompletion } from '../goal-completion';
 import { ToggleLead } from './toggle-lead';
 
 /** Goals, open ones first, each showing its period and when it is due. */
 export function GoalsSpoke({ boardId }: { boardId: string }) {
   const goals = useGoals(boardId);
-  const update = useUpdateGoal(boardId);
+  const completion = useGoalCompletion(boardId);
   const { can } = usePermissions();
   const canManage = can('goal.manage');
-  const pending = update.isPending ? update.variables : null;
-
-  /**
-   * Completing a goal finishes its open tasks on the server, with no "goal
-   * only" option, so it asks first and says how many. Reopening goes straight
-   * through.
-   */
-  const toggle = (goal: GoalDto) => {
-    if (goal.completedAt !== null) {
-      update.mutate({ goalId: goal.id, dto: { completed: false } });
-      return;
-    }
-    const open = goal.openTaskCount;
-    const noun = open === 1 ? 'task' : 'tasks';
-    Alert.alert(
-      'Complete this goal?',
-      open > 0
-        ? `"${goal.title}" still has ${open} open ${noun}. Completing the goal marks ${open === 1 ? 'it' : 'them'} done too.`
-        : `"${goal.title}" will be marked complete.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: open > 0 ? `Complete goal and ${open} ${noun}` : 'Complete goal',
-          onPress: () => update.mutate({ goalId: goal.id, dto: { completed: true } }),
-        },
-      ],
-    );
-  };
 
   const items = [...(goals.data ?? [])].sort((a, b) => {
     const done = Number(a.completedAt !== null) - Number(b.completedAt !== null);
@@ -63,16 +30,12 @@ export function GoalsSpoke({ boardId }: { boardId: string }) {
       emptyBody="Goals set on the web dashboard show up here."
     >
       {items.map((goal, index) => {
-        const done =
-          pending?.goalId === goal.id
-            ? (pending.dto.completed ?? goal.completedAt !== null)
-            : goal.completedAt !== null;
+        const done = completion.pendingDone(goal);
         return (
           <Row
             key={goal.id}
             first={index === 0}
             title={goal.title}
-            meta={goal.period.toLowerCase()}
             dim={done}
             trailing={goal.dueDate ? shortDate(dueDay(goal.dueDate)) : undefined}
             lead={
@@ -80,14 +43,16 @@ export function GoalsSpoke({ boardId }: { boardId: string }) {
                 done={done}
                 label={`Goal: ${goal.title}`}
                 idle={{ sf: 'circle', md: 'radio-button-unchecked' }}
-                onToggle={canManage ? () => toggle(goal) : undefined}
+                onToggle={canManage ? () => completion.toggle(goal) : undefined}
               />
             }
-            onPress={
-              canManage
-                ? () => router.push(`/board/${boardId}/form/goal?id=${goal.id}`)
-                : undefined
+            meta={
+              goal.taskCount > 0
+                ? `${goal.period.toLowerCase()} · ${goal.taskCount - goal.openTaskCount}/${goal.taskCount} tasks`
+                : goal.period.toLowerCase()
             }
+            // Everyone: the goal's tasks are for the band. Edit is on that screen.
+            onPress={() => router.push(`/board/${boardId}/goal/${goal.id}`)}
           />
         );
       })}
