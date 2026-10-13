@@ -1426,6 +1426,17 @@ pushed screen rather than a sheet because of the same trap). Linking is
 `task.editFields`, as on web. Task mutations now also refresh goals and events,
 whose `taskCount`/`openTaskCount` the completion prompt quotes.
 
+Then, same day: the calendar's band pills had their names clipped (a band
+name's Text box measured shorter than its glyphs; fixed by a fixed
+`lineHeight`). **Completing a task now finishes its open subtasks** at any
+depth, into the same done status, after a confirm naming how many (phone
+status sheet; web's five status pickers via `useTaskStatusChange`), with no
+"this task only" option, the same rule as goals. A goal's cascade now reaches
+the subtasks of its tasks too, and `openTaskCount` counts them. Tasks carry
+`openSubtaskCount` (shared `countOpen` in `apps/api/src/tasks/open-subtasks.ts`).
+Calendar rows always show the kind's icon; with several bands the band's colour
+is a dot on its corner instead of replacing it.
+
 Traps:
 
 - **A sheet's header is drawn over its content.** A ScrollView with
