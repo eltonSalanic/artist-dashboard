@@ -1421,10 +1421,11 @@ Traps:
   React Native's own layout never hears of the inset, so every Pressable's
   press area sits a header's height off its row (react-native#43546). The row
   lights up on touch and the release is thrown away as "outside": the band
-  switcher switched on perhaps one tap in three. The switcher and board menu
-  are plain Views padded by `useHeaderHeight()`; the status sheet still uses
-  the inset (a ScrollView is inset natively even without the prop) and has
-  not been reported.
+  switcher switched on perhaps one tap in three. The switcher, board menu
+  and status sheet are plain Views padded by `useHeaderHeight()` (a
+  ScrollView is inset natively even without the prop). The status sheet was
+  the last to move, once picking a status was reported doing nothing — which
+  had made a task impossible to mark done on the phone.
 - **A blank white app after the Mac changes network** is
   `apps/mobile/.env` pointing at the old LAN address: the startup session
   check hangs rather than failing. Metro picks up an edited `.env` without a

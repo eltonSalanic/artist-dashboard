@@ -1,5 +1,7 @@
-import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 import { router } from 'expo-router';
+import { useHeaderHeight } from 'expo-router/react-navigation';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import {
   useBoard,
@@ -34,6 +36,8 @@ export function StatusSheet({
   const task = useTask(boardId, taskId);
   const update = useUpdateTask(boardId);
   const canChangeStatus = useCanChangeStatus();
+  const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
 
   const statuses = board.data?.statuses ?? [];
   const current = task.data?.statusId;
@@ -58,10 +62,18 @@ export function StatusSheet({
   };
 
   return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={{ padding: spacing.md, gap: spacing.xs }}
+    // A plain View padded below the sheet's header, as in the band switcher: a
+    // ScrollView is inset for the header natively, React Native's layout never
+    // hears of it, and each row's press area sat a header's height off the row
+    // (react-native#43546) — it lit up on touch and the release was dropped.
+    <View
+      style={{
+        backgroundColor: colors.background,
+        padding: spacing.md,
+        paddingTop: headerHeight + spacing.sm,
+        paddingBottom: spacing.md + insets.bottom,
+        gap: spacing.xs,
+      }}
     >
       {task.data && (
         <ThemedText
@@ -125,6 +137,6 @@ export function StatusSheet({
           );
         })
       )}
-    </ScrollView>
+    </View>
   );
 }
