@@ -45,12 +45,6 @@ export function BoardFilter({
       // A ScrollView grows by default, so above the agenda's list it took half
       // the leftover height and stretched every chip into a tall capsule.
       style={{ flexGrow: 0 }}
-      // Held to exactly its chips' height, so any inset iOS adds clips them. A
-      // scroller near the top bar is inset for it automatically (the same
-      // native inset behind react-native#43546), which pushed the chips down
-      // inside their own strip and cut their bottoms off.
-      contentInsetAdjustmentBehavior="never"
-      automaticallyAdjustContentInsets={false}
       contentContainerStyle={{
         alignItems: 'center',
         paddingHorizontal: spacing.md,
@@ -87,11 +81,17 @@ export function BoardFilter({
             })}
           >
             {accent !== null && <Dot color={accent.bg} size={8} />}
+            {/* One line at a fixed line height. Measured on its own, a band
+                name's box came out shorter than its letters: iOS clips a Text
+                to its box, and the row centred the short box, so the name sat
+                low beside its dot with its bottom cut off. */}
             <ThemedText
               variant="footnote"
+              numberOfLines={1}
               style={{
                 color: active ? colors.primaryForeground : colors.mutedForeground,
                 fontWeight: '600',
+                lineHeight: 18,
               }}
             >
               {board === null ? 'All' : board.name}
