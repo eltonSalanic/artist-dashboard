@@ -1,4 +1,4 @@
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { useHeaderHeight } from 'expo-router/react-navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,6 +23,10 @@ import { radius, spacing, useThemeColors } from '@/theme';
  *
  * The sheet closes once the change has been *refetched*, not merely sent, so
  * the screen underneath is already showing the new status when it reappears.
+ *
+ * Moving a task into a done status finishes its open subtasks on the server,
+ * with no "this task only" — a task is not done while its subtasks are not —
+ * so with any open it asks first and says how many, as completing a goal does.
  */
 export function StatusSheet({
   boardId,
@@ -48,6 +52,29 @@ export function StatusSheet({
 
   const choose = (statusId: string) => {
     if (statusId === current) return router.back();
+    const open = task.data?.openSubtaskCount ?? 0;
+    const finishing =
+      statuses.find((s) => s.id === statusId)?.isDone === true &&
+      task.data?.status.isDone === false;
+    if (finishing && open > 0) {
+      const noun = open === 1 ? 'subtask' : 'subtasks';
+      Alert.alert(
+        'Complete this task?',
+        `"${task.data?.title}" still has ${open} open ${noun}. Completing it marks ${open === 1 ? 'it' : 'them'} done too.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: `Complete task and ${open} ${noun}`,
+            onPress: () => save(statusId),
+          },
+        ],
+      );
+      return;
+    }
+    save(statusId);
+  };
+
+  const save = (statusId: string) =>
     update.mutate(
       { taskId, dto: { statusId } },
       {
@@ -59,7 +86,6 @@ export function StatusSheet({
         },
       },
     );
-  };
 
   return (
     // A plain View padded below the sheet's header, as in the band switcher: a

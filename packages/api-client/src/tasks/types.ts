@@ -38,6 +38,11 @@ export interface TaskDto {
   assignees: TaskAssigneeDto[];
   checklist: ChecklistItemDto[];
   subtaskCount: number;
+  /**
+   * Live subtasks not yet done, at any depth. Moving the task to a done status
+   * finishes them too, which the clients' confirmation names before asking.
+   */
+  openSubtaskCount: number;
   checklistCount: number;
 }
 
