@@ -1414,6 +1414,18 @@ through on web too, completing a goal asks first and **always finishes its
 open tasks** (no "goal only" — the user's call), and files on events with a
 new phone event screen open to every member (`Attachment.eventId`).
 
+**Second pass, 2026-10-13:** picking a status in the status sheet did
+nothing (the sheet-header trap below), so a task could not be marked done on
+the phone. And the phone could only *display* a task's goal or event; it now
+links them like web: Goal and "Show or event" pickers in the task form
+(upcoming events only, plus whatever is already linked), a new goal screen at
+`/board/:boardId/goal/:goalId` (open to every member; goal rows go there
+instead of the admin-only form), a TASKS section on goal and event screens
+with Add, unlink and "Attach an existing task" (`/board/:boardId/attach`, a
+pushed screen rather than a sheet because of the same trap). Linking is
+`task.editFields`, as on web. Task mutations now also refresh goals and events,
+whose `taskCount`/`openTaskCount` the completion prompt quotes.
+
 Traps:
 
 - **A sheet's header is drawn over its content.** A ScrollView with
