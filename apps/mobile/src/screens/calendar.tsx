@@ -18,7 +18,7 @@ import {
 import { BoardFilter } from '@/components/board-filter';
 import { Icon, type IconName } from '@/components/icon';
 import { ListState } from '@/components/list-state';
-import { Dot, Row } from '@/components/row';
+import { Row } from '@/components/row';
 import { ThemedText } from '@/components/themed-text';
 import { useBoardScope } from '@/features/boards/use-board-scope';
 import { dayHeading, timeOfDay } from '@/features/board/format';
@@ -232,13 +232,13 @@ function CalendarRow({
 }) {
   const category = calendarCategory(item);
 
-  // Every cross-board item names its band, because a colour dot alone is
-  // unlearnable and "Load-in 5pm" is ambiguous without it. In a single-board
-  // account the band carries no information at all, so the name is dropped
-  // rather than repeated on every row.
+  // The kind first: it is what the row is. Every cross-board item then names
+  // its band, because a colour dot alone is unlearnable and "Load-in 5pm" is
+  // ambiguous without it. In a single-board account the band carries no
+  // information at all, so the name is dropped rather than repeated.
   const meta = [
-    namesBoards ? item.boardName : null,
     CALENDAR_CATEGORY_COPY[category].one,
+    namesBoards ? item.boardName : null,
     item.task?.statusName,
     item.event?.location,
   ]
@@ -246,15 +246,17 @@ function CalendarRow({
     .join(' · ');
 
   /**
-   * The lead slot shows whichever of the two is doing work. With several bands
-   * on screen the band is what you are telling apart, so it gets the dot; with
-   * one band there is nothing to tell apart, so the slot goes to the kind. The
-   * kind is named in the meta line either way, so nothing is carried by colour.
+   * The kind's icon, always: a show and a due task are the first thing to
+   * tell apart when scanning a month. With several bands on screen the band's
+   * colour rides on the icon's corner rather than taking its place — before,
+   * the dot replaced the icon, and the kind was left to the small print. Both
+   * are named in the meta line too, so neither rests on colour or shape alone.
    */
-  const lead = namesBoards && accent !== undefined ? (
-    <Dot color={accent} />
-  ) : (
-    <Icon name={CATEGORY_ICON[category]} size={15} />
+  const lead = (
+    <KindIcon
+      icon={CATEGORY_ICON[category]}
+      band={namesBoards ? accent : undefined}
+    />
   );
 
   return (
@@ -273,6 +275,33 @@ function CalendarRow({
         )
       }
     />
+  );
+}
+
+/** A kind icon, with the band's colour as a dot on its lower corner. */
+function KindIcon({ icon, band }: { icon: IconName; band: string | undefined }) {
+  const colors = useThemeColors();
+  return (
+    <View>
+      <Icon name={icon} size={15} />
+      {band !== undefined && (
+        <View
+          style={{
+            position: 'absolute',
+            right: -4,
+            bottom: -3,
+            width: 9,
+            height: 9,
+            borderRadius: 5,
+            backgroundColor: band,
+            // A ring of the canvas colour, so the dot reads as sitting on the
+            // icon rather than merging into it.
+            borderWidth: 1.5,
+            borderColor: colors.background,
+          }}
+        />
+      )}
+    </View>
   );
 }
 
