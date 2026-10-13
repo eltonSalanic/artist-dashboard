@@ -59,6 +59,13 @@ function useInvalidateTasks(boardId: string) {
       // Due tasks are on the calendar — every calendar query, for the same
       // reason as the planning hooks: the cross-board key has no board prefix.
       queryClient.invalidateQueries({ queryKey: ["calendar"] }),
+      // Goals and events count their tasks (`taskCount`, `openTaskCount`), and
+      // linking, unlinking or finishing a task changes those counts — the
+      // goal-completion prompt quotes `openTaskCount`, so a stale one lies.
+      queryClient.invalidateQueries({ queryKey: ["goals", boardId] }),
+      queryClient.invalidateQueries({ queryKey: ["goal", boardId] }),
+      queryClient.invalidateQueries({ queryKey: ["events", boardId] }),
+      queryClient.invalidateQueries({ queryKey: ["event", boardId] }),
     ]);
 }
 
