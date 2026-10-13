@@ -13,19 +13,23 @@ import { TaskForm } from '@/features/forms/task-form';
  *
  *   ?id=…            edit that item; absent, create one
  *   ?parentTaskId=…  a new subtask (kind `task`)
+ *   ?goalId=…, ?eventId=…  a new task already linked to that goal or event
  *   ?type=SHOW|…     what a new event starts as (kind `event`)
  *
  * One route rather than ten: the forms share their frame, and the stack only
  * has to be told once that this is a modal.
  */
 export default function Form() {
-  const { boardId, kind, id, parentTaskId, type } = useLocalSearchParams<{
-    boardId: string;
-    kind: string;
-    id?: string;
-    parentTaskId?: string;
-    type?: string;
-  }>();
+  const { boardId, kind, id, parentTaskId, goalId, eventId, type } =
+    useLocalSearchParams<{
+      boardId: string;
+      kind: string;
+      id?: string;
+      parentTaskId?: string;
+      goalId?: string;
+      eventId?: string;
+      type?: string;
+    }>();
 
   // Query parameters come from a URL, so they can be anything.
   const eventType = (EventTypes as readonly string[]).includes(type ?? '')
@@ -45,7 +49,15 @@ export default function Form() {
       case 'note':
         return <NoteForm boardId={boardId} />;
       default:
-        return <TaskForm boardId={boardId} taskId={id} parentTaskId={parentTaskId} />;
+        return (
+          <TaskForm
+            boardId={boardId}
+            taskId={id}
+            parentTaskId={parentTaskId}
+            goalId={goalId}
+            eventId={eventId}
+          />
+        );
     }
   })();
 
