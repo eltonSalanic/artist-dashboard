@@ -8,7 +8,8 @@ import type { Priority } from "@artist/shared";
 import { apiFetch } from "@artist/api-client";
 import { usePermissions } from "@artist/api-client";
 import type { BoardDetailDto } from "@artist/api-client";
-import { useCreateTask, useTasks, useUpdateTask } from "@artist/api-client";
+import { useCreateTask, useTasks } from "@artist/api-client";
+import { useTaskStatusChange } from "@/features/tasks/task-completion";
 import { useCanChangeStatus } from "@artist/api-client";
 import type { TaskFilters } from "@artist/api-client";
 import {
@@ -70,7 +71,7 @@ export function TasksTable({
   });
   const tasks = useTasks(boardId, filters);
   const createTask = useCreateTask(boardId);
-  const updateTask = useUpdateTask(boardId);
+  const { changeStatus, dialog } = useTaskStatusChange(boardId);
 
   const statuses = board.data?.statuses ?? [];
   const rootTasks = tasks.data?.filter((t) => !t.parentTaskId) ?? [];
@@ -165,8 +166,7 @@ export function TasksTable({
         <Select
           value={filters.sort ?? "order"}
           onValueChange={(v) =>
-            v &&
-            setFilters((f) => ({ ...f, sort: v as TaskFilters["sort"] }))
+            v && setFilters((f) => ({ ...f, sort: v as TaskFilters["sort"] }))
           }
           items={[
             { value: "order", label: "Board order" },
@@ -255,10 +255,7 @@ export function TasksTable({
                       statuses={statuses}
                       disabled={!canChangeStatus(task.assignees)}
                       onChange={(statusId) =>
-                        updateTask.mutate({
-                          taskId: task.id,
-                          dto: { statusId },
-                        })
+                        changeStatus(task, statusId, statuses)
                       }
                     />
                   </TableCell>
@@ -277,6 +274,7 @@ export function TasksTable({
           </Table>
         </div>
       )}
+      {dialog}
     </div>
   );
 }

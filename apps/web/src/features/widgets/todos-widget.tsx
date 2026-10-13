@@ -27,11 +27,7 @@ import {
   StatusSelect,
   SubtaskCount,
 } from "@/features/tasks/task-bits";
-import {
-  useReorderTask,
-  useTasks,
-  useUpdateTask,
-} from "@artist/api-client";
+import { useReorderTask, useTasks } from "@artist/api-client";
 import type { TaskDto } from "@artist/api-client";
 import {
   Empty,
@@ -41,6 +37,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTaskStatusChange } from "@/features/tasks/task-completion";
 
 function useBoard(boardId: string) {
   return useQuery({
@@ -63,7 +60,7 @@ export function TodosWidget({ boardId }: { boardId: string }) {
   const { can } = usePermissions();
   const board = useBoard(boardId);
   const tasks = useTasks(boardId, { sort: "order" });
-  const updateTask = useUpdateTask(boardId);
+  const { changeStatus, dialog } = useTaskStatusChange(boardId);
   const reorder = useReorderTask(boardId);
   const openTask = useOpenTask();
 
@@ -101,41 +98,42 @@ export function TodosWidget({ boardId }: { boardId: string }) {
             <ListChecks />
           </EmptyMedia>
           <EmptyTitle>No tasks yet</EmptyTitle>
-          <EmptyDescription>
-            Add tasks from the expanded view.
-          </EmptyDescription>
+          <EmptyDescription>Add tasks from the expanded view.</EmptyDescription>
         </EmptyHeader>
       </Empty>
     );
   }
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragEnd={handleDragEnd}
-    >
-      <SortableContext
-        items={rootTasks.map((t) => t.id)}
-        strategy={verticalListSortingStrategy}
+    <>
+      {dialog}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
       >
-        <ul className="flex flex-col gap-1">
-          {rootTasks.map((task) => (
-            <TodoRow
-              key={task.id}
-              task={task}
-              statuses={statuses}
-              draggable={canReorder}
-              statusDisabled={!can("task.changeStatus")}
-              onOpen={() => openTask(task.id)}
-              onStatusChange={(statusId) =>
-                updateTask.mutate({ taskId: task.id, dto: { statusId } })
-              }
-            />
-          ))}
-        </ul>
-      </SortableContext>
-    </DndContext>
+        <SortableContext
+          items={rootTasks.map((t) => t.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <ul className="flex flex-col gap-1">
+            {rootTasks.map((task) => (
+              <TodoRow
+                key={task.id}
+                task={task}
+                statuses={statuses}
+                draggable={canReorder}
+                statusDisabled={!can("task.changeStatus")}
+                onOpen={() => openTask(task.id)}
+                onStatusChange={(statusId) =>
+                  changeStatus(task, statusId, statuses)
+                }
+              />
+            ))}
+          </ul>
+        </SortableContext>
+      </DndContext>
+    </>
   );
 }
 
@@ -154,8 +152,14 @@ function TodoRow({
   onOpen: () => void;
   onStatusChange: (statusId: string) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: task.id, disabled: !draggable });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id, disabled: !draggable });
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,

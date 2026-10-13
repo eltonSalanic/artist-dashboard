@@ -7,11 +7,18 @@ import { Plus, Trash2, UserRound } from "lucide-react";
 import { apiFetch } from "@artist/api-client";
 import { usePermissions } from "@artist/api-client";
 import { useMe } from "@artist/api-client";
-import type { BoardDetailDto, BoardMemberDto, TaskStatusDto } from "@artist/api-client";
+import type {
+  BoardDetailDto,
+  BoardMemberDto,
+  TaskStatusDto,
+} from "@artist/api-client";
 import { useGoals } from "@artist/api-client";
 import { useEvents } from "@artist/api-client";
 import { useDetailParams } from "@/features/planning/use-detail-params";
-import { eventTypeLabel, formatDateTime } from "@/features/planning/planning-bits";
+import {
+  eventTypeLabel,
+  formatDateTime,
+} from "@/features/planning/planning-bits";
 import { CommentsSection } from "@/features/comments/comments-section";
 import { TaskAttachments } from "@/features/comments/task-attachments";
 import { ArchivedBanner } from "@/features/archive/archived-banner";
@@ -65,6 +72,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { useTaskStatusChange } from "@/features/tasks/task-completion";
 
 export function TaskDetailModal({ boardId }: { boardId: string }) {
   const router = useRouter();
@@ -308,6 +316,7 @@ function TaskDetailBody({
   const setAssignees = useSetAssignees(boardId);
   const createSubtask = useCreateTask(boardId);
   const checklist = useChecklist(boardId, taskId);
+  const { changeStatus, dialog } = useTaskStatusChange(boardId);
 
   const [title, setTitle] = useState(data.title);
   const [description, setDescription] = useState(data.description ?? "");
@@ -333,6 +342,7 @@ function TaskDetailBody({
 
   return (
     <div className="flex flex-col gap-5">
+      {dialog}
       <ArchivedBanner archivedAt={data.archivedAt} />
       <DialogHeader>
         {canEdit ? (
@@ -369,7 +379,7 @@ function TaskDetailBody({
             value={data.statusId}
             statuses={statuses}
             disabled={!canChangeStatus(data.assignees)}
-            onChange={(statusId) => updateTask.mutate({ taskId, dto: { statusId } })}
+            onChange={(statusId) => changeStatus(data, statusId, statuses)}
           />
         </Field>
         <Field>
@@ -560,7 +570,7 @@ function TaskDetailBody({
                   statuses={statuses}
                   disabled={!canChangeStatus(subtask.assignees)}
                   onChange={(statusId) =>
-                    updateTask.mutate({ taskId: subtask.id, dto: { statusId } })
+                    changeStatus(subtask, statusId, statuses)
                   }
                 />
                 <span

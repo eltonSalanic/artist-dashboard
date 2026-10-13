@@ -13,7 +13,8 @@ import {
   StatusSelect,
   SubtaskCount,
 } from "@/features/tasks/task-bits";
-import { useTasks, useUpdateTask } from "@artist/api-client";
+import { useTasks } from "@artist/api-client";
+import { useTaskStatusChange } from "@/features/tasks/task-completion";
 import {
   Empty,
   EmptyDescription,
@@ -37,7 +38,7 @@ export function MyTasksWidget({ boardId }: { boardId: string }) {
     boardId,
     userId ? { assigneeId: userId, sort: "dueDate" } : {},
   );
-  const updateTask = useUpdateTask(boardId);
+  const { changeStatus, dialog } = useTaskStatusChange(boardId);
 
   const statuses = board.data?.statuses ?? [];
   const rootTasks = (tasks.data ?? []).filter((t) => !t.parentTaskId);
@@ -67,34 +68,35 @@ export function MyTasksWidget({ boardId }: { boardId: string }) {
   }
 
   return (
-    <ul className="flex flex-col gap-1">
-      {rootTasks.map((task) => (
-        <li
-          key={task.id}
-          className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-accent/50"
-        >
-          <button
-            type="button"
-            className={`min-w-0 flex-1 truncate text-left text-sm ${task.status.isDone ? "text-muted-foreground line-through" : ""}`}
-            onClick={() => openTask(task.id)}
+    <>
+      {dialog}
+      <ul className="flex flex-col gap-1">
+        {rootTasks.map((task) => (
+          <li
+            key={task.id}
+            className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-accent/50"
           >
-            {task.title}
-          </button>
-          <SubtaskCount count={task.subtaskCount} />
-          <span className="shrink-0 text-xs text-muted-foreground">
-            {formatDueDate(task.dueDate)}
-          </span>
-          <StatusSelect
-            value={task.statusId}
-            statuses={statuses}
-            disabled={!can("task.changeStatus")}
-            onChange={(statusId) =>
-              updateTask.mutate({ taskId: task.id, dto: { statusId } })
-            }
-          />
-        </li>
-      ))}
-    </ul>
+            <button
+              type="button"
+              className={`min-w-0 flex-1 truncate text-left text-sm ${task.status.isDone ? "text-muted-foreground line-through" : ""}`}
+              onClick={() => openTask(task.id)}
+            >
+              {task.title}
+            </button>
+            <SubtaskCount count={task.subtaskCount} />
+            <span className="shrink-0 text-xs text-muted-foreground">
+              {formatDueDate(task.dueDate)}
+            </span>
+            <StatusSelect
+              value={task.statusId}
+              statuses={statuses}
+              disabled={!can("task.changeStatus")}
+              onChange={(statusId) => changeStatus(task, statusId, statuses)}
+            />
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 
