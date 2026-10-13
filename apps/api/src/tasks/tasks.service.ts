@@ -20,6 +20,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
 import { StorageService } from '../attachments/storage.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { countOpen } from './open-subtasks';
 
 const SORT_GAP = 1024;
 
@@ -28,8 +29,20 @@ const taskInclude = {
   assignees: { include: { user: true } },
   // Subtask ids and their archived state, rather than a `_count`: which
   // subtasks are visible depends on whether the *parent* is archived, and
-  // `_count` can't express a filter that reads the parent row.
-  subtasks: { select: { id: true, archivedAt: true } },
+  // `_count` can't express a filter that reads the parent row. Their status,
+  // and their own live subtasks', make `openSubtaskCount`: what completing
+  // this task would also finish.
+  subtasks: {
+    select: {
+      id: true,
+      archivedAt: true,
+      status: { select: { isDone: true } },
+      subtasks: {
+        where: { archivedAt: null },
+        select: { status: { select: { isDone: true } } },
+      },
+    },
+  },
   _count: { select: { checklist: true } },
   checklist: { orderBy: { sortOrder: 'asc' as const } },
   goal: { select: { id: true, title: true } },
@@ -275,6 +288,15 @@ export class TasksService {
             actorId: userId,
             meta: { taskId, taskTitle: updated.title },
           });
+          // A task is not done while its subtasks are not: they go with it,
+          // into the same done status. Both clients say how many first.
+          await this.finish(
+            tx,
+            boardId,
+            await this.openDescendants(tx, [taskId]),
+            updated.statusId,
+            userId,
+          );
         }
       }
       return updated;
@@ -283,14 +305,15 @@ export class TasksService {
   }
 
   /**
-   * Finish every open task linked to a goal, which completing the goal does:
-   * a goal is not done while its to-dos are not. Each one moves to the board's
-   * first done status. Runs in the goal's transaction, so the two land
-   * together or not at all. Returns how many were finished.
+   * Finish every open task linked to a goal, and every open subtask under
+   * them, which completing the goal does: a goal is not done while its to-dos
+   * are not. Each one moves to the board's first done status. Runs in the
+   * goal's transaction, so the two land together or not at all. Returns how
+   * many were finished.
    *
-   * Logged as one completion per task, without the STATUS_CHANGED line a
-   * single change also writes: ten tasks finished by one goal would otherwise
-   * be twenty lines of feed for one thing someone did.
+   * Subtasks are reached through their parent rather than by `goalId`: a
+   * subtask is rarely linked to the goal itself, and a done task's open
+   * subtasks count too.
    */
   async completeForGoal(
     tx: Prisma.TransactionClient,
@@ -298,10 +321,19 @@ export class TasksService {
     goalId: string,
     actorId: string,
   ): Promise<number> {
-    const open = await tx.task.findMany({
-      where: { boardId, goalId, archivedAt: null, status: { isDone: false } },
-      select: { id: true, title: true },
+    const linked = await tx.task.findMany({
+      where: { boardId, goalId, archivedAt: null },
+      select: { id: true, title: true, status: { select: { isDone: true } } },
     });
+    const open = [
+      ...linked
+        .filter((task) => !task.status.isDone)
+        .map(({ id, title }) => ({ id, title })),
+      ...(await this.openDescendants(
+        tx,
+        linked.map((task) => task.id),
+      )),
+    ];
     if (open.length === 0) return 0;
 
     const done = await tx.taskStatus.findFirst({
@@ -314,11 +346,54 @@ export class TasksService {
       );
     }
 
+    await this.finish(tx, boardId, open, done.id, actorId);
+    return open.length;
+  }
+
+  /**
+   * The open, live tasks under these, at any depth. A done subtask is still
+   * descended into — it can sit over a sub-subtask that is not — and an
+   * archived one is not, with everything under it.
+   */
+  private async openDescendants(
+    tx: Prisma.TransactionClient,
+    rootIds: string[],
+  ): Promise<{ id: string; title: string }[]> {
+    const open: { id: string; title: string }[] = [];
+    let parents = rootIds;
+    while (parents.length > 0) {
+      const children = await tx.task.findMany({
+        where: { parentTaskId: { in: parents }, archivedAt: null },
+        select: { id: true, title: true, status: { select: { isDone: true } } },
+      });
+      for (const child of children) {
+        if (!child.status.isDone)
+          open.push({ id: child.id, title: child.title });
+      }
+      parents = children.map((child) => child.id);
+    }
+    return open;
+  }
+
+  /**
+   * Move tasks finished by something else — a parent, a goal — to a done
+   * status. Logged as one completion per task, without the STATUS_CHANGED
+   * line a single change also writes: ten tasks finished by one tick would
+   * otherwise be twenty lines of feed for one thing someone did.
+   */
+  private async finish(
+    tx: Prisma.TransactionClient,
+    boardId: string,
+    tasks: { id: string; title: string }[],
+    statusId: string,
+    actorId: string,
+  ) {
+    if (tasks.length === 0) return;
     await tx.task.updateMany({
-      where: { id: { in: open.map((task) => task.id) } },
-      data: { statusId: done.id },
+      where: { id: { in: tasks.map((task) => task.id) } },
+      data: { statusId },
     });
-    for (const task of open) {
+    for (const task of tasks) {
       await this.activity.log(tx, {
         boardId,
         type: 'TASK_COMPLETED',
@@ -326,7 +401,6 @@ export class TasksService {
         meta: { taskId: task.id, taskTitle: task.title },
       });
     }
-    return open.length;
   }
 
   async remove(boardId: string, taskId: string) {
@@ -699,7 +773,12 @@ export class TasksService {
       user: { id: string; displayName: string; avatarUrl: string | null };
     }[];
     checklist?: { id: string; text: string; done: boolean }[];
-    subtasks?: { id: string; archivedAt: Date | null }[];
+    subtasks?: {
+      id: string;
+      archivedAt: Date | null;
+      status: { isDone: boolean };
+      subtasks?: { archivedAt?: Date | null; status: { isDone: boolean } }[];
+    }[];
     _count: { checklist: number };
   }) => ({
     id: task.id,
@@ -729,6 +808,7 @@ export class TasksService {
     })),
     checklist: task.checklist ?? [],
     subtaskCount: visibleSubtasks(task, task.subtasks ?? []).length,
+    openSubtaskCount: countOpen(task.subtasks ?? []),
     checklistCount: task._count.checklist,
   });
 }

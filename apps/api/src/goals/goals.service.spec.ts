@@ -14,9 +14,8 @@ describe('GoalsService', () => {
       delete: jest.fn(),
     },
     task: {
-      findMany: jest.fn(),
+      findMany: jest.fn().mockResolvedValue([]),
       count: jest.fn(),
-      groupBy: jest.fn().mockResolvedValue([]),
     },
     activity: { create: jest.fn() },
     $transaction: jest.fn(),
@@ -78,7 +77,7 @@ describe('GoalsService', () => {
 
   it('deletes linked tasks at any depth when cascade is asked for', async () => {
     prisma.goal.findFirst.mockResolvedValue({ id: 'g1' });
-    prisma.task.findMany.mockResolvedValue([{ id: 't1' }, { id: 't2' }]);
+    prisma.task.findMany.mockResolvedValueOnce([{ id: 't1' }, { id: 't2' }]);
 
     await service.remove('b1', 'g1', true);
 
@@ -161,22 +160,45 @@ describe('GoalsService', () => {
       { id: 'g1', _count: { tasks: 3 } },
       { id: 'g2', _count: { tasks: 0 } },
     ]);
-    prisma.task.groupBy.mockResolvedValueOnce([
-      { goalId: 'g1', _count: { _all: 2 } },
+    const open = { status: { isDone: false } };
+    const done = { status: { isDone: true } };
+    prisma.task.findMany.mockResolvedValueOnce([
+      { goalId: 'g1', ...open, subtasks: [] },
+      { goalId: 'g1', ...open, subtasks: [] },
+      { goalId: 'g1', ...done, subtasks: [] },
     ]);
 
     const goals = await service.list('b1', { includeCompleted: true });
 
     expect(goals.map((goal) => goal.openTaskCount)).toEqual([2, 0]);
-    expect(prisma.task.groupBy).toHaveBeenCalledWith(
+    expect(prisma.task.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: {
-          goalId: { in: ['g1', 'g2'] },
-          archivedAt: null,
-          status: { isDone: false },
-        },
+        where: { goalId: { in: ['g1', 'g2'] }, archivedAt: null },
       }),
     );
+  });
+
+  it("counts open subtasks under a goal's tasks, even under a done task", async () => {
+    prisma.goal.findMany.mockResolvedValue([
+      { id: 'g1', _count: { tasks: 1 } },
+    ]);
+    prisma.task.findMany.mockResolvedValueOnce([
+      {
+        goalId: 'g1',
+        status: { isDone: true },
+        subtasks: [
+          {
+            status: { isDone: false },
+            subtasks: [{ status: { isDone: false } }],
+          },
+          { status: { isDone: true }, subtasks: [] },
+        ],
+      },
+    ]);
+
+    const [goal] = await service.list('b1', { includeCompleted: true });
+
+    expect(goal.openTaskCount).toBe(2);
   });
 
   it('refuses to touch a goal on another board', async () => {

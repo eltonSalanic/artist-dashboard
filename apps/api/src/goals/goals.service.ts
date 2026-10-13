@@ -8,6 +8,7 @@ import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
 import { TasksService } from '../tasks/tasks.service';
+import { countOpen } from '../tasks/open-subtasks';
 
 const goalInclude = {
   // Archived tasks belong to the archive page, not to their goal's count —
@@ -154,23 +155,36 @@ export class GoalsService {
   }
 
   /**
-   * Live tasks not yet done, per goal: what completing the goal will finish,
-   * which the clients' confirmation names before asking.
+   * Live tasks not yet done, per goal, counting open subtasks under its tasks:
+   * what completing the goal will finish, which the clients' confirmation
+   * names before asking. Subtasks nest two levels, so two levels are read.
    */
   private async openTaskCounts(
     goalIds: string[],
   ): Promise<Map<string, number>> {
     if (goalIds.length === 0) return new Map();
-    const rows = await this.prisma.task.groupBy({
-      by: ['goalId'],
-      where: {
-        goalId: { in: goalIds },
-        archivedAt: null,
-        status: { isDone: false },
+    const live = { archivedAt: null };
+    const status = { select: { isDone: true } };
+    const linked = await this.prisma.task.findMany({
+      where: { goalId: { in: goalIds }, ...live },
+      select: {
+        goalId: true,
+        status,
+        subtasks: {
+          where: live,
+          select: {
+            status,
+            subtasks: { where: live, select: { status } },
+          },
+        },
       },
-      _count: { _all: true },
     });
-    return new Map(rows.map((row) => [row.goalId as string, row._count._all]));
+    const counts = new Map<string, number>();
+    for (const task of linked) {
+      const goalId = task.goalId as string;
+      counts.set(goalId, (counts.get(goalId) ?? 0) + countOpen([task]));
+    }
+    return counts;
   }
 
   private toDto = (

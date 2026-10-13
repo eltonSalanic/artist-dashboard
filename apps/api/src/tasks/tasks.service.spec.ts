@@ -9,7 +9,7 @@ describe('TasksService', () => {
   const prisma = {
     task: {
       findFirst: jest.fn(),
-      findMany: jest.fn(),
+      findMany: jest.fn().mockResolvedValue([]),
       aggregate: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
@@ -429,12 +429,16 @@ describe('TasksService', () => {
 
   describe('completeForGoal', () => {
     const tx = prisma as never;
+    const open = { status: { isDone: false } };
+    const done = { status: { isDone: true } };
 
     it("moves the goal's open tasks to the first done status and logs each", async () => {
-      prisma.task.findMany.mockResolvedValueOnce([
-        { id: 't1', title: 'Book the van' },
-        { id: 't2', title: 'Print setlists' },
-      ]);
+      prisma.task.findMany
+        .mockResolvedValueOnce([
+          { id: 't1', title: 'Book the van', ...open },
+          { id: 't2', title: 'Print setlists', ...open },
+        ])
+        .mockResolvedValueOnce([]);
       prisma.taskStatus.findFirst.mockResolvedValueOnce({ id: 'done' });
 
       const finished = await service.completeForGoal(tx, 'b1', 'g1', 'u1');
@@ -442,12 +446,7 @@ describe('TasksService', () => {
       expect(finished).toBe(2);
       expect(prisma.task.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: {
-            boardId: 'b1',
-            goalId: 'g1',
-            archivedAt: null,
-            status: { isDone: false },
-          },
+          where: { boardId: 'b1', goalId: 'g1', archivedAt: null },
         }),
       );
       expect(prisma.taskStatus.findFirst).toHaveBeenCalledWith({
@@ -464,8 +463,44 @@ describe('TasksService', () => {
       expect(logged).toEqual(['TASK_COMPLETED', 'TASK_COMPLETED']);
     });
 
+    it("also finishes the open subtasks under the goal's tasks, done or not", async () => {
+      prisma.task.findMany
+        // The goal's tasks: one open, one already done.
+        .mockResolvedValueOnce([
+          { id: 't1', title: 'Book the van', ...open },
+          { id: 't2', title: 'Print setlists', ...done },
+        ])
+        // Their subtasks: the done task still has an open one.
+        .mockResolvedValueOnce([
+          { id: 's1', title: 'Call the rental place', ...done },
+          { id: 's2', title: 'Proof the layout', ...open },
+        ])
+        // Under those, one open sub-subtask.
+        .mockResolvedValueOnce([
+          { id: 'ss1', title: 'Find the number', ...open },
+        ])
+        .mockResolvedValueOnce([]);
+      prisma.taskStatus.findFirst.mockResolvedValueOnce({ id: 'done' });
+
+      const finished = await service.completeForGoal(tx, 'b1', 'g1', 'u1');
+
+      expect(finished).toBe(3);
+      expect(prisma.task.findMany).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          where: { parentTaskId: { in: ['t1', 't2'] }, archivedAt: null },
+        }),
+      );
+      expect(prisma.task.updateMany).toHaveBeenCalledWith({
+        where: { id: { in: ['t1', 's2', 'ss1'] } },
+        data: { statusId: 'done' },
+      });
+    });
+
     it('does nothing when every task is already done', async () => {
-      prisma.task.findMany.mockResolvedValueOnce([]);
+      prisma.task.findMany
+        .mockResolvedValueOnce([{ id: 't1', title: 'T', ...done }])
+        .mockResolvedValueOnce([]);
 
       expect(await service.completeForGoal(tx, 'b1', 'g1', 'u1')).toBe(0);
       expect(prisma.task.updateMany).not.toHaveBeenCalled();
@@ -473,13 +508,131 @@ describe('TasksService', () => {
     });
 
     it('refuses when the board has no done status to finish them into', async () => {
-      prisma.task.findMany.mockResolvedValueOnce([{ id: 't1', title: 'T' }]);
+      prisma.task.findMany
+        .mockResolvedValueOnce([{ id: 't1', title: 'T', ...open }])
+        .mockResolvedValueOnce([]);
       prisma.taskStatus.findFirst.mockResolvedValueOnce(null);
 
       await expect(
         service.completeForGoal(tx, 'b1', 'g1', 'u1'),
       ).rejects.toBeInstanceOf(BadRequestException);
       expect(prisma.task.updateMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('completing a task with subtasks', () => {
+    const doneStatus = {
+      id: 's2',
+      name: 'Done',
+      color: '#22cc88',
+      isDone: true,
+    };
+    const updatedRow = {
+      ...baseTask,
+      archivedAt: null,
+      statusId: 's2',
+      status: doneStatus,
+      assignees: [],
+      checklist: [],
+      subtasks: [],
+      _count: { checklist: 0 },
+    };
+
+    it('moves its open subtasks, at any depth, into the same done status', async () => {
+      prisma.task.findFirst.mockResolvedValueOnce({
+        ...baseTask,
+        assignees: [],
+      });
+      prisma.taskStatus.findFirst.mockResolvedValueOnce({ id: 's2' });
+      prisma.task.update.mockResolvedValueOnce(updatedRow);
+      prisma.task.findMany
+        .mockResolvedValueOnce([
+          { id: 'c1', title: 'Open child', status: { isDone: false } },
+          { id: 'c2', title: 'Done child', status: { isDone: true } },
+        ])
+        .mockResolvedValueOnce([
+          { id: 'g1', title: 'Open grandchild', status: { isDone: false } },
+        ])
+        .mockResolvedValueOnce([]);
+
+      await service.update('b1', 't1', 'admin', 'ADMIN', { statusId: 's2' });
+
+      expect(prisma.task.findMany).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          where: { parentTaskId: { in: ['t1'] }, archivedAt: null },
+        }),
+      );
+      expect(prisma.task.updateMany).toHaveBeenCalledWith({
+        where: { id: { in: ['c1', 'g1'] } },
+        data: { statusId: 's2' },
+      });
+      const completed = (
+        prisma.activity.create.mock.calls as [
+          { data: { type: string; meta: { taskId: string } } },
+        ][]
+      )
+        .filter(([call]) => call.data.type === 'TASK_COMPLETED')
+        .map(([call]) => call.data.meta.taskId);
+      expect(completed).toEqual(['t1', 'c1', 'g1']);
+    });
+
+    it('leaves subtasks alone when the task moves between open statuses', async () => {
+      prisma.task.findFirst.mockResolvedValueOnce({
+        ...baseTask,
+        assignees: [],
+      });
+      prisma.taskStatus.findFirst.mockResolvedValueOnce({ id: 's3' });
+      prisma.task.update.mockResolvedValueOnce({
+        ...updatedRow,
+        statusId: 's3',
+        status: { id: 's3', name: 'Doing', color: '#3388ff', isDone: false },
+      });
+
+      await service.update('b1', 't1', 'admin', 'ADMIN', { statusId: 's3' });
+
+      expect(prisma.task.findMany).not.toHaveBeenCalled();
+      expect(prisma.task.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('reports how many open subtasks completing it would finish', async () => {
+      prisma.task.findFirst.mockResolvedValueOnce({
+        ...baseTask,
+        assignees: [],
+      });
+      prisma.taskStatus.findFirst.mockResolvedValueOnce({ id: 's3' });
+      prisma.task.update.mockResolvedValueOnce({
+        ...updatedRow,
+        statusId: 's3',
+        status: { id: 's3', name: 'Doing', color: '#3388ff', isDone: false },
+        subtasks: [
+          {
+            id: 'c1',
+            archivedAt: null,
+            status: { isDone: true },
+            subtasks: [{ status: { isDone: false } }],
+          },
+          {
+            id: 'c2',
+            archivedAt: null,
+            status: { isDone: false },
+            subtasks: [],
+          },
+          {
+            id: 'c3',
+            archivedAt: new Date(),
+            status: { isDone: false },
+            subtasks: [],
+          },
+        ],
+      });
+
+      const result = await service.update('b1', 't1', 'admin', 'ADMIN', {
+        statusId: 's3',
+      });
+
+      expect(result.subtaskCount).toBe(2);
+      expect(result.openSubtaskCount).toBe(2);
     });
   });
 });
