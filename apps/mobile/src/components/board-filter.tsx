@@ -45,6 +45,12 @@ export function BoardFilter({
       // A ScrollView grows by default, so above the agenda's list it took half
       // the leftover height and stretched every chip into a tall capsule.
       style={{ flexGrow: 0 }}
+      // Held to exactly its chips' height, so any inset iOS adds clips them. A
+      // scroller near the top bar is inset for it automatically (the same
+      // native inset behind react-native#43546), which pushed the chips down
+      // inside their own strip and cut their bottoms off.
+      contentInsetAdjustmentBehavior="never"
+      automaticallyAdjustContentInsets={false}
       contentContainerStyle={{
         alignItems: 'center',
         paddingHorizontal: spacing.md,
