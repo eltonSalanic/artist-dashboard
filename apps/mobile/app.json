@@ -43,11 +43,19 @@
       ],
       "@react-native-community/datetimepicker",
       "expo-image",
-      "expo-sharing"
+      "expo-sharing",
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": false,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "018024d5-3c2a-4c30-aff4-21fbc1661a4f"
+      }
+    },
+    "owner": "eltons"
   }
 }
