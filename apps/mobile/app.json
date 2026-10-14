@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Artist Dashboard",
+    "name": "Band Board",
     "slug": "artist-dashboard",
     "version": "0.1.0",
     "orientation": "portrait",
@@ -9,11 +9,12 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.artistdashboard.mobile",
+      "bundleIdentifier": "com.bandboard.app",
+      "appleTeamId": "242S9Y93M9",
       "supportsTablet": false
     },
     "android": {
-      "package": "com.artistdashboard.mobile",
+      "package": "com.bandboard.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
