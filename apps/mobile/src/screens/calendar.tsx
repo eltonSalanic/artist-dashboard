@@ -21,7 +21,7 @@ import { ListState } from '@/components/list-state';
 import { Row } from '@/components/row';
 import { ThemedText } from '@/components/themed-text';
 import { useBoardScope } from '@/features/boards/use-board-scope';
-import { dayHeading, timeOfDay } from '@/features/board/format';
+import { dayHeading, dueDay, shortDate, timeOfDay } from '@/features/board/format';
 import { useRefetchOnFocus } from '@/lib/refetch-on-focus';
 import {
   boardAccent,
@@ -118,9 +118,10 @@ function Agenda({
     [boards, scheme],
   );
 
-  // In a single-band account the band carries no information, so no row names
-  // it and the lead slot goes to the kind instead.
-  const namesBoards = boards.length > 1;
+  // Rows name their band only when bands are mixed on screen: under "All" with
+  // more than one. Filtered to a band, or in a one-band account, the band is
+  // already said by the chip and would only repeat on every row.
+  const namesBoards = boards.length > 1 && boardId === undefined;
 
   // The window is the local month: midnight on the 1st to midnight on the next
   // 1st, as instants. Memoised on the cursor because these strings are part of
@@ -214,6 +215,20 @@ const CATEGORY_ICON: Record<CalendarCategory, IconName> = {
   GOAL: { sf: 'target', md: 'track-changes' },
 };
 
+/**
+ * "Due Oct 3", "Rehearsal · Fri": the kind, and the day it falls on. The day
+ * heading above says it too, but a row read on its own (scrolled to, or under
+ * a sticky heading that has moved on) should not need it.
+ */
+function kindAndDate(item: CalendarItemDto, category: CalendarCategory): string {
+  // A due date is a calendar day stored as UTC midnight; read raw, it lands a
+  // day early west of Greenwich.
+  const day = shortDate(isWholeDay(item) ? dueDay(item.date) : item.date);
+  if (category === 'TASK') return `Due ${day}`;
+  if (category === 'GOAL') return `Goal · due ${day}`;
+  return `${CALENDAR_CATEGORY_COPY[category].one} · ${day}`;
+}
+
 /** A whole-day value has no clock time to print. */
 const isWholeDay = (item: CalendarItemDto) =>
   item.kind === 'TASK' || item.kind === 'GOAL';
@@ -232,12 +247,11 @@ function CalendarRow({
 }) {
   const category = calendarCategory(item);
 
-  // The kind first: it is what the row is. Every cross-board item then names
-  // its band, because a colour dot alone is unlearnable and "Load-in 5pm" is
-  // ambiguous without it. In a single-board account the band carries no
-  // information at all, so the name is dropped rather than repeated.
+  // The kind and its day first: they are what the row is. Mixed across bands,
+  // each row then names its band, because a colour dot alone is unlearnable
+  // and "Load-in 5pm" is ambiguous without it.
   const meta = [
-    CALENDAR_CATEGORY_COPY[category].one,
+    kindAndDate(item, category),
     namesBoards ? item.boardName : null,
     item.task?.statusName,
     item.event?.location,
