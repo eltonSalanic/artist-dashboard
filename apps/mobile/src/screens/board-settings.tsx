@@ -72,9 +72,9 @@ function NotificationsSection({ boardId }: { boardId: string }) {
   const save = useSaveNotificationPreference(boardId);
 
   return (
-    <Section title="EMAIL NOTIFICATIONS">
+    <Section title="NOTIFICATIONS">
       <ThemedText variant="footnote" tone="muted">
-        What this band may email you about. Everything else stays in the activity feed.
+        What this band may tell you about, by email and on your phone. Everything else stays in the activity feed.
       </ThemedText>
       {!preferences.data ? (
         <Skeleton width="100%" height={120} />

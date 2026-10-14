@@ -30,10 +30,10 @@ export function NotificationsCard({ boardId }: { boardId: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Email notifications</CardTitle>
+        <CardTitle>Notifications</CardTitle>
         <CardDescription>
-          What this board is allowed to email you about. Everything else stays
-          in the activity feed.
+          What this board is allowed to tell you about, by email and on your
+          phone. Everything else stays in the activity feed.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">

@@ -55,7 +55,7 @@ export function BoardMenuSheet() {
       // depends on the role.
       body: can('member.invite')
         ? 'Members, invites, statuses and palette, plus your notifications.'
-        : 'What this band may email you about.',
+        : 'What this band may tell you about.',
       href: base ? `${base}/settings` : undefined,
       visible: true,
     },
