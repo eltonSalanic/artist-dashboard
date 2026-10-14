@@ -7,6 +7,7 @@ import {
   SelectedBoardProvider,
   useSelectedBoard,
 } from '@/features/board/selected-board';
+import { PushNotifications } from '@/features/push/use-push';
 import { BoardPaletteProvider, spacing, useThemeColors } from '@/theme';
 
 /**
@@ -44,6 +45,9 @@ export default function TabsLayout() {
       <BoardChrome>
         <TabBar />
       </BoardChrome>
+      {/* After the tab bar, so a tap that launched the app navigates into
+          stacks that already exist. */}
+      <PushNotifications />
     </SelectedBoardProvider>
   );
 }

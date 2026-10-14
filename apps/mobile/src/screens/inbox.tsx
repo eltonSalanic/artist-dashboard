@@ -14,6 +14,7 @@ import { ListState } from '@/components/list-state';
 import { Dot, Row } from '@/components/row';
 import { ThemedText } from '@/components/themed-text';
 import { useBoardScope } from '@/features/boards/use-board-scope';
+import { PushPrompt } from '@/features/push/push-prompt';
 import { shortAgo } from '@/features/board/format';
 import { boardAccent, spacing, useScheme, useThemeColors } from '@/theme';
 import { useRefetchOnFocus } from '@/lib/refetch-on-focus';
@@ -102,6 +103,7 @@ function Mentions({
         data={items}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: spacing.md, flexGrow: 1 }}
+        ListHeaderComponent={<PushPrompt />}
         refreshControl={
           <RefreshControl
             refreshing={false}

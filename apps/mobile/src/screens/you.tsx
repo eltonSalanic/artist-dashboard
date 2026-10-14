@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useMe } from '@artist/api-client';
 import { Badge } from '@/components/badge';
@@ -6,6 +7,8 @@ import { Card } from '@/components/card';
 import { Skeleton } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { useSelectedBoard } from '@/features/board/selected-board';
+import { PushSetting } from '@/features/push/push-prompt';
+import { forgetThisDevice } from '@/features/push/push';
 import { supabase } from '@/lib/supabase';
 import { spacing, useThemeColors } from '@/theme';
 
@@ -15,13 +18,14 @@ import { spacing, useThemeColors } from '@/theme';
  *
  * This started life as P5's proof that the whole chain works — keychain
  * session, injected token, `@artist/api-client` under Metro, the phone's route
- * to the API — and it still is. Notification preferences and a profile editor
- * belong here later.
+ * to the API — and it still is. It also holds this phone's notification
+ * switch; which categories each band sends lives in that band's Settings.
  */
 export function YouScreen() {
   const colors = useThemeColors();
   const me = useMe(true);
   const { board, boards } = useSelectedBoard();
+  const [signingOut, setSigningOut] = useState(false);
 
   return (
     <ScrollView
@@ -77,11 +81,25 @@ export function YouScreen() {
         </>
       )}
 
+      <ThemedText variant="caption" tone="muted" style={styles.section}>
+        THIS PHONE
+      </ThemedText>
+      <PushSetting />
+
       <View style={styles.footer}>
         <Button
           title="Sign out"
           variant="destructive"
-          onPress={() => void supabase.auth.signOut()}
+          loading={signingOut}
+          onPress={() => {
+            setSigningOut(true);
+            // Unregistered first, while the session can still say whose
+            // token it is — otherwise the next person to sign in on this
+            // phone would be buzzed for this account until they did.
+            void forgetThisDevice()
+              .then(() => supabase.auth.signOut())
+              .finally(() => setSigningOut(false));
+          }}
         />
       </View>
     </ScrollView>
