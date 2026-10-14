@@ -37,6 +37,7 @@ export * from './dashboard/use-mobile-layout';
 export * from './mentions/types';
 export * from './mentions/use-inbox';
 export * from './mentions/use-mentions';
+export * from './notifications/devices';
 export * from './planning/types';
 export * from './planning/use-calendar';
 export * from './planning/use-cross-board-calendar';
