@@ -115,9 +115,10 @@ deliberately scheduled after mobile rather than blocking it.
 | **P12** | [Mobile layout editor](#p12--mobile-layout-editor) | mobile, shared | ☑ |
 | **P12b** | [Phone arrangement](#p12b--phone-arrangement) | mobile, shared, api, api-client | ☑ |
 | **P12c** | [Polish](#p12c--polish) | mobile (mostly) | ◐ |
-| **P13** | [Push client](#p13--push-client) | mobile, api | ☐ |
+| **P13** | [Push client](#p13--push-client) | mobile, api, api-client | ◐ |
 | **P14** | [Store builds](#p14--store-builds) | mobile, CI | ☐ |
 | **P15** | [Web board switcher](#p15--web-board-switcher) | **web** | ☐ |
+| **P16** | [Notes-style editor](#p16--notes-style-editor) | mobile, shared | ☐ |
 
 Each phase ends with a **hard stop for manual verification** before the next
 begins, per the project's phase-gated convention. What to verify is tracked
@@ -1462,26 +1463,63 @@ to the right spoke or entity** using P8's addressable routes.
 
 No skill exists for this. Expo docs only.
 
-**Also in P13: a Notes-style editor for the Notes widget.** Raised while
-verifying P11 (2026-10-03): the marker editor (`**bold**` while typing) is too
-technical for most of the people this app is for, who expect the Notes app.
-React Native's own text field cannot style text as it is typed, and the TipTap
-port is a WebView, so a real one needs a native module, which Expo Go cannot
-load. The user chose to wait for P13's development build rather than ship a
-fragile pure-JS editor in Expo Go now.
+**Built (2026-10-13), awaiting verification on the phone.**
 
-- Candidate: **`react-native-enriched`** (Software Mansion). Native input on
-  iOS and Android, New Architecture only, reads and writes HTML. Bold, italic,
-  strikethrough, underline, bulleted and numbered lists, headings, links.
-  Check its React Native compatibility table against the SDK at the time.
-- The note stays TipTap JSON. The editor needs an HTML ↔ TipTap converter in
-  `packages/shared`, held to the same bar as `note-markdown.ts`: fixtures, the
-  seeded fuzz, and the web schema test. `isMarkdownEditable`'s safety rule
-  carries over: what the editor cannot represent stays read-only.
-- Underline becomes editable, so a note with underline stops being read-only.
-- Toolbar: bold, italic, strikethrough, bullets, numbers, as asked. The P11
-  toolbar's limits (scrolls away in a long note) are worth fixing at the same
-  time.
+- **The phone is Band Board.** The display name, and a fresh bundle id
+  `com.bandboard.app` (Android package too) on the individual Apple team
+  `242S9Y93M9`, chosen before the first build registered the old one — a
+  bundle id cannot be renamed once an app ships. Web and email still say
+  "Artist Dashboard"; renaming them is a separate ticket. The EAS project
+  (`@eltons/artist-dashboard`, id in `app.json`) keeps its slug, which must
+  match the project.
+- **A development build, built on this Mac**, not EAS cloud:
+  `npm run mobile:ios` (= `expo run:ios --device`). `ios/` is generated
+  (continuous native generation) and gitignored; `eas.json` exists for
+  `eas credentials` and for P14.
+- **Never a cold prompt.** iOS asks once per install, so the system prompt
+  sits behind a "Turn on" on an Inbox card ("Not now" remembers per phone) and
+  on the You tab, which also covers "denied" with Open Settings. Permission is
+  a React Query query, so returning from Settings refetches it through the
+  existing AppState → focusManager wiring.
+- **Registration** (`features/push/push.ts`) runs whenever permission is
+  granted, on every launch — idempotent server-side, and it picks up a rotated
+  token; `addPushTokenListener` covers rotation mid-session. The project id is
+  passed explicitly to `getExpoPushTokenAsync`, as Expo recommends.
+- **Sign-out unregisters first**, while the session can still say whose token
+  it is, bounded to 3 s so it works offline. A token left behind is cleaned up
+  by the next sign-in on that phone, because the API removes every other
+  account's row for a token it registers (P2).
+- **Taps** (`features/push/push-route.ts`, pure and tested) go by the ids in
+  the payload P2 already sends: `taskId` → task, `eventId` → event,
+  `reminder-due` → the band's Reminders spoke, else the band's hub. The tapped
+  band becomes the selected one, so backing out lands on its own hub. Handled
+  through `useLastNotificationResponse`, which also carries the tap that
+  launched the app; it waits for the stored band choice to load, since
+  selecting earlier would be overwritten by it.
+- **Foreground**: shown as a banner (iOS drops it otherwise), and a received
+  push refreshes the Inbox so the badge moves without waiting for the poll.
+- **API**: `PUSH_IN_DEV=true` lets a local API send real pushes
+  (`push-transport.factory.ts`); never honoured under `NODE_ENV=test`.
+- **Copy**: band Settings on web and phone now say "Notifications", by email
+  and on the phone — the dispatcher already lets an email mute silence push.
+
+Traps:
+
+- **Apple's Program License Agreement blocks signing.** With an updated PLA
+  unaccepted, `-allowProvisioningUpdates` fails with "PLA Update available"
+  and then "No profiles for 'com.bandboard.app'". Only the account holder can
+  accept it, at developer.apple.com.
+- **A push key is separate from signing.** Xcode's automatic signing gives the
+  app the `aps-environment` entitlement; Expo still needs an APNs key
+  (`eas credentials -p ios`) to deliver. Without one Expo accepts the send and
+  nothing arrives.
+- **Mentions and assignments skip the actor**, so testing them needs a second
+  account. Reminders go to the whole band and are the solo test.
+- The global `eas-cli` could not be upgraded (root-owned files under
+  `~/.npm-global`); `npx eas-cli@latest` sidesteps it.
+
+The Notes-style editor that was planned alongside this moved to
+[P16](#p16--notes-style-editor), at the end, at the user's request.
 
 ### P14 — Store builds
 
@@ -1502,6 +1540,28 @@ for P5 on-device testing, not just for release.
 Close the deferred consequence of P3's additive approach: teach `apps/web` to
 show all of a user's boards instead of silently using the first. Its own phase
 so it is a deliberate feature rather than collateral damage from mobile work.
+
+### P16 — Notes-style editor
+
+Raised while verifying P11 (2026-10-03): the marker editor (`**bold**` while typing) is too
+technical for most of the people this app is for, who expect the Notes app.
+React Native's own text field cannot style text as it is typed, and the TipTap
+port is a WebView, so a real one needs a native module, which Expo Go cannot
+load. The user chose to wait for a development build rather than ship a
+fragile pure-JS editor in Expo Go, and then (2026-10-13) to do it last.
+
+- Candidate: **`react-native-enriched`** (Software Mansion). Native input on
+  iOS and Android, New Architecture only, reads and writes HTML. Bold, italic,
+  strikethrough, underline, bulleted and numbered lists, headings, links.
+  Check its React Native compatibility table against the SDK at the time.
+- The note stays TipTap JSON. The editor needs an HTML ↔ TipTap converter in
+  `packages/shared`, held to the same bar as `note-markdown.ts`: fixtures, the
+  seeded fuzz, and the web schema test. `isMarkdownEditable`'s safety rule
+  carries over: what the editor cannot represent stays read-only.
+- Underline becomes editable, so a note with underline stops being read-only.
+- Toolbar: bold, italic, strikethrough, bullets, numbers, as asked. The P11
+  toolbar's limits (scrolls away in a long note) are worth fixing at the same
+  time.
 
 ## Library replacement reference
 
