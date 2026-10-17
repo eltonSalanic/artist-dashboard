@@ -25,11 +25,19 @@ Then, with the stack up (`npx supabase start`, `npm run dev`):
 npm run mobile                  # from the repo root — expo start
 ```
 
-Scan the QR code with **Expo Go**. No development build is needed yet: every
-native module this app uses (`expo-secure-store`, `expo-router`, Reanimated,
-Gesture Handler, Screens, Safe Area Context) ships inside Expo Go. That changes
-at P13, when push notifications arrive — `expo-notifications` cannot receive
-remote push in Expo Go, so that phase needs `expo-dev-client` and a real build.
+This serves the **Band Wall development build**, not Expo Go — since P13
+(push), `expo-notifications` needs a real build, so the project carries
+`expo-dev-client`. Install the build once with the iPhone plugged in (Developer
+Mode on):
+
+```bash
+npm run mobile:ios              # from the repo root — expo run:ios --device
+```
+
+Then open Band Wall: Metro on the same Wi-Fi is listed under *Development
+servers*, and after the first time under *Recently opened*. The terminal's QR
+code (iPhone Camera) opens it too. Rebuild only when native code changes — a
+package with native code, native settings in `app.json`, an SDK upgrade.
 
 Phone and laptop must be on the same Wi-Fi. CORS is not involved: React
 Native's `fetch` is not a browser and sends no `Origin`, so the API's
@@ -39,8 +47,7 @@ Native's `fetch` is not a browser and sends no `Origin`, so the API's
 
 Public Wi-Fi usually isolates devices from each other, and an IPv6-only
 hotspot (T-Mobile's, for one) gives the laptop an IPv4 address — `192.0.0.2` —
-that nothing else can dial. Expo Go then fails with "There was a problem
-running the requested project". Tunnel instead:
+that nothing else can dial, so the app cannot reach Metro. Tunnel instead:
 
 ```bash
 npm run mobile:tunnel           # from the repo root; stop `npm run mobile` first
@@ -60,9 +67,16 @@ already up, opens ngrok tunnels for the API (3001), Supabase (54321) and Metro
   never lets `.env` overwrite a variable that is already set — `.env` still
   supplies the anon key. `EXPO_PACKAGER_PROXY_URL` points the manifest at the
   Metro tunnel.
-- **The QR code is `exps://`** (Expo Go's https scheme): ngrok serves https
-  only, and Expo's own QR would be `exp://…:443`, plain http. That is why Expo
-  runs in the background and its QR is not shown.
+- **The QR code opens the development build**:
+  `artistdashboard://expo-development-client/?url=<Metro tunnel>`. Expo's own
+  QR would carry the LAN address, which is why Expo runs in the background and
+  its QR is not shown. The Metro tunnel URL is printed too, for the launcher's
+  *Enter URL manually*.
+- **Same address every run:** ngrok gives each account one free static domain
+  (ngrok dashboard → Domains). `NGROK_METRO_DOMAIN=<it>.ngrok-free.app npm run
+  mobile:tunnel` pins Metro to it, so *Recently opened* keeps working without a
+  new scan. The API and Supabase URLs can still change; they are inlined into
+  each run's bundle.
 - **No keyboard shortcuts** — shake the phone → Reload. Each run starts Metro
   with `--clear`, since the URLs are new every time and inlined at bundle time,
   so the first load is slow.

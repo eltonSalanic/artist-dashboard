@@ -5,7 +5,12 @@
 #
 # Starts what is not already running (Supabase, the API), opens ngrok tunnels
 # for the API, Supabase and Metro, starts Expo with the tunnel URLs in place
-# of the ones in apps/mobile/.env, and prints a QR code for Expo Go.
+# of the ones in apps/mobile/.env, and prints a QR code that opens the Band Wall
+# development build (installed with `npm run mobile:ios`) on the Metro tunnel.
+#
+# NGROK_METRO_DOMAIN=<your-static-domain>.ngrok-free.app pins Metro to the
+# free static domain ngrok gives every account, so the dev build's "Recently
+# opened" entry keeps working between runs instead of needing a fresh scan.
 #
 # Supabase gets a tunnel too: the phone signs in against Supabase directly,
 # not through the API, so without it the app loads but cannot log in.
@@ -99,6 +104,7 @@ tunnels:
   artist-dashboard-metro:
     proto: http
     addr: $METRO_PORT
+${NGROK_METRO_DOMAIN:+    domain: $NGROK_METRO_DOMAIN}
 EOF
 
 echo "Opening ngrok tunnels (log: $LOG_DIR/ngrok.log)…"
@@ -148,14 +154,17 @@ echo "Starting Expo (log: $LOG_DIR/expo.log)…"
 pids+=($!)
 wait_for 120 "Expo" curl -sf "http://127.0.0.1:$METRO_PORT/status" -o /dev/null
 
-# exps:// is Expo Go's https scheme — the tunnel only serves https.
-EXPO_GO_URL="exps://${METRO_URL#https://}"
+# The development build's own link: the app's scheme, then the Metro URL it
+# should load. Expo Go cannot open this project since P13 (expo-dev-client).
+SCHEME="$(node -p 'require(process.argv[1]).expo.scheme' "$ROOT/apps/mobile/app.json")"
+DEV_BUILD_URL="$SCHEME://expo-development-client/?url=$(node -p 'encodeURIComponent(process.argv[1])' "$METRO_URL")"
 
 echo
-node -e 'require("qrcode-terminal").generate(process.argv[1], { small: true })' "$EXPO_GO_URL"
+node -e 'require("qrcode-terminal").generate(process.argv[1], { small: true })' "$DEV_BUILD_URL"
 cat <<EOF
 
-  Scan with Expo Go (iOS: the Camera app):  $EXPO_GO_URL
+  Scan with the iPhone Camera → opens Band Wall:  $DEV_BUILD_URL
+  Or in Band Wall's launcher → Enter URL manually:  $METRO_URL
 
   API       $API_URL
   Supabase  $SUPABASE_URL
