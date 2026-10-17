@@ -720,62 +720,16 @@ against its ticket, and move the ticket along on the board when it holds.
 
 ## P13 — Push client
 
-The first phase on a **development build** rather than Expo Go. Expo Go cannot
-receive pushes for this project, and once `expo-dev-client` is installed
-`npm run mobile` serves the development build, not Expo Go.
+**From P13 on, each phase's checks live on a Trello card**, as a checklist that
+ticks from the phone: [P13 — Push client testing](https://trello.com/c/dbXgr4F9/20-p13-push-client-testing)
+on the Band Board board. Anything that fails gets its own card. This file keeps
+P1–P12c as the record and points at the card for each later phase.
 
-**Setup, once:**
-
-1. Accept Apple's latest Program License Agreement for the individual team at
-   [developer.apple.com/account](https://developer.apple.com/account) — Xcode
-   cannot make a signing profile until it is.
-2. Upload a push key: `cd apps/mobile && npx eas-cli@latest credentials -p ios`
-   → *development* profile → Push Notifications → set up a new key. Without it
-   Expo accepts the send and Apple silently drops it.
-3. Plug the iPhone in by cable, unlock it, trust this Mac, and turn on
-   Settings → Privacy & Security → Developer Mode (iOS restarts once).
-4. `npm run mobile:ios` from the repo root — builds and installs **Band Wall**
-   on the phone. The first build takes several minutes.
-5. In `apps/api/.env`, set `PUSH_IN_DEV=true` and restart the API. Without it a
-   local API records pushes instead of sending them.
-6. Afterwards, day to day: `npm run mobile` and open Band Wall (not Expo Go).
-
-Mentions and assignments never notify the person who did them, so those checks
-need a **second account** acting on web. Reminders go to the whole band,
-yourself included, and the reminder job runs every 5 minutes.
-
-### Install and asking — ★
-
-- [x] 🔵 ★ The home screen icon is labelled **Band Wall**
-- [ ] 🔵 ★ Fresh install, sign in → **No** permission prompt appears on its own
-- [ ] 🔵 ★ Inbox → A "Hear about it as it happens" card sits above the mentions
-- [ ] ★ Inbox card → Not now → It goes and stays gone after a relaunch
-- [ ] ★ You → "Notifications are off" with a Turn on button
-- [ ] 🔵 ★ Turn on (Inbox or You) → iOS asks → Allow → The Inbox card is gone; You says "Notifications are on"
-- [ ] ★ Deny instead (reinstall to retry) → You says they were turned off, with Open Settings → it opens this app's page in Settings
-- [ ] ★ Turn notifications on in Settings, come back → You says "Notifications are on" without relaunching
-
-### Delivery and taps — ★
-
-- [x] 🔵 ★ Set a reminder a few minutes out, lock the phone → A banner arrives within ~5 minutes of its time
-- [x] 🔵 ★ Tap that banner → Band Wall opens on that band's Reminders
-- [ ] 🔵 ★ Second account @mentions you in a comment → Banner; tap → The task, with the comment
-- [ ] 🔵 ★ Second account assigns you a task → Banner; tap → That task
-- [ ] ★ Second account adds or moves a show → Banner; tap → That event
-- [ ] ★ Force-quit Band Wall, then tap a fresh banner → It cold-starts straight into the right screen
-- [ ] ★ A banner from the band you are *not* looking at → Tap → Opens it, and backing out lands on that band's hub
-- [ ] ★ A mention arrives while the app is open → Banner shows anyway; the Inbox badge goes up straight away
-- [ ] ★ Mute Mentions in a band's Settings → A mention there no longer buzzes; email stays muted too
-
-### Sign-out — ★
-
-- [ ] 🔵 ★ Sign out, then have the second account mention you → Nothing arrives on this phone
-- [ ] ★ Sign out with Wi-Fi and cellular off → Sign-out still completes (within ~3 seconds)
-
-### Regressions — ↻
-
-- [ ] 🔵 ↻ Everything else on the phone behaves as before in the development build — hub, spokes, calendar, inbox, uploads
-- [ ] ↻ Web: board Settings shows "Notifications", and toggling a category saves as before
+Setup for P13 (once): accept Apple's latest Program License Agreement; upload a
+push key with `cd apps/mobile && npx eas-cli@latest credentials -p ios`;
+plug the iPhone in with Developer Mode on and run `npm run mobile:ios`; set
+`PUSH_IN_DEV=true` in `apps/api/.env`. Day to day: `npm run mobile` (or
+`npm run mobile:tunnel`), then open Band Wall.
 
 ---
 
@@ -783,7 +737,7 @@ yourself included, and the reminder job runs every 5 minutes.
 
 ## P14–P16 — not yet built
 
-Sections get added as each phase lands. Known in advance:
+Each gets a Trello testing card when it lands, linked from a short section here. Known in advance:
 
 - **P15** is the only phase that intentionally changes web behaviour.
 - **P16** (Notes-style editor) takes over P11's deferred editing checks,
