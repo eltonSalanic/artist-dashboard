@@ -197,11 +197,16 @@ function PositionStrip({
               opacity: pressed ? 0.7 : 1,
             })}
           >
+            {/* Same fix as the band pills in board-filter.tsx: without a fixed
+                line height iOS sized this box shorter than its letters and
+                clipped the descenders ("Meetings", "Activity"). */}
             <ThemedText
               variant="footnote"
+              numberOfLines={1}
               style={{
                 color: active ? colors.primaryForeground : colors.mutedForeground,
                 fontWeight: '600',
+                lineHeight: 18,
               }}
             >
               {WIDGET_META[type].title}
