@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { Logger } from '@nestjs/common';
 import type { OutgoingPush, PushResult, PushTransport } from './push-transport';
 
@@ -21,6 +22,19 @@ const SEND_URL = 'https://exp.host/--/api/v2/push/send';
 
 /** Expo's documented ceiling on recipients per request. */
 const CHUNK = 100;
+
+/**
+ * APNs' `apns-collapse-id`, which Expo's `collapseId` becomes, may be at most
+ * 64 bytes, and Apple rejects the whole notification otherwise
+ * (InvalidCollapseId). Dedupe keys run longer — a reminder's is 96 characters
+ * — and that rejection is invisible here: Expo's ticket still says "ok", the
+ * error only appears in the receipt fetched later. So the key is hashed: a
+ * fixed 43 characters, and the same key always yields the same id, which is
+ * all collapsing needs.
+ */
+export function collapseIdFor(dedupeKey: string): string {
+  return createHash('sha256').update(dedupeKey).digest('base64url');
+}
 
 /** The one ticket error that means "delete this token", not "retry later". */
 const DEVICE_GONE = 'DeviceNotRegistered';
@@ -64,7 +78,7 @@ export class ExpoPushTransport implements PushTransport {
           // re-queues and the phone is notified again. What this does buy is
           // that the repeat *replaces* the earlier notification on the device
           // rather than stacking beside it.
-          collapseId: push.idempotencyKey,
+          collapseId: collapseIdFor(push.idempotencyKey),
           sound: 'default',
           priority: 'high',
         }),

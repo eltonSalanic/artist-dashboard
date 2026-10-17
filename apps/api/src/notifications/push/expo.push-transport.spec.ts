@@ -1,4 +1,4 @@
-import { ExpoPushTransport } from './expo.push-transport';
+import { ExpoPushTransport, collapseIdFor } from './expo.push-transport';
 
 /** The shape our transport actually passes to fetch. */
 interface SentRequest {
@@ -41,7 +41,7 @@ describe('ExpoPushTransport', () => {
     global.fetch = fetchMock as unknown as typeof fetch;
   });
 
-  it('posts all tokens in one request, with the dedupe key as collapseId', async () => {
+  it('posts all tokens in one request, collapsing on the dedupe key', async () => {
     fetchMock.mockResolvedValue(ok([{ status: 'ok' }, { status: 'ok' }]));
 
     await expect(transport.send(push)).resolves.toEqual({ invalidTokens: [] });
@@ -52,8 +52,19 @@ describe('ExpoPushTransport', () => {
       to: ['tok-a', 'tok-b'],
       title: 'Dana mentioned you',
       body: 'can you check the mix?',
-      collapseId: 'mention:c1:u1',
+      collapseId: collapseIdFor('mention:c1:u1'),
     });
+  });
+
+  // Apple rejects a collapse id over 64 bytes, and Expo's ticket hides it.
+  it('keeps the collapseId within APNs 64-byte limit, and stable', () => {
+    const reminderKey =
+      'reminder:85e21fce-6749-40c3-9948-69439aaca758:1792262340000:bc656953-0de2-448d-9d4a-5568afcba1bc';
+    expect(Buffer.byteLength(collapseIdFor(reminderKey))).toBeLessThanOrEqual(
+      64,
+    );
+    expect(collapseIdFor(reminderKey)).toBe(collapseIdFor(reminderKey));
+    expect(collapseIdFor(reminderKey)).not.toBe(collapseIdFor('mention:c1:u1'));
   });
 
   // DeviceNotRegistered is permanent — the dispatcher deletes these rather
