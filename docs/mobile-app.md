@@ -1465,10 +1465,12 @@ No skill exists for this. Expo docs only.
 
 **Built (2026-10-13), awaiting verification on the phone.**
 
-- **The phone is Band Board.** The display name, and a fresh bundle id
-  `com.bandboard.app` (Android package too) on the individual Apple team
-  `242S9Y93M9`, chosen before the first build registered the old one — a
-  bundle id cannot be renamed once an app ships. Web and email still say
+- **The phone is Band Wall.** The display name, and bundle id
+  `com.bandwall.app` (Android package too; the user owns the bandwall
+  domain) on the individual Apple team `242S9Y93M9`. It went "Artist
+  Dashboard" → "Band Board" → "Band Wall": `com.bandboard.app` turned out to
+  be registered to another developer — bundle ids are unique across all of
+  Apple, and the only check is trying to register one. Web and email still say
   "Artist Dashboard"; renaming them is a separate ticket. The EAS project
   (`@eltons/artist-dashboard`, id in `app.json`) keeps its slug, which must
   match the project.
@@ -1507,8 +1509,11 @@ Traps:
 
 - **Apple's Program License Agreement blocks signing.** With an updated PLA
   unaccepted, `-allowProvisioningUpdates` fails with "PLA Update available"
-  and then "No profiles for 'com.bandboard.app'". Only the account holder can
-  accept it, at developer.apple.com.
+  and then "No profiles for …". Only the account holder can accept it, at
+  developer.apple.com.
+- **Signing asks for the keychain once per binary.** The first signed build
+  prompts "codesign wants to access key …" for the app and every embedded
+  framework; **Always Allow** (with the Mac login password) ends it.
 - **A push key is separate from signing.** Xcode's automatic signing gives the
   app the `aps-environment` entitlement; Expo still needs an APNs key
   (`eas credentials -p ios`) to deliver. Without one Expo accepts the send and

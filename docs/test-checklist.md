@@ -25,7 +25,7 @@ exactly as they did. If one of these fails, the refactor broke it.
 | ---------- | ----------------------------------------------------------------------------------------------------------------------- |
 | **Web**    | `npm run dev` → [http://localhost:3000](http://localhost:3000)                                                          |
 | **API**    | `curl` with a bearer token, or the web UI exercising it                                                                 |
-| **Mobile** | a physical phone. Up to P12c **Expo Go** (`npm run mobile`, scan the QR code); from P13 the **Band Board development build** (`npm run mobile:ios` once, then `npm run mobile`). |
+| **Mobile** | a physical phone. Up to P12c **Expo Go** (`npm run mobile`, scan the QR code); from P13 the **Band Wall development build** (`npm run mobile:ios` once, then `npm run mobile`). |
 | **Mail**   | Mailpit at [http://127.0.0.1:54324](http://127.0.0.1:54324)                                                             |
 
 
@@ -734,11 +734,11 @@ receive pushes for this project, and once `expo-dev-client` is installed
    Expo accepts the send and Apple silently drops it.
 3. Plug the iPhone in by cable, unlock it, trust this Mac, and turn on
    Settings → Privacy & Security → Developer Mode (iOS restarts once).
-4. `npm run mobile:ios` from the repo root — builds and installs **Band Board**
+4. `npm run mobile:ios` from the repo root — builds and installs **Band Wall**
    on the phone. The first build takes several minutes.
 5. In `apps/api/.env`, set `PUSH_IN_DEV=true` and restart the API. Without it a
    local API records pushes instead of sending them.
-6. Afterwards, day to day: `npm run mobile` and open Band Board (not Expo Go).
+6. Afterwards, day to day: `npm run mobile` and open Band Wall (not Expo Go).
 
 Mentions and assignments never notify the person who did them, so those checks
 need a **second account** acting on web. Reminders go to the whole band,
@@ -746,7 +746,7 @@ yourself included, and the reminder job runs every 5 minutes.
 
 ### Install and asking — ★
 
-- [ ] 🔵 ★ The home screen icon is labelled **Band Board**
+- [ ] 🔵 ★ The home screen icon is labelled **Band Wall**
 - [ ] 🔵 ★ Fresh install, sign in → **No** permission prompt appears on its own
 - [ ] 🔵 ★ Inbox → A "Hear about it as it happens" card sits above the mentions
 - [ ] ★ Inbox card → Not now → It goes and stays gone after a relaunch
@@ -758,11 +758,11 @@ yourself included, and the reminder job runs every 5 minutes.
 ### Delivery and taps — ★
 
 - [ ] 🔵 ★ Set a reminder a few minutes out, lock the phone → A banner arrives within ~5 minutes of its time
-- [ ] 🔵 ★ Tap that banner → Band Board opens on that band's Reminders
+- [ ] 🔵 ★ Tap that banner → Band Wall opens on that band's Reminders
 - [ ] 🔵 ★ Second account @mentions you in a comment → Banner; tap → The task, with the comment
 - [ ] 🔵 ★ Second account assigns you a task → Banner; tap → That task
 - [ ] ★ Second account adds or moves a show → Banner; tap → That event
-- [ ] ★ Force-quit Band Board, then tap a fresh banner → It cold-starts straight into the right screen
+- [ ] ★ Force-quit Band Wall, then tap a fresh banner → It cold-starts straight into the right screen
 - [ ] ★ A banner from the band you are *not* looking at → Tap → Opens it, and backing out lands on that band's hub
 - [ ] ★ A mention arrives while the app is open → Banner shows anyway; the Inbox badge goes up straight away
 - [ ] ★ Mute Mentions in a band's Settings → A mention there no longer buzzes; email stays muted too
