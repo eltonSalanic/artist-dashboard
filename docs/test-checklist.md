@@ -746,7 +746,7 @@ yourself included, and the reminder job runs every 5 minutes.
 
 ### Install and asking — ★
 
-- [ ] 🔵 ★ The home screen icon is labelled **Band Wall**
+- [x] 🔵 ★ The home screen icon is labelled **Band Wall**
 - [ ] 🔵 ★ Fresh install, sign in → **No** permission prompt appears on its own
 - [ ] 🔵 ★ Inbox → A "Hear about it as it happens" card sits above the mentions
 - [ ] ★ Inbox card → Not now → It goes and stays gone after a relaunch
@@ -757,8 +757,8 @@ yourself included, and the reminder job runs every 5 minutes.
 
 ### Delivery and taps — ★
 
-- [ ] 🔵 ★ Set a reminder a few minutes out, lock the phone → A banner arrives within ~5 minutes of its time
-- [ ] 🔵 ★ Tap that banner → Band Wall opens on that band's Reminders
+- [x] 🔵 ★ Set a reminder a few minutes out, lock the phone → A banner arrives within ~5 minutes of its time
+- [x] 🔵 ★ Tap that banner → Band Wall opens on that band's Reminders
 - [ ] 🔵 ★ Second account @mentions you in a comment → Banner; tap → The task, with the comment
 - [ ] 🔵 ★ Second account assigns you a task → Banner; tap → That task
 - [ ] ★ Second account adds or moves a show → Banner; tap → That event
