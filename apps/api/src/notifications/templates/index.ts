@@ -6,11 +6,13 @@ export interface RenderedNotification {
   html: string;
   text: string;
   /**
-   * Push wording, when a template wants different copy for a lock screen than
-   * for an inbox. Optional: the dispatcher falls back to the subject line and
-   * the first line of the plaintext body, which reads acceptably for all seven
-   * templates today. Per-template push copy lands with the client that can
-   * actually display it.
+   * Lock-screen wording: what happened in the title, the substance in the
+   * body. Every trigger template has one — the dispatcher's fallback (subject
+   * plus the first plaintext line) repeats itself on a phone, because an
+   * email's first line restates its subject: on the first device build a
+   * mention arrived as the same sentence twice, ending in a colon, with the
+   * comment itself missing. The fallback remains for templates without one
+   * (the diagnostic).
    */
   push?: { title: string; body: string };
 }
@@ -92,6 +94,10 @@ const commentMention: TemplateRenderer = (payload, ctx) => {
       unsubscribeUrl: ctx.unsubscribeUrl,
     }),
     text: `${actorName} mentioned you on "${taskTitle}":\n\n${excerpt}\n\nRead it: ${url}\nTurn these off: ${ctx.unsubscribeUrl}`,
+    push: {
+      title: `${actorName} mentioned you`,
+      body: excerpt ? `On "${taskTitle}": ${excerpt}` : `On "${taskTitle}"`,
+    },
   };
 };
 
@@ -115,6 +121,10 @@ const taskAssigned: TemplateRenderer = (payload, ctx) => {
       unsubscribeUrl: ctx.unsubscribeUrl,
     }),
     text: `${actorName} assigned you "${taskTitle}".${dueDate ? ` Due ${formatDate(dueDate, ctx.timezone)}.` : ''}\n\nOpen it: ${url}\nTurn these off: ${ctx.unsubscribeUrl}`,
+    push: {
+      title: `New task: ${taskTitle}`,
+      body: `${actorName} assigned it to you.${dueDate ? ` Due ${formatDate(dueDate, ctx.timezone)}.` : ''}`,
+    },
   };
 };
 
@@ -134,6 +144,10 @@ const taskUnassigned: TemplateRenderer = (payload, ctx) => {
       unsubscribeUrl: ctx.unsubscribeUrl,
     }),
     text: `${actorName} took you off "${taskTitle}". Nothing needed from you.\n\nSee it: ${url}\nTurn these off: ${ctx.unsubscribeUrl}`,
+    push: {
+      title: `You're off "${taskTitle}"`,
+      body: `${actorName} took you off it. Nothing needed from you.`,
+    },
   };
 };
 
@@ -159,6 +173,10 @@ const eventCreated: TemplateRenderer = (payload, ctx) => {
       unsubscribeUrl: ctx.unsubscribeUrl,
     }),
     text: `${noun} added: ${title}\n${when}${location ? `\n${location}` : ''}\n\nDetails: ${url}\nTurn these off: ${ctx.unsubscribeUrl}`,
+    push: {
+      title: `New ${noun.toLowerCase()}: ${title}`,
+      body: location ? `${when} · ${location}` : when,
+    },
   };
 };
 
@@ -182,6 +200,10 @@ const eventMoved: TemplateRenderer = (payload, ctx) => {
       unsubscribeUrl: ctx.unsubscribeUrl,
     }),
     text: `${title} moved.\n\nNow: ${now}\nWas: ${was}\n\nDetails: ${url}\nTurn these off: ${ctx.unsubscribeUrl}`,
+    push: {
+      title: `${noun} moved: ${title}`,
+      body: `Now ${now} (was ${was})`,
+    },
   };
 };
 
@@ -208,6 +230,12 @@ const reminderDue: TemplateRenderer = (payload, ctx) => {
       unsubscribeUrl: ctx.unsubscribeUrl,
     }),
     text: `Reminder: ${title}${description ? `\n\n${description}` : ''}\n\nSet for ${when}.\n\nOpen the board: ${url}\nTurn these off: ${ctx.unsubscribeUrl}`,
+    // It arrives at the moment it names, so the time would be noise; the band
+    // is what says which of several this is from when there is no note.
+    push: {
+      title: `Reminder: ${title}`,
+      body: description || ctx.boardName,
+    },
   };
 };
 
