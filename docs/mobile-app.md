@@ -1518,6 +1518,14 @@ Traps:
   spinning). The listener now acts only on a token it has not seen, and
   registrations share one in flight (`token-changes.ts`). ngrok's inspector
   (`127.0.0.1:4047/api/requests/http` under the tunnel) is what showed it.
+- **APNs rejects a collapse id over 64 bytes, and Expo's ticket hides it.**
+  P2 passed the dedupe key as `collapseId`; a reminder's is 96 characters, so
+  Apple refused every one (`InvalidCollapseId`) while Expo's *ticket* said
+  "ok" and the row was stamped SENT. The error shows only in the *receipt*
+  (`/push/getReceipts`), which nothing reads yet. The key is now hashed
+  (`collapseIdFor`, 43 chars). Diagnosed by sending by hand with and without
+  the key and reading both receipts. Reading receipts in the dispatcher would
+  have surfaced it — worth doing before P14.
 - **Signing asks for the keychain once per binary.** The first signed build
   prompts "codesign wants to access key …" for the app and every embedded
   framework; **Always Allow** (with the Mac login password) ends it.
