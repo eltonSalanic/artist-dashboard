@@ -41,6 +41,11 @@ Prisma skills are installed under `apps/api/.claude/skills/` and are **scoped to
 - **`vercel-react-best-practices`** — React 19 / Next perf review.
 - ⚠️ **`nextjs-app-router-patterns` mostly does NOT apply.** That skill is about Server Components, streaming, and server-side data fetching — all of which this project deliberately avoids (see convention below). Ignore its RSC guidance; only its routing/file-convention bits are relevant.
 
+### UI design — both apps (installed 2026-10-17 for the UI refresh)
+- **`impeccable`** (repo root, pbakaus/impeccable) — design direction, critique, audit, polish, typeset, layout; covers app UI ("Operate" mode) and native iOS/Android screens. Its launcher downloads a small binary on first run; the skill's documented fallback (read PRODUCT.md / DESIGN.md directly) works without it.
+- **`ui-ux-pro-max`** (repo root) — searchable local reference: palettes, font pairings, UX rules, per-stack guidance incl. React Native. Python 3 script, no network.
+- **`web-design-guidelines`** (`apps/web` only, Vercel) — audit web UI against Vercel's interface guidelines.
+
 ### Mobile — `apps/mobile` (Expo / React Native)
 17 skills are installed under `apps/mobile/.claude/skills/` and are **scoped to `apps/mobile/`** — they stay inert while you edit `apps/web`, which matters because several carry opinions that are wrong advice for the Next app. The per-area routing table lives in [apps/mobile/AGENTS.md](apps/mobile/AGENTS.md); read it before writing mobile code.
 
