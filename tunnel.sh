@@ -155,15 +155,35 @@ pids+=($!)
 wait_for 120 "Expo" curl -sf "http://127.0.0.1:$METRO_PORT/status" -o /dev/null
 
 # The development build's own link: the app's scheme, then the Metro URL it
-# should load. Expo Go cannot open this project since P13 (expo-dev-client).
+# should load. exps:// is Expo Go's https scheme — the tunnel only serves https.
+# Expo Go cannot receive pushes for this project, but still runs the rest.
 SCHEME="$(node -p 'require(process.argv[1]).expo.scheme' "$ROOT/apps/mobile/app.json")"
 DEV_BUILD_URL="$SCHEME://expo-development-client/?url=$(node -p 'encodeURIComponent(process.argv[1])' "$METRO_URL")"
+EXPO_GO_URL="exps://${METRO_URL#https://}"
 
+# Both codes side by side, each under its label. Rendered to strings first
+# and zipped line by line; the shorter one is padded with blank rows.
 echo
-node -e 'require("qrcode-terminal").generate(process.argv[1], { small: true })' "$DEV_BUILD_URL"
+node -e '
+  const qr = require("qrcode-terminal");
+  const render = (text) => {
+    let out = "";
+    qr.generate(text, { small: true }, (s) => (out = s));
+    return out.split("\n").filter((line) => line.length > 0);
+  };
+  const [left, right] = [render(process.argv[1]), render(process.argv[2])];
+  const width = Math.max(...left.map((l) => l.length));
+  const gap = "    ";
+  console.log("Band Wall (dev build)".padEnd(width) + gap + "Expo Go");
+  for (let i = 0; i < Math.max(left.length, right.length); i++) {
+    console.log((left[i] ?? "").padEnd(width) + gap + (right[i] ?? ""));
+  }
+' "$DEV_BUILD_URL" "$EXPO_GO_URL"
 cat <<EOF
 
-  Scan with the iPhone Camera → opens Band Wall:  $DEV_BUILD_URL
+  Scan either with the iPhone Camera.
+  Band Wall:  $DEV_BUILD_URL
+  Expo Go:    $EXPO_GO_URL  (no push)
   Or in Band Wall's launcher → Enter URL manually:  $METRO_URL
 
   API       $API_URL

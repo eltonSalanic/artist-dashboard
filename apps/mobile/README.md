@@ -67,8 +67,9 @@ already up, opens ngrok tunnels for the API (3001), Supabase (54321) and Metro
   never lets `.env` overwrite a variable that is already set — `.env` still
   supplies the anon key. `EXPO_PACKAGER_PROXY_URL` points the manifest at the
   Metro tunnel.
-- **The QR code opens the development build**:
-  `artistdashboard://expo-development-client/?url=<Metro tunnel>`. Expo's own
+- **Two QR codes, side by side:** the development build's
+  (`artistdashboard://expo-development-client/?url=<Metro tunnel>`) and Expo
+  Go's (`exps://…`, Expo Go's https scheme — no push there). Expo's own
   QR would carry the LAN address, which is why Expo runs in the background and
   its QR is not shown. The Metro tunnel URL is printed too, for the launcher's
   *Enter URL manually*.
