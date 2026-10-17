@@ -11,6 +11,7 @@ import {
   type PushPermission,
 } from './push';
 import { pushDestination } from './push-route';
+import { onTokenChange, single } from './token-changes';
 
 /**
  * Notification permission, as a query.
@@ -83,17 +84,25 @@ export function usePushNotifications() {
   const granted = permission === 'granted';
 
   // Register whenever permission is (or becomes) granted, and again if the
-  // OS hands the app a new device token mid-session.
+  // OS hands the app a *different* device token mid-session.
+  //
+  // The listener must not re-register on every event: fetching a token makes
+  // iOS report it again, so that loops — it flooded the API at ~50 requests a
+  // second on the first device build. See token-changes.ts.
   useEffect(() => {
     if (!granted) return;
-    const register = () =>
-      void registerThisDevice().catch((error: unknown) => {
+    const register = single(() =>
+      registerThisDevice().catch((error: unknown) => {
         // Not alerted: the person did nothing to cause it, and the next
         // launch tries again. Visible in Metro for whoever is debugging.
         if (__DEV__) console.warn('Push registration failed', error);
-      });
-    register();
-    const subscription = Notifications.addPushTokenListener(register);
+      }),
+    );
+    const rotated = onTokenChange(() => void register());
+    void register();
+    const subscription = Notifications.addPushTokenListener((token) =>
+      rotated(String(token.data)),
+    );
     return () => subscription.remove();
   }, [granted]);
 

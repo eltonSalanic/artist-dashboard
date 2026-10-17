@@ -1511,6 +1511,13 @@ Traps:
   unaccepted, `-allowProvisioningUpdates` fails with "PLA Update available"
   and then "No profiles for …". Only the account holder can accept it, at
   developer.apple.com.
+- **Fetching a push token fires the token listener.** `getExpoPushTokenAsync`
+  makes iOS report the device token again, so an `addPushTokenListener` that
+  re-registered on every event looped — ~50 `POST /me/devices` a second on the
+  first device build, starving every other request (a reminder save sat
+  spinning). The listener now acts only on a token it has not seen, and
+  registrations share one in flight (`token-changes.ts`). ngrok's inspector
+  (`127.0.0.1:4047/api/requests/http` under the tunnel) is what showed it.
 - **Signing asks for the keychain once per binary.** The first signed build
   prompts "codesign wants to access key …" for the app and every embedded
   framework; **Always Allow** (with the Mac login password) ends it.
