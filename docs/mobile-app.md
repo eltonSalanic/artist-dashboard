@@ -1615,7 +1615,17 @@ not touched.
   pick up the face too). Trap: `adjustsFontSizeToFit` in a horizontal pager
   measures off-screen pages at zero width and stays shrunk, so the header
   title wraps instead.
-- Next: task / event / goal detail, then Inbox and You, then sheets and forms.
+- **Step 3, detail screens (task / event / goal):** each opens with a block in
+  its widget's colour (`DetailPoster`, `features/board/detail-poster.tsx`), so
+  it reads as the calendar block or card you tapped, opened up: a task in
+  To-Do's, an event in Shows / Next Rehearsals / Next Meetings by type, a goal
+  in Goals'. The kind in small caps across the top; an event's day set huge
+  with "In 4 days" / "4 days ago" in the corner (`daysAway`), so a past event
+  says it is past. The status pill and Complete / Reopen sit on the block in
+  its own ink. Section captions, badges, comments, linked tasks and
+  attachments are in Figtree; descriptions and comments use the new medium
+  `paragraph` style. Buttons and the comment field wait for the forms step.
+- Next: Inbox and You, then sheets and forms.
 
 ## Library replacement reference
 
