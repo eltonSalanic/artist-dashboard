@@ -1599,8 +1599,8 @@ not touched.
   (tap to switch band), the header title fading in once it scrolls away, ⋯ as
   an outlined circle. Cards keep their palette colours and layout; their text
   is Figtree.
-- **Calendar:** C's poster agenda (huge month, "This week" block, giant day
-  numbers). Every item wears **its widget's colour in its own band**: a show is
+- **Calendar:** C's poster agenda (huge month, giant day numbers; C's "This
+  week" summary block removed at the user's request). Every item wears **its widget's colour in its own band**: a show is
   the band's Shows card colour, a rehearsal its Next Rehearsals colour, a due
   task its To-Do's colour (`widgetInk`, the same rule as `use-hub-cards`).
   Events are blocks; tasks, goals and reminders are rows with a badge in that
