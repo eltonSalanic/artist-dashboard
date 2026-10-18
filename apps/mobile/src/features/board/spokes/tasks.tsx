@@ -15,10 +15,23 @@ import {
 import type { TaskDto } from '@artist/api-client';
 import { Dot, Row } from '@/components/row';
 import { SpokeList } from '@/components/spoke-list';
-import { ThemedText } from '@/components/themed-text';
-import { spacing } from '@/theme';
-import { dueDay, shortDate } from '../format';
+import { PosterText } from '@/components/poster-text';
+import { spacing, usePosterCanvas } from '@/theme';
+import { dueDay, isThisWeek, isToday, shortDate } from '../format';
 import { planMove } from '../reorder';
+import { SpokeHeader } from '../spoke-header';
+
+/** "6 open · 2 due today", or null when there is nothing to count. */
+function openSummary(tasks: TaskDto[], soon: 'today' | 'week'): string | null {
+  const open = tasks.filter((task) => !task.status.isDone);
+  if (tasks.length === 0) return null;
+  const due = open.filter(
+    (task) =>
+      task.dueDate !== null &&
+      (soon === 'today' ? isToday(dueDay(task.dueDate)) : isThisWeek(dueDay(task.dueDate))),
+  ).length;
+  return `${open.length} open${due > 0 ? ` · ${due} due ${soon === 'today' ? 'today' : 'this week'}` : ''}`;
+}
 
 /** Priority is only worth saying when it is not the middle. */
 function meta(task: TaskDto): string {
@@ -103,12 +116,20 @@ export function TodosSpoke({ boardId }: { boardId: string }) {
   const { can } = usePermissions();
   const tasks = useTasks(boardId, { sort: 'order' });
   const roots = (tasks.data ?? []).filter((t) => t.parentTaskId === null);
+  const header = (
+    <SpokeHeader boardId={boardId} widgetType="TODOS" summary={openSummary(roots, 'today')} />
+  );
 
   // Reorder is ADMIN-only at the endpoint (`@BoardRoles('ADMIN')`), and
   // `task.editFields` is the shared map's name for exactly that.
   if (can('task.editFields') && !tasks.isPending && !tasks.error && roots.length > 0) {
     return (
-      <ReorderableTodos tasks={roots} boardId={boardId} basis={tasks.dataUpdatedAt} />
+      <ReorderableTodos
+        tasks={roots}
+        boardId={boardId}
+        basis={tasks.dataUpdatedAt}
+        header={header}
+      />
     );
   }
 
@@ -121,6 +142,7 @@ export function TodosSpoke({ boardId }: { boardId: string }) {
       emptyIcon={{ sf: 'checklist', md: 'checklist' }}
       emptyTitle="Nothing to do"
       emptyBody="Tasks added on the web dashboard show up here."
+      header={header}
     >
       <TaskRows tasks={roots} boardId={boardId} />
     </SpokeList>
@@ -144,17 +166,19 @@ function ReorderableTodos({
   tasks,
   boardId,
   basis,
+  header,
 }: {
   tasks: TaskDto[];
   boardId: string;
   basis: number;
+  header: React.ReactNode;
 }) {
+  const canvas = usePosterCanvas();
   const reorder = useReorderTask(boardId);
   const [held, setHeld] = useState<{ ids: string[]; basis: number } | null>(null);
 
   const byId = new Map(tasks.map((task) => [task.id, task]));
-  const ordered =
-    held?.basis === basis ? held.ids.flatMap((id) => byId.get(id) ?? []) : tasks;
+  const ordered = held?.basis === basis ? held.ids.flatMap((id) => byId.get(id) ?? []) : tasks;
 
   const move = (from: number, to: number) => {
     const plan = planMove(
@@ -188,13 +212,16 @@ function ReorderableTodos({
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={{ padding: spacing.md }}
       ListHeaderComponent={
-        <ThemedText
-          variant="footnote"
-          tone="muted"
-          style={{ paddingHorizontal: spacing.sm, paddingBottom: spacing.sm }}
-        >
-          Hold a task to move it.
-        </ThemedText>
+        <>
+          {header}
+          <PosterText
+            variant="cardMeta"
+            color={canvas.soft}
+            style={{ paddingHorizontal: spacing.sm, paddingBottom: spacing.sm }}
+          >
+            Hold a task to move it.
+          </PosterText>
+        </>
       }
       renderItem={({ item, index }) => (
         <DraggableTaskRow
@@ -245,10 +272,7 @@ function DraggableTaskRow({
 /** The caller's own tasks, soonest due first. */
 export function MyTasksSpoke({ boardId }: { boardId: string }) {
   const me = useMe(true);
-  const tasks = useTasks(
-    boardId,
-    me.data ? { assigneeId: me.data.user.id, sort: 'dueDate' } : {},
-  );
+  const tasks = useTasks(boardId, me.data ? { assigneeId: me.data.user.id, sort: 'dueDate' } : {});
   const roots = (tasks.data ?? []).filter((t) => t.parentTaskId === null);
 
   return (
@@ -260,6 +284,9 @@ export function MyTasksSpoke({ boardId }: { boardId: string }) {
       emptyIcon={{ sf: 'person.crop.circle.badge.checkmark', md: 'assignment-ind' }}
       emptyTitle="Nothing assigned to you"
       emptyBody="Tasks someone assigns you will appear here."
+      header={
+        <SpokeHeader boardId={boardId} widgetType="MY_TASKS" summary={openSummary(roots, 'week')} />
+      }
     >
       <TaskRows tasks={roots} boardId={boardId} />
     </SpokeList>

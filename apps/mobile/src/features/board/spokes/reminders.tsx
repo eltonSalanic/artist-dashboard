@@ -3,6 +3,7 @@ import { usePermissions, useReminders, useUpdateReminder } from '@artist/api-cli
 import { Row } from '@/components/row';
 import { SpokeList } from '@/components/spoke-list';
 import { shortDate } from '../format';
+import { SpokeHeader } from '../spoke-header';
 import { ToggleLead } from './toggle-lead';
 
 /** Reminders, soonest first, with standing notes (no date) at the end. */
@@ -19,6 +20,10 @@ export function RemindersSpoke({ boardId }: { boardId: string }) {
     return (a.remindAt ?? '9999').localeCompare(b.remindAt ?? '9999');
   });
   const now = new Date();
+  const open = items.filter((reminder) => !reminder.done);
+  const due = open.filter(
+    (reminder) => reminder.remindAt !== null && new Date(reminder.remindAt) <= now,
+  ).length;
 
   return (
     <SpokeList
@@ -29,14 +34,18 @@ export function RemindersSpoke({ boardId }: { boardId: string }) {
       emptyIcon={{ sf: 'bell', md: 'notifications-none' }}
       emptyTitle="Nothing to remember"
       emptyBody="Reminders are board-wide, so everyone sees the same list."
+      header={
+        <SpokeHeader
+          boardId={boardId}
+          widgetType="REMINDERS"
+          summary={items.length > 0 ? `${open.length} open${due > 0 ? ` · ${due} due` : ''}` : null}
+        />
+      }
     >
       {items.map((reminder, index) => {
         const done =
-          pending?.reminderId === reminder.id
-            ? (pending.dto.done ?? reminder.done)
-            : reminder.done;
-        const overdue =
-          !done && reminder.remindAt !== null && new Date(reminder.remindAt) <= now;
+          pending?.reminderId === reminder.id ? (pending.dto.done ?? reminder.done) : reminder.done;
+        const overdue = !done && reminder.remindAt !== null && new Date(reminder.remindAt) <= now;
         return (
           <Row
             key={reminder.id}

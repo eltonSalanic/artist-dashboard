@@ -1,17 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  FlatList,
-  Pressable,
-  View,
-  useWindowDimensions,
-  type ViewToken,
-} from 'react-native';
+import { FlatList, Pressable, View, useWindowDimensions, type ViewToken } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { WIDGET_META, type WidgetType } from '@artist/shared';
 import { usePermissions } from '@artist/api-client';
 import { Icon } from '@/components/icon';
+import { PosterText } from '@/components/poster-text';
 import { ThemedText } from '@/components/themed-text';
 import { spokeAction } from '@/features/board/spoke-actions';
+import { useWidgetInk } from '@/features/board/spoke-header';
 import { SPOKES } from '@/features/board/spoke-registry';
 import { useVisibleWidgets } from '@/features/board/use-visible-widgets';
 import { radius, spacing, useThemeColors } from '@/theme';
@@ -44,13 +40,10 @@ export function WidgetSpokeScreen({
   const [index, setIndex] = useState(initial);
   const listRef = useRef<FlatList<WidgetType>>(null);
 
-  const onViewable = useCallback(
-    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      const first = viewableItems[0]?.index;
-      if (typeof first === 'number') setIndex(first);
-    },
-    [],
-  );
+  const onViewable = useCallback(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    const first = viewableItems[0]?.index;
+    if (typeof first === 'number') setIndex(first);
+  }, []);
 
   const goTo = (next: number) => {
     setIndex(next);
@@ -60,7 +53,7 @@ export function WidgetSpokeScreen({
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {pages.length > 1 && (
-        <PositionStrip pages={pages} index={index} onSelect={goTo} />
+        <PositionStrip boardId={boardId} pages={pages} index={index} onSelect={goTo} />
       )}
 
       <FlatList
@@ -110,7 +103,9 @@ export function WidgetSpokeScreen({
 
       <Stack.Screen
         options={{
-          title: WIDGET_META[pages[index] ?? widgetType].title,
+          // Each page names itself in its header (`SpokeHeader`), set large;
+          // the bar keeps only Back and the page's action.
+          title: '',
           headerBackTitle: 'Board',
           // Follows the page you have swiped to: a + on Shows adds a show.
           headerRight: () => {
@@ -124,9 +119,9 @@ export function WidgetSpokeScreen({
                 onPress={() => router.push(action.href)}
               >
                 {action.edit ? (
-                  <ThemedText variant="body" style={{ color: colors.primary }}>
+                  <PosterText variant="rowTitle" color={colors.primary}>
                     Edit
-                  </ThemedText>
+                  </PosterText>
                 ) : (
                   <Icon name={{ sf: 'plus', md: 'add' }} size={22} color={colors.primary} />
                 )}
@@ -142,17 +137,23 @@ export function WidgetSpokeScreen({
 /**
  * Which widget you are on, and the ones either side. Labels rather than dots:
  * ten dots say how far along you are but not what you would land on.
+ *
+ * Spotify's filter chips: the active one is filled with its widget's colour,
+ * the colour of the card you tapped and of the cover under it.
  */
 function PositionStrip({
+  boardId,
   pages,
   index,
   onSelect,
 }: {
+  boardId: string;
   pages: WidgetType[];
   index: number;
   onSelect: (next: number) => void;
 }) {
   const colors = useThemeColors();
+  const ink = useWidgetInk(boardId, pages[index] ?? pages[0]);
 
   const stripRef = useRef<FlatList<WidgetType>>(null);
 
@@ -190,27 +191,24 @@ function PositionStrip({
             accessibilityState={{ selected: active }}
             onPress={() => onSelect(i)}
             style={({ pressed }) => ({
-              paddingHorizontal: spacing.sm + 2,
-              paddingVertical: spacing.xs + 2,
+              paddingHorizontal: spacing.md - 2,
+              paddingVertical: spacing.xs + 3,
               borderRadius: radius.full,
-              backgroundColor: active ? colors.primary : colors.muted,
+              backgroundColor: active ? ink.bg : colors.muted,
+              boxShadow: active && ink.plain ? '0 1px 2px rgba(0, 0, 0, 0.12)' : undefined,
               opacity: pressed ? 0.7 : 1,
             })}
           >
-            {/* Same fix as the band pills in board-filter.tsx: without a fixed
-                line height iOS sized this box shorter than its letters and
-                clipped the descenders ("Meetings", "Activity"). */}
-            <ThemedText
-              variant="footnote"
+            {/* The style carries a fixed line height: without one iOS sized
+                this box shorter than its letters and clipped the descenders
+                ("Meetings", "Activity"). */}
+            <PosterText
+              variant="chip"
               numberOfLines={1}
-              style={{
-                color: active ? colors.primaryForeground : colors.mutedForeground,
-                fontWeight: '600',
-                lineHeight: 18,
-              }}
+              color={active ? ink.ink : colors.foreground}
             >
               {WIDGET_META[type].title}
-            </ThemedText>
+            </PosterText>
           </Pressable>
         );
       }}

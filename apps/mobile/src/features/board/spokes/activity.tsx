@@ -5,8 +5,9 @@ import type { ActivityType } from '@artist/shared';
 import { Icon, type IconName } from '@/components/icon';
 import { Row } from '@/components/row';
 import { Skeleton } from '@/components/skeleton';
-import { ThemedText } from '@/components/themed-text';
-import { shortAgo } from '../format';
+import { PosterText } from '@/components/poster-text';
+import { isToday, shortAgo } from '../format';
+import { SpokeHeader } from '../spoke-header';
 import { spacing, useTokens } from '@/theme';
 
 /** The icon per event type — the sentence itself is shared with web. */
@@ -31,6 +32,7 @@ export function ActivitySpoke({ boardId }: { boardId: string }) {
   const tokens = useTokens();
   const feed = useActivityFeed(boardId);
   const items = feed.data?.pages.flatMap((page) => page.items) ?? [];
+  const today = items.filter((item) => isToday(item.createdAt)).length;
 
   return (
     <FlatList
@@ -38,6 +40,19 @@ export function ActivitySpoke({ boardId }: { boardId: string }) {
       keyExtractor={(item) => item.id}
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={{ padding: spacing.md, flexGrow: 1 }}
+      ListHeaderComponent={
+        <SpokeHeader
+          boardId={boardId}
+          widgetType="ACTIVITY_FEED"
+          summary={
+            items[0]
+              ? today > 0
+                ? `${today} today · latest ${shortAgo(items[0].createdAt)}`
+                : `Latest ${shortAgo(items[0].createdAt)}`
+              : null
+          }
+        />
+      }
       onEndReachedThreshold={0.4}
       onEndReached={() => {
         if (feed.hasNextPage && !feed.isFetchingNextPage) {
@@ -68,10 +83,16 @@ export function ActivitySpoke({ boardId }: { boardId: string }) {
               size={28}
               color={tokens.mutedForeground}
             />
-            <ThemedText variant="headline">Nothing has happened yet</ThemedText>
-            <ThemedText variant="subhead" tone="muted" style={{ textAlign: 'center' }}>
+            <PosterText variant="title" color={tokens.foreground}>
+              Nothing has happened yet
+            </PosterText>
+            <PosterText
+              variant="body"
+              color={tokens.mutedForeground}
+              style={{ textAlign: 'center' }}
+            >
               Tasks, goals and comments show up here as the band works.
-            </ThemedText>
+            </PosterText>
           </View>
         )
       }

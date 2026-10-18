@@ -4,6 +4,7 @@ import { Row } from '@/components/row';
 import { SpokeList } from '@/components/spoke-list';
 import { dueDay, shortDate } from '../format';
 import { useGoalCompletion } from '../goal-completion';
+import { SpokeHeader } from '../spoke-header';
 import { ToggleLead } from './toggle-lead';
 
 /** Goals, open ones first, each showing its period and when it is due. */
@@ -13,7 +14,9 @@ export function GoalsSpoke({ boardId }: { boardId: string }) {
   const { can } = usePermissions();
   const canManage = can('goal.manage');
 
-  const items = [...(goals.data ?? [])].sort((a, b) => {
+  const all = goals.data ?? [];
+  const active = all.filter((goal) => goal.completedAt === null).length;
+  const items = [...all].sort((a, b) => {
     const done = Number(a.completedAt !== null) - Number(b.completedAt !== null);
     if (done !== 0) return done;
     return (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999');
@@ -28,6 +31,17 @@ export function GoalsSpoke({ boardId }: { boardId: string }) {
       emptyIcon={{ sf: 'target', md: 'track-changes' }}
       emptyTitle="No goals yet"
       emptyBody="Goals set on the web dashboard show up here."
+      header={
+        <SpokeHeader
+          boardId={boardId}
+          widgetType="GOALS"
+          summary={
+            all.length > 0
+              ? `${active} active · ${Math.round(((all.length - active) / all.length) * 100)}% complete`
+              : null
+          }
+        />
+      }
     >
       {items.map((goal, index) => {
         const done = completion.pendingDone(goal);

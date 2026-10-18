@@ -3,10 +3,11 @@ import { isMarkdownEditable, type NoteNode } from '@artist/shared';
 import { useCustomWidget, usePermissions } from '@artist/api-client';
 import { Icon } from '@/components/icon';
 import { Skeleton } from '@/components/skeleton';
-import { ThemedText } from '@/components/themed-text';
+import { PosterText } from '@/components/poster-text';
 import { NoteView } from '@/features/notes/note-view';
 import { noteBlocks } from '../note-preview';
 import { shortAgo } from '../format';
+import { SpokeHeader } from '../spoke-header';
 import { spacing, useTokens } from '@/theme';
 
 /**
@@ -28,6 +29,11 @@ export function NoteSpoke({ boardId }: { boardId: string }) {
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={{ padding: spacing.md, gap: spacing.md, flexGrow: 1 }}
     >
+      <SpokeHeader
+        boardId={boardId}
+        widgetType="CUSTOM"
+        summary={note.data?.updatedAt ? `Edited ${shortAgo(note.data.updatedAt)}` : null}
+      />
       {note.isPending ? (
         <View style={{ gap: spacing.sm }}>
           <Skeleton width="90%" height={16} />
@@ -48,26 +54,22 @@ export function NoteSpoke({ boardId }: { boardId: string }) {
             size={28}
             color={tokens.mutedForeground}
           />
-          <ThemedText variant="headline">Nothing written yet</ThemedText>
-          <ThemedText variant="subhead" tone="muted" style={{ textAlign: 'center' }}>
+          <PosterText variant="title" color={tokens.foreground}>
+            Nothing written yet
+          </PosterText>
+          <PosterText variant="body" color={tokens.mutedForeground} style={{ textAlign: 'center' }}>
             {canManage
-              ? 'The band\'s shared note lives here. Tap Edit to write it.'
-              : 'The band\'s shared note lives here.'}
-          </ThemedText>
+              ? "The band's shared note lives here. Tap Edit to write it."
+              : "The band's shared note lives here."}
+          </PosterText>
         </View>
       ) : (
         <>
-          {note.data?.updatedAt && (
-            <ThemedText variant="caption" tone="muted">
-              EDITED {shortAgo(note.data.updatedAt).toUpperCase()}
-            </ThemedText>
-          )}
           <NoteView doc={note.data!.content as unknown as NoteNode} />
           {canManage && !isMarkdownEditable(note.data!.content) && (
-            <ThemedText variant="footnote" tone="muted">
-              This note uses formatting the phone can&apos;t edit without losing. Edit
-              it on web.
-            </ThemedText>
+            <PosterText variant="cardMeta" color={tokens.mutedForeground}>
+              This note uses formatting the phone can&apos;t edit without losing. Edit it on web.
+            </PosterText>
           )}
         </>
       )}
