@@ -16,12 +16,11 @@ import {
 import { BoardFilter } from '@/components/board-filter';
 import { Icon, type IconName } from '@/components/icon';
 import { ListState } from '@/components/list-state';
-import { CountUp, PosterText } from '@/components/poster-text';
+import { PosterText } from '@/components/poster-text';
 import { useBoardScope } from '@/features/boards/use-board-scope';
 import { timeOfDay } from '@/features/board/format';
 import { useRefetchOnFocus } from '@/lib/refetch-on-focus';
 import {
-  boneOf,
   posterRadius,
   shadows,
   spacing,
@@ -36,10 +35,9 @@ import {
 /**
  * The calendar as a poster agenda (direction C, "Wrapped").
  *
- * Top to bottom: the band filter, the month set huge with its steppers, one
- * summary block — "This week: 5 things" with shows / rehearsals / meetings /
- * due counted out — and then the month's days, each a bold typographic
- * section: a huge day number in a gutter, and that day's things beside it.
+ * Top to bottom: the band filter, the month set huge with its steppers, and
+ * then the month's days, each a bold typographic section: a huge day number
+ * in a gutter, and that day's things beside it.
  * Every item wears the colour of the widget it belongs to, in its own band:
  * a show is the colour of that band's Shows card, a rehearsal of its Next
  * Rehearsals card, a due task of its To-Do's card. Events are solid blocks;
@@ -117,10 +115,6 @@ const CATEGORY_WIDGET: Record<CalendarCategory, WidgetType> = {
   GOAL: 'GOALS',
 };
 
-/** A thing counts towards "this week" until it is done. */
-const isOpen = (item: CalendarItemDto) =>
-  item.task?.isDone !== true && item.goal?.completed !== true;
-
 function Agenda({
   year,
   month,
@@ -179,24 +173,9 @@ function Agenda({
   );
   const calendar = useAllBoardsCalendar(from, to, boardId);
 
-  // The next seven days, for the summary when the cursor is on this month. Its
-  // own request, because a week near the end of a month runs into the next one.
-  const week = useMemo(() => {
-    const now = new Date();
-    return {
-      from: new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString(),
-      to: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7).toISOString(),
-    };
-  }, []);
-  const thisWeek = useAllBoardsCalendar(week.from, week.to, boardId);
-
-  const now = new Date();
-  const current = year === now.getFullYear() && month === now.getMonth();
   const monthName = new Date(year, month, 1).toLocaleDateString(undefined, { month: 'long' });
 
   const days = useMemo(() => groupCalendarByDay(calendar.data ?? []), [calendar.data]);
-
-  const summarySource = current ? thisWeek : calendar;
 
   return (
     <FlatList
@@ -211,29 +190,12 @@ function Agenda({
       refreshControl={
         <RefreshControl
           refreshing={false}
-          onRefresh={() => {
-            void calendar.refetch();
-            void thisWeek.refetch();
-          }}
+          onRefresh={() => void calendar.refetch()}
           tintColor={canvas.soft}
         />
       }
       ListHeaderComponent={
-        <View style={{ gap: spacing.md, paddingBottom: spacing.sm }}>
-          {top}
-          <Summary
-            kicker={current ? 'This week' : monthName}
-            items={summarySource.data}
-            pending={summarySource.isPending}
-            sentence={(n) =>
-              current
-                ? n === 1
-                  ? 'thing on this week'
-                  : 'things on this week'
-                : `${n === 1 ? 'thing' : 'things'} in ${monthName}`
-            }
-          />
-        </View>
+        <View style={{ gap: spacing.md, paddingBottom: spacing.sm }}>{top}</View>
       }
       renderItem={({ item: day }) => (
         <DaySection
@@ -364,141 +326,6 @@ function Stepper({
         <Icon name={icon} size={16} color={pressed ? canvas.background : canvas.ink} />
       )}
     </Pressable>
-  );
-}
-
-/** The four counts the summary spells out, in the order a gigging band cares. */
-const SUMMARY_COUNTS: {
-  key: string;
-  one: string;
-  many: string;
-  match: (c: CalendarCategory) => boolean;
-}[] = [
-  { key: 'show', one: 'show', many: 'shows', match: (c) => c === 'SHOW' },
-  { key: 'reh', one: 'rehearsal', many: 'rehearsals', match: (c) => c === 'REHEARSAL' },
-  { key: 'meet', one: 'meeting', many: 'meetings', match: (c) => c === 'MEETING' },
-  {
-    key: 'due',
-    one: 'due',
-    many: 'due',
-    match: (c) => c === 'TASK' || c === 'GOAL' || c === 'REMINDER',
-  },
-];
-
-/**
- * "This week — 5 things", with the counts behind it underneath. The deep
- * colour of the selected band, like the hub's spotlight, so the two screens
- * open the same way.
- */
-function Summary({
-  kicker,
-  items,
-  pending,
-  sentence,
-}: {
-  kicker: string;
-  items: CalendarItemDto[] | undefined;
-  pending: boolean;
-  sentence: (count: number) => string;
-}) {
-  const color = usePosterSlot('c4');
-  const open = (items ?? []).filter(isOpen);
-  const yours = open.filter((item) => item.task?.assignedToMe === true).length;
-  const counts = SUMMARY_COUNTS.map((entry) => ({
-    ...entry,
-    n: open.filter((item) => entry.match(calendarCategory(item))).length,
-  }));
-  const bone = boneOf(color);
-
-  return (
-    <View
-      accessible
-      accessibilityLabel={
-        pending
-          ? `${kicker}: loading`
-          : `${kicker}: ${open.length} ${sentence(open.length)}. ${counts
-              .map((c) => `${c.n} ${c.n === 1 ? c.one : c.many}`)
-              .join(', ')}${yours > 0 ? `. ${yours} yours` : ''}`
-      }
-      style={{
-        backgroundColor: color.bg,
-        borderRadius: posterRadius.block,
-        borderCurve: 'continuous',
-        padding: spacing.lg - 4,
-        paddingTop: spacing.md,
-        gap: spacing.sm,
-      }}
-    >
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <PosterText variant="label" color={color.ink} style={{ flex: 1 }}>
-          {kicker.toUpperCase()}
-        </PosterText>
-        {yours > 0 && (
-          <View
-            style={{
-              backgroundColor: color.ink,
-              borderRadius: posterRadius.chip,
-              paddingHorizontal: spacing.sm,
-              paddingVertical: 3,
-            }}
-          >
-            <PosterText variant="label" color={color.bg}>
-              {yours} YOURS
-            </PosterText>
-          </View>
-        )}
-      </View>
-
-      {pending ? (
-        <View style={{ gap: spacing.sm }}>
-          <View style={{ width: 90, height: 64, borderRadius: 10, backgroundColor: bone }} />
-          <View style={{ width: '70%', height: 22, borderRadius: 8, backgroundColor: bone }} />
-        </View>
-      ) : (
-        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: spacing.md }}>
-          <View style={{ maxWidth: '55%' }}>
-            <CountUp
-              variant="mega"
-              color={color.accent}
-              value={open.length}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.5}
-              style={{ marginBottom: -6 }}
-            />
-          </View>
-          <PosterText
-            variant="statement"
-            color={color.ink}
-            numberOfLines={2}
-            style={{ flex: 1, paddingBottom: spacing.sm }}
-          >
-            {sentence(open.length)}
-          </PosterText>
-        </View>
-      )}
-
-      <View
-        style={{
-          flexDirection: 'row',
-          borderTopWidth: 2,
-          borderTopColor: color.ink,
-          paddingTop: spacing.sm,
-          marginTop: spacing.xs,
-        }}
-      >
-        {counts.map((entry) => (
-          <View key={entry.key} style={{ flex: 1 }}>
-            <PosterText variant="title" color={color.ink}>
-              {pending ? '–' : entry.n}
-            </PosterText>
-            <PosterText variant="meta" color={color.soft} numberOfLines={1}>
-              {entry.n === 1 ? entry.one : entry.many}
-            </PosterText>
-          </View>
-        ))}
-      </View>
-    </View>
   );
 }
 
