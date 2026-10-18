@@ -2,8 +2,8 @@ import { Pressable, View } from 'react-native';
 import { ThemeTokensProvider, radius, shadows, spacing, useSlotTokens } from '@/theme';
 import type { HubCard } from '@/features/board/use-hub-cards';
 import { Icon } from './icon';
+import { PosterText } from './poster-text';
 import { Skeleton } from './skeleton';
-import { ThemedText } from './themed-text';
 
 /** How long a card is held before the hub goes into edit mode. */
 export const HOLD_TO_EDIT = 400;
@@ -16,6 +16,10 @@ export const HOLD_TO_EDIT = 400;
  * `hero` shows prose, `stat` a number. A card two rows `tall` adds the first
  * few things behind the number (the next shows, the top tasks), the way a
  * large phone widget does. The grid sizes the card; it fills its cell.
+ *
+ * Set in Figtree, the Spotify-like face the redesign uses: heavy small caps
+ * for the name, Black for the number. Colours still come from the card's
+ * own token set, so it reads on every palette slot.
  */
 export function HubStatCard({
   card,
@@ -67,9 +71,14 @@ export function HubStatCard({
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
           <Icon name={card.icon} size={15} color={tokens.mutedForeground} />
-          <ThemedText variant="caption" tone="muted" numberOfLines={1} style={{ flex: 1 }}>
+          <PosterText
+            variant="label"
+            color={tokens.mutedForeground}
+            numberOfLines={1}
+            style={{ flex: 1 }}
+          >
             {card.title.toUpperCase()}
-          </ThemedText>
+          </PosterText>
           {card.urgent && (
             <View
               accessibilityLabel="Needs attention"
@@ -89,21 +98,24 @@ export function HubStatCard({
             <Skeleton width="35%" height={12} />
           </View>
         ) : card.primary === null ? (
-          <ThemedText variant="subhead" tone="muted">
+          <PosterText variant="body" color={tokens.mutedForeground}>
             Nothing yet
-          </ThemedText>
+          </PosterText>
         ) : (
           <View style={{ gap: 2 }}>
-            <ThemedText
-              variant={hero ? 'body' : 'largeTitle'}
+            <PosterText
+              variant={hero ? 'prose' : 'stat'}
+              color={tokens.foreground}
               numberOfLines={hero ? (tall ? 4 : 3) : 1}
+              adjustsFontSizeToFit={!hero}
+              minimumFontScale={0.6}
             >
               {card.primary}
-            </ThemedText>
+            </PosterText>
             {card.qualifier !== null && (
-              <ThemedText variant="footnote" tone="muted" numberOfLines={1}>
+              <PosterText variant="meta" color={tokens.mutedForeground} numberOfLines={1}>
                 {card.qualifier}
-              </ThemedText>
+              </PosterText>
             )}
           </View>
         )}
@@ -112,13 +124,18 @@ export function HubStatCard({
           <View style={{ gap: 2, marginTop: spacing.xs }}>
             {lines.map((line) => (
               <View key={line.key} style={{ flexDirection: 'row', gap: spacing.xs }}>
-                <ThemedText variant="footnote" numberOfLines={1} style={{ flex: 1 }}>
+                <PosterText
+                  variant="meta"
+                  color={tokens.foreground}
+                  numberOfLines={1}
+                  style={{ flex: 1 }}
+                >
                   {line.text}
-                </ThemedText>
+                </PosterText>
                 {line.meta !== null && (
-                  <ThemedText variant="footnote" tone="muted" numberOfLines={1}>
+                  <PosterText variant="meta" color={tokens.mutedForeground} numberOfLines={1}>
                     {line.meta}
-                  </ThemedText>
+                  </PosterText>
                 )}
               </View>
             ))}
