@@ -8,16 +8,23 @@ import {
   useTask,
 } from '@artist/api-client';
 import { Badge } from '@/components/badge';
-import { Button } from '@/components/button';
 import { Icon } from '@/components/icon';
+import { PosterText } from '@/components/poster-text';
 import { Dot, Row } from '@/components/row';
 import { Section } from '@/components/section';
-import { Skeleton } from '@/components/skeleton';
-import { ThemedText } from '@/components/themed-text';
 import { TaskAttachments } from '@/features/attachments/task-attachments';
+import {
+  DetailLoading,
+  DetailMissing,
+  DetailPoster,
+  HeaderEdit,
+  PosterMeta,
+  PosterPill,
+} from '@/features/board/detail-poster';
 import { dueDay, shortDate } from '@/features/board/format';
+import { useWidgetInk } from '@/features/board/spoke-header';
 import { CommentsSection } from '@/features/comments/comments-section';
-import { radius, spacing, useThemeColors } from '@/theme';
+import { radius, spacing, useThemeColors, type WidgetInk } from '@/theme';
 
 /**
  * One task. Status, checklist ticks, comments and attachments are writable
@@ -27,6 +34,9 @@ import { radius, spacing, useThemeColors } from '@/theme';
  * Reached from any task row, and addressable, so a mention notification can
  * open the task it is about rather than the board root. Wrapped by its route
  * in `BoardPermissions`, so every control answers for this task's band.
+ *
+ * The top is a block in the To-Do widget's colour — a due task wears the same
+ * colour on the calendar — with the status pill on it.
  */
 export function TaskDetailScreen({
   boardId,
@@ -40,47 +50,24 @@ export function TaskDetailScreen({
   const checklist = useChecklist(boardId, taskId);
   const canChangeStatus = useCanChangeStatus();
   const { can } = usePermissions();
+  const ink = useWidgetInk(boardId, 'TODOS');
 
-  if (task.isPending) {
-    return (
-      <ScrollView
-        style={{ flex: 1, backgroundColor: colors.background }}
-        contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}
-      >
-        <Skeleton width="80%" height={26} />
-        <Skeleton width="40%" height={14} />
-        <Skeleton width="100%" height={60} />
-      </ScrollView>
-    );
-  }
+  if (task.isPending) return <DetailLoading />;
 
   if (task.isError || !task.data) {
     return (
-      <View style={center(colors.background)}>
-        <Icon
-          name={{ sf: 'questionmark.circle', md: 'help-outline' }}
-          size={30}
-          color={colors.mutedForeground}
-        />
-        <ThemedText variant="headline">Task not found</ThemedText>
-        <ThemedText variant="subhead" tone="muted" style={{ textAlign: 'center' }}>
-          {/* Also what an archived or deleted task looks like, and what a
-              notification for someone else's board looks like — the API 404s
-              rather than confirming it exists. */}
-          It may have been deleted, archived, or belong to another band.
-        </ThemedText>
-        <Button title="Go back" variant="ghost" size="sm" onPress={() => router.back()} />
-      </View>
+      <DetailMissing
+        what="Task"
+        // Also what a notification for someone else's board looks like.
+        reason="It may have been deleted, archived, or belong to another band."
+      />
     );
   }
 
   const t = task.data;
   const meta = [
-    // Reached from the Archive; Edit → Unarchive brings it back.
-    t.archivedAt ? 'archived' : null,
-    t.priority !== 'MEDIUM' ? `${t.priority.toLowerCase()} priority` : null,
-    t.dueDate ? `due ${shortDate(dueDay(t.dueDate))}` : null,
+    t.dueDate ? `Due ${shortDate(dueDay(t.dueDate))}` : null,
+    t.priority !== 'MEDIUM' ? `${t.priority === 'HIGH' ? 'High' : 'Low'} priority` : null,
   ].filter((part): part is string => part !== null);
 
   return (
@@ -95,16 +82,10 @@ export function TaskDetailScreen({
         options={{
           headerRight: can('task.editFields')
             ? () => (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Edit task"
-                  hitSlop={10}
+                <HeaderEdit
+                  label="Edit task"
                   onPress={() => router.push(`/board/${boardId}/form/task?id=${t.id}`)}
-                >
-                  <ThemedText variant="body" style={{ color: colors.primary }}>
-                    Edit
-                  </ThemedText>
-                </Pressable>
+                />
               )
             : undefined,
         }}
@@ -119,35 +100,31 @@ export function TaskDetailScreen({
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ padding: spacing.md, gap: spacing.lg }}
       >
-        <View style={{ gap: spacing.sm }}>
-          <ThemedText variant="title">{t.title}</ThemedText>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: spacing.sm,
-            }}
-          >
-            <StatusButton
-              name={t.status.name}
-              color={t.status.color}
-              onPress={
-                canChangeStatus(t.assignees)
-                  ? () => router.push(`/board/${boardId}/status/${t.id}`)
-                  : undefined
-              }
-            />
-            {meta.length > 0 && (
-              <ThemedText variant="subhead" tone="muted">
-                {meta.join(' · ')}
-              </ThemedText>
-            )}
-          </View>
-        </View>
+        <DetailPoster
+          ink={ink}
+          label={t.parentTaskId === null ? 'Task' : 'Subtask'}
+          // Reached from the Archive; Edit → Unarchive brings it back.
+          aside={t.archivedAt ? 'Archived' : null}
+          title={t.title}
+          done={t.status.isDone}
+        >
+          {meta.length > 0 && <PosterMeta ink={ink}>{meta.join(' · ')}</PosterMeta>}
+          <StatusPill
+            ink={ink}
+            name={t.status.name}
+            color={t.status.color}
+            onPress={
+              canChangeStatus(t.assignees)
+                ? () => router.push(`/board/${boardId}/status/${t.id}`)
+                : undefined
+            }
+          />
+        </DetailPoster>
 
         {t.description !== null && t.description.trim() !== '' && (
-          <ThemedText variant="body">{t.description}</ThemedText>
+          <PosterText variant="paragraph" color={colors.foreground}>
+            {t.description}
+          </PosterText>
         )}
 
         {t.assignees.length > 0 && (
@@ -251,9 +228,9 @@ export function TaskDetailScreen({
                     router.push(`/board/${boardId}/form/task?parentTaskId=${t.id}`)
                   }
                 >
-                  <ThemedText variant="subhead" style={{ color: colors.primary }}>
+                  <PosterText variant="chip" color={colors.primary}>
                     Add
-                  </ThemedText>
+                  </PosterText>
                 </Pressable>
               ) : undefined
             }
@@ -273,9 +250,9 @@ export function TaskDetailScreen({
           </Section>
         )}
 
-        <ThemedText variant="footnote" tone="muted">
-          Created by {t.createdBy.displayName}.
-        </ThemedText>
+        <PosterText variant="cardMeta" color={colors.mutedForeground}>
+          {`Created by ${t.createdBy.displayName}.`}
+        </PosterText>
 
         <TaskAttachments boardId={boardId} parent={{ taskId: t.id }} />
 
@@ -290,55 +267,41 @@ export function TaskDetailScreen({
  * than a bare dot: it has to read as tappable, and it is the one write a
  * member does most. Without permission it is the same pill, minus the chevron
  * and the press — still saying what the status is.
+ *
+ * The status's own colour is a dot ringed in the block's ink, since a status
+ * colour was never picked to sit on a palette block.
  */
-function StatusButton({
+function StatusPill({
+  ink,
   name,
   color,
   onPress,
 }: {
+  ink: WidgetInk;
   name: string;
   color: string;
   onPress?: () => void;
 }) {
-  const colors = useThemeColors();
   return (
-    <Pressable
-      accessibilityRole={onPress ? 'button' : 'text'}
+    <PosterPill
+      ink={ink}
+      label={name}
       accessibilityLabel={`Status: ${name}`}
       accessibilityHint={onPress ? 'Changes the status' : undefined}
-      disabled={!onPress}
+      chevron={onPress !== undefined}
       onPress={onPress}
-      hitSlop={8}
-      style={({ pressed }) => ({
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.xs,
-        paddingVertical: spacing.xs,
-        paddingHorizontal: spacing.sm,
-        borderRadius: radius.full,
-        backgroundColor: pressed ? colors.accent : colors.muted,
-      })}
-    >
-      <Dot color={color} />
-      <ThemedText variant="subhead" style={{ fontWeight: '600' }}>
-        {name}
-      </ThemedText>
-      {onPress && (
-        <Icon
-          name={{ sf: 'chevron.down', md: 'expand-more' }}
-          size={12}
-          color={colors.mutedForeground}
+      lead={
+        <View
+          style={{
+            width: 12,
+            height: 12,
+            borderRadius: radius.full,
+            borderWidth: 1.5,
+            borderColor: ink.ink,
+            backgroundColor: color,
+          }}
         />
-      )}
-    </Pressable>
+      }
+    />
   );
 }
-
-const center = (background: string) => ({
-  flex: 1,
-  alignItems: 'center' as const,
-  justifyContent: 'center' as const,
-  gap: spacing.sm,
-  padding: spacing.xl,
-  backgroundColor: background,
-});

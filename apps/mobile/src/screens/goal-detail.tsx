@@ -1,13 +1,20 @@
 import { router, Stack } from 'expo-router';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ScrollView } from 'react-native';
 import { useGoal, usePermissions } from '@artist/api-client';
 import type { GoalPeriod } from '@artist/shared';
-import { Button } from '@/components/button';
 import { Icon } from '@/components/icon';
-import { Skeleton } from '@/components/skeleton';
-import { ThemedText } from '@/components/themed-text';
+import { PosterText } from '@/components/poster-text';
+import {
+  DetailLoading,
+  DetailMissing,
+  DetailPoster,
+  HeaderEdit,
+  PosterMeta,
+  PosterPill,
+} from '@/features/board/detail-poster';
 import { dueDay, shortDate } from '@/features/board/format';
 import { useGoalCompletion } from '@/features/board/goal-completion';
+import { useWidgetInk } from '@/features/board/spoke-header';
 import { LinkedTasks } from '@/features/links/linked-tasks';
 import { spacing, useThemeColors } from '@/theme';
 
@@ -27,89 +34,37 @@ const PERIOD_LABEL: Record<GoalPeriod, string> = {
  * whoever may manage goals; linking tasks is for whoever may edit tasks.
  * Wrapped by its route in `BoardPermissions`.
  */
-export function GoalDetailScreen({
-  boardId,
-  goalId,
-}: {
-  boardId: string;
-  goalId: string;
-}) {
+export function GoalDetailScreen({ boardId, goalId }: { boardId: string; goalId: string }) {
   const colors = useThemeColors();
   const goal = useGoal(boardId, goalId);
   const completion = useGoalCompletion(boardId);
+  const ink = useWidgetInk(boardId, 'GOALS');
   const { can } = usePermissions();
   const canManage = can('goal.manage');
 
-  if (goal.isPending) {
-    return (
-      <ScrollView
-        style={{ flex: 1, backgroundColor: colors.background }}
-        contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}
-      >
-        <Skeleton width="70%" height={26} />
-        <Skeleton width="45%" height={14} />
-        <Skeleton width="100%" height={60} />
-      </ScrollView>
-    );
-  }
+  if (goal.isPending) return <DetailLoading />;
 
   if (goal.isError || !goal.data) {
     return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: spacing.sm,
-          padding: spacing.xl,
-          backgroundColor: colors.background,
-        }}
-      >
-        <Icon
-          name={{ sf: 'questionmark.circle', md: 'help-outline' }}
-          size={30}
-          color={colors.mutedForeground}
-        />
-        <ThemedText variant="headline">Goal not found</ThemedText>
-        <ThemedText variant="subhead" tone="muted" style={{ textAlign: 'center' }}>
-          It may have been deleted, or belong to another band.
-        </ThemedText>
-        <Button title="Go back" variant="ghost" size="sm" onPress={() => router.back()} />
-      </View>
+      <DetailMissing what="Goal" reason="It may have been deleted, or belong to another band." />
     );
   }
 
   const g = goal.data;
   const done = completion.pendingDone(g);
   const archived = g.archivedAt !== null;
-  const when = [
-    PERIOD_LABEL[g.period],
-    g.dueDate ? `due ${shortDate(dueDay(g.dueDate)).toLowerCase()}` : null,
-    done ? 'completed' : null,
-    archived ? 'archived' : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
 
   return (
     <>
       <Stack.Screen
         options={{
-          title: 'Goal',
           headerRight:
             canManage && !archived
               ? () => (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Edit goal"
-                    hitSlop={10}
+                  <HeaderEdit
+                    label="Edit goal"
                     onPress={() => router.push(`/board/${boardId}/form/goal?id=${g.id}`)}
-                  >
-                    <ThemedText variant="body" style={{ color: colors.primary }}>
-                      Edit
-                    </ThemedText>
-                  </Pressable>
+                  />
                 )
               : undefined,
         }}
@@ -119,30 +74,42 @@ export function GoalDetailScreen({
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{ padding: spacing.md, gap: spacing.lg }}
       >
-        <View style={{ gap: spacing.xs }}>
-          <ThemedText
-            variant="title"
-            style={done ? { textDecorationLine: 'line-through', opacity: 0.6 } : undefined}
-          >
-            {g.title}
-          </ThemedText>
-          <ThemedText variant="subhead" tone="muted">
-            {when}
-          </ThemedText>
-        </View>
+        <DetailPoster
+          ink={ink}
+          label={`${PERIOD_LABEL[g.period]} goal`}
+          aside={archived ? 'Archived' : done ? 'Completed' : null}
+          title={g.title}
+          done={done}
+        >
+          {g.dueDate ? (
+            <PosterMeta ink={ink}>{`Due ${shortDate(dueDay(g.dueDate))}`}</PosterMeta>
+          ) : null}
+          {canManage && !archived && (
+            <PosterPill
+              ink={ink}
+              filled={!done}
+              label={done ? 'Reopen goal' : 'Complete goal'}
+              lead={
+                <Icon
+                  name={
+                    done
+                      ? { sf: 'arrow.uturn.backward', md: 'undo' }
+                      : { sf: 'checkmark', md: 'check' }
+                  }
+                  size={14}
+                  color={done ? ink.ink : ink.bg}
+                />
+              }
+              disabled={completion.isPending}
+              onPress={() => completion.toggle(g)}
+            />
+          )}
+        </DetailPoster>
 
         {g.description !== null && g.description.trim() !== '' && (
-          <ThemedText variant="body">{g.description}</ThemedText>
-        )}
-
-        {canManage && !archived && (
-          <Button
-            title={done ? 'Reopen goal' : 'Complete goal'}
-            variant={done ? 'ghost' : 'primary'}
-            size="sm"
-            disabled={completion.isPending}
-            onPress={() => completion.toggle(g)}
-          />
+          <PosterText variant="paragraph" color={colors.foreground}>
+            {g.description}
+          </PosterText>
         )}
 
         <LinkedTasks boardId={boardId} link={{ goalId: g.id }} archived={archived} />

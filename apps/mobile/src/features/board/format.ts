@@ -107,6 +107,19 @@ export function dayHeading(date: Date, now = new Date()): string {
   return absolute;
 }
 
+/**
+ * How far a day is from today, in words: "Today", "Tomorrow", "In 4 days",
+ * "Yesterday", "4 days ago". For a detail screen's corner, where the date
+ * itself is already set large and this only has to say whether it has passed.
+ */
+export function daysAway(iso: string, now = new Date()): string {
+  const days = daysFromToday(iso, now);
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Tomorrow';
+  if (days === -1) return 'Yesterday';
+  return days > 0 ? `In ${days} days` : `${-days} days ago`;
+}
+
 /** "820 B", "34 KB", "4.2 MB" — the same steps web uses. */
 export function fileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;

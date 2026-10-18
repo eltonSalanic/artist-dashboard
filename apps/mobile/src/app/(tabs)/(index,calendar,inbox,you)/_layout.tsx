@@ -47,10 +47,12 @@ export default function TabStackLayout({ segment }: { segment: string }) {
       <Stack.Screen name="board/[boardId]/w/[widgetType]" />
       <Stack.Screen
         name="board/[boardId]/task/[taskId]"
-        options={{ title: 'Task' }}
+        // Untitled: the screen's block names the kind, set large. Blank here
+        // too, not only once loaded, or the bar would flash "Task" and empty.
+        options={{ title: '' }}
       />
-      <Stack.Screen name="board/[boardId]/event/[eventId]" options={{ title: 'Event' }} />
-      <Stack.Screen name="board/[boardId]/goal/[goalId]" options={{ title: 'Goal' }} />
+      <Stack.Screen name="board/[boardId]/event/[eventId]" options={{ title: '' }} />
+      <Stack.Screen name="board/[boardId]/goal/[goalId]" options={{ title: '' }} />
       <Stack.Screen name="board/[boardId]/attach" options={{ title: 'Attach a task' }} />
       <Stack.Screen name="board/[boardId]/archive" options={{ title: 'Archive' }} />
       <Stack.Screen name="board/[boardId]/settings" options={{ title: 'Settings' }} />

@@ -1,6 +1,7 @@
 import {
   count,
   dayHeading,
+  daysAway,
   dueDay,
   fileSize,
   isThisWeek,
@@ -101,6 +102,24 @@ describe('dayHeading', () => {
     const heading = dayHeading(new Date(2026, 2, 20), now);
     expect(heading).not.toContain('·');
     expect(heading).toContain('20');
+  });
+});
+
+describe('daysAway', () => {
+  it('names the days either side of today', () => {
+    expect(daysAway(at(0), now)).toBe('Today');
+    expect(daysAway(at(1), now)).toBe('Tomorrow');
+    expect(daysAway(at(-1), now)).toBe('Yesterday');
+  });
+
+  it('counts the days to anything further, in both directions', () => {
+    expect(daysAway(at(4), now)).toBe('In 4 days');
+    expect(daysAway(at(-4), now)).toBe('4 days ago');
+  });
+
+  it('goes by the local day, not by hours elapsed', () => {
+    // 11pm tomorrow is 35 hours away, and still tomorrow.
+    expect(daysAway(at(1, 23), now)).toBe('Tomorrow');
   });
 });
 
