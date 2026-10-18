@@ -8,10 +8,13 @@ import Animated, {
   FadeOut,
   LinearTransition,
   ReduceMotion,
+  interpolate,
   useAnimatedRef,
+  useAnimatedStyle,
   useAnimatedScrollHandler,
   useScrollOffset,
   useSharedValue,
+  type SharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
@@ -19,6 +22,7 @@ import { useBoard, useResetMobileLayout, useSaveMobileLayout } from '@artist/api
 import { WIDGET_META, resolveBoardTheme, type MobileLayoutItem } from '@artist/shared';
 import { Button } from '@/components/button';
 import { Icon } from '@/components/icon';
+import { PosterText } from '@/components/poster-text';
 import { HubCardSkeleton } from '@/components/stat-card';
 import { ThemedText } from '@/components/themed-text';
 import { HubGrid, ROW_HEIGHT } from '@/features/board/hub-grid';
@@ -27,7 +31,7 @@ import { useSelectedBoard } from '@/features/board/selected-board';
 import { useHubCards } from '@/features/board/use-hub-cards';
 import { HeaderText } from '@/features/forms/form-screen';
 import { useRefetchOnFocus } from '@/lib/refetch-on-focus';
-import { radius, spacing, useThemeColors } from '@/theme';
+import { radius, spacing, usePosterCanvas, useThemeColors } from '@/theme';
 
 /**
  * The board hub. One board's widgets as summaries; tapping one opens its spoke
@@ -229,6 +233,10 @@ function BoardHub({ boardId, name }: { boardId: string; name: string }) {
             />
           }
         >
+          <Animated.View layout={SLIDE}>
+            <Masthead name={name} />
+          </Animated.View>
+
           {editing && (
             <Animated.View
               entering={APPEAR}
@@ -332,12 +340,12 @@ function BoardHub({ boardId, name }: { boardId: string; name: string }) {
         </Animated.ScrollView>
       </View>
 
-      {/* The board name *is* the switcher. Tapping a title to change context is
-          the Slack/Notion/Linear convention and needs no teaching. While
-          editing, the header becomes Cancel and Done, as in a form. */}
+      {/* The band's name is set huge at the top of the page (the masthead), so
+          the header only names it once that has scrolled away. While editing,
+          the header becomes Cancel and Done, as in a form. */}
       <Stack.Screen
         options={{
-          headerTitle: () => <BoardTitle name={name} />,
+          headerTitle: () => <FadingTitle name={name} offset={offset} min={minOffset} />,
           headerLeft: editing ? () => <HeaderText title="Cancel" onPress={cancel} /> : undefined,
           headerRight: editing
             ? () => (
@@ -382,17 +390,121 @@ function BoardTitle({ name }: { name: string }) {
   );
 }
 
+/**
+ * Today's date in small caps, then the band's name as big as it will go, with
+ * a round button that says it opens something. The name *is* the switcher:
+ * tapping a title to change context is the Slack/Notion/Linear convention and
+ * needs no teaching; here it is simply a much bigger title.
+ */
+function Masthead({ name }: { name: string }) {
+  const canvas = usePosterCanvas();
+  const today = new Date().toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  });
+  return (
+    <Link href="/boards" asChild>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${name}. Change band`}
+        style={({ pressed }) => ({ gap: 2, opacity: pressed ? 0.6 : 1 })}
+      >
+        <PosterText variant="label" color={canvas.soft}>
+          {today.toUpperCase()}
+        </PosterText>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <PosterText
+            variant="display"
+            color={canvas.ink}
+            numberOfLines={2}
+            adjustsFontSizeToFit
+            minimumFontScale={0.6}
+            style={{ flexShrink: 1 }}
+          >
+            {name}
+          </PosterText>
+          <View
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: 15,
+              backgroundColor: canvas.ink,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginTop: 4,
+            }}
+          >
+            <Icon
+              name={{ sf: 'chevron.down', md: 'expand-more' }}
+              size={14}
+              color={canvas.background}
+            />
+          </View>
+        </View>
+      </Pressable>
+    </Link>
+  );
+}
+
+/**
+ * The band's name in the header, faded in once the masthead has scrolled
+ * under it, so the switcher is never out of reach. Only reads shared values
+ * and calls `interpolate` on the UI thread.
+ */
+function FadingTitle({
+  name,
+  offset,
+  min,
+}: {
+  name: string;
+  offset: SharedValue<number>;
+  min: SharedValue<number>;
+}) {
+  const canvas = usePosterCanvas();
+  const style = useAnimatedStyle(() => ({
+    opacity: interpolate(offset.get() - min.get(), [40, 90], [0, 1], 'clamp'),
+  }));
+  return (
+    <Animated.View style={style}>
+      <Link href="/boards" asChild>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${name}. Change band`}
+          hitSlop={8}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 44 }}
+        >
+          <PosterText variant="caption" color={canvas.ink} numberOfLines={1}>
+            {name}
+          </PosterText>
+          <Icon name={{ sf: 'chevron.down', md: 'expand-more' }} size={12} color={canvas.soft} />
+        </Pressable>
+      </Link>
+    </Animated.View>
+  );
+}
+
+/** The board menu, as an outlined circle to match the masthead's button. */
 function BoardMenuButton() {
-  const colors = useThemeColors();
+  const canvas = usePosterCanvas();
   return (
     <Link href="/board-menu" asChild>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Board options"
         hitSlop={8}
-        style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+        style={({ pressed }) => ({
+          width: 36,
+          height: 36,
+          borderRadius: 18,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderWidth: 2,
+          borderColor: canvas.ink,
+          opacity: pressed ? 0.6 : 1,
+        })}
       >
-        <Icon name={{ sf: 'ellipsis', md: 'more-horiz' }} size={20} color={colors.primary} />
+        <Icon name={{ sf: 'ellipsis', md: 'more-horiz' }} size={18} color={canvas.ink} />
       </Pressable>
     </Link>
   );
