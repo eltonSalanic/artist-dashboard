@@ -1,8 +1,8 @@
 import { View } from 'react-native';
 import { Button } from './button';
 import { Icon, type IconName } from './icon';
+import { PosterText } from './poster-text';
 import { Skeleton } from './skeleton';
-import { ThemedText } from './themed-text';
 import { spacing, useTokens } from '@/theme';
 
 /**
@@ -62,17 +62,15 @@ export function ListState({
         size={28}
         color={tokens.mutedForeground}
       />
-      <ThemedText variant="headline">
+      <PosterText variant="title" color={tokens.foreground}>
         {error ? 'Could not load this' : title}
-      </ThemedText>
+      </PosterText>
       {(error?.message ?? body) !== undefined && (
-        <ThemedText variant="subhead" tone="muted" style={{ textAlign: 'center' }}>
+        <PosterText variant="body" color={tokens.mutedForeground} style={{ textAlign: 'center' }}>
           {error ? error.message : body}
-        </ThemedText>
+        </PosterText>
       )}
-      {error && onRetry && (
-        <Button title="Try again" variant="ghost" size="sm" onPress={onRetry} />
-      )}
+      {error && onRetry && <Button title="Try again" variant="ghost" size="sm" onPress={onRetry} />}
     </View>
   );
 }

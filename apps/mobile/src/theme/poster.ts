@@ -84,6 +84,10 @@ export const poster = {
   },
   prose: { fontFamily: face.bold, fontSize: 17, lineHeight: 22, letterSpacing: -0.35 },
   cardMeta: { fontFamily: face.medium, fontSize: 13, lineHeight: 17, letterSpacing: -0.1 },
+  /** A filter chip's label. */
+  chip: { fontFamily: face.semi, fontSize: 14, lineHeight: 18, letterSpacing: -0.1 },
+  /** A list row's title, like a Spotify track name. */
+  rowTitle: { fontFamily: face.semi, fontSize: 16, lineHeight: 21, letterSpacing: -0.2 },
   /** The words after a block's number. */
   caption: { fontFamily: face.bold, fontSize: 16, lineHeight: 20, letterSpacing: -0.2 },
   body: { fontFamily: face.semi, fontSize: 15, lineHeight: 20, letterSpacing: -0.1 },

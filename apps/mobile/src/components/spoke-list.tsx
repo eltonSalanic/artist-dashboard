@@ -2,8 +2,8 @@ import type { ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
 import { Icon, type IconName } from './icon';
 import { Button } from './button';
+import { PosterText } from './poster-text';
 import { Skeleton } from './skeleton';
-import { ThemedText } from './themed-text';
 import { spacing, useTokens } from '@/theme';
 
 /**
@@ -59,13 +59,13 @@ export function SpokeList({
             size={28}
             color={tokens.mutedForeground}
           />
-          <ThemedText variant="headline">Could not load this</ThemedText>
-          <ThemedText variant="subhead" tone="muted" style={{ textAlign: 'center' }}>
+          <PosterText variant="title" color={tokens.foreground}>
+            Could not load this
+          </PosterText>
+          <PosterText variant="body" color={tokens.mutedForeground} style={{ textAlign: 'center' }}>
             {error.message}
-          </ThemedText>
-          {onRetry && (
-            <Button title="Try again" variant="ghost" size="sm" onPress={onRetry} />
-          )}
+          </PosterText>
+          {onRetry && <Button title="Try again" variant="ghost" size="sm" onPress={onRetry} />}
         </Centered>
       );
     }
@@ -74,11 +74,17 @@ export function SpokeList({
       return (
         <Centered>
           <Icon name={emptyIcon} size={28} color={tokens.mutedForeground} />
-          <ThemedText variant="headline">{emptyTitle}</ThemedText>
+          <PosterText variant="title" color={tokens.foreground}>
+            {emptyTitle}
+          </PosterText>
           {emptyBody !== undefined && (
-            <ThemedText variant="subhead" tone="muted" style={{ textAlign: 'center' }}>
+            <PosterText
+              variant="body"
+              color={tokens.mutedForeground}
+              style={{ textAlign: 'center' }}
+            >
               {emptyBody}
-            </ThemedText>
+            </PosterText>
           )}
         </Centered>
       );

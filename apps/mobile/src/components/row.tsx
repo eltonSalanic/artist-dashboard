@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, View, type AccessibilityActionInfo } from 'react-native';
 import { radius, spacing, useTokens } from '@/theme';
-import { ThemedText } from './themed-text';
+import { PosterText } from './poster-text';
 
 /**
  * A list row: something small on the left, a title, a quieter line under it,
@@ -10,6 +10,8 @@ import { ThemedText } from './themed-text';
  * Grouped rows separated by hairlines rather than a card each — "Everything's a
  * Card", every row in its own rounded shadowed box, is one of the named
  * native-slop tells, and a list of twelve tasks is exactly where it shows up.
+ *
+ * Set like a Spotify track row: a semibold title, a medium-weight grey line.
  */
 export function Row({
   title,
@@ -44,23 +46,24 @@ export function Row({
     <>
       {lead !== undefined && <View style={{ width: 18, alignItems: 'center' }}>{lead}</View>}
       <View style={{ flex: 1, gap: 2 }}>
-        <ThemedText
-          variant="body"
+        <PosterText
+          variant="rowTitle"
+          color={tokens.foreground}
           numberOfLines={2}
           style={dim ? { textDecorationLine: 'line-through', opacity: 0.6 } : undefined}
         >
           {title}
-        </ThemedText>
+        </PosterText>
         {meta != null && meta !== '' && (
-          <ThemedText variant="footnote" tone="muted" numberOfLines={1}>
+          <PosterText variant="cardMeta" color={tokens.mutedForeground} numberOfLines={1}>
             {meta}
-          </ThemedText>
+          </PosterText>
         )}
       </View>
       {typeof trailing === 'string' ? (
-        <ThemedText variant="footnote" tone="muted">
+        <PosterText variant="cardMeta" color={tokens.mutedForeground}>
           {trailing}
-        </ThemedText>
+        </PosterText>
       ) : (
         trailing
       )}
@@ -95,10 +98,7 @@ export function Row({
           ? (event) => onAccessibilityAction(event.nativeEvent.actionName)
           : undefined
       }
-      style={({ pressed }) => [
-        layout,
-        pressed && { backgroundColor: tokens.accent },
-      ]}
+      style={({ pressed }) => [layout, pressed && { backgroundColor: tokens.accent }]}
     >
       {body}
     </Pressable>
