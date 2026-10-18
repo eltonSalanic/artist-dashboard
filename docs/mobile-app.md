@@ -119,6 +119,7 @@ deliberately scheduled after mobile rather than blocking it.
 | **P14** | [Store builds](#p14--store-builds) | mobile, CI | ☐ |
 | **P15** | [Web board switcher](#p15--web-board-switcher) | **web** | ☐ |
 | **P16** | [Notes-style editor](#p16--notes-style-editor) | mobile, shared | ☐ |
+| **P17** | [Redesign](#p17--redesign) | mobile, api-client | ◐ |
 
 Each phase ends with a **hard stop for manual verification** before the next
 begins, per the project's phase-gated convention. What to verify is tracked
@@ -1582,6 +1583,31 @@ fragile pure-JS editor in Expo Go, and then (2026-10-13) to do it last.
 - Toolbar: bold, italic, strikethrough, bullets, numbers, as asked. The P11
   toolbar's limits (scrolls away in a long note) are worth fixing at the same
   time.
+
+### P17 — Redesign
+
+Chosen 2026-10-17. Four directions after Spotify / Spotify for Artists were
+built side by side (branches `redesign/a-s4a-home`, `b-spotify-dark`,
+`c-wrapped`, `d-s4a-pages`) and screenshotted; the user picked **C's
+calendar** and asked to keep the existing widget cards, only in the new face,
+with C's masthead on the widget page. Branch `feat/mobile-redesign`. Web is
+not touched.
+
+- **Face:** Figtree (`@expo-google-fonts/figtree`, loaded at runtime with
+  `expo-font`, so no native rebuild), tokens in `apps/mobile/src/theme/poster.ts`.
+- **Widget page:** today's date in small caps over the band name set huge
+  (tap to switch band), the header title fading in once it scrolls away, ⋯ as
+  an outlined circle. Cards keep their palette colours and layout; their text
+  is Figtree.
+- **Calendar:** C's poster agenda (huge month, "This week" block, giant day
+  numbers). Every item wears **its widget's colour in its own band**: a show is
+  the band's Shows card colour, a rehearsal its Next Rehearsals colour, a due
+  task its To-Do's colour (`widgetInk`, the same rule as `use-hub-cards`).
+  Events are blocks; tasks, goals and reminders are rows with a badge in that
+  colour. Each band's theme comes from the new `useBoards` hook in
+  `@artist/api-client` (same `["board", id]` key as `useBoard`).
+- Both screens sit on the app's own canvas, so a plain widget looks the same
+  on both. The rest of the app is unchanged until the next step.
 
 ## Library replacement reference
 
