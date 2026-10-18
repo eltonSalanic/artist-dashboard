@@ -9,3 +9,4 @@ export * from './shadows';
 export * from './spacing';
 export * from './tokens';
 export * from './typography';
+export * from './poster';

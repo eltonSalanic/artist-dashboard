@@ -10,12 +10,14 @@ import {
   focusManager,
 } from '@tanstack/react-query';
 import { Stack } from 'expo-router/stack';
+import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useSession } from '@artist/api-client';
 import { supabase } from '@/lib/supabase';
+import { POSTER_FONTS } from '@/theme/poster';
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -31,7 +33,13 @@ const queryClient = new QueryClient({
 });
 
 export default function RootLayout() {
-  const { session, loading } = useSession();
+  const { session, loading: sessionLoading } = useSession();
+  // The hub and calendar set their numbers in Figtree. Held behind the splash
+  // like the session, so the first frame is not system type swapping to
+  // Figtree a beat later. A font that fails to load is not worth a broken
+  // launch: the text falls back to the system face.
+  const [fontsLoaded, fontError] = useFonts(POSTER_FONTS);
+  const loading = sessionLoading || (!fontsLoaded && fontError === null);
 
   useEffect(() => {
     // supabase-js refreshes the access token on a `setTimeout`, and the OS

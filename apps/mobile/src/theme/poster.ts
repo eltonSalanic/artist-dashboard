@@ -1,0 +1,95 @@
+import type { TextStyle } from 'react-native';
+import { Figtree_600SemiBold } from '@expo-google-fonts/figtree/600SemiBold';
+import { Figtree_700Bold } from '@expo-google-fonts/figtree/700Bold';
+import { Figtree_800ExtraBold } from '@expo-google-fonts/figtree/800ExtraBold';
+import { Figtree_900Black } from '@expo-google-fonts/figtree/900Black';
+import type { WidgetColor } from '@artist/shared';
+import { useScheme } from './colors';
+import { posterCanvas, posterSlot, type PosterCanvas, type PosterColor } from './poster-colors';
+import { useBoardPalette } from './tokens';
+
+export * from './poster-colors';
+
+/**
+ * The "Wrapped" design language for the hub and the calendar: one heavy
+ * geometric face, set huge and tight, on flat blocks of the band's colour.
+ *
+ * **Figtree** is the free face closest to Spotify's Circular — geometric,
+ * single-storey `a`, round dots — and unlike most Circular stand-ins it has a
+ * true Black (900), which is what makes a number read as a poster rather than
+ * as a stat. Loaded at runtime with `expo-font` (already in every Expo build),
+ * so no native rebuild. Only four weights ship; each import is one file, so
+ * the other ten in the package never reach the bundle.
+ *
+ * Custom families carry their weight in the name, so **never pair these with
+ * `fontWeight`** — on iOS that makes the system go looking for a synthetic
+ * bold of a face that is already bold.
+ */
+export const POSTER_FONTS = {
+  Figtree_600SemiBold,
+  Figtree_700Bold,
+  Figtree_800ExtraBold,
+  Figtree_900Black,
+};
+
+export const face = {
+  black: 'Figtree_900Black',
+  heavy: 'Figtree_800ExtraBold',
+  bold: 'Figtree_700Bold',
+  semi: 'Figtree_600SemiBold',
+} as const;
+
+/**
+ * The ramp. Every style sets `lineHeight`, at least ~1.1× the size: iOS clips
+ * a glyph that pokes out of its line box, and Figtree Black's numerals are
+ * tall. The *visual* tightness comes from negative tracking and from the
+ * layout's gaps, never from a squeezed line box.
+ *
+ * `maxFontSizeMultiplier` keeps Dynamic Type from blowing a 96pt numeral past
+ * its block; body-sized text is allowed to scale further than display text.
+ */
+export const poster = {
+  /** The hub hero's number. */
+  mega: { fontFamily: face.black, fontSize: 96, lineHeight: 104, letterSpacing: -4 },
+  /** A block's number, a calendar day. */
+  figure: { fontFamily: face.black, fontSize: 58, lineHeight: 64, letterSpacing: -2.2 },
+  /** The band's name, the month. */
+  display: { fontFamily: face.black, fontSize: 40, lineHeight: 46, letterSpacing: -1.4 },
+  /** The sentence under a hero number. */
+  statement: { fontFamily: face.heavy, fontSize: 30, lineHeight: 34, letterSpacing: -0.9 },
+  /** Prose on a block (Focus, Notes), an event's title. */
+  title: { fontFamily: face.heavy, fontSize: 20, lineHeight: 24, letterSpacing: -0.4 },
+  /** The words after a block's number. */
+  caption: { fontFamily: face.bold, fontSize: 16, lineHeight: 20, letterSpacing: -0.2 },
+  body: { fontFamily: face.semi, fontSize: 15, lineHeight: 20, letterSpacing: -0.1 },
+  meta: { fontFamily: face.semi, fontSize: 13, lineHeight: 17, letterSpacing: 0 },
+  /** Small caps labels: a block's name, a kind. */
+  label: { fontFamily: face.heavy, fontSize: 11, lineHeight: 14, letterSpacing: 1.1 },
+} as const satisfies Record<string, TextStyle>;
+
+/** Display sizes scale a little with Dynamic Type; body sizes scale more. */
+export const DISPLAY_SCALE = 1.15;
+export const BODY_SCALE = 1.4;
+
+/**
+ * Spotify's corners are small — album art is nearly square — and a poster's
+ * edge should read as cut paper, not as a phone widget's squircle. Still
+ * continuous, still not sharp.
+ */
+export const posterRadius = {
+  block: 14,
+  chip: 9999,
+} as const;
+
+/** Generous: blocks are posters on a wall, they need air between them. */
+export const posterGap = 12;
+
+/** The page behind the posters, for this scheme. */
+export function usePosterCanvas(): PosterCanvas {
+  return posterCanvas(useScheme());
+}
+
+/** One block's colours, in the selected board's palette. */
+export function usePosterSlot(slot: WidgetColor): PosterColor {
+  return posterSlot(useBoardPalette(), useScheme(), slot);
+}
