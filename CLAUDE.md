@@ -69,6 +69,18 @@ These are project rules the user has set. Follow them without re-litigating.
 
 ---
 
+## Trello — keep the Band Board up to date
+
+The user tracks work and phone testing on the **Band Board** Trello board: https://trello.com/b/xsGE7BMR/band-board. Update it as you go, through the claude.ai Trello connector. Read list IDs with `trelloReadList list_by_board`; never guess them.
+
+- **Tickets:** when you start one, move its card to **Dev**. When it's built, move it to **Testing** and comment with the commit hash, what changed and how to test it. Only the user moves cards to **Done**.
+- **Phases:** each phase or redesign step gets one card in Testing, named "P<n> — <name> testing", with a Trello checklist (🔵 priority checks first). When a later step of the same phase lands, add a checklist for it to that card. Link the card from a short section in [docs/test-checklist.md](docs/test-checklist.md).
+- **When the user confirms a check in chat**, tick it on the card.
+- **Failures** found while testing become their own cards.
+- **Names:** refer to cards by their title, not their number; the user can't see card numbers in Trello.
+
+---
+
 ## Two migration systems (know which owns what)
 
 One Postgres database, multiple schemas with different owners. **They never overlap.**
