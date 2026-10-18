@@ -197,21 +197,3 @@ export function contrast(fg: string, bg: string): number {
   const b = luminance(bg);
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
-
-/**
- * The record ornament's groove: the block's ink at a whisper. Text that can
- * sit over it is always full ink, and the spec checks that pairing too.
- */
-export function grooveOf(color: PosterColor): string {
-  return composite(`${color.ink}1a`, color.bg);
-}
-
-/** A hairline in the block's ink — dividers only, never behind text. */
-export function hairlineOf(color: PosterColor): string {
-  return composite(`${color.ink}2e`, color.bg);
-}
-
-/** Skeleton bones in the block's ink. */
-export function boneOf(color: PosterColor): string {
-  return composite(`${color.ink}26`, color.bg);
-}

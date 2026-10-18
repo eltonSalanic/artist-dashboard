@@ -1,5 +1,5 @@
 import { BoardPalettes, WidgetColors } from '@artist/shared';
-import { contrast, grooveOf, posterCanvas, posterSlot } from './poster-colors';
+import { contrast, posterCanvas, posterSlot } from './poster-colors';
 
 /**
  * The Wrapped screens write on solid colour, so legibility is a property of
@@ -23,8 +23,6 @@ describe('poster colours', () => {
           expect(contrast(block.ink, block.bg)).toBeGreaterThanOrEqual(6);
           expect(contrast(block.soft, block.bg)).toBeGreaterThanOrEqual(4.5);
           expect(contrast(block.accent, block.bg)).toBeGreaterThanOrEqual(3);
-          // Labels and numbers can sit over the record ornament.
-          expect(contrast(block.ink, grooveOf(block))).toBeGreaterThanOrEqual(4.5);
         });
       }
     }
