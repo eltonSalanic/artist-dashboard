@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
-import { Link } from 'expo-router';
+import { router } from 'expo-router';
 import { useMe } from '@artist/api-client';
 import { Button } from '@/components/button';
 import { Icon } from '@/components/icon';
@@ -98,35 +98,36 @@ export function YouScreen() {
 
       {board !== null && accent !== null && (
         <Section title="SHOWING">
-          {/* The band is the switcher, as the band name is on the widget page. */}
-          <Link href="/boards" asChild>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`${board.name}, ${board.role.toLowerCase()}. Change band`}
-              style={({ pressed }) => ({
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: spacing.md - 4,
-                padding: spacing.md - 2,
-                borderRadius: posterRadius.block,
-                borderCurve: 'continuous',
-                backgroundColor: accent.bg,
-                transform: [{ scale: pressed ? 0.98 : 1 }],
-              })}
-            >
-              <View style={{ flex: 1, gap: spacing.xs }}>
-                <PosterText variant="title" color={accent.fg} numberOfLines={2}>
-                  {board.name}
-                </PosterText>
-                <PosterText variant="label" color={accent.fg}>
-                  {boards.length > 1
-                    ? `${board.role} · ${boards.length} BANDS · TAP TO SWITCH`
-                    : board.role}
-                </PosterText>
-              </View>
-              <Icon name={{ sf: 'chevron.down', md: 'expand-more' }} size={14} color={accent.fg} />
-            </Pressable>
-          </Link>
+          {/* The band is the switcher, as the band name is on the widget page.
+              Pushed from `onPress` rather than wrapped in a `Link asChild`: the
+              Link's slot drops a style function, and with it the block's fill. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${board.name}, ${board.role.toLowerCase()}. Change band`}
+            onPress={() => router.push('/boards')}
+            style={({ pressed }) => ({
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing.md - 4,
+              padding: spacing.md - 2,
+              borderRadius: posterRadius.block,
+              borderCurve: 'continuous',
+              backgroundColor: accent.bg,
+              transform: [{ scale: pressed ? 0.98 : 1 }],
+            })}
+          >
+            <View style={{ flex: 1, gap: spacing.xs }}>
+              <PosterText variant="title" color={accent.fg} numberOfLines={2}>
+                {board.name}
+              </PosterText>
+              <PosterText variant="label" color={accent.fg}>
+                {boards.length > 1
+                  ? `${board.role} · ${boards.length} BANDS · TAP TO SWITCH`
+                  : board.role}
+              </PosterText>
+            </View>
+            <Icon name={{ sf: 'chevron.down', md: 'expand-more' }} size={14} color={accent.fg} />
+          </Pressable>
         </Section>
       )}
 
