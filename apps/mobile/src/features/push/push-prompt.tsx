@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Linking, StyleSheet, View } from 'react-native';
-import { Button } from '@/components/button';
-import { Card } from '@/components/card';
-import { ThemedText } from '@/components/themed-text';
-import { spacing } from '@/theme';
+import { ActivityIndicator, Linking, View } from 'react-native';
+import { Icon } from '@/components/icon';
+import { PosterPill } from '@/components/poster-pill';
+import { PosterText } from '@/components/poster-text';
+import { blockInk, posterRadius, spacing, useCanvasInk, usePosterSlot } from '@/theme';
 import { usePushPermission, usePushPromptDismissed } from './use-push';
 
 /** What a band can notify about — the four categories in NOTIFICATION_CATEGORY_COPY. */
@@ -19,33 +19,53 @@ const WHAT = 'mentions, tasks handed to you, schedule changes and reminders';
  * where it lives because a mention is the clearest case for a buzz.
  *
  * Gone once answered either way, or waved off; the You tab keeps the switch.
+ *
+ * A block in the page's own ink — black on paper, charcoal on black — rather
+ * than a band's colour: it is about this phone, not about any one band.
  */
 export function PushPrompt() {
   const { permission, ask } = usePushPermission();
   const { dismissed, dismiss } = usePushPromptDismissed();
   const [asking, setAsking] = useState(false);
+  const ink = blockInk(usePosterSlot('base'));
 
   if (permission !== 'undetermined' || dismissed !== false) return null;
 
   return (
-    <Card style={styles.card}>
-      <ThemedText variant="headline">Hear about it as it happens</ThemedText>
-      <ThemedText variant="subhead" tone="muted">
-        Turn on notifications to hear about {WHAT}.
-      </ThemedText>
-      <View style={styles.actions}>
-        <Button
-          title="Turn on"
-          size="sm"
-          loading={asking}
+    <View
+      style={{
+        backgroundColor: ink.bg,
+        borderRadius: posterRadius.block,
+        borderCurve: 'continuous',
+        padding: spacing.md + 2,
+        gap: spacing.sm,
+        marginBottom: spacing.lg,
+      }}
+    >
+      <PosterText variant="label" color={ink.soft}>
+        NOTIFICATIONS
+      </PosterText>
+      <PosterText variant="statement" color={ink.ink} accessibilityRole="header">
+        Hear about it as it happens
+      </PosterText>
+      <PosterText variant="body" color={ink.soft}>
+        {`Turn on notifications to hear about ${WHAT}.`}
+      </PosterText>
+      <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs }}>
+        <PosterPill
+          ink={ink}
+          filled
+          label="Turn on"
+          lead={asking ? <ActivityIndicator size="small" color={ink.bg} /> : undefined}
+          disabled={asking}
           onPress={() => {
             setAsking(true);
             void ask().finally(() => setAsking(false));
           }}
         />
-        <Button title="Not now" size="sm" variant="ghost" onPress={dismiss} />
+        <PosterPill ink={ink} label="Not now" onPress={dismiss} />
       </View>
-    </Card>
+    </View>
   );
 }
 
@@ -57,48 +77,58 @@ export function PushPrompt() {
 export function PushSetting() {
   const { permission, ask } = usePushPermission();
   const [asking, setAsking] = useState(false);
+  const ink = useCanvasInk();
 
   if (permission === undefined) return null;
+  const on = permission === 'granted';
 
   return (
-    <Card>
-      <ThemedText variant="headline">
-        {permission === 'granted' ? 'Notifications are on' : 'Notifications are off'}
-      </ThemedText>
-      <ThemedText variant="subhead" tone="muted">
-        {permission === 'granted'
-          ? `This phone hears about ${WHAT}. Each band's Settings decides which.`
-          : permission === 'denied'
-            ? 'They were turned off for this app. Switch them back on in Settings.'
-            : `Turn them on to hear about ${WHAT}.`}
-      </ThemedText>
-      {permission === 'undetermined' && (
-        <Button
-          title="Turn on"
-          size="sm"
-          loading={asking}
-          style={styles.action}
-          onPress={() => {
-            setAsking(true);
-            void ask().finally(() => setAsking(false));
-          }}
-        />
-      )}
-      {permission === 'denied' && (
-        <Button
-          title="Open Settings"
-          size="sm"
-          variant="secondary"
-          style={styles.action}
-          onPress={() => void Linking.openSettings()}
-        />
-      )}
-    </Card>
+    <View style={{ flexDirection: 'row', gap: spacing.md, paddingVertical: spacing.xs }}>
+      <Icon
+        name={
+          on
+            ? { sf: 'bell.fill', md: 'notifications' }
+            : { sf: 'bell.slash', md: 'notifications-off' }
+        }
+        size={20}
+        color={ink.ink}
+      />
+      <View style={{ flex: 1, gap: spacing.xs }}>
+        <PosterText variant="rowTitle" color={ink.ink}>
+          {on ? 'Notifications are on' : 'Notifications are off'}
+        </PosterText>
+        <PosterText variant="cardMeta" color={ink.soft}>
+          {on
+            ? `This phone hears about ${WHAT}. Each band's Settings decides which.`
+            : permission === 'denied'
+              ? 'They were turned off for this app. Switch them back on in Settings.'
+              : `Turn them on to hear about ${WHAT}.`}
+        </PosterText>
+        {permission === 'undetermined' && (
+          <View style={{ marginTop: spacing.xs }}>
+            <PosterPill
+              ink={ink}
+              filled
+              label="Turn on"
+              lead={asking ? <ActivityIndicator size="small" color={ink.bg} /> : undefined}
+              disabled={asking}
+              onPress={() => {
+                setAsking(true);
+                void ask().finally(() => setAsking(false));
+              }}
+            />
+          </View>
+        )}
+        {permission === 'denied' && (
+          <View style={{ marginTop: spacing.xs }}>
+            <PosterPill
+              ink={ink}
+              label="Open Settings"
+              onPress={() => void Linking.openSettings()}
+            />
+          </View>
+        )}
+      </View>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: { marginBottom: spacing.md },
-  actions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
-  action: { alignSelf: 'flex-start', marginTop: spacing.xs },
-});
