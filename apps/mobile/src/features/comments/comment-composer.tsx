@@ -7,7 +7,7 @@ import {
   type MentionTarget,
 } from '@artist/shared';
 import { Button } from '@/components/button';
-import { ThemedText } from '@/components/themed-text';
+import { PosterText } from '@/components/poster-text';
 import { radius, spacing, type, useTokens } from '@/theme';
 
 /**
@@ -83,9 +83,9 @@ export function CommentComposer({
                 backgroundColor: pressed ? tokens.accent : tokens.muted,
               })}
             >
-              <ThemedText variant="subhead" style={{ fontWeight: '600' }}>
-                @{target.displayName}
-              </ThemedText>
+              <PosterText variant="chip" color={tokens.foreground}>
+                {`@${target.displayName}`}
+              </PosterText>
             </Pressable>
           ))}
         </ScrollView>

@@ -91,6 +91,9 @@ export const poster = {
   /** The words after a block's number. */
   caption: { fontFamily: face.bold, fontSize: 16, lineHeight: 20, letterSpacing: -0.2 },
   body: { fontFamily: face.semi, fontSize: 15, lineHeight: 20, letterSpacing: -0.1 },
+  /** Running text someone wrote: a description, a comment. Lighter than
+   *  `body`, with more lead, because it can run to a paragraph. */
+  paragraph: { fontFamily: face.medium, fontSize: 15, lineHeight: 21, letterSpacing: -0.1 },
   meta: { fontFamily: face.semi, fontSize: 13, lineHeight: 17, letterSpacing: 0 },
   /** Small caps labels: a block's name, a kind. */
   label: { fontFamily: face.heavy, fontSize: 11, lineHeight: 14, letterSpacing: 1.1 },

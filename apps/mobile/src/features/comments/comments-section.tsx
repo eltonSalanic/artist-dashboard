@@ -20,10 +20,10 @@ import {
 import { Icon } from '@/components/icon';
 import { Section } from '@/components/section';
 import { Skeleton } from '@/components/skeleton';
-import { ThemedText } from '@/components/themed-text';
+import { PosterText } from '@/components/poster-text';
 import { AttachmentGrid } from '@/features/attachments/attachment-grid';
 import { shortAgo } from '@/features/board/format';
-import { spacing, useThemeColors } from '@/theme';
+import { face, spacing, useThemeColors } from '@/theme';
 import { CommentComposer } from './comment-composer';
 
 /**
@@ -39,6 +39,7 @@ export function CommentsSection({
   boardId: string;
   taskId: string;
 }) {
+  const colors = useThemeColors();
   const { can } = usePermissions();
   const board = useBoard(boardId);
   const comments = useComments(boardId, taskId);
@@ -78,9 +79,9 @@ export function CommentsSection({
           ))}
         </View>
       ) : (
-        <ThemedText variant="subhead" tone="muted">
+        <PosterText variant="cardMeta" color={colors.mutedForeground}>
           No comments yet.
-        </ThemedText>
+        </PosterText>
       )}
 
       {can('task.comment') && (
@@ -171,13 +172,12 @@ function CommentItem({
   return (
     <View style={{ gap: spacing.xs }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-        <ThemedText variant="subhead" style={{ fontWeight: '600', flexShrink: 1 }}>
+        <PosterText variant="rowTitle" color={colors.foreground} style={{ flexShrink: 1 }}>
           {comment.author.displayName}
-        </ThemedText>
-        <ThemedText variant="footnote" tone="muted" style={{ flex: 1 }}>
-          {shortAgo(comment.createdAt)}
-          {comment.editedAt ? ' · edited' : ''}
-        </ThemedText>
+        </PosterText>
+        <PosterText variant="cardMeta" color={colors.mutedForeground} style={{ flex: 1 }}>
+          {`${shortAgo(comment.createdAt)}${comment.editedAt ? ' · edited' : ''}`}
+        </PosterText>
         {(canEdit || canDelete) && !editing && (
           <Pressable
             accessibilityRole="button"
@@ -206,21 +206,23 @@ function CommentItem({
           busy={update.isPending}
         />
       ) : (
-        <ThemedText variant="body">
+        <PosterText variant="paragraph" color={colors.foreground}>
           {splitMentions(comment.body, members).map((segment, i) =>
             segment.type === 'mention' ? (
-              <ThemedText
+              // A family, not a weight: Figtree's weights are separate faces.
+              <PosterText
                 key={i}
-                variant="body"
-                style={{ color: colors.primary, fontWeight: '600' }}
+                variant="paragraph"
+                color={colors.primary}
+                style={{ fontFamily: face.bold }}
               >
                 {segment.value}
-              </ThemedText>
+              </PosterText>
             ) : (
               segment.value
             ),
           )}
-        </ThemedText>
+        </PosterText>
       )}
 
       {comment.attachments.length > 0 && (

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
-import { spacing } from '@/theme';
-import { ThemedText } from './themed-text';
+import { spacing, useTokens } from '@/theme';
+import { PosterText } from './poster-text';
 
 /**
  * A labelled group on a detail screen: a small caps caption, then its content.
@@ -17,6 +17,7 @@ export function Section({
   action?: ReactNode;
   children: ReactNode;
 }) {
+  const tokens = useTokens();
   return (
     <View style={{ gap: spacing.xs }}>
       <View
@@ -27,9 +28,9 @@ export function Section({
           minHeight: 20,
         }}
       >
-        <ThemedText variant="caption" tone="muted">
+        <PosterText variant="label" color={tokens.mutedForeground} accessibilityRole="header">
           {title}
-        </ThemedText>
+        </PosterText>
         {action}
       </View>
       {children}

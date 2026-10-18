@@ -12,8 +12,8 @@ import {
 import { Button } from '@/components/button';
 import { Section } from '@/components/section';
 import { Skeleton } from '@/components/skeleton';
-import { ThemedText } from '@/components/themed-text';
-import { spacing } from '@/theme';
+import { PosterText } from '@/components/poster-text';
+import { spacing, useThemeColors } from '@/theme';
 import { AttachmentGrid } from './attachment-grid';
 import { NameSheet } from './name-sheet';
 import { chooseSource, pickUpload } from './pick';
@@ -34,6 +34,7 @@ export function TaskAttachments({
   boardId: string;
   parent: { taskId: string } | { eventId: string };
 }) {
+  const colors = useThemeColors();
   const { can } = usePermissions();
   const me = useMe(true);
   const attachments = useAttachments(boardId, parent);
@@ -74,15 +75,15 @@ export function TaskAttachments({
           onDelete={(attachmentId) => remove.mutateAsync(attachmentId)}
         />
       ) : (
-        <ThemedText variant="subhead" tone="muted">
+        <PosterText variant="cardMeta" color={colors.mutedForeground}>
           No files attached.
-        </ThemedText>
+        </PosterText>
       )}
 
       {upload.isPending && (
-        <ThemedText variant="footnote" tone="muted">
-          Uploading {upload.variables?.fileName}…
-        </ThemedText>
+        <PosterText variant="cardMeta" color={colors.mutedForeground}>
+          {`Uploading ${upload.variables?.fileName ?? 'file'}…`}
+        </PosterText>
       )}
 
       {can('file.upload') && (

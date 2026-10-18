@@ -9,7 +9,7 @@ import { Dot, Row } from '@/components/row';
 import { Icon } from '@/components/icon';
 import { Section } from '@/components/section';
 import { Skeleton } from '@/components/skeleton';
-import { ThemedText } from '@/components/themed-text';
+import { PosterText } from '@/components/poster-text';
 import { dueDay, shortDate } from '@/features/board/format';
 import { useThemeColors } from '@/theme';
 
@@ -61,9 +61,9 @@ export function LinkedTasks({
             hitSlop={10}
             onPress={() => router.push(`/board/${boardId}/form/task?${linkQuery(link)}`)}
           >
-            <ThemedText variant="subhead" style={{ color: colors.primary }}>
+            <PosterText variant="chip" color={colors.primary}>
               Add
-            </ThemedText>
+            </PosterText>
           </Pressable>
         ) : undefined
       }
@@ -71,9 +71,9 @@ export function LinkedTasks({
       {tasks.isPending ? (
         <Skeleton width="100%" height={48} />
       ) : roots.length === 0 ? (
-        <ThemedText variant="subhead" tone="muted">
+        <PosterText variant="cardMeta" color={colors.mutedForeground}>
           No tasks linked yet.
-        </ThemedText>
+        </PosterText>
       ) : (
         roots.map((task, index) => (
           <Row

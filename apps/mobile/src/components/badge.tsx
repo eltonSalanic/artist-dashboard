@@ -1,6 +1,6 @@
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 import { radius, spacing, useTokens } from '@/theme';
-import { ThemedText } from './themed-text';
+import { PosterText } from './poster-text';
 
 /**
  * A capsule for a count or a status word. Reads against whatever surface it
@@ -33,15 +33,9 @@ export function Badge({
         style,
       ]}
     >
-      <ThemedText
-        variant="footnote"
-        style={{
-          color: solid ? tokens.primaryForeground : tokens.foreground,
-          fontWeight: '600',
-        }}
-      >
+      <PosterText variant="meta" color={solid ? tokens.primaryForeground : tokens.foreground}>
         {label}
-      </ThemedText>
+      </PosterText>
     </View>
   );
 }
