@@ -1,5 +1,6 @@
 import {
   BOARD_PALETTE_COLORS,
+  SURFACE_TOKENS,
   oklchToHex,
   type BoardPalette,
   type ColorScheme,
@@ -57,31 +58,19 @@ const MAX_CHROMA = 0.24;
 /** The alpha for `soft`: as low as it can go and stay ≥ 4.5:1 on every block. */
 const SOFT_ALPHA = 0.8;
 
-const CANVAS: Record<ColorScheme, { background: Oklch; ink: Oklch; soft: Oklch }> = {
-  // Paper, not the warm cream of the rest of the app: posters want a brighter
-  // ground so the colour blocks sit on it rather than in it.
-  light: {
-    background: { l: 0.975, c: 0.006, h: 85 },
-    ink: { l: 0.17, c: 0.006, h: 60 },
-    soft: { l: 0.45, c: 0.01, h: 66 },
-  },
-  // Near black: Wrapped's own ground, and it makes every palette glow.
-  dark: {
-    background: { l: 0.145, c: 0.004, h: 70 },
-    ink: { l: 0.97, c: 0.008, h: 85 },
-    soft: { l: 0.76, c: 0.01, h: 75 },
-  },
-};
-
+/**
+ * The page is the app's own canvas (the warm cream, or charcoal in the dark),
+ * so the calendar and the widget page sit on the same ground as the widget
+ * cards, and a band's uncoloured widget looks the same in both places.
+ */
 export function posterCanvas(scheme: ColorScheme): PosterCanvas {
-  const c = CANVAS[scheme];
-  const ink = oklchToHex(c.ink);
+  const page = SURFACE_TOKENS[scheme];
   return {
-    background: oklchToHex(c.background),
-    ink,
-    soft: oklchToHex(c.soft),
-    rule: oklchToHex({ ...c.ink, alpha: 0.14 }),
-    faint: oklchToHex({ ...c.ink, alpha: 0.08 }),
+    background: oklchToHex(page.background),
+    ink: oklchToHex(page.foreground),
+    soft: oklchToHex(page.mutedForeground),
+    rule: oklchToHex({ ...page.foreground, alpha: 0.14 }),
+    faint: oklchToHex({ ...page.foreground, alpha: 0.08 }),
   };
 }
 

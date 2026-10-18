@@ -1,16 +1,16 @@
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, View } from 'react-native';
 import { Stack, router } from 'expo-router';
-import { useAllBoardsCalendar, type CalendarItemDto } from '@artist/api-client';
+import { useAllBoardsCalendar, useBoards, type CalendarItemDto } from '@artist/api-client';
 import {
   CALENDAR_CATEGORY_COPY,
   calendarCategory,
   daysFromToday,
   groupCalendarByDay,
-  type BoardPalette,
+  resolveBoardTheme,
   type BoardSummaryDto,
+  type BoardTheme,
   type CalendarCategory,
-  type PaletteSlot,
   type WidgetType,
 } from '@artist/shared';
 import { BoardFilter } from '@/components/board-filter';
@@ -21,16 +21,16 @@ import { useBoardScope } from '@/features/boards/use-board-scope';
 import { timeOfDay } from '@/features/board/format';
 import { useRefetchOnFocus } from '@/lib/refetch-on-focus';
 import {
-  boardAccent,
   boneOf,
   posterRadius,
-  posterSlot,
+  shadows,
   spacing,
-  useBoardPalette,
   usePosterCanvas,
   usePosterSlot,
   useScheme,
+  widgetInk,
   type PosterCanvas,
+  type WidgetInk,
 } from '@/theme';
 
 /**
@@ -40,10 +40,11 @@ import {
  * summary block — "This week: 5 things" with shows / rehearsals / meetings /
  * due counted out — and then the month's days, each a bold typographic
  * section: a huge day number in a gutter, and that day's things beside it.
- * Events are solid blocks in their band's colours (a show is the palette's
- * lead colour, a rehearsal its second, a meeting its third); tasks, goals and
- * reminders are lighter rows, because they are things to tick, not places to
- * be.
+ * Every item wears the colour of the widget it belongs to, in its own band:
+ * a show is the colour of that band's Shows card, a rehearsal of its Next
+ * Rehearsals card, a due task of its To-Do's card. Events are solid blocks;
+ * tasks, goals and reminders are lighter rows with a badge in their widget's
+ * colour, because they are things to tick, not places to be.
  *
  * An agenda, not a month grid. Web draws 42 cells with chips in them, which
  * works at 1200px and not at 390: a cell would be 50pt wide, and "Bowery
@@ -103,11 +104,17 @@ export function CalendarScreen() {
   );
 }
 
-/** Which palette slot an event kind paints with, in its own band's palette. */
-const EVENT_SLOT: Partial<Record<CalendarCategory, PaletteSlot>> = {
-  SHOW: 'c1',
-  REHEARSAL: 'c2',
-  MEETING: 'c3',
+/** Events are blocks; everything else is a row. */
+const EVENT_CATEGORIES: readonly CalendarCategory[] = ['SHOW', 'REHEARSAL', 'MEETING'];
+
+/** The widget each kind of item belongs to: its colour, and where a tap goes. */
+const CATEGORY_WIDGET: Record<CalendarCategory, WidgetType> = {
+  SHOW: 'SHOWS',
+  REHEARSAL: 'NEXT_REHEARSALS',
+  MEETING: 'NEXT_MEETINGS',
+  TASK: 'TODOS',
+  REMINDER: 'REMINDERS',
+  GOAL: 'GOALS',
 };
 
 /** A thing counts towards "this week" until it is done. */
@@ -128,21 +135,32 @@ function Agenda({
   top: React.ReactNode;
 }) {
   const canvas = usePosterCanvas();
-  const fallbackPalette = useBoardPalette();
+  const scheme = useScheme();
 
   /**
-   * A band's colours come from the board list, not from the item.
+   * A band's colours come from the band, not from the item.
    *
-   * The calendar response already carries `boardId` and `boardName` because an
-   * item merged across bands is otherwise unidentifiable and unlinkable. A
-   * palette is not per item though — it is per board, and the list of bands is
-   * already loaded and already says it. Putting it on every row would be the
-   * same fact repeated a hundred times, and a second place for it to be stale.
+   * The calendar response carries `boardId` because an item merged across
+   * bands is otherwise unidentifiable. Which colour each widget is lives in
+   * the band's theme, one per band rather than one per row. Until a band's
+   * theme arrives its rows use the palette from the band list with the
+   * widgets' default colours, which is what most bands have anyway.
    */
-  const palettes = useMemo(
-    () => new Map(boards.map((board) => [board.id, board.palette])),
-    [boards],
+  const details = useBoards(boards.map((board) => board.id));
+  // A few bands at most, so rebuilt each render rather than memoised on a
+  // list of query results that is a new array every time.
+  const themes = new Map<string, BoardTheme>(
+    boards.map((board, index) => [
+      board.id,
+      resolveBoardTheme(details[index]?.data?.theme ?? { palette: board.palette }),
+    ]),
   );
+  const inkOf = (item: CalendarItemDto, category: CalendarCategory): WidgetInk =>
+    widgetInk(
+      themes.get(item.boardId) ?? resolveBoardTheme(undefined),
+      CATEGORY_WIDGET[category],
+      scheme,
+    );
 
   // Rows name their band only when bands are mixed on screen: under "All" with
   // more than one. Filtered to a band, or in a one-band account, the band is
@@ -222,7 +240,7 @@ function Agenda({
           date={new Date(day.parts.year, day.parts.month, day.parts.day)}
           items={day.items}
           namesBoards={namesBoards}
-          paletteOf={(id) => palettes.get(id) ?? fallbackPalette}
+          inkOf={inkOf}
           canvas={canvas}
         />
       )}
@@ -488,13 +506,13 @@ function DaySection({
   date,
   items,
   namesBoards,
-  paletteOf,
+  inkOf,
   canvas,
 }: {
   date: Date;
   items: CalendarItemDto[];
   namesBoards: boolean;
-  paletteOf: (boardId: string) => BoardPalette;
+  inkOf: (item: CalendarItemDto, category: CalendarCategory) => WidgetInk;
   canvas: PosterCanvas;
 }) {
   const today = usePosterSlot('c1');
@@ -550,14 +568,13 @@ function DaySection({
       <View style={{ flex: 1, gap: spacing.sm, paddingTop: spacing.xs }}>
         {items.map((item) => {
           const category = calendarCategory(item);
-          const slot = EVENT_SLOT[category];
-          return slot ? (
+          const ink = inkOf(item, category);
+          return EVENT_CATEGORIES.includes(category) ? (
             <EventBlock
               key={`${item.kind}-${item.id}`}
               item={item}
               category={category}
-              slot={slot}
-              palette={paletteOf(item.boardId)}
+              color={ink}
               namesBoards={namesBoards}
             />
           ) : (
@@ -566,7 +583,7 @@ function DaySection({
               item={item}
               category={category}
               namesBoards={namesBoards}
-              band={paletteOf(item.boardId)}
+              badge={ink}
               canvas={canvas}
             />
           );
@@ -576,41 +593,30 @@ function DaySection({
   );
 }
 
-/** Which widget a non-task item lives in, so a tap has somewhere to go. */
-const CATEGORY_WIDGET: Record<Exclude<CalendarCategory, 'TASK'>, WidgetType> = {
-  SHOW: 'SHOWS',
-  REHEARSAL: 'NEXT_REHEARSALS',
-  MEETING: 'NEXT_MEETINGS',
-  REMINDER: 'REMINDERS',
-  GOAL: 'GOALS',
-};
-
 const openItem = (item: CalendarItemDto, category: CalendarCategory) =>
   router.push(
     item.kind === 'TASK'
       ? `/board/${item.boardId}/task/${item.id}`
-      : `/board/${item.boardId}/w/${CATEGORY_WIDGET[category as Exclude<CalendarCategory, 'TASK'>]}`,
+      : `/board/${item.boardId}/w/${CATEGORY_WIDGET[category]}`,
   );
 
 /**
- * A show, rehearsal or meeting: a solid block in its band's colour for that
- * kind. The kind is also written on it, so nothing rests on colour alone —
- * and under "All", the band is named too.
+ * A show, rehearsal or meeting: a solid block in the colour of its widget.
+ * The kind is also written on it, so nothing rests on colour alone — and
+ * under "All", the band is named too. An uncoloured widget gives a plain
+ * card, with the same faint shadow its card has on the widget page.
  */
 function EventBlock({
   item,
   category,
-  slot,
-  palette,
+  color,
   namesBoards,
 }: {
   item: CalendarItemDto;
   category: CalendarCategory;
-  slot: PaletteSlot;
-  palette: BoardPalette;
+  color: WidgetInk;
   namesBoards: boolean;
 }) {
-  const color = posterSlot(palette, useScheme(), slot);
   const time = timeOfDay(item.date);
   const ends = item.event?.endsAt ? timeOfDay(item.event.endsAt) : null;
   const meta = [item.event?.location, namesBoards ? item.boardName : null]
@@ -630,6 +636,7 @@ function EventBlock({
         padding: spacing.md - 2,
         gap: 2,
         minHeight: 44,
+        boxShadow: color.plain ? shadows.card : undefined,
         transform: [{ scale: pressed ? 0.98 : 1 }],
       })}
     >
@@ -660,22 +667,23 @@ const LIGHT_ICON: Partial<Record<CalendarCategory, IconName>> = {
 
 /**
  * A due task, a goal or a reminder: lighter than an event — ink on the page,
- * no block — because it is something to tick off, not somewhere to be.
+ * no block — because it is something to tick off, not somewhere to be. Its
+ * badge is a small tile in its widget's colour, so it still says which
+ * widget it belongs to at a glance.
  */
 function LightRow({
   item,
   category,
   namesBoards,
-  band,
+  badge,
   canvas,
 }: {
   item: CalendarItemDto;
   category: CalendarCategory;
   namesBoards: boolean;
-  band: BoardPalette;
+  badge: WidgetInk;
   canvas: PosterCanvas;
 }) {
-  const scheme = useScheme();
   const done = item.task?.isDone === true || item.goal?.completed === true;
   const mine = item.task?.assignedToMe === true;
   const meta = [
@@ -705,25 +713,35 @@ function LightRow({
         opacity: pressed ? 0.6 : 1,
       })}
     >
-      <View style={{ width: 24, alignItems: 'center' }}>
+      <View
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: 9,
+          borderCurve: 'continuous',
+          backgroundColor: badge.bg,
+          boxShadow: badge.plain ? shadows.card : undefined,
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: done ? 0.55 : 1,
+        }}
+      >
         {icon ? (
-          <Icon name={icon} size={18} color={done ? canvas.soft : canvas.ink} />
+          <Icon name={icon} size={16} color={badge.ink} />
         ) : (
           <View
             style={{
-              width: 20,
-              height: 20,
-              borderRadius: 10,
-              borderWidth: 2.5,
-              borderColor: done ? canvas.soft : canvas.ink,
-              backgroundColor: done ? canvas.soft : 'transparent',
+              width: 16,
+              height: 16,
+              borderRadius: 8,
+              borderWidth: 2,
+              borderColor: badge.ink,
+              backgroundColor: done ? badge.ink : 'transparent',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            {done && (
-              <Icon name={{ sf: 'checkmark', md: 'check' }} size={11} color={canvas.background} />
-            )}
+            {done && <Icon name={{ sf: 'checkmark', md: 'check' }} size={9} color={badge.bg} />}
           </View>
         )}
       </View>
@@ -737,16 +755,6 @@ function LightRow({
           {item.title}
         </PosterText>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-          {namesBoards && (
-            <View
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: 4,
-                backgroundColor: boardAccent(band, scheme).bg,
-              }}
-            />
-          )}
           <PosterText variant="meta" color={canvas.soft} numberOfLines={1} style={{ flexShrink: 1 }}>
             {meta}
           </PosterText>

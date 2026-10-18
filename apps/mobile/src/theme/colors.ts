@@ -51,7 +51,12 @@ const surfaces: Record<ColorScheme, ThemeColors> = {
  */
 const slotCache = new Map<string, ThemeColors>();
 
-function cardTokens(
+/**
+ * A card's tokens for one slot of a palette. A plain function so a list
+ * painting several bands (the calendar) can call it per row; one band's
+ * screen uses `useCardColors`.
+ */
+export function cardTokens(
   palette: BoardPalette,
   scheme: ColorScheme,
   slot: WidgetColor,

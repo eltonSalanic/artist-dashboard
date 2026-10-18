@@ -3,8 +3,15 @@ import { Figtree_600SemiBold } from '@expo-google-fonts/figtree/600SemiBold';
 import { Figtree_700Bold } from '@expo-google-fonts/figtree/700Bold';
 import { Figtree_800ExtraBold } from '@expo-google-fonts/figtree/800ExtraBold';
 import { Figtree_900Black } from '@expo-google-fonts/figtree/900Black';
-import type { WidgetColor } from '@artist/shared';
-import { useScheme } from './colors';
+import {
+  WIDGET_META,
+  resolveWidgetColor,
+  type BoardTheme,
+  type ColorScheme,
+  type WidgetColor,
+  type WidgetType,
+} from '@artist/shared';
+import { cardTokens, useScheme } from './colors';
 import { posterCanvas, posterSlot, type PosterCanvas, type PosterColor } from './poster-colors';
 import { useBoardPalette } from './tokens';
 
@@ -59,6 +66,16 @@ export const poster = {
   statement: { fontFamily: face.heavy, fontSize: 30, lineHeight: 34, letterSpacing: -0.9 },
   /** Prose on a block (Focus, Notes), an event's title. */
   title: { fontFamily: face.heavy, fontSize: 20, lineHeight: 24, letterSpacing: -0.4 },
+  /** A widget card's number. */
+  stat: {
+    fontFamily: face.black,
+    fontSize: 34,
+    lineHeight: 40,
+    letterSpacing: -1.2,
+    fontVariant: ['tabular-nums'],
+  },
+  /** A widget card's prose (Focus, Notes). */
+  prose: { fontFamily: face.bold, fontSize: 17, lineHeight: 22, letterSpacing: -0.2 },
   /** The words after a block's number. */
   caption: { fontFamily: face.bold, fontSize: 16, lineHeight: 20, letterSpacing: -0.2 },
   body: { fontFamily: face.semi, fontSize: 15, lineHeight: 20, letterSpacing: -0.1 },
@@ -92,4 +109,33 @@ export function usePosterCanvas(): PosterCanvas {
 /** One block's colours, in the selected board's palette. */
 export function usePosterSlot(slot: WidgetColor): PosterColor {
   return posterSlot(useBoardPalette(), useScheme(), slot);
+}
+
+/** A widget's own colours: what its card on the widget page is painted with. */
+export interface WidgetInk {
+  bg: string;
+  ink: string;
+  soft: string;
+  /** The widget is uncoloured: a plain card, which needs its shadow to show. */
+  plain: boolean;
+}
+
+/**
+ * The colours a band gave one widget, worked out exactly as the widget page
+ * does (`use-hub-cards`), so a show on the calendar is the colour of the
+ * Shows card and a rehearsal the colour of Next Rehearsals.
+ */
+export function widgetInk(
+  theme: BoardTheme,
+  widgetType: WidgetType,
+  scheme: ColorScheme,
+): WidgetInk {
+  const slot = resolveWidgetColor(theme, widgetType, WIDGET_META[widgetType].defaultColor ?? 'base');
+  const tokens = cardTokens(theme.palette, scheme, slot);
+  return {
+    bg: tokens.card,
+    ink: tokens.cardForeground,
+    soft: tokens.mutedForeground,
+    plain: slot === 'base',
+  };
 }
