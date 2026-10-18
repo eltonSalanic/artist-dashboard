@@ -1,4 +1,5 @@
 import type { TextStyle } from 'react-native';
+import { Figtree_500Medium } from '@expo-google-fonts/figtree/500Medium';
 import { Figtree_600SemiBold } from '@expo-google-fonts/figtree/600SemiBold';
 import { Figtree_700Bold } from '@expo-google-fonts/figtree/700Bold';
 import { Figtree_800ExtraBold } from '@expo-google-fonts/figtree/800ExtraBold';
@@ -33,6 +34,7 @@ export * from './poster-colors';
  * bold of a face that is already bold.
  */
 export const POSTER_FONTS = {
+  Figtree_500Medium,
   Figtree_600SemiBold,
   Figtree_700Bold,
   Figtree_800ExtraBold,
@@ -44,6 +46,7 @@ export const face = {
   heavy: 'Figtree_800ExtraBold',
   bold: 'Figtree_700Bold',
   semi: 'Figtree_600SemiBold',
+  medium: 'Figtree_500Medium',
 } as const;
 
 /**
@@ -66,16 +69,21 @@ export const poster = {
   statement: { fontFamily: face.heavy, fontSize: 30, lineHeight: 34, letterSpacing: -0.9 },
   /** Prose on a block (Focus, Notes), an event's title. */
   title: { fontFamily: face.heavy, fontSize: 20, lineHeight: 24, letterSpacing: -0.4 },
-  /** A widget card's number. */
+  /**
+   * A widget card, set the way Spotify sets its cards: a bold sentence-case
+   * title rather than spaced small caps, a heavy number tracked tight, and
+   * secondary text a step lighter than the title.
+   */
+  cardTitle: { fontFamily: face.bold, fontSize: 15, lineHeight: 20, letterSpacing: -0.3 },
   stat: {
-    fontFamily: face.black,
+    fontFamily: face.heavy,
     fontSize: 34,
     lineHeight: 40,
-    letterSpacing: -1.2,
+    letterSpacing: -1.6,
     fontVariant: ['tabular-nums'],
   },
-  /** A widget card's prose (Focus, Notes). */
-  prose: { fontFamily: face.bold, fontSize: 17, lineHeight: 22, letterSpacing: -0.2 },
+  prose: { fontFamily: face.bold, fontSize: 17, lineHeight: 22, letterSpacing: -0.35 },
+  cardMeta: { fontFamily: face.medium, fontSize: 13, lineHeight: 17, letterSpacing: -0.1 },
   /** The words after a block's number. */
   caption: { fontFamily: face.bold, fontSize: 16, lineHeight: 20, letterSpacing: -0.2 },
   body: { fontFamily: face.semi, fontSize: 15, lineHeight: 20, letterSpacing: -0.1 },

@@ -17,8 +17,8 @@ export const HOLD_TO_EDIT = 400;
  * few things behind the number (the next shows, the top tasks), the way a
  * large phone widget does. The grid sizes the card; it fills its cell.
  *
- * Set in Figtree, the Spotify-like face the redesign uses: heavy small caps
- * for the name, Black for the number. Colours still come from the card's
+ * Set in Figtree, the Spotify-like face the redesign uses, the way Spotify
+ * sets its cards (see `poster.cardTitle`). Colours still come from the card's
  * own token set, so it reads on every palette slot.
  */
 export function HubStatCard({
@@ -72,12 +72,12 @@ export function HubStatCard({
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
           <Icon name={card.icon} size={15} color={tokens.mutedForeground} />
           <PosterText
-            variant="label"
-            color={tokens.mutedForeground}
+            variant="cardTitle"
+            color={tokens.foreground}
             numberOfLines={1}
             style={{ flex: 1 }}
           >
-            {card.title.toUpperCase()}
+            {card.title}
           </PosterText>
           {card.urgent && (
             <View
@@ -98,7 +98,7 @@ export function HubStatCard({
             <Skeleton width="35%" height={12} />
           </View>
         ) : card.primary === null ? (
-          <PosterText variant="body" color={tokens.mutedForeground}>
+          <PosterText variant="cardMeta" color={tokens.mutedForeground}>
             Nothing yet
           </PosterText>
         ) : (
@@ -113,7 +113,7 @@ export function HubStatCard({
               {card.primary}
             </PosterText>
             {card.qualifier !== null && (
-              <PosterText variant="meta" color={tokens.mutedForeground} numberOfLines={1}>
+              <PosterText variant="cardMeta" color={tokens.mutedForeground} numberOfLines={1}>
                 {card.qualifier}
               </PosterText>
             )}
@@ -125,7 +125,7 @@ export function HubStatCard({
             {lines.map((line) => (
               <View key={line.key} style={{ flexDirection: 'row', gap: spacing.xs }}>
                 <PosterText
-                  variant="meta"
+                  variant="cardMeta"
                   color={tokens.foreground}
                   numberOfLines={1}
                   style={{ flex: 1 }}
@@ -133,7 +133,7 @@ export function HubStatCard({
                   {line.text}
                 </PosterText>
                 {line.meta !== null && (
-                  <PosterText variant="meta" color={tokens.mutedForeground} numberOfLines={1}>
+                  <PosterText variant="cardMeta" color={tokens.mutedForeground} numberOfLines={1}>
                     {line.meta}
                   </PosterText>
                 )}
