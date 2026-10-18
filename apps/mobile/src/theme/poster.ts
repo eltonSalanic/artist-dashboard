@@ -130,7 +130,11 @@ export function widgetInk(
   widgetType: WidgetType,
   scheme: ColorScheme,
 ): WidgetInk {
-  const slot = resolveWidgetColor(theme, widgetType, WIDGET_META[widgetType].defaultColor ?? 'base');
+  const slot = resolveWidgetColor(
+    theme,
+    widgetType,
+    WIDGET_META[widgetType].defaultColor ?? 'base',
+  );
   const tokens = cardTokens(theme.palette, scheme, slot);
   return {
     bg: tokens.card,

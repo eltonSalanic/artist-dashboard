@@ -94,7 +94,8 @@ export function posterSlot(
   const cached = cache.get(key);
   if (cached) return cached;
 
-  const bg = slot === 'base' ? baseBlock(scheme) : vivid(BOARD_PALETTE_COLORS[palette][scheme][slot].bg);
+  const bg =
+    slot === 'base' ? baseBlock(scheme) : vivid(BOARD_PALETTE_COLORS[palette][scheme][slot].bg);
   const resolved = paint(bg, accentsFor(palette, scheme, slot));
   cache.set(key, resolved);
   return resolved;

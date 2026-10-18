@@ -368,7 +368,12 @@ function Stepper({
 }
 
 /** The four counts the summary spells out, in the order a gigging band cares. */
-const SUMMARY_COUNTS: { key: string; one: string; many: string; match: (c: CalendarCategory) => boolean }[] = [
+const SUMMARY_COUNTS: {
+  key: string;
+  one: string;
+  many: string;
+  match: (c: CalendarCategory) => boolean;
+}[] = [
   { key: 'show', one: 'show', many: 'shows', match: (c) => c === 'SHOW' },
   { key: 'reh', one: 'rehearsal', many: 'rehearsals', match: (c) => c === 'REHEARSAL' },
   { key: 'meet', one: 'meeting', many: 'meetings', match: (c) => c === 'MEETING' },
@@ -755,7 +760,12 @@ function LightRow({
           {item.title}
         </PosterText>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-          <PosterText variant="meta" color={canvas.soft} numberOfLines={1} style={{ flexShrink: 1 }}>
+          <PosterText
+            variant="meta"
+            color={canvas.soft}
+            numberOfLines={1}
+            style={{ flexShrink: 1 }}
+          >
             {meta}
           </PosterText>
         </View>
