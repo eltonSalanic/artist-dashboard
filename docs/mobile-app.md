@@ -1607,7 +1607,15 @@ not touched.
   colour. Each band's theme comes from the new `useBoards` hook in
   `@artist/api-client` (same `["board", id]` key as `useBoard`).
 - Both screens sit on the app's own canvas, so a plain widget looks the same
-  on both. The rest of the app is unchanged until the next step.
+  on both. Approved by the user on 2026-10-17.
+- **Step 2, widget screens (spokes):** a playlist-style header on each (a cover
+  in the widget's colour with its icon, the name set large, a summary line);
+  the widget pills as Spotify chips, the active one in its widget's colour;
+  `Row`, `SpokeList` and `ListState` set in Figtree (so lists on other screens
+  pick up the face too). Trap: `adjustsFontSizeToFit` in a horizontal pager
+  measures off-screen pages at zero width and stays shrunk, so the header
+  title wraps instead.
+- Next: task / event / goal detail, then Inbox and You, then sheets and forms.
 
 ## Library replacement reference
 
