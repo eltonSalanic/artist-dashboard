@@ -1625,7 +1625,20 @@ not touched.
   its own ink. Section captions, badges, comments, linked tasks and
   attachments are in Figtree; descriptions and comments use the new medium
   `paragraph` style. Buttons and the comment field wait for the forms step.
-- Next: Inbox and You, then sheets and forms.
+  Phone-checked by the user 2026-10-18.
+- **Step 4, Inbox and You:** the Inbox opens with its count set as the
+  calendar sets its month ("3 mentions", FOR YOU · band in small caps), and
+  says "Nothing for you." in the same huge type as an empty month. Each
+  mention is a tile with the sender's initial in the band's colour (the band
+  is also named in words), the sentence, and the excerpt on its own lines.
+  The notification ask is a block in the page's own ink with pill buttons.
+  You is a profile: initial in a large round tile in the shown band's colour,
+  the name set like the band on the widget page; the band it shows is a block
+  in its colour that opens the band switcher. Shared on the way: `Button`
+  is a Figtree capsule, the band filter chips (Calendar too) are Spotify chips
+  like the widget pills, bar titles are Figtree, and `PosterPill` moved to
+  `components/`.
+- Next: sheets and forms (text fields, choice chips, the form screens).
 
 ## Library replacement reference
 
