@@ -1,16 +1,17 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
+import { Link } from 'expo-router';
 import { useMe } from '@artist/api-client';
-import { Badge } from '@/components/badge';
 import { Button } from '@/components/button';
-import { Card } from '@/components/card';
+import { Icon } from '@/components/icon';
+import { PosterText } from '@/components/poster-text';
+import { Section } from '@/components/section';
 import { Skeleton } from '@/components/skeleton';
-import { ThemedText } from '@/components/themed-text';
 import { useSelectedBoard } from '@/features/board/selected-board';
 import { PushSetting } from '@/features/push/push-prompt';
 import { forgetThisDevice } from '@/features/push/push';
 import { supabase } from '@/lib/supabase';
-import { spacing, useThemeColors } from '@/theme';
+import { boardAccent, posterRadius, shadows, spacing, usePosterCanvas, useScheme } from '@/theme';
 
 /**
  * The account tab: who you are signed in as, which band the app is currently
@@ -20,95 +21,133 @@ import { spacing, useThemeColors } from '@/theme';
  * session, injected token, `@artist/api-client` under Metro, the phone's route
  * to the API — and it still is. It also holds this phone's notification
  * switch; which categories each band sends lives in that band's Settings.
+ *
+ * Set like a Spotify profile: your initial in a large round tile, your name
+ * as big as the widget page sets the band's.
  */
 export function YouScreen() {
-  const colors = useThemeColors();
+  const canvas = usePosterCanvas();
+  const scheme = useScheme();
   const me = useMe(true);
   const { board, boards } = useSelectedBoard();
   const [signingOut, setSigningOut] = useState(false);
+  // The avatar wears the band you are looking at, so it changes with it.
+  const accent = board ? boardAccent(board.palette, scheme) : null;
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: colors.background }}
+      style={{ flex: 1, backgroundColor: canvas.background }}
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={styles.content}
+      contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl, gap: spacing.xl }}
     >
       {me.isPending ? (
-        <Card>
-          <Skeleton width="60%" height={20} />
-          <Skeleton width="80%" height={14} />
-        </Card>
+        <View style={{ gap: spacing.md }}>
+          <Skeleton width={88} height={88} style={{ borderRadius: 44 }} />
+          <Skeleton width="60%" height={36} />
+          <Skeleton width="45%" height={14} />
+        </View>
       ) : me.isError ? (
-        <Card>
-          <ThemedText variant="headline" tone="destructive">
+        <View style={{ gap: spacing.sm }}>
+          <PosterText variant="title" color={canvas.ink}>
             Could not reach the API
-          </ThemedText>
-          <ThemedText variant="subhead" tone="muted">
+          </PosterText>
+          <PosterText variant="body" color={canvas.soft}>
             {me.error.message}
-          </ThemedText>
+          </PosterText>
           <Button
             title="Try again"
             variant="ghost"
             size="sm"
             onPress={() => void me.refetch()}
-            style={styles.retry}
+            style={{ alignSelf: 'flex-start', paddingHorizontal: 0 }}
           />
-        </Card>
+        </View>
       ) : (
-        <Card>
-          <ThemedText variant="headline">{me.data.user.displayName}</ThemedText>
-          <ThemedText variant="subhead" tone="muted">
-            {me.data.user.email}
-          </ThemedText>
-        </Card>
+        <View accessible accessibilityRole="header" style={{ gap: spacing.md }}>
+          <View
+            style={{
+              width: 88,
+              height: 88,
+              borderRadius: 44,
+              backgroundColor: accent?.bg ?? canvas.ink,
+              boxShadow: shadows.raised,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <PosterText variant="display" color={accent?.fg ?? canvas.background}>
+              {me.data.user.displayName.trim().charAt(0).toUpperCase() || '?'}
+            </PosterText>
+          </View>
+          <View style={{ gap: 2 }}>
+            <PosterText
+              variant="display"
+              color={canvas.ink}
+              numberOfLines={2}
+              adjustsFontSizeToFit
+              minimumFontScale={0.6}
+            >
+              {me.data.user.displayName}
+            </PosterText>
+            <PosterText variant="body" color={canvas.soft} numberOfLines={1}>
+              {me.data.user.email}
+            </PosterText>
+          </View>
+        </View>
       )}
 
-      {board !== null && (
-        <>
-          <ThemedText variant="caption" tone="muted" style={styles.section}>
-            SHOWING
-          </ThemedText>
-          <Card>
-            <ThemedText variant="headline">{board.name}</ThemedText>
-            <Badge label={board.role.toLowerCase()} />
-            {boards.length > 1 && (
-              <ThemedText variant="footnote" tone="muted">
-                {boards.length} bands. Switch from the board name on the Board
-                tab.
-              </ThemedText>
-            )}
-          </Card>
-        </>
+      {board !== null && accent !== null && (
+        <Section title="SHOWING">
+          {/* The band is the switcher, as the band name is on the widget page. */}
+          <Link href="/boards" asChild>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${board.name}, ${board.role.toLowerCase()}. Change band`}
+              style={({ pressed }) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing.md - 4,
+                padding: spacing.md - 2,
+                borderRadius: posterRadius.block,
+                borderCurve: 'continuous',
+                backgroundColor: accent.bg,
+                transform: [{ scale: pressed ? 0.98 : 1 }],
+              })}
+            >
+              <View style={{ flex: 1, gap: spacing.xs }}>
+                <PosterText variant="title" color={accent.fg} numberOfLines={2}>
+                  {board.name}
+                </PosterText>
+                <PosterText variant="label" color={accent.fg}>
+                  {boards.length > 1
+                    ? `${board.role} · ${boards.length} BANDS · TAP TO SWITCH`
+                    : board.role}
+                </PosterText>
+              </View>
+              <Icon name={{ sf: 'chevron.down', md: 'expand-more' }} size={14} color={accent.fg} />
+            </Pressable>
+          </Link>
+        </Section>
       )}
 
-      <ThemedText variant="caption" tone="muted" style={styles.section}>
-        THIS PHONE
-      </ThemedText>
-      <PushSetting />
+      <Section title="THIS PHONE">
+        <PushSetting />
+      </Section>
 
-      <View style={styles.footer}>
-        <Button
-          title="Sign out"
-          variant="destructive"
-          loading={signingOut}
-          onPress={() => {
-            setSigningOut(true);
-            // Unregistered first, while the session can still say whose
-            // token it is — otherwise the next person to sign in on this
-            // phone would be buzzed for this account until they did.
-            void forgetThisDevice()
-              .then(() => supabase.auth.signOut())
-              .finally(() => setSigningOut(false));
-          }}
-        />
-      </View>
+      <Button
+        title="Sign out"
+        variant="destructive"
+        loading={signingOut}
+        onPress={() => {
+          setSigningOut(true);
+          // Unregistered first, while the session can still say whose
+          // token it is — otherwise the next person to sign in on this
+          // phone would be buzzed for this account until they did.
+          void forgetThisDevice()
+            .then(() => supabase.auth.signOut())
+            .finally(() => setSigningOut(false));
+        }}
+      />
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  content: { padding: spacing.md, gap: spacing.sm },
-  section: { marginTop: spacing.md, marginLeft: spacing.xs },
-  retry: { alignSelf: 'flex-start', paddingHorizontal: 0 },
-  footer: { marginTop: spacing.xl },
-});
