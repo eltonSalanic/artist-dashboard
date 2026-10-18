@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router/stack';
-import { useThemeColors } from '@/theme';
+import { face, useThemeColors } from '@/theme';
 
 /**
  * One stack definition, instantiated once per tab.
@@ -25,7 +25,9 @@ export default function TabStackLayout({ segment }: { segment: string }) {
       screenOptions={{
         headerShadowVisible: false,
         headerStyle: { backgroundColor: colors.background },
-        headerTitleStyle: { color: colors.foreground },
+        // Figtree is loaded before the first screen draws (the root layout
+        // waits on it), so the native bar can name it from the start.
+        headerTitleStyle: { color: colors.foreground, fontFamily: face.bold },
         headerTintColor: colors.primary,
         contentStyle: { backgroundColor: colors.background },
         headerBackButtonDisplayMode: 'minimal',

@@ -1,8 +1,8 @@
 import { FlatList, Pressable } from 'react-native';
 import type { BoardSummaryDto } from '@artist/shared';
 import { boardAccent, radius, spacing, useScheme, useThemeColors } from '@/theme';
+import { PosterText } from './poster-text';
 import { Dot } from './row';
-import { ThemedText } from './themed-text';
 
 /**
  * All · Neon Harbor · Weekend Duo — the band filter the Calendar and Inbox
@@ -17,6 +17,9 @@ import { ThemedText } from './themed-text';
  * A scroller rather than a segmented control: the number of bands is unbounded
  * and segments divide the width between them, so five bands would be five
  * unreadable slivers.
+ *
+ * Set as Spotify's filter chips, like the widget pills on a widget screen:
+ * filled grey at rest, filled with ink when selected.
  */
 export function BoardFilter({
   boards,
@@ -67,35 +70,30 @@ export function BoardFilter({
               flexDirection: 'row',
               alignItems: 'center',
               gap: spacing.xs,
-              paddingHorizontal: spacing.sm + 2,
-              paddingVertical: spacing.xs + 2,
+              paddingHorizontal: spacing.md - 2,
+              paddingVertical: spacing.xs + 3,
               borderRadius: radius.full,
               borderCurve: 'continuous',
-              // The selected chip is filled, the rest are outlined. Selection is
-              // carried by the fill and by `accessibilityState`, never by the
-              // band's own colour — which is a hue, and two bands may share it.
-              backgroundColor: active ? colors.primary : 'transparent',
-              borderWidth: 1,
-              borderColor: active ? colors.primary : colors.border,
+              // Selection is carried by the fill and by `accessibilityState`,
+              // never by the band's own colour — which is a hue, and two bands
+              // may share it.
+              backgroundColor: active ? colors.foreground : colors.muted,
               opacity: pressed ? 0.7 : 1,
             })}
           >
             {accent !== null && <Dot color={accent.bg} size={8} />}
-            {/* One line at a fixed line height. Measured on its own, a band
-                name's box came out shorter than its letters: iOS clips a Text
-                to its box, and the row centred the short box, so the name sat
-                low beside its dot with its bottom cut off. */}
-            <ThemedText
-              variant="footnote"
+            {/* One line at a fixed line height (the chip style carries one).
+                Measured on its own, a band name's box came out shorter than its
+                letters: iOS clips a Text to its box, and the row centred the
+                short box, so the name sat low beside its dot with its bottom
+                cut off. */}
+            <PosterText
+              variant="chip"
               numberOfLines={1}
-              style={{
-                color: active ? colors.primaryForeground : colors.mutedForeground,
-                fontWeight: '600',
-                lineHeight: 18,
-              }}
+              color={active ? colors.background : colors.foreground}
             >
               {board === null ? 'All' : board.name}
-            </ThemedText>
+            </PosterText>
           </Pressable>
         );
       }}

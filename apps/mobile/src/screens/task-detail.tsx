@@ -9,6 +9,7 @@ import {
 } from '@artist/api-client';
 import { Badge } from '@/components/badge';
 import { Icon } from '@/components/icon';
+import { PosterPill } from '@/components/poster-pill';
 import { PosterText } from '@/components/poster-text';
 import { Dot, Row } from '@/components/row';
 import { Section } from '@/components/section';
@@ -19,7 +20,6 @@ import {
   DetailPoster,
   HeaderEdit,
   PosterMeta,
-  PosterPill,
 } from '@/features/board/detail-poster';
 import { dueDay, shortDate } from '@/features/board/format';
 import { useWidgetInk } from '@/features/board/spoke-header';

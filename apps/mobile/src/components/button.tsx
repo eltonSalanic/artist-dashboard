@@ -4,8 +4,8 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { radius, spacing, useTokens } from '@/theme';
-import { ThemedText } from './themed-text';
+import { posterRadius, spacing, useTokens } from '@/theme';
+import { PosterText } from './poster-text';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive';
 export type ButtonSize = 'sm' | 'md';
@@ -19,6 +19,8 @@ export type ButtonSize = 'sm' | 'md';
  * `style` merges last so a caller can change layout (margins, flex) without
  * forking the component. A caller reaching for colours means the variant set is
  * missing one.
+ *
+ * Shaped like Spotify's buttons: a full capsule, a bold label.
  */
 export function Button({
   title,
@@ -65,7 +67,7 @@ export function Button({
       style={({ pressed }) => [
         {
           backgroundColor: background,
-          borderRadius: radius.md,
+          borderRadius: posterRadius.chip,
           borderCurve: 'continuous',
           borderWidth: variant === 'destructive' ? 1 : 0,
           borderColor: tokens.border,
@@ -82,9 +84,9 @@ export function Button({
       {loading ? (
         <ActivityIndicator color={label} />
       ) : (
-        <ThemedText variant="headline" style={{ color: label }}>
+        <PosterText variant="caption" color={label}>
           {title}
-        </ThemedText>
+        </PosterText>
       )}
     </Pressable>
   );

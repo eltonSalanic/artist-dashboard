@@ -3,6 +3,7 @@ import { ScrollView } from 'react-native';
 import { useGoal, usePermissions } from '@artist/api-client';
 import type { GoalPeriod } from '@artist/shared';
 import { Icon } from '@/components/icon';
+import { PosterPill } from '@/components/poster-pill';
 import { PosterText } from '@/components/poster-text';
 import {
   DetailLoading,
@@ -10,7 +11,6 @@ import {
   DetailPoster,
   HeaderEdit,
   PosterMeta,
-  PosterPill,
 } from '@/features/board/detail-poster';
 import { dueDay, shortDate } from '@/features/board/format';
 import { useGoalCompletion } from '@/features/board/goal-completion';

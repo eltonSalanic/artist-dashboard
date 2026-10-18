@@ -136,6 +136,20 @@ export interface WidgetInk {
 }
 
 /**
+ * The page itself as an ink, for a pill or control that sits on the canvas
+ * rather than on a block: canvas-coloured fill, page ink for the words.
+ */
+export function useCanvasInk(): WidgetInk {
+  const canvas = usePosterCanvas();
+  return { bg: canvas.background, ink: canvas.ink, soft: canvas.soft, plain: true };
+}
+
+/** A palette block's colours, as the ink a `PosterPill` or block paints with. */
+export function blockInk(color: PosterColor): WidgetInk {
+  return { bg: color.bg, ink: color.ink, soft: color.soft, plain: false };
+}
+
+/**
  * The colours a band gave one widget, worked out exactly as the widget page
  * does (`use-hub-cards`), so a show on the calendar is the colour of the
  * Shows card and a rehearsal the colour of Next Rehearsals.
