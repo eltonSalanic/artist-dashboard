@@ -1,6 +1,7 @@
 import { Pressable, View } from 'react-native';
-import { radius, spacing, useTokens } from '@/theme';
-import { ThemedText } from './themed-text';
+import { posterRadius, spacing, useTokens } from '@/theme';
+import { FieldLabel } from './field-label';
+import { PosterText } from './poster-text';
 
 export interface Choice<T extends string> {
   value: T;
@@ -13,6 +14,9 @@ export interface Choice<T extends string> {
  * picker is two, and it shows the current choice without opening anything.
  *
  * Single choice by default; `multiple` turns it into a set (assignees).
+ *
+ * Set as the band filter and the widget pills are: Spotify's chips, grey until
+ * chosen, then filled with the page's ink.
  */
 export function ChoiceChips<T extends string>({
   label,
@@ -43,10 +47,8 @@ export function ChoiceChips<T extends string>({
   };
 
   return (
-    <View style={{ gap: spacing.xs }}>
-      <ThemedText variant="footnote" tone="muted" style={{ fontWeight: '600' }}>
-        {label}
-      </ThemedText>
+    <View style={{ gap: spacing.xs + 2 }}>
+      <FieldLabel>{label}</FieldLabel>
       <View
         accessibilityRole={multiple ? undefined : 'radiogroup'}
         accessibilityLabel={label}
@@ -60,25 +62,28 @@ export function ChoiceChips<T extends string>({
               accessibilityRole={multiple ? 'checkbox' : 'radio'}
               accessibilityState={multiple ? { checked: selected } : { selected }}
               onPress={() => toggle(choice.value)}
+              hitSlop={4}
               style={({ pressed }) => ({
-                paddingHorizontal: spacing.md,
-                paddingVertical: spacing.sm,
-                borderRadius: radius.full,
+                minHeight: 36,
+                justifyContent: 'center',
+                paddingHorizontal: spacing.md - 2,
+                borderRadius: posterRadius.chip,
+                borderCurve: 'continuous',
                 // Filled, not just tinted, when chosen — the same rule as the
                 // band filter, so selection never rests on a hue difference.
-                backgroundColor: selected ? tokens.primary : tokens.muted,
-                opacity: pressed ? 0.75 : 1,
+                backgroundColor: selected ? tokens.foreground : tokens.muted,
+                opacity: pressed ? 0.7 : 1,
               })}
             >
-              <ThemedText
-                variant="subhead"
-                style={{
-                  fontWeight: '600',
-                  color: selected ? tokens.primaryForeground : tokens.foreground,
-                }}
+              {/* One line at the chip style's fixed line height, or iOS sizes
+                  the box shorter than the letters and clips them. */}
+              <PosterText
+                variant="chip"
+                numberOfLines={1}
+                color={selected ? tokens.background : tokens.foreground}
               >
                 {choice.label}
-              </ThemedText>
+              </PosterText>
             </Pressable>
           );
         })}

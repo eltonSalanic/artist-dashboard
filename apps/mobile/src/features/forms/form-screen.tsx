@@ -8,8 +8,8 @@ import {
 } from 'react-native';
 import { router, Stack, useNavigation } from 'expo-router';
 import { usePreventRemove } from 'expo-router/react-navigation';
-import { ThemedText } from '@/components/themed-text';
-import { spacing, useThemeColors } from '@/theme';
+import { PosterText } from '@/components/poster-text';
+import { face, spacing, usePosterCanvas, useThemeColors } from '@/theme';
 
 /**
  * Leaves the form on purpose — after a save, an archive or a delete — without
@@ -40,9 +40,16 @@ export function FormScreen({
   saving,
   onSave,
   scrollable = true,
+  postered = false,
   children,
 }: {
   title: string;
+  /**
+   * The form opens with a `FormPoster` that already names it ("NEW TASK"),
+   * so the bar stays empty, as it does over a detail screen. `title` still
+   * names the screen to assistive tech and the back stack.
+   */
+  postered?: boolean;
   dirty: boolean;
   canSave: boolean;
   saving: boolean;
@@ -54,7 +61,7 @@ export function FormScreen({
   scrollable?: boolean;
   children: ReactNode;
 }) {
-  const colors = useThemeColors();
+  const canvas = usePosterCanvas();
   const navigation = useNavigation();
   const leaving = useRef(false);
 
@@ -84,12 +91,13 @@ export function FormScreen({
   return (
     <LeaveContext value={leave}>
       <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: colors.background }}
+        style={{ flex: 1, backgroundColor: canvas.background }}
         behavior={process.env.EXPO_OS === 'android' ? 'padding' : undefined}
       >
         <Stack.Screen
           options={{
             title,
+            headerTitle: postered ? '' : undefined,
             headerLeft: () => <HeaderText title="Cancel" onPress={() => router.back()} />,
             headerRight: () =>
               saving ? (
@@ -144,16 +152,15 @@ export function HeaderText({
       onPress={onPress}
       hitSlop={10}
     >
-      <ThemedText
-        variant="body"
-        style={{
-          color: colors.primary,
-          fontWeight: bold ? '600' : '400',
-          opacity: disabled ? 0.4 : 1,
-        }}
+      {/* Figtree like the rest of the bar; Save a weight up, as iOS sets the
+          confirming action. */}
+      <PosterText
+        variant="rowTitle"
+        color={colors.primary}
+        style={{ fontFamily: bold ? face.bold : face.medium, opacity: disabled ? 0.4 : 1 }}
       >
         {title}
-      </ThemedText>
+      </PosterText>
     </Pressable>
   );
 }

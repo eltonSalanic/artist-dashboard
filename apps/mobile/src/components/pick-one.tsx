@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
-import { radius, spacing, useTokens } from '@/theme';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { posterRadius, spacing, useTokens } from '@/theme';
+import { FieldLabel } from './field-label';
 import { Icon } from './icon';
-import { ThemedText } from './themed-text';
+import { PosterText } from './poster-text';
 
 export interface PickOption {
   value: string;
@@ -44,13 +45,11 @@ export function PickOne({
   ];
 
   return (
-    <View style={{ gap: spacing.xs }}>
-      <ThemedText variant="footnote" tone="muted" style={{ fontWeight: '600' }}>
-        {label}
-      </ThemedText>
+    <View style={{ gap: spacing.xs + 2 }}>
+      <FieldLabel>{label}</FieldLabel>
       <View
         style={{
-          borderRadius: radius.md,
+          borderRadius: posterRadius.block,
           borderCurve: 'continuous',
           backgroundColor: tokens.muted,
           overflow: 'hidden',
@@ -70,14 +69,14 @@ export function PickOne({
             opacity: pressed ? 0.75 : 1,
           })}
         >
-          <ThemedText
-            variant="body"
+          <PosterText
+            variant="field"
             numberOfLines={1}
-            tone={chosen ? undefined : 'muted'}
+            color={chosen ? tokens.foreground : tokens.mutedForeground}
             style={{ flex: 1 }}
           >
             {chosen?.label ?? noneLabel}
-          </ThemedText>
+          </PosterText>
           <Icon
             name={
               open
@@ -109,30 +108,30 @@ export function PickOne({
                     minHeight: 44,
                     paddingHorizontal: spacing.md,
                     paddingVertical: spacing.xs,
-                    borderTopWidth: 1,
+                    borderTopWidth: StyleSheet.hairlineWidth,
                     borderTopColor: tokens.border,
                     backgroundColor: pressed ? tokens.accent : undefined,
                   })}
                 >
                   <View style={{ flex: 1, gap: 2 }}>
-                    <ThemedText
-                      variant="body"
+                    <PosterText
+                      variant="field"
                       numberOfLines={2}
-                      tone={option.value === null ? 'muted' : undefined}
+                      color={option.value === null ? tokens.mutedForeground : tokens.foreground}
                     >
                       {option.label}
-                    </ThemedText>
+                    </PosterText>
                     {option.meta ? (
-                      <ThemedText variant="footnote" tone="muted" numberOfLines={1}>
+                      <PosterText variant="meta" color={tokens.mutedForeground} numberOfLines={1}>
                         {option.meta}
-                      </ThemedText>
+                      </PosterText>
                     ) : null}
                   </View>
                   {selected && (
                     <Icon
                       name={{ sf: 'checkmark', md: 'check' }}
                       size={15}
-                      color={tokens.primary}
+                      color={tokens.foreground}
                     />
                   )}
                 </Pressable>

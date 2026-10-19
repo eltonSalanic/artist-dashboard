@@ -1,8 +1,8 @@
 import { Pressable, View } from 'react-native';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
-import { radius, spacing, useTokens } from '@/theme';
+import { posterRadius, spacing, useTokens } from '@/theme';
 import { Icon } from './icon';
-import { ThemedText } from './themed-text';
+import { PosterText } from './poster-text';
 
 /**
  * A labelled date, or date and time, using each platform's own picker.
@@ -85,16 +85,14 @@ export function DateField({
         gap: spacing.sm,
         minHeight: 48,
         paddingHorizontal: spacing.md,
-        borderRadius: radius.md,
+        borderRadius: posterRadius.block,
         borderCurve: 'continuous',
-        backgroundColor: tokens.card,
-        borderWidth: 1,
-        borderColor: tokens.border,
+        backgroundColor: tokens.muted,
       }}
     >
-      <ThemedText variant="body" style={{ flex: 1 }}>
+      <PosterText variant="rowTitle" color={tokens.foreground} style={{ flex: 1 }}>
         {label}
-      </ThemedText>
+      </PosterText>
 
       {process.env.EXPO_OS === 'ios' && value ? (
         <DateTimePicker
@@ -113,12 +111,11 @@ export function DateField({
             process.env.EXPO_OS === 'ios' ? onChange(seed()) : openAndroid()
           }
         >
-          <ThemedText
-            variant="body"
-            style={{ color: value ? tokens.foreground : tokens.primary }}
-          >
+          {/* Empty, the action is set a weight up so it reads as tappable
+              without borrowing the app's blue onto the poster screens. */}
+          <PosterText variant={value ? 'field' : 'rowTitle'} color={tokens.foreground}>
             {value ? formatted : `Add ${mode === 'date' ? 'date' : 'time'}`}
-          </ThemedText>
+          </PosterText>
         </Pressable>
       )}
 

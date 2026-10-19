@@ -97,7 +97,19 @@ export const poster = {
   meta: { fontFamily: face.semi, fontSize: 13, lineHeight: 17, letterSpacing: 0 },
   /** Small caps labels: a block's name, a kind. */
   label: { fontFamily: face.heavy, fontSize: 11, lineHeight: 14, letterSpacing: 1.1 },
+  /** A value in a form field that is not typed: a picked goal, a date. */
+  field: { fontFamily: face.medium, fontSize: 16, lineHeight: 21, letterSpacing: -0.1 },
 } as const satisfies Record<string, TextStyle>;
+
+/**
+ * What someone types into a form field: `field` without its `lineHeight`, which
+ * on iOS draws a single-line `TextInput`'s text off-centre in the box.
+ */
+export const posterInput = {
+  fontFamily: poster.field.fontFamily,
+  fontSize: poster.field.fontSize,
+  letterSpacing: poster.field.letterSpacing,
+} as const satisfies TextStyle;
 
 /** Display sizes scale a little with Dynamic Type; body sizes scale more. */
 export const DISPLAY_SCALE = 1.15;
