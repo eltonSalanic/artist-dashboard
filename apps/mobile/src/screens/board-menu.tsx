@@ -10,16 +10,6 @@ import { useSelectedBoard } from '@/features/board/selected-board';
 import { radius, spacing, useThemeColors } from '@/theme';
 
 /**
- * How long the push waits for this sheet to finish closing. On iOS a formSheet
- * that is still closing lays itself out once more and resizes the first scroll
- * view down its old views to the sheet's height; Fabric has already recycled
- * those views into the pushed screen, so Settings drew two members and then
- * blank space. react-native-screens#4651, fixed in 4.28 (Expo 57 pins 4.26);
- * drop the wait once the app is on a fixed version.
- */
-const SHEET_CLOSE_MS = 350;
-
-/**
  * The hub's `⋯`: the things that are not widgets. A sheet rather than an iOS
  * header menu (`Stack.Toolbar.Menu`), which is iOS-only — one implementation
  * both platforms get is worth more here than the platform-perfect menu on half
@@ -72,8 +62,7 @@ export function BoardMenuSheet() {
   ];
 
   return (
-    // A plain View: three rows never need to scroll, and a ScrollView here
-    // made the clipping described at `SHEET_CLOSE_MS` worse.
+    // A plain View: three rows never need to scroll.
     // The sheet's header is drawn over its content, hence the top padding:
     // without it the first row sat under the title.
     <View
@@ -96,13 +85,14 @@ export function BoardMenuSheet() {
             disabled={!item.href && !item.action}
             onPress={() => {
               // Close the sheet first, so the screen pushes onto the stack
-              // underneath instead of on top of a sheet.
+              // underneath instead of on top of a sheet. Both in one action
+              // needs react-native-screens 4.29+: before it, the closing sheet
+              // shrank the pushed screen's scroll view to the sheet's height
+              // (react-native-screens#4651), cutting Settings off after two
+              // members.
               router.dismiss();
               if (item.action) item.action();
-              else if (item.href) {
-                const href = item.href;
-                setTimeout(() => router.push(href), SHEET_CLOSE_MS);
-              }
+              else if (item.href) router.push(item.href);
             }}
             style={({ pressed }) => ({
               flexDirection: 'row',
