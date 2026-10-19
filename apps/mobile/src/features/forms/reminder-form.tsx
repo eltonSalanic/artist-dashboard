@@ -12,6 +12,8 @@ import { DateField } from '@/components/date-field';
 import { TextField } from '@/components/text-field';
 import { FormGate } from './form-gate';
 import { FormScreen } from './form-screen';
+import { useWidgetInk } from '@/features/board/spoke-header';
+import { FormPoster } from './form-poster';
 import { ItemActions } from './item-actions';
 
 /**
@@ -76,6 +78,8 @@ function ReminderFields({ boardId, reminder }: { boardId: string; reminder: Remi
     }
   };
 
+  const ink = useWidgetInk(boardId, 'REMINDERS');
+
   return (
     <FormScreen
       title={reminder ? 'Edit reminder' : 'New reminder'}
@@ -83,9 +87,13 @@ function ReminderFields({ boardId, reminder }: { boardId: string; reminder: Remi
       canSave={title.trim().length > 0 && (dirty || !reminder)}
       saving={create.isPending || update.isPending}
       onSave={save}
+      postered
     >
-      <TextField
-        label="Remember to…"
+      <FormPoster
+        ink={ink}
+        label={reminder ? 'Edit reminder' : 'New reminder'}
+        fieldLabel="Remember to"
+        placeholder="Remember to…"
         value={title}
         onChangeText={setTitle}
         autoFocus={!reminder}

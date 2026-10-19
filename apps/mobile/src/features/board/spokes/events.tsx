@@ -1,17 +1,11 @@
 import { useMemo } from 'react';
 import { router } from 'expo-router';
 import { useEvents } from '@artist/api-client';
-import type { EventType, WidgetType } from '@artist/shared';
+import type { EventType } from '@artist/shared';
 import { Row } from '@/components/row';
 import { SpokeList } from '@/components/spoke-list';
 import { shortDate } from '../format';
-import { SpokeHeader } from '../spoke-header';
-
-const widget: Record<EventType, WidgetType> = {
-  SHOW: 'SHOWS',
-  REHEARSAL: 'NEXT_REHEARSALS',
-  MEETING: 'NEXT_MEETINGS',
-};
+import { EVENT_WIDGET, SpokeHeader } from '../spoke-header';
 
 const copy: Record<EventType, { empty: string; body: string }> = {
   SHOW: { empty: 'No shows booked', body: 'Upcoming shows appear here.' },
@@ -42,7 +36,7 @@ export function makeEventsSpoke(type: EventType) {
         header={
           <SpokeHeader
             boardId={boardId}
-            widgetType={widget[type]}
+            widgetType={EVENT_WIDGET[type]}
             summary={
               items[0] ? `${items.length} upcoming · next ${shortDate(items[0].startsAt)}` : null
             }

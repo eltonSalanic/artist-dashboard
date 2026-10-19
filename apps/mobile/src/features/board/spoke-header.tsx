@@ -1,10 +1,17 @@
 import { View } from 'react-native';
 import { useBoard } from '@artist/api-client';
-import { WIDGET_META, resolveBoardTheme, type WidgetType } from '@artist/shared';
+import { WIDGET_META, resolveBoardTheme, type EventType, type WidgetType } from '@artist/shared';
 import { Icon } from '@/components/icon';
 import { PosterText } from '@/components/poster-text';
 import { shadows, spacing, usePosterCanvas, useScheme, widgetInk, type WidgetInk } from '@/theme';
 import { WIDGET_ICONS } from './widget-icons';
+
+/** The widget each kind of event lives in, and so takes its colour from. */
+export const EVENT_WIDGET: Record<EventType, WidgetType> = {
+  SHOW: 'SHOWS',
+  REHEARSAL: 'NEXT_REHEARSALS',
+  MEETING: 'NEXT_MEETINGS',
+};
 
 /**
  * A widget's own colours on this band: what its card on the widget page is

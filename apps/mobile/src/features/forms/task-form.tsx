@@ -25,6 +25,8 @@ import { DateField } from '@/components/date-field';
 import { PickOne, type PickOption } from '@/components/pick-one';
 import { TextField } from '@/components/text-field';
 import { FormScreen } from './form-screen';
+import { useWidgetInk } from '@/features/board/spoke-header';
+import { FormPoster } from './form-poster';
 import { FormGate } from './form-gate';
 import { ItemActions } from './item-actions';
 import { shortDate } from '@/features/board/format';
@@ -175,6 +177,7 @@ function TaskFields({
   };
 
   const members = board.data?.members ?? [];
+  const ink = useWidgetInk(boardId, 'TODOS');
 
   return (
     <FormScreen
@@ -183,14 +186,17 @@ function TaskFields({
       canSave={title.trim().length > 0 && (dirty || !task)}
       saving={saving}
       onSave={save}
+      postered
     >
-      <TextField
-        label="Title"
+      <FormPoster
+        ink={ink}
+        label={task ? `Edit ${label}` : `New ${label}`}
+        fieldLabel="Title"
+        placeholder="What needs doing?"
         value={title}
         onChangeText={setTitle}
         autoFocus={!task}
         maxLength={200}
-        returnKeyType="done"
       />
       <TextField
         label="Description"

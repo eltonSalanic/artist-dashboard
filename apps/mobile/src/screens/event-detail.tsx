@@ -1,7 +1,6 @@
 import { router, Stack } from 'expo-router';
 import { ScrollView, View } from 'react-native';
 import { useEvent, usePermissions } from '@artist/api-client';
-import type { EventType, WidgetType } from '@artist/shared';
 import { PosterText } from '@/components/poster-text';
 import { TaskAttachments } from '@/features/attachments/task-attachments';
 import {
@@ -12,19 +11,13 @@ import {
   PosterMeta,
 } from '@/features/board/detail-poster';
 import { daysAway, timeOfDay } from '@/features/board/format';
-import { useWidgetInk } from '@/features/board/spoke-header';
+import { EVENT_WIDGET, useWidgetInk } from '@/features/board/spoke-header';
 import { LinkedTasks } from '@/features/links/linked-tasks';
 import { spacing, useThemeColors } from '@/theme';
 
 const TYPE_TITLE = { SHOW: 'Show', REHEARSAL: 'Rehearsal', MEETING: 'Meeting' } as const;
 
 /** The widget each kind of event lives in: its colour here and on the calendar. */
-const TYPE_WIDGET: Record<EventType, WidgetType> = {
-  SHOW: 'SHOWS',
-  REHEARSAL: 'NEXT_REHEARSALS',
-  MEETING: 'NEXT_MEETINGS',
-};
-
 /**
  * One show, rehearsal or meeting: when, where, the notes, its tasks, and its
  * files.
@@ -45,7 +38,7 @@ export function EventDetailScreen({ boardId, eventId }: { boardId: string; event
   const { can } = usePermissions();
   // Until the event lands its type is unknown; Shows is only a placeholder,
   // and the loading state paints no block with it.
-  const ink = useWidgetInk(boardId, TYPE_WIDGET[event.data?.type ?? 'SHOW']);
+  const ink = useWidgetInk(boardId, EVENT_WIDGET[event.data?.type ?? 'SHOW']);
 
   if (event.isPending) return <DetailLoading />;
 

@@ -19,6 +19,8 @@ import { DateField } from '@/components/date-field';
 import { TextField } from '@/components/text-field';
 import { FormGate } from './form-gate';
 import { FormScreen } from './form-screen';
+import { useWidgetInk } from '@/features/board/spoke-header';
+import { FormPoster } from './form-poster';
 import { ItemActions } from './item-actions';
 
 // Web's labels (`goalPeriodLabel`), so a goal reads the same on both.
@@ -95,6 +97,8 @@ function GoalFields({ boardId, goal }: { boardId: string; goal: GoalDto | null }
     }
   };
 
+  const ink = useWidgetInk(boardId, 'GOALS');
+
   return (
     <FormScreen
       title={goal ? 'Edit goal' : 'New goal'}
@@ -102,9 +106,13 @@ function GoalFields({ boardId, goal }: { boardId: string; goal: GoalDto | null }
       canSave={title.trim().length > 0 && (dirty || !goal)}
       saving={create.isPending || update.isPending}
       onSave={save}
+      postered
     >
-      <TextField
-        label="Goal"
+      <FormPoster
+        ink={ink}
+        label={goal ? 'Edit goal' : 'New goal'}
+        fieldLabel="Goal"
+        placeholder="What are you going for?"
         value={title}
         onChangeText={setTitle}
         autoFocus={!goal}

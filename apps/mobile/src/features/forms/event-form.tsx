@@ -12,15 +12,24 @@ import {
 import { ChoiceChips } from '@/components/choice-chips';
 import { DateField } from '@/components/date-field';
 import { TextField } from '@/components/text-field';
-import { ThemedText } from '@/components/themed-text';
+import { PosterText } from '@/components/poster-text';
 import { FormGate } from './form-gate';
 import { FormScreen } from './form-screen';
+import { EVENT_WIDGET, useWidgetInk } from '@/features/board/spoke-header';
+import { FormPoster } from './form-poster';
+import { useThemeColors } from '@/theme';
 import { ItemActions } from './item-actions';
 
 const TYPE_LABEL: Record<EventType, string> = {
   SHOW: 'Show',
   REHEARSAL: 'Rehearsal',
   MEETING: 'Meeting',
+};
+
+const TYPE_PLACEHOLDER: Record<EventType, string> = {
+  SHOW: 'Name the show',
+  REHEARSAL: 'What are you rehearsing?',
+  MEETING: "What's the meeting about?",
 };
 
 /**
@@ -121,6 +130,11 @@ function EventFields({
     }
   };
 
+  // Follows the type chips, so switching a show to a rehearsal repaints the
+  // block in Next Rehearsals' colour before it is saved.
+  const ink = useWidgetInk(boardId, EVENT_WIDGET[type]);
+  const colors = useThemeColors();
+
   return (
     <FormScreen
       title={event ? `Edit ${label}` : `New ${label}`}
@@ -130,19 +144,23 @@ function EventFields({
       }
       saving={create.isPending || update.isPending}
       onSave={save}
+      postered
     >
+      <FormPoster
+        ink={ink}
+        label={event ? `Edit ${label}` : `New ${label}`}
+        fieldLabel="Title"
+        placeholder={TYPE_PLACEHOLDER[type]}
+        value={title}
+        onChangeText={setTitle}
+        autoFocus={!event}
+        maxLength={200}
+      />
       <ChoiceChips
         label="Type"
         choices={EventTypes.map((t) => ({ value: t, label: TYPE_LABEL[t] }))}
         value={type}
         onChange={setType}
-      />
-      <TextField
-        label="Title"
-        value={title}
-        onChangeText={setTitle}
-        autoFocus={!event}
-        maxLength={200}
       />
       <DateField
         label="Starts"
@@ -153,9 +171,9 @@ function EventFields({
       />
       <DateField label="Ends" mode="datetime" value={endsAt} onChange={setEndsAt} />
       {endsBeforeStart && (
-        <ThemedText variant="footnote" tone="destructive">
+        <PosterText variant="meta" color={colors.destructive}>
           {"It can't end before it starts."}
-        </ThemedText>
+        </PosterText>
       )}
       <TextField
         label="Location"
