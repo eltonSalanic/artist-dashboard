@@ -2,9 +2,11 @@ import type { TextStyle } from 'react-native';
 
 /**
  * Named text styles mirroring Apple's ramp, so sizes feel native rather than
- * invented. The system font is deliberate: no font files are bundled, so text
- * renders in San Francisco or Roboto. That means mobile does not match the web
- * app's typeface — the native face is worth more here than the match.
+ * invented. In the system face: since the redesign (P17) only the Notes view
+ * and editor still read these directly, because their bold and italic marks
+ * are `fontWeight` / `fontStyle`, which only the system face carries (P16
+ * replaces both). Everything else goes through `uiText`, the same ramp in
+ * Figtree.
  *
  * **No colour in this file.** The palette is a light/dark pair read through a
  * hook, so a static style object cannot know it; `ThemedText` applies tone at

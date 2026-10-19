@@ -1,8 +1,7 @@
-import { Linking, Text, View, type TextStyle } from 'react-native';
+import { Linking, Text, View, type TextProps, type TextStyle } from 'react-native';
 import type { NoteNode } from '@artist/shared';
-import { ThemedText } from '@/components/themed-text';
 import type { TypeVariant } from '@/theme';
-import { radius, spacing, useTokens } from '@/theme';
+import { radius, spacing, type, useTokens } from '@/theme';
 
 const MONO = process.env.EXPO_OS === 'ios' ? 'Menlo' : 'monospace';
 
@@ -24,6 +23,23 @@ export function NoteView({ doc }: { doc: NoteNode }) {
   );
 }
 
+/**
+ * A note's text, in the system face rather than Figtree like the rest of the
+ * app: its bold and italic marks are `fontWeight` / `fontStyle`, which only
+ * the system face carries — on Figtree iOS would fake them. P16's editor
+ * replaces this view.
+ */
+function NoteText({
+  variant = 'body',
+  tone = 'default',
+  style,
+  ...props
+}: TextProps & { variant?: TypeVariant; tone?: 'default' | 'muted' }) {
+  const tokens = useTokens();
+  const color = tone === 'muted' ? tokens.mutedForeground : tokens.foreground;
+  return <Text style={[type[variant], { color }, style]} {...props} />;
+}
+
 const HEADING: Record<number, TypeVariant> = {
   1: 'title',
   2: 'headline',
@@ -36,9 +52,9 @@ function Block({ node }: { node: NoteNode }) {
     case 'paragraph':
       // An empty paragraph is a deliberate gap between blocks.
       return node.content?.length ? (
-        <ThemedText variant="body">
+        <NoteText variant="body">
           <Inline nodes={node.content} />
-        </ThemedText>
+        </NoteText>
       ) : (
         <View style={{ height: spacing.sm }} />
       );
@@ -46,13 +62,13 @@ function Block({ node }: { node: NoteNode }) {
     case 'heading': {
       const level = Number(node.attrs?.level ?? 1);
       return (
-        <ThemedText
+        <NoteText
           variant={HEADING[level] ?? 'subhead'}
           accessibilityRole="header"
           style={[{ marginTop: spacing.xs }, level > 2 && { fontWeight: '600' }]}
         >
           <Inline nodes={node.content} />
-        </ThemedText>
+        </NoteText>
       );
     }
 
@@ -85,9 +101,9 @@ function Block({ node }: { node: NoteNode }) {
             padding: spacing.sm,
           }}
         >
-          <ThemedText variant="footnote" style={{ fontFamily: MONO }}>
+          <NoteText variant="footnote" style={{ fontFamily: MONO }}>
             {(node.content ?? []).map((t) => t.text ?? '').join('')}
-          </ThemedText>
+          </NoteText>
         </View>
       );
 
@@ -103,9 +119,9 @@ function Block({ node }: { node: NoteNode }) {
         <View style={{ gap: spacing.xs }}>
           {node.content.map((child, index) =>
             child.type === 'text' || child.type === 'hardBreak' ? (
-              <ThemedText key={index} variant="body">
+              <NoteText key={index} variant="body">
                 <Inline nodes={[child]} />
-              </ThemedText>
+              </NoteText>
             ) : (
               <Block key={index} node={child} />
             ),
@@ -121,13 +137,13 @@ function List({ node }: { node: NoteNode }) {
     <View accessibilityRole="list" style={{ gap: spacing.xs }}>
       {(node.content ?? []).map((item, index) => (
         <View key={index} style={{ flexDirection: 'row', gap: spacing.sm }}>
-          <ThemedText
+          <NoteText
             variant="body"
             tone="muted"
             style={{ minWidth: node.type === 'orderedList' ? 22 : 12, textAlign: 'right' }}
           >
             {node.type === 'orderedList' ? `${start + index}.` : '•'}
-          </ThemedText>
+          </NoteText>
           <View style={{ flex: 1, gap: spacing.xs }}>
             {(item.content ?? []).map((child, i) => (
               <Block key={i} node={child} />

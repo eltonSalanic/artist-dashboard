@@ -102,6 +102,23 @@ export const poster = {
 } as const satisfies Record<string, TextStyle>;
 
 /**
+ * Apple's ramp (`typography.ts`) set in Figtree, for `ThemedText`: the same
+ * sizes and roles the screens were laid out in, each given the Figtree face
+ * closest to its system weight, a line height (Figtree needs one, see above),
+ * and the tighter tracking the face wants. `caption` is only ever small caps
+ * here ("PENDING", "HIDDEN"), so it is the poster `label`.
+ */
+export const uiText = {
+  largeTitle: { fontFamily: face.heavy, fontSize: 34, lineHeight: 40, letterSpacing: -1 },
+  title: { fontFamily: face.heavy, fontSize: 22, lineHeight: 27, letterSpacing: -0.5 },
+  headline: { fontFamily: face.bold, fontSize: 17, lineHeight: 22, letterSpacing: -0.3 },
+  body: { fontFamily: face.medium, fontSize: 17, lineHeight: 23, letterSpacing: -0.2 },
+  subhead: { fontFamily: face.medium, fontSize: 15, lineHeight: 21, letterSpacing: -0.1 },
+  footnote: { fontFamily: face.medium, fontSize: 13, lineHeight: 18, letterSpacing: 0 },
+  caption: poster.label,
+} as const satisfies Record<string, TextStyle>;
+
+/**
  * What someone types into a form field: `field` without its `lineHeight`, which
  * on iOS draws a single-line `TextInput`'s text off-centre in the box.
  */
