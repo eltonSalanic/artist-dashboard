@@ -1664,8 +1664,21 @@ not touched.
   it. Sheet layout (header-padded plain Views, the dismiss-then-push in the
   board menu) is unchanged, so the react-native#43546 and
   react-native-screens#4651 fixes stand.
-- Next: what is still in the system face — Settings, sign-in, the attachment
-  gallery and grid, the item actions under a form, and the comment field.
+- **Step 7, the rest:** `ThemedText` is set in Figtree (`uiText` in
+  `theme/poster.ts`: Apple's sizes, Figtree faces, a line height each), so
+  every screen that still used it — Settings, the attachment gallery and
+  tiles, the archive and delete actions under a form, the hub's hints and
+  empty states, the tabs' error — reads in the app's face. The Notes view
+  alone keeps the system face, since its bold and italic marks are
+  `fontWeight` / `fontStyle` (P16 replaces it). Sign-in opens with the
+  widget page's masthead (BAND WALL in small caps over the greeting set
+  huge) and loses its white system bar. The comment field is the forms'
+  flat filled box. The attachment grid is set like Spotify's album grid:
+  square art with tight corners and the name left-aligned. Also fixed: the
+  widget pills stretched to half the screen, because the strip grew like
+  any horizontal list (`flexGrow: 0`, as the band filter needed).
+- Left for the phone pass: the whole app in light and dark mode, then merge
+  `feat/mobile-redesign` into `feat/mobile-app`.
 
 ## Library replacement reference
 
