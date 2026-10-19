@@ -1638,7 +1638,20 @@ not touched.
   is a Figtree capsule, the band filter chips (Calendar too) are Spotify chips
   like the widget pills, bar titles are Figtree, and `PosterPill` moved to
   `components/`.
-- Next: sheets and forms (text fields, choice chips, the form screens).
+- **Step 5, forms:** each create/edit form opens with the block the item will
+  become (`FormPoster`, `features/forms/form-poster.tsx`): the kind in small
+  caps ("NEW TASK", "EDIT SHOW") and the title typed straight onto a block in
+  its widget's colour, set as large as on the detail screen and wrapping
+  rather than scrolling. An event's block follows its Type chips, so a show
+  switched to a rehearsal turns Next Rehearsals' colour before it is saved.
+  The bar stays empty over a postered form, as over a detail screen. The
+  fields are Figtree: small-caps labels (`FieldLabel`), flat filled inputs
+  with no outline (`TextField`, `PickOne`, `DateField`), choice chips set as
+  the band filter's, and Cancel / Save in the bar. One `EVENT_WIDGET` map in
+  `spoke-header.tsx` replaces three copies. Focus and Notes keep their own
+  layouts (Notes waits for P16). Trap: a single-line `TextInput` with a
+  `lineHeight` draws its text off-centre on iOS, so `posterInput` drops it.
+- Next: the sheets (status, band switcher, board menu, attachment name).
 
 ## Library replacement reference
 
