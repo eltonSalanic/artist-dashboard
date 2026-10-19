@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { Modal, Pressable, TextInput, View } from 'react-native';
+import { Modal, TextInput, View } from 'react-native';
 import { Image } from 'expo-image';
 import { splitFileName, withExtension } from '@artist/shared';
-import { ThemedText } from '@/components/themed-text';
-import { radius, spacing, useThemeColors } from '@/theme';
+import { FieldLabel } from '@/components/field-label';
+import { PosterText } from '@/components/poster-text';
+import { HeaderText } from '@/features/forms/form-screen';
+import { face, posterInput, posterRadius, spacing, useTokens } from '@/theme';
 
 /**
  * Names a file: a new upload before it goes, or an existing one.
@@ -35,7 +37,7 @@ export function NameSheet({
   onConfirm: (fileName: string) => void;
   onCancel: () => void;
 }) {
-  const colors = useThemeColors();
+  const tokens = useTokens();
   const { base, extension } = splitFileName(fileName);
   const [draft, setDraft] = useState(base);
   const next = withExtension(draft, extension);
@@ -44,17 +46,34 @@ export function NameSheet({
   };
 
   return (
-    <Modal
-      visible
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onCancel}
-    >
-      <View style={{ flex: 1, backgroundColor: colors.background, padding: spacing.md, gap: spacing.lg }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <HeaderButton label="Cancel" onPress={onCancel} />
-          <ThemedText variant="headline">{title}</ThemedText>
-          <HeaderButton label={confirmLabel} bold disabled={!next || pending} onPress={submit} />
+    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onCancel}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: tokens.background,
+          padding: spacing.md,
+          gap: spacing.lg,
+        }}
+      >
+        {/* Drawn like the form bar: Cancel and the confirm in Figtree, the
+            confirm a weight up. */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            minHeight: 44,
+          }}
+        >
+          <HeaderText title="Cancel" onPress={onCancel} />
+          <PosterText
+            variant="rowTitle"
+            color={tokens.foreground}
+            style={{ fontFamily: face.bold }}
+          >
+            {title}
+          </PosterText>
+          <HeaderText title={confirmLabel} bold disabled={!next || pending} onPress={submit} />
         </View>
 
         {previewUri && (
@@ -63,82 +82,56 @@ export function NameSheet({
             contentFit="cover"
             style={{
               alignSelf: 'center',
-              width: 160,
-              height: 160,
-              borderRadius: radius.md,
-              backgroundColor: colors.muted,
+              width: 180,
+              height: 180,
+              borderRadius: posterRadius.block,
+              backgroundColor: tokens.muted,
             }}
           />
         )}
 
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: spacing.xs,
-            paddingHorizontal: spacing.md,
-            borderRadius: radius.md,
-            borderCurve: 'continuous',
-            backgroundColor: colors.card,
-          }}
-        >
-          <TextInput
-            autoFocus
-            selectTextOnFocus
-            accessibilityLabel="File name"
-            value={draft}
-            onChangeText={setDraft}
-            maxLength={255}
-            returnKeyType="done"
-            onSubmitEditing={submit}
-            placeholder="Name"
-            placeholderTextColor={colors.mutedForeground}
-            style={{ flex: 1, paddingVertical: spacing.md, fontSize: 17, color: colors.foreground }}
-          />
-          {extension !== '' && (
-            <ThemedText variant="body" tone="muted">
-              {extension}
-            </ThemedText>
-          )}
+        <View style={{ gap: spacing.xs + 2 }}>
+          <FieldLabel>Name</FieldLabel>
+          {/* The form's flat filled field, with the extension inside it at
+              the right, where it cannot be typed over. */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing.xs,
+              paddingHorizontal: spacing.md,
+              borderRadius: posterRadius.block,
+              borderCurve: 'continuous',
+              backgroundColor: tokens.muted,
+            }}
+          >
+            <TextInput
+              autoFocus
+              selectTextOnFocus
+              accessibilityLabel="File name"
+              value={draft}
+              onChangeText={setDraft}
+              maxLength={255}
+              returnKeyType="done"
+              onSubmitEditing={submit}
+              placeholder="Name"
+              placeholderTextColor={tokens.mutedForeground}
+              style={[
+                posterInput,
+                { flex: 1, paddingVertical: spacing.sm + 5, color: tokens.foreground },
+              ]}
+            />
+            {extension !== '' && (
+              <PosterText variant="field" color={tokens.mutedForeground}>
+                {extension}
+              </PosterText>
+            )}
+          </View>
+          <PosterText variant="cardMeta" color={tokens.mutedForeground}>
+            What your band sees, and what a download saves as.
+          </PosterText>
         </View>
-        <ThemedText variant="footnote" tone="muted">
-          What your band sees, and what a download saves as.
-        </ThemedText>
       </View>
     </Modal>
-  );
-}
-
-function HeaderButton({
-  label,
-  bold = false,
-  disabled = false,
-  onPress,
-}: {
-  label: string;
-  bold?: boolean;
-  disabled?: boolean;
-  onPress: () => void;
-}) {
-  const colors = useThemeColors();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      hitSlop={10}
-      onPress={onPress}
-    >
-      <ThemedText
-        variant="body"
-        style={{
-          color: colors.primary,
-          fontWeight: bold ? '600' : '400',
-          opacity: disabled ? 0.4 : 1,
-        }}
-      >
-        {label}
-      </ThemedText>
-    </Pressable>
   );
 }
