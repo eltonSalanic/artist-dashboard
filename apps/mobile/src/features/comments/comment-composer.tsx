@@ -8,7 +8,7 @@ import {
 } from '@artist/shared';
 import { Button } from '@/components/button';
 import { PosterText } from '@/components/poster-text';
-import { radius, spacing, type, useTokens } from '@/theme';
+import { poster, posterRadius, radius, spacing, useTokens } from '@/theme';
 
 /**
  * A multiline input with `@`-mention suggestions — the phone's version of the
@@ -20,6 +20,10 @@ import { radius, spacing, type, useTokens } from '@/theme';
  * already taught. No arrow-key navigation to port — a tap is the selection.
  *
  * The parent owns the text, so it can derive mention ids on submit.
+ *
+ * The field is the forms' flat filled box (`TextField`) rather than an
+ * outlined card, in the face people's comments are read in. Multiline, so it
+ * keeps the line height a single-line input has to drop.
  */
 export function CommentComposer({
   value,
@@ -107,16 +111,14 @@ export function CommentComposer({
           if (placeCaret !== null) setPlaceCaret(null);
         }}
         style={[
-          type.body,
+          poster.field,
           {
             minHeight: 88,
             maxHeight: 200,
             textAlignVertical: 'top',
             color: tokens.foreground,
-            backgroundColor: tokens.card,
-            borderWidth: 1,
-            borderColor: tokens.border,
-            borderRadius: radius.md,
+            backgroundColor: tokens.muted,
+            borderRadius: posterRadius.block,
             borderCurve: 'continuous',
             paddingHorizontal: spacing.md,
             paddingTop: spacing.sm + 4,
