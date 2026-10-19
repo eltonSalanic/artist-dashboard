@@ -34,7 +34,7 @@ import { Section } from '@/components/section';
 import { Skeleton } from '@/components/skeleton';
 import { TextField } from '@/components/text-field';
 import { ThemedText } from '@/components/themed-text';
-import { paletteSwatches, radius, spacing, useScheme, useThemeColors } from '@/theme';
+import { paletteSwatches, posterRadius, radius, spacing, useScheme, useThemeColors } from '@/theme';
 
 /**
  * Board settings — web's settings page, one section per card, each gated by
@@ -357,7 +357,7 @@ function StatusEditor({
         gap: spacing.sm,
         padding: spacing.md,
         marginVertical: spacing.xs,
-        borderRadius: radius.md,
+        borderRadius: posterRadius.block,
         borderCurve: 'continuous',
         backgroundColor: colors.card,
       }}
