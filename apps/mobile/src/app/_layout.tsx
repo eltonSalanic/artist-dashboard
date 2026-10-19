@@ -91,7 +91,9 @@ export default function RootLayout() {
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             </Stack.Protected>
             <Stack.Protected guard={session === null}>
-              <Stack.Screen name="sign-in" options={{ title: 'Sign in' }} />
+              {/* No bar: the screen's own masthead says what it is, and a
+                  white system bar over the cream page read as another app. */}
+              <Stack.Screen name="sign-in" options={{ title: 'Sign in', headerShown: false }} />
             </Stack.Protected>
           </Stack>
         </QueryClientProvider>

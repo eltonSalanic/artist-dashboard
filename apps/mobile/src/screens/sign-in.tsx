@@ -6,10 +6,11 @@ import {
   View,
 } from 'react-native';
 import { Button } from '@/components/button';
+import { PosterText } from '@/components/poster-text';
 import { TextField } from '@/components/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { supabase } from '@/lib/supabase';
-import { spacing, useThemeColors } from '@/theme';
+import { spacing, usePosterCanvas } from '@/theme';
 
 type Mode = 'signin' | 'signup';
 
@@ -21,9 +22,12 @@ type Mode = 'signin' | 'signup';
  * in, and the one magic link the product sends is a Supabase *invite*, whose
  * redirect the API hardcodes to `WEB_URL/auth/callback`. An invited bandmate
  * accepts on the web, sets a password, and signs in here with it.
+ *
+ * Opens with the widget page's masthead: the app's name in small caps over
+ * the greeting set huge, so the first screen is already in the poster face.
  */
 export function SignInScreen() {
-  const colors = useThemeColors();
+  const canvas = usePosterCanvas();
   const [mode, setMode] = useState<Mode>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -60,18 +64,23 @@ export function SignInScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.root, { backgroundColor: colors.background }]}
+      style={[styles.root, { backgroundColor: canvas.background }]}
       behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.form}>
-        <ThemedText variant="title">
-          {mode === 'signin' ? 'Welcome back' : 'Create your account'}
-        </ThemedText>
-        <ThemedText variant="subhead" tone="muted" style={styles.subtitle}>
-          {mode === 'signin'
-            ? "Sign in to your band's dashboard."
-            : 'Start a dashboard for your band.'}
-        </ThemedText>
+        <View accessible accessibilityRole="header" style={styles.masthead}>
+          <PosterText variant="label" color={canvas.soft}>
+            BAND WALL
+          </PosterText>
+          <PosterText variant="display" color={canvas.ink}>
+            {mode === 'signin' ? 'Welcome back' : 'Create your account'}
+          </PosterText>
+          <PosterText variant="body" color={canvas.soft}>
+            {mode === 'signin'
+              ? "Sign in to your band's dashboard."
+              : 'Start a dashboard for your band.'}
+          </PosterText>
+        </View>
 
         <TextField
           label="Email"
@@ -140,7 +149,7 @@ export function SignInScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, justifyContent: 'center' },
   form: { padding: spacing.lg, gap: spacing.md },
-  subtitle: { marginTop: -spacing.sm },
+  masthead: { gap: spacing.xs, marginBottom: spacing.sm },
   submit: { marginTop: spacing.sm },
   link: { alignItems: 'center', paddingVertical: spacing.sm },
 });
