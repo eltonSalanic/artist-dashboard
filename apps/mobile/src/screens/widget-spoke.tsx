@@ -175,7 +175,12 @@ function PositionStrip({
       keyExtractor={(type) => type}
       horizontal
       showsHorizontalScrollIndicator={false}
+      // A horizontal list grows by default, so above the pager it took half the
+      // screen and stretched every chip into a tall capsule — the band filter's
+      // bug, fixed the same way.
+      style={{ flexGrow: 0 }}
       contentContainerStyle={{
+        alignItems: 'center',
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.sm,
         gap: spacing.xs,
