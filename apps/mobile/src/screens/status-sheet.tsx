@@ -10,10 +10,10 @@ import {
   useUpdateTask,
 } from '@artist/api-client';
 import { Icon } from '@/components/icon';
+import { PosterText } from '@/components/poster-text';
 import { Dot } from '@/components/row';
 import { Skeleton } from '@/components/skeleton';
-import { ThemedText } from '@/components/themed-text';
-import { radius, spacing, useThemeColors } from '@/theme';
+import { face, posterRadius, spacing, usePosterCanvas } from '@/theme';
 
 /**
  * Pick a task's status. A sheet rather than a picker wheel or a menu: statuses
@@ -27,6 +27,10 @@ import { radius, spacing, useThemeColors } from '@/theme';
  * Moving a task into a done status finishes its open subtasks on the server,
  * with no "this task only" — a task is not done while its subtasks are not —
  * so with any open it asks first and says how many, as completing a goal does.
+ *
+ * Set like the board menu: the task it acts on first, set as the detail screen
+ * sets it, then bare rows. The current status is a filled row with a tick, so
+ * a band whose statuses share a colour still shows which one the task is in.
  */
 export function StatusSheet({
   boardId,
@@ -35,7 +39,7 @@ export function StatusSheet({
   boardId: string;
   taskId: string;
 }) {
-  const colors = useThemeColors();
+  const canvas = usePosterCanvas();
   const board = useBoard(boardId);
   const task = useTask(boardId, taskId);
   const update = useUpdateTask(boardId);
@@ -94,7 +98,7 @@ export function StatusSheet({
     // (react-native#43546) — it lit up on touch and the release was dropped.
     <View
       style={{
-        backgroundColor: colors.background,
+        backgroundColor: canvas.background,
         padding: spacing.md,
         paddingTop: headerHeight + spacing.sm,
         paddingBottom: spacing.md + insets.bottom,
@@ -102,23 +106,27 @@ export function StatusSheet({
       }}
     >
       {task.data && (
-        <ThemedText
-          variant="subhead"
-          tone="muted"
-          numberOfLines={2}
-          style={{ marginBottom: spacing.xs }}
+        <View
+          style={{
+            paddingHorizontal: spacing.xs,
+            paddingBottom: spacing.sm + 2,
+            marginBottom: spacing.xs,
+            borderBottomWidth: 1,
+            borderBottomColor: canvas.rule,
+          }}
         >
-          {task.data.title}
-        </ThemedText>
+          <PosterText variant="title" color={canvas.ink} numberOfLines={2}>
+            {task.data.title}
+          </PosterText>
+        </View>
       )}
 
       {board.isPending || task.isPending ? (
         [0, 1, 2].map((i) => <Skeleton key={i} width="100%" height={48} />)
       ) : !allowed ? (
-        <ThemedText variant="subhead" tone="muted">
-          Only the people assigned to this task, or a band admin, can change its
-          status.
-        </ThemedText>
+        <PosterText variant="paragraph" color={canvas.soft} style={{ paddingHorizontal: spacing.xs }}>
+          Only the people assigned to this task, or a band admin, can change its status.
+        </PosterText>
       ) : (
         statuses.map((status) => {
           const selected = status.id === current;
@@ -137,25 +145,29 @@ export function StatusSheet({
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: spacing.md,
-                minHeight: 48,
-                paddingHorizontal: spacing.md,
-                borderRadius: radius.md,
+                minHeight: 52,
+                paddingHorizontal: spacing.sm + 4,
+                borderRadius: posterRadius.block,
                 borderCurve: 'continuous',
-                backgroundColor: selected || pressed ? colors.accent : colors.card,
+                backgroundColor: selected || pressed ? canvas.faint : 'transparent',
               })}
             >
-              <Dot color={status.color} size={12} />
-              <ThemedText variant="body" style={{ flex: 1 }}>
+              <Dot color={status.color} size={14} />
+              <PosterText
+                variant="rowTitle"
+                color={canvas.ink}
+                style={[{ flex: 1 }, selected && { fontFamily: face.heavy }]}
+              >
                 {status.name}
-              </ThemedText>
+              </PosterText>
               <View style={{ width: 22, alignItems: 'center' }}>
                 {pendingId === status.id ? (
-                  <ActivityIndicator size="small" />
+                  <ActivityIndicator size="small" color={canvas.ink} />
                 ) : selected ? (
                   <Icon
                     name={{ sf: 'checkmark', md: 'check' }}
                     size={17}
-                    color={colors.primary}
+                    color={canvas.ink}
                   />
                 ) : null}
               </View>
