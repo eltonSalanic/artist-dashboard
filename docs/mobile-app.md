@@ -1651,7 +1651,21 @@ not touched.
   `spoke-header.tsx` replaces three copies. Focus and Notes keep their own
   layouts (Notes waits for P16). Trap: a single-line `TextInput` with a
   `lineHeight` draws its text off-centre on iOS, so `posterInput` drops it.
-- Next: the sheets (status, band switcher, board menu, attachment name).
+- **Step 6, sheets:** the band switcher is a wall of bands, each a block in
+  its own colour (the You tab's band block), the one showing marked by a
+  filled tick and "· SHOWING", never by colour alone, since two bands can
+  share one. The board menu opens with the band it acts on (a small tile in
+  its colour with its initial, then its name), then Spotify `⋯`-menu rows:
+  a bare icon, a semibold title and a medium line, no box round each. The
+  status sheet names the task as the detail block does, then bare rows; the
+  current status is a filled row with a heavier name and a tick. The
+  attachment name sheet has the form bar's Cancel / Save in Figtree, a
+  small-caps NAME label and the flat filled field, with the extension inside
+  it. Sheet layout (header-padded plain Views, the dismiss-then-push in the
+  board menu) is unchanged, so the react-native#43546 and
+  react-native-screens#4651 fixes stand.
+- Next: what is still in the system face — Settings, sign-in, the attachment
+  gallery and grid, the item actions under a form, and the comment field.
 
 ## Library replacement reference
 
