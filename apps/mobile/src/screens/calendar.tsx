@@ -4,6 +4,7 @@ import { Stack, router } from 'expo-router';
 import { useAllBoardsCalendar, useBoards, type CalendarItemDto } from '@artist/api-client';
 import {
   CALENDAR_CATEGORY_COPY,
+  CalendarCategories,
   calendarCategory,
   daysFromToday,
   groupCalendarByDay,
@@ -15,6 +16,7 @@ import {
   type WidgetType,
 } from '@artist/shared';
 import { BoardFilter } from '@/components/board-filter';
+import { ChoiceChips } from '@/components/choice-chips';
 import { Icon, type IconName } from '@/components/icon';
 import { ListState } from '@/components/list-state';
 import { PosterText } from '@/components/poster-text';
@@ -56,6 +58,11 @@ import {
  * keep its shape; a list that printed 19 empty headings would bury the five
  * days that matter. Today is the exception: this month opens scrolled to it,
  * so it is there even on a day with nothing booked, and says so.
+ *
+ * The round filter button beside the steppers narrows it to some kinds of
+ * thing, as web's legend chips do. The chips are the Archive's: additive, none
+ * picked means everything, rather than web's all-on-and-tap-to-hide, so the
+ * phone's two type filters work one way.
  */
 export function CalendarScreen() {
   const canvas = usePosterCanvas();
@@ -65,6 +72,9 @@ export function CalendarScreen() {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
   });
+
+  const [types, setTypes] = useState<CalendarCategory[]>([]);
+  const [picking, setPicking] = useState(false);
 
   const toToday = () => {
     const now = new Date();
@@ -76,7 +86,29 @@ export function CalendarScreen() {
       <View style={{ marginHorizontal: -spacing.md }}>
         <BoardFilter boards={scope.boards} boardId={scope.boardId} onSelect={scope.select} />
       </View>
-      <MonthHeader cursor={cursor} onChange={setCursor} onToday={toToday} canvas={canvas} />
+      <MonthHeader
+        cursor={cursor}
+        onChange={setCursor}
+        onToday={toToday}
+        canvas={canvas}
+        filter={{
+          on: types.length > 0,
+          open: picking,
+          onPress: () => setPicking(!picking),
+        }}
+      />
+      {picking && (
+        <ChoiceChips
+          label={types.length > 0 ? 'Showing only' : 'Show only'}
+          multiple
+          choices={CalendarCategories.map((c) => ({
+            value: c,
+            label: CALENDAR_CATEGORY_COPY[c].label,
+          }))}
+          value={types}
+          onChange={setTypes}
+        />
+      )}
     </>
   );
 
@@ -91,6 +123,7 @@ export function CalendarScreen() {
           month={cursor.month}
           boardId={scope.boardId}
           boards={scope.boards}
+          types={types}
           top={top}
         />
       ) : (
@@ -122,12 +155,15 @@ function Agenda({
   month,
   boardId,
   boards,
+  types,
   top,
 }: {
   year: number;
   month: number;
   boardId: string | undefined;
   boards: BoardSummaryDto[];
+  /** The kinds of thing to show; empty for all of them. */
+  types: CalendarCategory[];
   top: React.ReactNode;
 }) {
   const canvas = usePosterCanvas();
@@ -179,14 +215,23 @@ function Agenda({
 
   const now = new Date();
   const thisMonth = year === now.getFullYear() && month === now.getMonth();
-  const empty = calendar.data !== undefined && calendar.data.length === 0;
+  // Filtered here, not in the request: the API has no type param, and a
+  // month's items are a few dozen at most.
+  const shown = useMemo(
+    () =>
+      types.length === 0
+        ? calendar.data
+        : calendar.data?.filter((item) => types.includes(calendarCategory(item))),
+    [calendar.data, types],
+  );
+  const empty = shown !== undefined && shown.length === 0;
   const days = useMemo(() => {
-    const grouped = groupCalendarByDay(calendar.data ?? []);
+    const grouped = groupCalendarByDay(shown ?? []);
     // Only once the month has loaded, so the spinner still shows until then.
     return thisMonth && calendar.data !== undefined
       ? withCalendarDay(grouped, new Date())
       : grouped;
-  }, [calendar.data, thisMonth]);
+  }, [shown, calendar.data, thisMonth]);
 
   // Opening this month lands on today rather than on the 1st. Once per month
   // and band shown, so a refetch on focus never yanks the list back while
@@ -262,13 +307,13 @@ function Agenda({
             />
           </View>
         ) : (
-          <EmptyMonth monthName={monthName} canvas={canvas} />
+          <EmptyMonth monthName={monthName} filtered={types.length > 0} canvas={canvas} />
         )
       }
       // This month is never an empty list, since today is always in it, so
       // an empty month still says so under today.
       ListFooterComponent={
-        empty && thisMonth ? <EmptyMonth monthName={monthName} canvas={canvas} /> : null
+        empty && thisMonth ? <EmptyMonth monthName={monthName} filtered={types.length > 0} canvas={canvas} /> : null
       }
     />
   );
@@ -281,14 +326,24 @@ const isTodayDay = (parts: { year: number; month: number; day: number }) => {
   );
 };
 
-function EmptyMonth({ monthName, canvas }: { monthName: string; canvas: PosterCanvas }) {
+function EmptyMonth({
+  monthName,
+  filtered,
+  canvas,
+}: {
+  monthName: string;
+  filtered: boolean;
+  canvas: PosterCanvas;
+}) {
   return (
     <View style={{ paddingTop: spacing.xl, gap: spacing.sm }}>
       <PosterText variant="display" color={canvas.ink}>
         Nothing in {monthName}.
       </PosterText>
       <PosterText variant="body" color={canvas.soft}>
-        Shows, rehearsals, meetings, due tasks, goals and reminders all land here.
+        {filtered
+          ? 'Nothing of the kinds picked, anyway. Untick them to see everything.'
+          : 'Shows, rehearsals, meetings, due tasks, goals and reminders all land here.'}
       </PosterText>
     </View>
   );
@@ -303,11 +358,14 @@ function MonthHeader({
   onChange,
   onToday,
   canvas,
+  filter,
 }: {
   cursor: { year: number; month: number };
   onChange: (next: { year: number; month: number }) => void;
   onToday: () => void;
   canvas: PosterCanvas;
+  /** The type filter's button: `on` while it narrows the month. */
+  filter: { on: boolean; open: boolean; onPress: () => void };
 }) {
   const shift = (delta: number) => {
     const shifted = new Date(cursor.year, cursor.month + delta, 1);
@@ -341,6 +399,14 @@ function MonthHeader({
       </Pressable>
       <View style={{ flexDirection: 'row', gap: spacing.sm, paddingBottom: 10 }}>
         <Stepper
+          icon={{ sf: 'line.3.horizontal.decrease', md: 'filter-list' }}
+          label={filter.on ? 'Filter by type, on' : 'Filter by type'}
+          onPress={filter.onPress}
+          canvas={canvas}
+          filled={filter.on}
+          expanded={filter.open}
+        />
+        <Stepper
           icon={{ sf: 'chevron.left', md: 'chevron-left' }}
           label="Previous month"
           onPress={() => shift(-1)}
@@ -362,16 +428,22 @@ function Stepper({
   label,
   onPress,
   canvas,
+  filled = false,
+  expanded,
 }: {
   icon: IconName;
   label: string;
   onPress: () => void;
   canvas: PosterCanvas;
+  /** Solid in ink, as a pressed stepper is: a filter that is narrowing. */
+  filled?: boolean;
+  expanded?: boolean;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={expanded === undefined ? undefined : { expanded }}
       onPress={onPress}
       style={({ pressed }) => ({
         width: 44,
@@ -381,11 +453,15 @@ function Stepper({
         borderColor: canvas.ink,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: pressed ? canvas.ink : 'transparent',
+        backgroundColor: pressed !== filled ? canvas.ink : 'transparent',
       })}
     >
       {({ pressed }) => (
-        <Icon name={icon} size={16} color={pressed ? canvas.background : canvas.ink} />
+        <Icon
+          name={icon}
+          size={16}
+          color={pressed !== filled ? canvas.background : canvas.ink}
+        />
       )}
     </Pressable>
   );
