@@ -15,13 +15,18 @@ import {
   useMe,
   usePermissions,
   useUpdateComment,
+  useUploadAttachment,
+  notify,
   type CommentDto,
+  type UploadSource,
 } from '@artist/api-client';
 import { Icon } from '@/components/icon';
 import { Section } from '@/components/section';
 import { Skeleton } from '@/components/skeleton';
 import { PosterText } from '@/components/poster-text';
 import { AttachmentGrid } from '@/features/attachments/attachment-grid';
+import { NameSheet } from '@/features/attachments/name-sheet';
+import { chooseSource, pickUpload } from '@/features/attachments/pick';
 import { shortAgo } from '@/features/board/format';
 import { face, spacing, useThemeColors } from '@/theme';
 import { CommentComposer } from './comment-composer';
@@ -117,7 +122,9 @@ function CommentItem({
   const remove = useDeleteComment(boardId, taskId);
   const removeFile = useDeleteAttachment(boardId, { commentId: comment.id });
   const renameFile = useRenameAttachment(boardId, { commentId: comment.id });
+  const upload = useUploadAttachment(boardId, { commentId: comment.id });
   const [editing, setEditing] = useState(false);
+  const [picked, setPicked] = useState<{ source: UploadSource; preview?: string } | null>(null);
   const [draft, setDraft] = useState(comment.body);
 
   const myId = me.data?.user.id;
@@ -125,6 +132,19 @@ function CommentItem({
   // The API's rules: only the author edits; the author or an admin deletes.
   const canEdit = isAuthor;
   const canDelete = isAuthor || can('task.editFields');
+  // As on web: anyone who may upload may add a file to any comment.
+  const canAttach = can('file.upload');
+
+  const attach = async () => {
+    try {
+      const from = await chooseSource();
+      if (!from) return;
+      const file = await pickUpload(from);
+      if (file) setPicked(file);
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : 'Could not open the picker');
+    }
+  };
 
   const save = () => {
     const body = draft.trim();
@@ -178,6 +198,20 @@ function CommentItem({
         <PosterText variant="cardMeta" color={colors.mutedForeground} style={{ flex: 1 }}>
           {`${shortAgo(comment.createdAt)}${comment.editedAt ? ' · edited' : ''}`}
         </PosterText>
+        {canAttach && !editing && (
+          // Its own button, as web's paperclip: the actions alert is full on
+          // Android, which holds three buttons with Cancel.
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Attach file to comment"
+            hitSlop={12}
+            disabled={upload.isPending}
+            onPress={() => void attach()}
+            style={({ pressed }) => ({ opacity: pressed || upload.isPending ? 0.4 : 1 })}
+          >
+            <Icon name={{ sf: 'paperclip', md: 'attach-file' }} size={16} color={colors.mutedForeground} />
+          </Pressable>
+        )}
         {(canEdit || canDelete) && !editing && (
           <Pressable
             accessibilityRole="button"
@@ -237,6 +271,26 @@ function CommentItem({
             renameFile.mutateAsync({ attachmentId, dto: { fileName } })
           }
           onDelete={(attachmentId) => removeFile.mutateAsync(attachmentId)}
+        />
+      )}
+
+      {upload.isPending && (
+        <PosterText variant="cardMeta" color={colors.mutedForeground}>
+          {`Uploading ${upload.variables?.fileName ?? 'file'}…`}
+        </PosterText>
+      )}
+
+      {picked && (
+        <NameSheet
+          title="Name this file"
+          fileName={picked.source.fileName}
+          previewUri={picked.preview}
+          confirmLabel="Upload"
+          onCancel={() => setPicked(null)}
+          onConfirm={(fileName) => {
+            upload.mutate({ ...picked.source, fileName });
+            setPicked(null);
+          }}
         />
       )}
     </View>
