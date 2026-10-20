@@ -102,6 +102,10 @@ function NotificationsSection({ boardId }: { boardId: string }) {
                   // Painted first and rolled back on failure, in the hook.
                   onValueChange={(enabled) => save.mutate({ category, enabled })}
                   trackColor={{ true: colors.primary }}
+                  // The track is the page ink, near-white in the dark, where the
+                  // system's white thumb vanished into it: the thumb is the ink's
+                  // opposite, as a primary button's label is.
+                  thumbColor={preferences.data[category] ? colors.primaryForeground : undefined}
                 />
               }
             />
@@ -392,6 +396,7 @@ function StatusEditor({
           value={status.isDone}
           onValueChange={(isDone) => update.mutate({ statusId: status.id, dto: { isDone } })}
           trackColor={{ true: colors.primary }}
+          thumbColor={status.isDone ? colors.primaryForeground : undefined}
         />
       </View>
       <View style={{ flexDirection: 'row', gap: spacing.sm }}>
