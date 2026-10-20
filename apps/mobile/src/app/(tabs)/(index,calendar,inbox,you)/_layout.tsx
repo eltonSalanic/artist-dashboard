@@ -1,5 +1,24 @@
 import { Stack } from 'expo-router/stack';
+import { ThemedText } from '@/components/themed-text';
 import { face, useThemeColors } from '@/theme';
+
+/**
+ * A sheet's title, drawn by React rather than as the bar's own title.
+ *
+ * In dark mode iOS dims the title label of a sheet's bar whatever colour it is
+ * given (the page ink came out mid grey, pure red a dark red), while the light
+ * mode's near-black hid it. A title view of our own is drawn as it is asked.
+ */
+function sheetTitle(title: string) {
+  return {
+    title,
+    headerTitle: () => (
+      <ThemedText variant="headline" accessibilityRole="header">
+        {title}
+      </ThemedText>
+    ),
+  };
+}
 
 /**
  * One stack definition, instantiated once per tab.
@@ -41,7 +60,7 @@ export default function TabStackLayout({ segment }: { segment: string }) {
           presentation: 'formSheet',
           sheetGrabberVisible: true,
           sheetAllowedDetents: 'fitToContents',
-          title: 'Your bands',
+          ...sheetTitle('Your bands'),
         }}
       />
       {/* Spokes and task detail: pushed, titled by the screen itself. They are
@@ -64,7 +83,7 @@ export default function TabStackLayout({ segment }: { segment: string }) {
           presentation: 'formSheet',
           sheetGrabberVisible: true,
           sheetAllowedDetents: 'fitToContents',
-          title: 'Status',
+          ...sheetTitle('Status'),
         }}
       />
       <Stack.Screen
@@ -81,7 +100,7 @@ export default function TabStackLayout({ segment }: { segment: string }) {
           presentation: 'formSheet',
           sheetGrabberVisible: true,
           sheetAllowedDetents: 'fitToContents',
-          title: 'Board',
+          ...sheetTitle('Board'),
         }}
       />
     </Stack>
