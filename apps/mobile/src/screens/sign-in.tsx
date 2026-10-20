@@ -102,8 +102,13 @@ export function SignInScreen() {
           editable={!pending}
           secureTextEntry
           autoCapitalize="none"
-          autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-          textContentType={mode === 'signin' ? 'password' : 'newPassword'}
+          // A plain password field in both modes. `newPassword` made iOS lay its
+          // yellow strong-password overlay over the field on Create account,
+          // which kept only the first typed letter and then stuck when you
+          // switched back to Sign in. With no associated domain a generated
+          // password could not reach the web sign-in anyway.
+          autoComplete="current-password"
+          textContentType="password"
           returnKeyType="go"
           onSubmitEditing={() => {
             if (canSubmit) void submit();
