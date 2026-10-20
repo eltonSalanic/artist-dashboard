@@ -41,7 +41,7 @@ export function renderLayout(input: LayoutInput): string {
     ${cta}
   </div>
   <p style="max-width:520px;margin:20px auto 0;font-size:12px;line-height:1.5;color:${MUTED};text-align:center">
-    You're getting this because you're on ${esc(input.boardName)}.
+    You're getting this because you're on ${esc(input.boardName)} in Band Wall.
     <a href="${esc(input.unsubscribeUrl)}" style="color:${MUTED}">Turn these off</a>.
   </p>
 </body></html>`;

@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Artist Dashboard",
-    template: "%s · Artist Dashboard",
+    default: "Band Wall",
+    template: "%s · Band Wall",
   },
   description:
     "Visibility, collaboration, and organization for bands and artists. Tasks, goals, shows, rehearsals, and more in one dashboard.",

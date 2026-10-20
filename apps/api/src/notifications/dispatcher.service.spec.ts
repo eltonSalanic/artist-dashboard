@@ -195,7 +195,7 @@ describe('DispatcherService', () => {
       expect(pushTransport.sent[0].tokens).toEqual(['tok-a', 'tok-b']);
       // Rendered from the same template as the email, so the two can never
       // describe the same event differently.
-      expect(pushTransport.sent[0].title).toBe('Artist Dashboard test email');
+      expect(pushTransport.sent[0].title).toBe('Band Wall test email');
       expect(pushTransport.sent[0].idempotencyKey).toBe('mention:m1');
       expect(lastUpdate().status).toBe('SENT');
     });

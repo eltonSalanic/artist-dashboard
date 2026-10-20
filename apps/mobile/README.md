@@ -1,4 +1,4 @@
-# `apps/mobile` — Artist Dashboard on iOS and Android
+# `apps/mobile` — Band Wall on iOS and Android
 
 Expo SDK 57 / React Native 0.86, expo-router, React Native `StyleSheet`. A
 third app beside `apps/web`, sharing `packages/shared` and

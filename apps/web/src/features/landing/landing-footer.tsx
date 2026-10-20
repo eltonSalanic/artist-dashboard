@@ -9,12 +9,12 @@ export function LandingFooter() {
             <AudioLines className="size-4" />
           </span>
           <span className="font-heading text-sm font-bold tracking-tight">
-            Artist Dashboard
+            Band Wall
           </span>
         </div>
 
         <p className="text-xs text-muted-foreground">
-          © {new Date().getFullYear()} Artist Dashboard · made by the lame ah
+          © {new Date().getFullYear()} Band Wall · made by the lame ah
           guitarist from american woman.
         </p>
       </div>

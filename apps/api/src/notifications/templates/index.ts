@@ -64,7 +64,7 @@ const eventNoun = (type: string): string =>
 const diagnostic: TemplateRenderer = (payload, ctx) => {
   const note = str(payload, 'note') || 'Nothing to report. The pipe works.';
   return {
-    subject: 'Artist Dashboard test email',
+    subject: 'Band Wall test email',
     html: renderLayout({
       heading: 'This is a test',
       bodyHtml: `<p style="margin:0">${note}</p>`,
