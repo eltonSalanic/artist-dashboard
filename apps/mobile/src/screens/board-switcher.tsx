@@ -96,16 +96,6 @@ export function BoardSwitcherSheet() {
           </Pressable>
         );
       })}
-
-      {boards.length === 1 && (
-        <PosterText
-          variant="paragraph"
-          color={canvas.soft}
-          style={{ paddingHorizontal: spacing.xs, paddingTop: spacing.xs }}
-        >
-          You are only in one band. Ask an admin to invite you to another, or create one on the web.
-        </PosterText>
-      )}
     </View>
   );
 }
