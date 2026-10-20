@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, View } from 'react-native';
 import { Stack, router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAllBoardsCalendar, useBoards, type CalendarItemDto } from '@artist/api-client';
 import {
   CALENDAR_CATEGORY_COPY,
@@ -117,17 +118,30 @@ export function CalendarScreen() {
       {/* Mounted only once the stored filter has been read, so the first request
           is the one the person actually asked for rather than every band
           followed by a snap to one. */}
-      {scope.ready ? (
+      {/* Pinned: the band filter and the month stay put while the days
+          scroll under them, so which band and which month is always on
+          screen. A plain view above the list rather than a sticky header,
+          because the type chips under the month open and close, and a sticky
+          list header that changes height jolts the scroll position. */}
+      <View
+        style={{
+          paddingHorizontal: spacing.md,
+          paddingBottom: spacing.sm,
+          gap: spacing.md,
+          backgroundColor: canvas.background,
+          zIndex: 1,
+        }}
+      >
+        {top}
+      </View>
+      {scope.ready && (
         <Agenda
           year={cursor.year}
           month={cursor.month}
           boardId={scope.boardId}
           boards={scope.boards}
           types={types}
-          top={top}
         />
-      ) : (
-        <View style={{ paddingHorizontal: spacing.md }}>{top}</View>
       )}
 
       <Stack.Screen
@@ -156,7 +170,6 @@ function Agenda({
   boardId,
   boards,
   types,
-  top,
 }: {
   year: number;
   month: number;
@@ -164,7 +177,6 @@ function Agenda({
   boards: BoardSummaryDto[];
   /** The kinds of thing to show; empty for all of them. */
   types: CalendarCategory[];
-  top: React.ReactNode;
 }) {
   const canvas = usePosterCanvas();
   const scheme = useScheme();
@@ -233,28 +245,105 @@ function Agenda({
       : grouped;
   }, [shown, calendar.data, thisMonth]);
 
-  // Opening this month lands on today rather than on the 1st. Once per month
-  // and band shown, so a refetch on focus never yanks the list back while
-  // someone is reading further down.
+  // Opening this month lands on today rather than on the 1st, set in the
+  // middle of what can be seen, so the days either side of it show too.
+  // Near the end of a month there is not enough below today to centre it, so
+  // it goes as far down as the list goes. Once per view, so a refetch on focus never yanks the list back
+  // while someone is reading further down.
   const list = useRef<FlatList<(typeof days)[number]>>(null);
   const landed = useRef<string | null>(null);
   const todayIndex = thisMonth ? days.findIndex((day) => isTodayDay(day.parts)) : -1;
+
+  // The list runs on under the tab bar. Inside the tab, the bottom safe-area
+  // inset is the bar's height (it includes the home indicator), so that is
+  // what is covered. The list is not the screen's first scroll view any
+  // more, so iOS no longer insets it for the bar by itself: its end is padded
+  // by the same amount instead, or the last day of a month sat under the bar.
+  const insets = useSafeAreaInsets();
+  const covered = insets.bottom;
+  const contentHeight = useRef(0);
+  const firstView = useRef<View>(null);
+  const todayView = useRef<View>(null);
+
+  // Each re-centre waits a frame, so it measures the layout that caused it
+  // rather than the one before (a filter that drops days above today moved
+  // it up after the measure, and it landed 90pt low).
+  // A day measures its true height a frame or two after it renders (a day
+  // with two items wraps taller than the first guess), and the list moves
+  // down when the band chips above it arrive, which can be well after the
+  // first frame. A jump made before either lands wrong. So until the person
+  // first drags the list, every change in its size or its content's
+  // re-centres today. Untouched, the list is still on today, so a re-centre
+  // never moves anyone from what they were reading; once they drag, it stops.
+  const settling = useRef(false);
+
+  /**
+   * Today's middle on the middle of what shows between the header and the
+   * tab bar, measured rather than estimated: today's block and the first
+   * day's are both measured in the scroll view, and today's distance below
+   * the first day (the top of the content) is where it sits in the list
+   * whatever the current scroll, which is the same for both and cancels out.
+   * The offset is clamped to the list's real range. React Native's own clamp leaves out the room iOS adds under the
+   * tab bar, so near the end of a month it stopped a bar's height short of
+   * as-far-down-as-it-goes.
+   */
+  const centreToday = useCallback(() => {
+    if (todayIndex <= 0) return;
+    // measureLayout measures against an ancestor; the scroll view is one of
+    // both days, where the first day is not one of today's.
+    const scroller = list.current?.getNativeScrollRef() as View | null | undefined;
+    const first = firstView.current;
+    const day = todayView.current;
+    if (!scroller || !first || !day) return;
+    // The list's height is measured here, not kept from a render: it changes
+    // as the screen settles (the band chips arrive after the first layout and
+    // push the list down), and a centring done against the old height sat
+    // today well above the middle.
+    scroller.measure((_sx, _sy, _sw, listHeight) => {
+      first.measureLayout(scroller, (_fx, firstY) => {
+        day.measureLayout(scroller, (_dx, dayY, _w, dayHeight) => {
+          const top = dayY - firstY;
+          const visible = listHeight - covered;
+          const furthest = Math.max(0, contentHeight.current - listHeight);
+          const offset = Math.min(furthest, Math.max(0, top + dayHeight / 2 - visible / 2));
+          list.current?.scrollToOffset({ offset, animated: false });
+        });
+      });
+    });
+  }, [todayIndex, covered]);
+  // The latest centring, for the frame callback below: the effect that
+  // schedules it does not cancel it when it re-runs, so it must not hold a
+  // stale index.
+  const centreLatest = useEffectEvent(() => centreToday());
+
+  // Each new view (month, band or kinds picked) starts in a known place: this
+  // month on today, any other month at its top. Without it the list kept the
+  // last view's scroll, so a band with less in it opened scrolled past its
+  // own content, today's block cut off under the header.
+  const view = `${year}-${month}-${boardId ?? 'all'}-${types.join(',')}`;
   useEffect(() => {
-    const view = `${year}-${month}-${boardId ?? 'all'}`;
+    if (landed.current === view) return;
     if (!thisMonth) {
-      landed.current = null;
+      landed.current = view;
+      settling.current = false;
+      list.current?.scrollToOffset({ offset: 0, animated: false });
       return;
     }
-    if (todayIndex < 0 || landed.current === view) return;
+    // This month waits for its days.
+    if (todayIndex < 0) return;
     landed.current = view;
-    // The first day is already right under the month's name.
-    if (todayIndex === 0) return;
-    // Cells are measured a frame after they render, so wait for that.
-    const frame = requestAnimationFrame(() =>
-      list.current?.scrollToIndex({ index: todayIndex, animated: false }),
-    );
-    return () => cancelAnimationFrame(frame);
-  }, [year, month, boardId, thisMonth, todayIndex]);
+    // The first day belongs at the top, where centring it would clamp to.
+    if (todayIndex === 0) {
+      settling.current = false;
+      list.current?.scrollToOffset({ offset: 0, animated: false });
+      return;
+    }
+    settling.current = true;
+    // Cells are measured a frame after they render, so wait for that. Not
+    // cancelled when the effect re-runs: it re-runs as the index settles and
+    // returns early, and the centring must still happen.
+    requestAnimationFrame(() => centreLatest());
+  }, [view, thisMonth, todayIndex]);
 
   return (
     <FlatList
@@ -264,16 +353,20 @@ function Agenda({
       // A month is a few dozen sections at most. Rendering them all up front
       // is what lets the list jump straight to today.
       initialNumToRender={days.length}
-      onScrollToIndexFailed={(info) =>
-        setTimeout(
-          () => list.current?.scrollToIndex({ index: info.index, animated: false }),
-          50,
-        )
-      }
+      onLayout={() => {
+        if (settling.current) requestAnimationFrame(centreToday);
+      }}
+      onContentSizeChange={(_width, height) => {
+        contentHeight.current = height;
+        if (settling.current) requestAnimationFrame(centreToday);
+      }}
+      onScrollBeginDrag={() => {
+        settling.current = false;
+      }}
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={{
         paddingHorizontal: spacing.md,
-        paddingBottom: spacing.xxl,
+        paddingBottom: spacing.xxl + covered,
         flexGrow: 1,
       }}
       refreshControl={
@@ -283,17 +376,21 @@ function Agenda({
           tintColor={canvas.soft}
         />
       }
-      ListHeaderComponent={
-        <View style={{ gap: spacing.md, paddingBottom: spacing.sm }}>{top}</View>
-      }
-      renderItem={({ item: day }) => (
-        <DaySection
-          date={new Date(day.parts.year, day.parts.month, day.parts.day)}
-          items={day.items}
-          namesBoards={namesBoards}
-          inkOf={inkOf}
-          canvas={canvas}
-        />
+      renderItem={({ item: day, index }) => (
+        // Today's block is measured from the first day's to centre it; the
+        // wrappers are real native views so they can be.
+        <View
+          ref={index === todayIndex ? todayView : index === 0 ? firstView : undefined}
+          collapsable={false}
+        >
+          <DaySection
+            date={new Date(day.parts.year, day.parts.month, day.parts.day)}
+            items={day.items}
+            namesBoards={namesBoards}
+            inkOf={inkOf}
+            canvas={canvas}
+          />
+        </View>
       )}
       ListEmptyComponent={
         calendar.isPending || calendar.error ? (
@@ -313,7 +410,9 @@ function Agenda({
       // This month is never an empty list, since today is always in it, so
       // an empty month still says so under today.
       ListFooterComponent={
-        empty && thisMonth ? <EmptyMonth monthName={monthName} filtered={types.length > 0} canvas={canvas} /> : null
+        empty && thisMonth ? (
+          <EmptyMonth monthName={monthName} filtered={types.length > 0} canvas={canvas} />
+        ) : null
       }
     />
   );
