@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Pressable, TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
 import { useBoard, useMe } from '@artist/api-client';
 import { Priorities } from '@artist/shared';
 import { ChoiceChips, type Choice } from '@/components/choice-chips';
 import { Icon, type IconName } from '@/components/icon';
 import { PosterText } from '@/components/poster-text';
-import { posterRadius, spacing, useTokens } from '@/theme';
+import { posterInput, posterRadius, spacing, useTokens } from '@/theme';
 import {
   PRIORITY_LABELS,
   SORT_LABELS,
@@ -16,7 +16,10 @@ import {
   type TaskView,
 } from '../task-view';
 
-type Panel = 'sort' | 'filter' | null;
+type Panel = 'sort' | 'filter' | 'search' | null;
+
+/** How long typing must pause before the search goes to the API. */
+const SEARCH_PAUSE_MS = 250;
 
 /**
  * A task list's view and which of its panels is open, kept by the spoke
@@ -26,7 +29,18 @@ type Panel = 'sort' | 'filter' | null;
 export function useTaskView(sort: TaskSort) {
   const [view, setView] = useState<TaskView>(() => defaultTaskView(sort));
   const [panel, setPanel] = useState<Panel>(null);
-  return { view, setView, panel, setPanel, initial: sort };
+  // What is typed, kept apart from the view so each keystroke is not a fetch;
+  // it reaches `view.search` once typing pauses.
+  const [search, setSearch] = useState('');
+  useEffect(() => {
+    const words = search.trim();
+    const timer = setTimeout(
+      () => setView((v) => (v.search === words ? v : { ...v, search: words })),
+      SEARCH_PAUSE_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [search]);
+  return { view, setView, panel, setPanel, search, setSearch, initial: sort };
 }
 
 export type TaskViewState = ReturnType<typeof useTaskView>;
@@ -50,7 +64,7 @@ export function TaskViewControls({
   state: TaskViewState;
   byAssignee: boolean;
 }) {
-  const { view, setView, panel, setPanel, initial } = state;
+  const { view, setView, panel, setPanel, search, setSearch, initial } = state;
   const board = useBoard(boardId);
   const me = useMe(true);
   const filters = activeFilters(view);
@@ -102,7 +116,30 @@ export function TaskViewControls({
           open={panel === 'filter'}
           onPress={() => toggle('filter')}
         />
+        <PanelPill
+          icon={{ sf: 'magnifyingglass', md: 'search' }}
+          label={view.search !== '' ? view.search : 'Search'}
+          accessibilityLabel={view.search !== '' ? `Search, ${view.search}` : 'Search'}
+          active={view.search !== ''}
+          open={panel === 'search'}
+          onPress={() => toggle('search')}
+          shrink
+        />
       </View>
+
+      {panel === 'search' && (
+        <Animated.View
+          entering={APPEAR}
+          exiting={VANISH}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.sm,
+          }}
+        >
+          <SearchField value={search} onChange={setSearch} />
+        </Animated.View>
+      )}
 
       {panel === 'sort' && (
         <Animated.View entering={APPEAR} exiting={VANISH}>
@@ -140,7 +177,9 @@ export function TaskViewControls({
             />
           )}
           {filters > 0 && (
-            <ClearLink onPress={() => setView(defaultTaskView(view.sort))} />
+            <ClearLink
+              onPress={() => setView({ ...defaultTaskView(view.sort), search: view.search })}
+            />
           )}
         </Animated.View>
       )}
@@ -159,6 +198,7 @@ function PanelPill({
   active,
   open,
   onPress,
+  shrink = false,
 }: {
   icon: IconName;
   label: string;
@@ -166,6 +206,8 @@ function PanelPill({
   active: boolean;
   open: boolean;
   onPress: () => void;
+  /** Gives way first when the row is full: a long search, not the sort. */
+  shrink?: boolean;
 }) {
   const tokens = useTokens();
   const fg = active ? tokens.background : tokens.foreground;
@@ -186,10 +228,11 @@ function PanelPill({
         borderCurve: 'continuous',
         backgroundColor: active ? tokens.foreground : tokens.muted,
         opacity: pressed ? 0.7 : 1,
+        flexShrink: shrink ? 1 : 0,
       })}
     >
       <Icon name={icon} size={14} color={fg} />
-      <PosterText variant="chip" numberOfLines={1} color={fg}>
+      <PosterText variant="chip" numberOfLines={1} color={fg} style={{ flexShrink: 1 }}>
         {label}
       </PosterText>
       <Icon
@@ -202,6 +245,67 @@ function PanelPill({
         color={fg}
       />
     </Pressable>
+  );
+}
+
+/**
+ * The search box: a flat filled field like the forms', focused as it opens,
+ * since opening it is asking to type. Web's search matches titles; so does this.
+ */
+function SearchField({ value, onChange }: { value: string; onChange: (text: string) => void }) {
+  const tokens = useTokens();
+  return (
+    <View
+      style={{
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        paddingHorizontal: spacing.md,
+        borderRadius: posterRadius.block,
+        borderCurve: 'continuous',
+        backgroundColor: tokens.muted,
+      }}
+    >
+      <Icon
+        name={{ sf: 'magnifyingglass', md: 'search' }}
+        size={15}
+        color={tokens.mutedForeground}
+      />
+      <TextInput
+        accessibilityLabel="Search tasks"
+        placeholder="Search tasks…"
+        placeholderTextColor={tokens.mutedForeground}
+        value={value}
+        onChangeText={onChange}
+        autoFocus
+        autoCorrect={false}
+        returnKeyType="search"
+        clearButtonMode="while-editing"
+        style={[
+          posterInput,
+          {
+            flex: 1,
+            color: tokens.foreground,
+            paddingVertical: spacing.sm + 3,
+          },
+        ]}
+      />
+      {value !== '' && process.env.EXPO_OS === 'android' && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Clear search"
+          hitSlop={10}
+          onPress={() => onChange('')}
+        >
+          <Icon
+            name={{ sf: 'xmark.circle.fill', md: 'cancel' }}
+            size={16}
+            color={tokens.mutedForeground}
+          />
+        </Pressable>
+      )}
+    </View>
   );
 }
 

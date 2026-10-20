@@ -112,6 +112,9 @@ function StatusDot({ task, boardId }: { task: TaskDto; boardId: string }) {
 
 /** What an empty list says: nothing at all, or nothing this filter lets through. */
 function emptyCopy(state: TaskViewState, title: string, body: string) {
+  if (state.view.search !== '') {
+    return { emptyTitle: 'No tasks match', emptyBody: 'No task title has those words.' };
+  }
   return activeFilters(state.view) > 0
     ? { emptyTitle: 'No tasks match', emptyBody: 'Try another filter, or clear them.' }
     : { emptyTitle: title, emptyBody: body };
@@ -142,6 +145,9 @@ export function TodosSpoke({ boardId }: { boardId: string }) {
   if (
     can('task.editFields') &&
     canDragInView(state.view) &&
+    // Swapping lists remounts the header, so the search field would lose the
+    // keyboard on its first keystroke; while it is open, the plain list stays.
+    state.panel !== 'search' &&
     !tasks.isPending &&
     !tasks.error &&
     roots.length > 0

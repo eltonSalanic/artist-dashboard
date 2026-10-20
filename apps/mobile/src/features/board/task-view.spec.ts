@@ -13,11 +13,19 @@ describe('taskQuery', () => {
 
   it('sends a chosen status, priority and assignee', () => {
     expect(
-      taskQuery({ sort: 'dueDate', status: 's1', priority: 'HIGH', assignee: 'u1' }),
+      taskQuery({ sort: 'dueDate', status: 's1', priority: 'HIGH', assignee: 'u1', search: '' }),
     ).toEqual({ sort: 'dueDate', statusId: 's1', priority: 'HIGH', assigneeId: 'u1' });
   });
 
   // "Open" is every status not done; the API has no param for it.
+  it('sends a search, and none when it is empty', () => {
+    expect(taskQuery({ ...defaultTaskView('order'), search: 'flyer' })).toEqual({
+      sort: 'order',
+      search: 'flyer',
+    });
+    expect(taskQuery(defaultTaskView('order'))).toEqual({ sort: 'order' });
+  });
+
   it('leaves "open" off the query', () => {
     expect(taskQuery({ ...defaultTaskView('order'), status: 'open' })).toEqual({ sort: 'order' });
   });
@@ -43,7 +51,7 @@ describe('keepTask', () => {
 describe('activeFilters / canDragInView', () => {
   it('counts filters, not the sort', () => {
     expect(activeFilters(defaultTaskView('priority'))).toBe(0);
-    expect(activeFilters({ sort: 'order', status: 'open', priority: 'LOW', assignee: 'all' })).toBe(
+    expect(activeFilters({ sort: 'order', status: 'open', priority: 'LOW', assignee: 'all', search: 'x' })).toBe(
       2,
     );
   });
@@ -52,5 +60,6 @@ describe('activeFilters / canDragInView', () => {
     expect(canDragInView(defaultTaskView('order'))).toBe(true);
     expect(canDragInView(defaultTaskView('dueDate'))).toBe(false);
     expect(canDragInView({ ...defaultTaskView('order'), priority: 'HIGH' })).toBe(false);
+    expect(canDragInView({ ...defaultTaskView('order'), search: 'flyer' })).toBe(false);
   });
 });

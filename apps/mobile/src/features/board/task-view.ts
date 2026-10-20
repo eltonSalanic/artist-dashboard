@@ -17,6 +17,8 @@ export interface TaskView {
   priority: Priority | 'all';
   /** `all`, or one member's user id. */
   assignee: string;
+  /** Words in the title, trimmed; empty for none. Matched by the API, as on web. */
+  search: string;
 }
 
 export const SORT_LABELS: Record<TaskSort, string> = {
@@ -33,7 +35,7 @@ export const PRIORITY_LABELS: Record<Priority, string> = {
 };
 
 export function defaultTaskView(sort: TaskSort): TaskView {
-  return { sort, status: 'all', priority: 'all', assignee: 'all' };
+  return { sort, status: 'all', priority: 'all', assignee: 'all', search: '' };
 }
 
 /** The query params for a view. `assigneeId` a screen fixes (My Tasks) wins. */
@@ -45,9 +47,11 @@ export function taskQuery(
   statusId?: string;
   priority?: Priority;
   assigneeId?: string;
+  search?: string;
 } {
   return {
     sort: view.sort,
+    ...(view.search !== '' ? { search: view.search } : {}),
     ...(view.status !== 'all' && view.status !== 'open' ? { statusId: view.status } : {}),
     ...(view.priority !== 'all' ? { priority: view.priority } : {}),
     ...(fixed.assigneeId
@@ -63,7 +67,7 @@ export function keepTask(view: TaskView, task: { status: { isDone: boolean } }):
   return view.status !== 'open' || !task.status.isDone;
 }
 
-/** How many filters are narrowing the list; the sort is not one. */
+/** How many filters are narrowing the list; the sort is not one, nor the search, which has its own pill. */
 export function activeFilters(view: TaskView): number {
   return (
     Number(view.status !== 'all') +
@@ -74,9 +78,9 @@ export function activeFilters(view: TaskView): number {
 
 /**
  * Dragging rows sets the board's own order, so it is only offered when that
- * order is what is shown, all of it: with a filter on, a drop lands between
+ * order is what is shown, all of it: with a filter or a search on, a drop lands between
  * two visible tasks with hidden ones around them, somewhere nobody chose.
  */
 export function canDragInView(view: TaskView): boolean {
-  return view.sort === 'order' && activeFilters(view) === 0;
+  return view.sort === 'order' && activeFilters(view) === 0 && view.search === '';
 }
