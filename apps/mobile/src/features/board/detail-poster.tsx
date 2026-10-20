@@ -6,7 +6,7 @@ import { PosterText } from '@/components/poster-text';
 import { Skeleton } from '@/components/skeleton';
 import {
   posterRadius,
-  shadows,
+  useShadows,
   spacing,
   usePosterCanvas,
   useThemeColors,
@@ -38,6 +38,7 @@ export function DetailPoster({
   /** What follows the title on the block: the when, the status, a button. */
   children?: ReactNode;
 }) {
+  const shadows = useShadows();
   return (
     <View
       style={{

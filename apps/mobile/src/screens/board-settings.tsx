@@ -34,7 +34,15 @@ import { Section } from '@/components/section';
 import { Skeleton } from '@/components/skeleton';
 import { TextField } from '@/components/text-field';
 import { ThemedText } from '@/components/themed-text';
-import { paletteSwatches, posterRadius, radius, spacing, useScheme, useThemeColors } from '@/theme';
+import {
+  paletteSwatches,
+  posterRadius,
+  radius,
+  spacing,
+  useScheme,
+  useShadows,
+  useThemeColors,
+} from '@/theme';
 
 /**
  * Board settings — web's settings page, one section per card, each gated by
@@ -464,6 +472,7 @@ function Swatches({ value, onChange }: { value: string; onChange: (color: string
 function PaletteSection({ boardId }: { boardId: string }) {
   const colors = useThemeColors();
   const scheme = useScheme();
+  const shadows = useShadows();
   const board = useBoard(boardId);
   const save = useSaveBoardTheme(boardId);
   const theme = resolveBoardTheme(board.data?.theme);
@@ -497,6 +506,8 @@ function PaletteSection({ boardId }: { boardId: string }) {
                         marginLeft: i === 0 ? 0 : -4,
                         borderWidth: 1.5,
                         borderColor: colors.background,
+                        // Each palette's deepest colour is darker than the dark page.
+                        boxShadow: shadows.edge,
                       }}
                     />
                   ))}

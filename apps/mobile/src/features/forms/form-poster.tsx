@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { TextInput, View } from 'react-native';
 import { PosterText } from '@/components/poster-text';
-import { DISPLAY_SCALE, poster, posterRadius, shadows, spacing, type WidgetInk } from '@/theme';
+import { DISPLAY_SCALE, poster, posterRadius, spacing, useShadows, type WidgetInk } from '@/theme';
 
 /**
  * The top of a create/edit form: the block the item will open as
@@ -36,6 +36,7 @@ export function FormPoster({
   /** A control that belongs on the block, under the title. */
   children?: ReactNode;
 }) {
+  const shadows = useShadows();
   return (
     <View
       style={{

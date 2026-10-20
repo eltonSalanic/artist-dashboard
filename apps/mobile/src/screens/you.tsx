@@ -11,7 +11,14 @@ import { useSelectedBoard } from '@/features/board/selected-board';
 import { PushSetting } from '@/features/push/push-prompt';
 import { forgetThisDevice } from '@/features/push/push';
 import { supabase } from '@/lib/supabase';
-import { boardAccent, posterRadius, shadows, spacing, usePosterCanvas, useScheme } from '@/theme';
+import {
+  boardAccent,
+  posterRadius,
+  spacing,
+  usePosterCanvas,
+  useScheme,
+  useShadows,
+} from '@/theme';
 
 /**
  * The account tab: who you are signed in as, which band the app is currently
@@ -27,6 +34,7 @@ import { boardAccent, posterRadius, shadows, spacing, usePosterCanvas, useScheme
  */
 export function YouScreen() {
   const canvas = usePosterCanvas();
+  const shadows = useShadows();
   const scheme = useScheme();
   const me = useMe(true);
   const { board, boards } = useSelectedBoard();

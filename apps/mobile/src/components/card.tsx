@@ -4,8 +4,8 @@ import type { WidgetColor } from '@artist/shared';
 import {
   ThemeTokensProvider,
   radius,
-  shadows,
   spacing,
+  useShadows,
   useSlotTokens,
 } from '@/theme';
 
@@ -28,6 +28,7 @@ export function Card({
   children: ReactNode;
 }) {
   const tokens = useSlotTokens(slot);
+  const shadows = useShadows();
 
   return (
     <ThemeTokensProvider value={tokens}>

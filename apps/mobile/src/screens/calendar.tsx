@@ -22,7 +22,7 @@ import { timeOfDay } from '@/features/board/format';
 import { useRefetchOnFocus } from '@/lib/refetch-on-focus';
 import {
   posterRadius,
-  shadows,
+  useShadows,
   spacing,
   usePosterCanvas,
   usePosterSlot,
@@ -450,6 +450,7 @@ function EventBlock({
   namesBoards: boolean;
 }) {
   const time = timeOfDay(item.date);
+  const shadows = useShadows();
   const ends = item.event?.endsAt ? timeOfDay(item.event.endsAt) : null;
   const meta = [item.event?.location, namesBoards ? item.boardName : null]
     .filter((part): part is string => part != null && part !== '')
@@ -468,7 +469,7 @@ function EventBlock({
         padding: spacing.md - 2,
         gap: 2,
         minHeight: 44,
-        boxShadow: color.plain ? shadows.card : undefined,
+        boxShadow: color.plain ? shadows.card : shadows.edge,
         transform: [{ scale: pressed ? 0.98 : 1 }],
       })}
     >
@@ -516,6 +517,7 @@ function LightRow({
   badge: WidgetInk;
   canvas: PosterCanvas;
 }) {
+  const shadows = useShadows();
   const done = item.task?.isDone === true || item.goal?.completed === true;
   const mine = item.task?.assignedToMe === true;
   const meta = [
@@ -552,7 +554,7 @@ function LightRow({
           borderRadius: 9,
           borderCurve: 'continuous',
           backgroundColor: badge.bg,
-          boxShadow: badge.plain ? shadows.card : undefined,
+          boxShadow: badge.plain ? shadows.card : shadows.edge,
           alignItems: 'center',
           justifyContent: 'center',
           opacity: done ? 0.55 : 1,

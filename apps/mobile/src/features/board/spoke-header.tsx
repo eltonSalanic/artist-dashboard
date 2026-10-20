@@ -3,7 +3,14 @@ import { useBoard } from '@artist/api-client';
 import { WIDGET_META, resolveBoardTheme, type EventType, type WidgetType } from '@artist/shared';
 import { Icon } from '@/components/icon';
 import { PosterText } from '@/components/poster-text';
-import { shadows, spacing, usePosterCanvas, useScheme, widgetInk, type WidgetInk } from '@/theme';
+import {
+  spacing,
+  usePosterCanvas,
+  useScheme,
+  useShadows,
+  widgetInk,
+  type WidgetInk,
+} from '@/theme';
 import { WIDGET_ICONS } from './widget-icons';
 
 /** The widget each kind of event lives in, and so takes its colour from. */
@@ -41,6 +48,7 @@ export function SpokeHeader({
   const canvas = usePosterCanvas();
   const ink = useWidgetInk(boardId, widgetType);
   const title = WIDGET_META[widgetType].title;
+  const shadows = useShadows();
 
   return (
     <View

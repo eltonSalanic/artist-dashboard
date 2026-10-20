@@ -1,5 +1,5 @@
 import { Pressable, View } from 'react-native';
-import { ThemeTokensProvider, radius, shadows, spacing, useSlotTokens } from '@/theme';
+import { ThemeTokensProvider, radius, spacing, useShadows, useSlotTokens } from '@/theme';
 import type { HubCard } from '@/features/board/use-hub-cards';
 import { Icon } from './icon';
 import { PosterText } from './poster-text';
@@ -39,6 +39,7 @@ export function HubStatCard({
   onPressOut?: () => void;
 }) {
   const tokens = useSlotTokens(card.slot);
+  const shadows = useShadows();
   const hero = card.kind === 'hero';
   const lines = tall && !card.loading ? card.lines : [];
 
@@ -153,6 +154,7 @@ export function HubStatCard({
  */
 export function HubCardSkeleton() {
   const tokens = useSlotTokens('base');
+  const shadows = useShadows();
   return (
     <View
       style={{
