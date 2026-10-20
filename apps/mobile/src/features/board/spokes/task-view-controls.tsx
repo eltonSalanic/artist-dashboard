@@ -280,6 +280,7 @@ function SearchField({ value, onChange }: { value: string; onChange: (text: stri
         onChangeText={onChange}
         autoFocus
         autoCorrect={false}
+        autoCapitalize="none"
         returnKeyType="search"
         clearButtonMode="while-editing"
         style={[
