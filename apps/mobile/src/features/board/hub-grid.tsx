@@ -740,7 +740,10 @@ function ColourPicker({
                 borderRadius: radius.full,
                 backgroundColor: tokens.card,
                 borderWidth: chosen ? 2 : 1,
-                borderColor: chosen ? colors.foreground : colors.border,
+                // The ring, not the hairline border: a swatch the colour of
+                // the row (Ink in the dark, Neutral in the light) needs an
+                // edge to be seen at all.
+                borderColor: chosen ? colors.foreground : colors.ring,
                 alignItems: 'center',
                 justifyContent: 'center',
                 transform: [{ scale: pressed ? 0.9 : 1 }],
