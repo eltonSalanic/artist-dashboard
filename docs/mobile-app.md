@@ -1677,8 +1677,23 @@ not touched.
   square art with tight corners and the name left-aligned. Also fixed: the
   widget pills stretched to half the screen, because the strip grew like
   any horizontal list (`flexGrow: 0`, as the band filter needed).
-- Left for the phone pass: the whole app in light and dark mode, then merge
-  `feat/mobile-redesign` into `feat/mobile-app`.
+- **Step 8, light and dark:** every screen walked in both schemes on the
+  simulator. The colours were already scheme pairs; what broke in the dark
+  was elevation and a few native controls. A shadow on charcoal shows
+  nothing, so a plain card was one step off the page and each palette's
+  deepest colour (the playful ink, forest's bark, ocean's navy) sank into
+  it. `useShadows()` (`theme/shadows.ts`) keeps the light shadows and in the
+  dark draws the web's answer instead, a 1px inset ring of the page ink at
+  10% (web: `ring-1 ring-foreground/10`), on every card, block, poster and
+  palette swatch. A plain widget's active pill was its card colour, a step
+  off the resting grey, so it now fills with ink as the band filter does.
+  iOS dims a form sheet's bar title in the dark whatever colour it is given
+  (pure red came out dark red), so the three sheets' titles are drawn in
+  React. The settings switches' white thumb vanished into the near-white
+  track; it is now the ink's opposite. Not changed: the launch splash is
+  still Expo's template (blue, Expo mark) in both schemes, which needs a
+  logo and a native build.
+- Left: merge `feat/mobile-redesign` into `feat/mobile-app`.
 
 ## Library replacement reference
 

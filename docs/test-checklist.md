@@ -737,7 +737,7 @@ plug the iPhone in with Developer Mode on and run `npm run mobile:ios`; set
 
 ## P17 — Redesign
 
-Checks live on the Trello card [P17 — Redesign testing (widget page + calendar)](https://trello.com/c/99Ht7oXP), one checklist per step: the widget page and calendar first, then the widget screens. Later steps (task, event and goal pages; Inbox and You; sheets and forms) add their own checklist to the same card.
+Checks live on the Trello card [P17 — Redesign testing (widget page + calendar)](https://trello.com/c/99Ht7oXP), one checklist per step: the widget page and calendar first, then the widget screens. Later steps (task, event and goal pages; Inbox and You; sheets and forms; the rest; light and dark) add their own checklist to the same card.
 
 Run it from the `feat/mobile-redesign` branch with `npm run mobile` (or `npm run mobile:tunnel`), then open Band Wall. No rebuild is needed.
 
