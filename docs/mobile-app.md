@@ -119,7 +119,7 @@ deliberately scheduled after mobile rather than blocking it.
 | **P14** | [Store builds](#p14--store-builds) | mobile, CI | ☐ |
 | **P15** | [Web board switcher](#p15--web-board-switcher) | **web** | ☐ |
 | **P16** | [Notes-style editor](#p16--notes-style-editor) | mobile, shared | ☐ |
-| **P17** | [Redesign](#p17--redesign) | mobile, api-client | ◐ |
+| **P17** | [Redesign](#p17--redesign) | mobile, api-client | ☑ |
 
 Each phase ends with a **hard stop for manual verification** before the next
 begins, per the project's phase-gated convention. What to verify is tracked
@@ -1693,7 +1693,10 @@ not touched.
   track; it is now the ink's opposite. Not changed: the launch splash is
   still Expo's template (blue, Expo mark) in both schemes, which needs a
   logo and a native build.
-- Left: merge `feat/mobile-redesign` into `feat/mobile-app`.
+- **Done 2026-10-19.** Every step's checks ticked on the Trello card (the one
+  open item, Step 4's first-run notification prompt, has its own Backlog
+  reminder) and `feat/mobile-redesign` merged into `feat/mobile-app`. The
+  branded splash and icon are a follow-up, not part of P17.
 
 ## Library replacement reference
 
