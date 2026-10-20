@@ -120,6 +120,7 @@ deliberately scheduled after mobile rather than blocking it.
 | **P15** | [Web board switcher](#p15--web-board-switcher) | **web** | ☐ |
 | **P16** | [Notes-style editor](#p16--notes-style-editor) | mobile, shared | ☐ |
 | **P17** | [Redesign](#p17--redesign) | mobile, api-client | ☑ |
+| **P18** | [Join links](#p18--join-links) | api, shared, mobile, web | ☐ |
 
 Each phase ends with a **hard stop for manual verification** before the next
 begins, per the project's phase-gated convention. What to verify is tracked
@@ -1697,6 +1698,47 @@ not touched.
   open item, Step 4's first-run notification prompt, has its own Backlog
   reminder) and `feat/mobile-redesign` merged into `feat/mobile-app`. The
   branded splash and icon are a follow-up, not part of P17.
+
+### P18 — Join links
+
+Chosen 2026-10-20, replacing the email-invite code flow (P10c invites, the
+`6be2633` join-with-code sign-in). Researched against BAND (link, short code,
+reusable QR) and Discord (one link per server).
+
+**Decisions (user, 2026-10-20):** links never expire; every join needs an
+admin's approval; admins get an alert on the board's widget page and a push
+when someone asks to join.
+
+**Flow**
+1. Each band has one join link + short code, e.g. `bandwall.app/j/K7Q2MX`.
+   Admins can reset it (old link stops working). Never expires.
+2. Phone band Settings: **Share invite** → iOS share sheet (Messages,
+   WhatsApp…), plus the code and a QR for in-person. Web Settings gets the same.
+3. Opening the link: app installed → "Join Neon Harbor?"; not installed → a
+   web page with the App Store button and the code. In-app "Have a band code?"
+   on sign-in / Your bands covers the install gap (no deferred deep links in
+   Expo without a paid service).
+4. Sign in or create an account → **Ask to join** → a pending join request.
+   The person sees "Waiting for an admin" until decided.
+5. Admins: an alert block on the band's widget page ("Sam wants to join ·
+   Approve / Decline") and a push (new `JOIN_REQUEST` category, routes to the
+   band). Approve creates the Membership (USER); decline removes the request.
+   The requester gets a push either way.
+6. Email invites stay as a secondary option, sending the same link.
+
+**Build steps**
+- API: `Board.joinCode` (unique, regenerable), `JoinRequest` model
+  (board, user, status, createdAt), endpoints: preview by code, request,
+  list pending (admin), approve/decline, reset code. Permission
+  `member.invite` in the shared map. Jest units only.
+- Notifications: `JOIN_REQUEST` (admins) and `JOIN_DECIDED` (requester),
+  push + preference category.
+- Mobile: universal-link route `/j/[code]`, join screen, code entry, Share
+  invite + QR in Settings, pending-requests alert on the hub, waiting state.
+- Web: `/j/[code]` page (join or get the app), Settings share/reset, pending
+  requests on the dashboard.
+- Retire: the invite-code sign-in mode and custom invite email template.
+- Needs: associated domain / universal links → a new dev build.
 
 ## Library replacement reference
 
