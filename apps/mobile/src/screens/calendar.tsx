@@ -673,12 +673,16 @@ function DaySection({
   );
 }
 
-const openItem = (item: CalendarItemDto, category: CalendarCategory) =>
-  router.push(
-    item.kind === 'TASK'
-      ? `/board/${item.boardId}/task/${item.id}`
-      : `/board/${item.boardId}/w/${CATEGORY_WIDGET[category]}`,
-  );
+/** Each item opens its own screen, in its band, as web's calendar opens its modal. */
+const DETAIL_ROUTE: Record<CalendarItemDto['kind'], string> = {
+  TASK: 'task',
+  EVENT: 'event',
+  GOAL: 'goal',
+  REMINDER: 'reminder',
+};
+
+const openItem = (item: CalendarItemDto) =>
+  router.push(`/board/${item.boardId}/${DETAIL_ROUTE[item.kind]}/${item.id}`);
 
 /**
  * A show, rehearsal or meeting: a solid block in the colour of its widget.
@@ -709,7 +713,7 @@ function EventBlock({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={[kind, item.title, time, meta].filter(Boolean).join(', ')}
-      onPress={() => openItem(item, category)}
+      onPress={() => openItem(item)}
       style={({ pressed }) => ({
         backgroundColor: color.bg,
         borderRadius: posterRadius.block,
@@ -784,7 +788,7 @@ function LightRow({
       accessibilityLabel={[item.title, meta, mine ? 'yours' : null, done ? 'done' : null]
         .filter(Boolean)
         .join(', ')}
-      onPress={() => openItem(item, category)}
+      onPress={() => openItem(item)}
       style={({ pressed }) => ({
         flexDirection: 'row',
         alignItems: 'center',
