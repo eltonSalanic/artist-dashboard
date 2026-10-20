@@ -10,7 +10,7 @@ import { spokeAction } from '@/features/board/spoke-actions';
 import { useWidgetInk } from '@/features/board/spoke-header';
 import { SPOKES } from '@/features/board/spoke-registry';
 import { useVisibleWidgets } from '@/features/board/use-visible-widgets';
-import { radius, spacing, useThemeColors } from '@/theme';
+import { radius, spacing, useShadows, useThemeColors } from '@/theme';
 
 /**
  * One widget, expanded — and swipeable to the ones either side.
@@ -139,7 +139,8 @@ export function WidgetSpokeScreen({
  * ten dots say how far along you are but not what you would land on.
  *
  * Spotify's filter chips: the active one is filled with its widget's colour,
- * the colour of the card you tapped and of the cover under it.
+ * the colour of the card you tapped and of the cover under it, or with ink
+ * when the widget is uncoloured.
  */
 function PositionStrip({
   boardId,
@@ -153,6 +154,7 @@ function PositionStrip({
   onSelect: (next: number) => void;
 }) {
   const colors = useThemeColors();
+  const shadows = useShadows();
   const ink = useWidgetInk(boardId, pages[index] ?? pages[0]);
 
   const stripRef = useRef<FlatList<WidgetType>>(null);
@@ -190,6 +192,11 @@ function PositionStrip({
       onScrollToIndexFailed={() => undefined}
       renderItem={({ item: type, index: i }) => {
         const active = i === index;
+        // A plain widget has no colour of its own, and its card colour is one
+        // step off the resting grey: in the dark the active chip looked like
+        // every other one. It is filled with ink instead, as the band filter's.
+        const fill = ink.plain ? colors.foreground : ink.bg;
+        const label = ink.plain ? colors.background : ink.ink;
         return (
           <Pressable
             accessibilityRole="tab"
@@ -199,19 +206,16 @@ function PositionStrip({
               paddingHorizontal: spacing.md - 2,
               paddingVertical: spacing.xs + 3,
               borderRadius: radius.full,
-              backgroundColor: active ? ink.bg : colors.muted,
-              boxShadow: active && ink.plain ? '0 1px 2px rgba(0, 0, 0, 0.12)' : undefined,
+              backgroundColor: active ? fill : colors.muted,
+              // The palette's deepest colour is darker than the dark page.
+              boxShadow: active && !ink.plain ? shadows.edge : undefined,
               opacity: pressed ? 0.7 : 1,
             })}
           >
             {/* The style carries a fixed line height: without one iOS sized
                 this box shorter than its letters and clipped the descenders
                 ("Meetings", "Activity"). */}
-            <PosterText
-              variant="chip"
-              numberOfLines={1}
-              color={active ? ink.ink : colors.foreground}
-            >
+            <PosterText variant="chip" numberOfLines={1} color={active ? label : colors.foreground}>
               {WIDGET_META[type].title}
             </PosterText>
           </Pressable>
