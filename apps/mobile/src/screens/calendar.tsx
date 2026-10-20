@@ -257,8 +257,9 @@ function Agenda({
   // The list runs on under the tab bar. Inside the tab, the bottom safe-area
   // inset is the bar's height (it includes the home indicator), so that is
   // what is covered. The list is not the screen's first scroll view any
-  // more, so iOS no longer insets it for the bar by itself: its end is padded
-  // by the same amount instead, or the last day of a month sat under the bar.
+  // more, and iOS's own inset applied to a drag but not to a jump from code,
+  // so it is switched off and the list's end is padded by the bar's height
+  // instead: one allowance, the same for both.
   const insets = useSafeAreaInsets();
   const covered = insets.bottom;
   const contentHeight = useRef(0);
@@ -363,7 +364,10 @@ function Agenda({
       onScrollBeginDrag={() => {
         settling.current = false;
       }}
-      contentInsetAdjustmentBehavior="automatic"
+      // The bar is allowed for by the padding below, so iOS must not add its own
+      // inset too: it did on a drag, leaving the bar's height again of empty
+      // space under the last day, while a jump from code stopped short of it.
+      contentInsetAdjustmentBehavior="never"
       contentContainerStyle={{
         paddingHorizontal: spacing.md,
         paddingBottom: spacing.xxl + covered,
