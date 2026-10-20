@@ -76,11 +76,9 @@ export function RemindersSpoke({ boardId }: { boardId: string }) {
                 }
               />
             }
-            onPress={
-              canManage
-                ? () => router.push(`/board/${boardId}/form/reminder?id=${reminder.id}`)
-                : undefined
-            }
+            // Open to everyone, as web's reminder modal is; Edit is on the
+            // detail screen for whoever may manage reminders.
+            onPress={() => router.push(`/board/${boardId}/reminder/${reminder.id}`)}
           />
         );
       })}
