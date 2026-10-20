@@ -22,15 +22,19 @@ import {
   moveCard,
   packMobileGrid,
   resizeCard,
+  WidgetColors,
+  slotLabel,
   stretchLoneCards,
+  type BoardPalette,
   type CardWidgetType,
   type MobileLayoutItem,
   type MobilePlacement,
   type MobileSpan,
+  type WidgetColor,
 } from '@artist/shared';
 import { Icon, type IconName } from '@/components/icon';
 import { HOLD_TO_EDIT, HubStatCard } from '@/components/stat-card';
-import { radius, spacing, useThemeColors } from '@/theme';
+import { cardTokens, radius, spacing, useScheme, useShadows, useThemeColors } from '@/theme';
 import type { HubCard } from './use-hub-cards';
 
 /**
@@ -44,6 +48,9 @@ import type { HubCard } from './use-hub-cards';
  * in the list, everything re-flows, and the other cards spring to their new
  * cells. Only the crossing goes back to React; the card under the finger, the
  * springs and the auto-scroll all run on the UI thread.
+ *
+ * Someone allowed to change the band's look also gets a palette in each card's
+ * other corner, which opens the palette's colours on the card itself.
  */
 
 /** One row of cards: room for a number and a line under it. */
@@ -137,11 +144,18 @@ function frameOf(p: MobilePlacement, cell: number): Frame {
   };
 }
 
+/** Recolouring cards, for someone allowed to: absent hides the palette. */
+export interface HubRecolour {
+  palette: BoardPalette;
+  onPick: (widgetType: CardWidgetType, color: WidgetColor) => void;
+}
+
 export function HubGrid({
   cards,
   items,
   editing,
   scroll,
+  recolour,
   onOpen,
   onStartEditing,
   onChange,
@@ -151,6 +165,7 @@ export function HubGrid({
   items: MobileLayoutItem[];
   editing: boolean;
   scroll: HubScroll;
+  recolour?: HubRecolour;
   onOpen: (widgetType: CardWidgetType) => void;
   onStartEditing: () => void;
   /** Takes an update rather than a list, so a drag never acts on a stale one. */
@@ -160,6 +175,16 @@ export function HubGrid({
 }) {
   const [width, setWidth] = useState(0);
   const cellWidth = (width - GAP) / 2;
+  // Whose colours are open. One card at a time, and none outside edit mode.
+  const [picking, setPicking] = useState<CardWidgetType | null>(null);
+  const openPicker = editing ? picking : null;
+  const dragging = useCallback(
+    (on: boolean) => {
+      if (on) setPicking(null);
+      onDragging(on);
+    },
+    [onDragging],
+  );
 
   const { placements, rows } = useMemo(() => packMobileGrid(items), [items]);
   const frames = useMemo(
@@ -337,9 +362,20 @@ export function HubGrid({
             cell={cell}
             drag={drag}
             scrollOffset={scroll.offset}
+            recolour={recolour}
+            picking={openPicker === placement.widgetType}
+            onTogglePicker={() =>
+              setPicking((current) =>
+                current === placement.widgetType ? null : placement.widgetType,
+              )
+            }
+            onPick={(color) => {
+              setPicking(null);
+              recolour?.onPick(placement.widgetType, color);
+            }}
             onOpen={onOpen}
             onStartEditing={onStartEditing}
-            onDragging={onDragging}
+            onDragging={dragging}
             onResize={resize}
             onHide={hide}
             onStep={step}
@@ -358,6 +394,10 @@ function GridCard({
   cell,
   drag,
   scrollOffset,
+  recolour,
+  picking,
+  onTogglePicker,
+  onPick,
   onOpen,
   onStartEditing,
   onDragging,
@@ -373,6 +413,10 @@ function GridCard({
   cell: SharedValue<number>;
   drag: Drag;
   scrollOffset: SharedValue<number>;
+  recolour: HubRecolour | undefined;
+  picking: boolean;
+  onTogglePicker: () => void;
+  onPick: (color: WidgetColor) => void;
   onOpen: (widgetType: CardWidgetType) => void;
   onStartEditing: () => void;
   onDragging: (dragging: boolean) => void;
@@ -552,6 +596,14 @@ function GridCard({
                   label: placement.h === 1 ? 'Make taller' : 'Make shorter',
                 },
                 ...(canHide ? [{ name: 'hide', label: 'Hide' }] : []),
+                // A screen reader cannot reach the swatches inside a card
+                // that is one control, so each colour is an action of its own.
+                ...(recolour
+                  ? WidgetColors.filter((color) => color !== card.slot).map((color) => ({
+                      name: `colour:${color}`,
+                      label: `Colour ${slotLabel(recolour.palette, color)}`,
+                    }))
+                  : []),
               ]
             : undefined
         }
@@ -562,6 +614,7 @@ function GridCard({
           if (action === 'wider') onResize(type, placement.w === 1 ? 2 : 1, placement.h);
           if (action === 'taller') onResize(type, placement.w, placement.h === 1 ? 2 : 1);
           if (action === 'hide') onHide(type);
+          if (action.startsWith('colour:')) onPick(action.slice('colour:'.length) as WidgetColor);
         }}
       >
         <HubStatCard
@@ -583,6 +636,24 @@ function GridCard({
 
         {editing && (
           <>
+            {recolour && picking && (
+              <ColourPicker
+                palette={recolour.palette}
+                value={card.slot}
+                title={title}
+                onPick={onPick}
+              />
+            )}
+            {recolour && (
+              <EditButton
+                icon={{ sf: 'paintpalette.fill', md: 'palette' }}
+                label={picking ? `Close ${title} colours` : `Change ${title} colour`}
+                disabled={false}
+                onPress={onTogglePicker}
+                style={{ top: -spacing.xs, left: -spacing.xs }}
+                colors={colors}
+              />
+            )}
             <EditButton
               icon={{ sf: 'eye.slash', md: 'visibility-off' }}
               label={`Hide ${title}`}
@@ -603,6 +674,86 @@ function GridCard({
         )}
       </Animated.View>
     </GestureDetector>
+  );
+}
+
+/**
+ * The palette's colours laid over the card, in web's colour menu's order,
+ * with the card's own one ticked. A pick repaints the card straight away and
+ * is saved with Done, like the rest of edit mode.
+ */
+function ColourPicker({
+  palette,
+  value,
+  title,
+  onPick,
+}: {
+  palette: BoardPalette;
+  value: WidgetColor;
+  title: string;
+  onPick: (color: WidgetColor) => void;
+}) {
+  const scheme = useScheme();
+  const colors = useThemeColors();
+  const shadows = useShadows();
+  return (
+    <Animated.View
+      entering={FadeIn.duration(150)}
+      exiting={FadeOut.duration(100)}
+      style={{
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 3,
+      }}
+      pointerEvents="box-none"
+    >
+      <View
+        accessibilityLabel={`${title} colours`}
+        style={{
+          flexDirection: 'row',
+          gap: 4,
+          padding: 4,
+          borderRadius: radius.full,
+          backgroundColor: colors.background,
+          boxShadow: shadows.card,
+        }}
+      >
+        {WidgetColors.map((color) => {
+          const tokens = cardTokens(palette, scheme, color);
+          const chosen = color === value;
+          return (
+            <Pressable
+              key={color}
+              accessibilityRole="button"
+              accessibilityLabel={slotLabel(palette, color)}
+              accessibilityState={{ selected: chosen }}
+              onPress={() => onPick(color)}
+              hitSlop={4}
+              style={({ pressed }) => ({
+                width: 28,
+                height: 28,
+                borderRadius: radius.full,
+                backgroundColor: tokens.card,
+                borderWidth: chosen ? 2 : 1,
+                borderColor: chosen ? colors.foreground : colors.border,
+                alignItems: 'center',
+                justifyContent: 'center',
+                transform: [{ scale: pressed ? 0.9 : 1 }],
+              })}
+            >
+              {chosen && (
+                <Icon name={{ sf: 'checkmark', md: 'check' }} size={12} color={tokens.cardForeground} />
+              )}
+            </Pressable>
+          );
+        })}
+      </View>
+    </Animated.View>
   );
 }
 

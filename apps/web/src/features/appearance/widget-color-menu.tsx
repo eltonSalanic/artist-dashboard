@@ -2,8 +2,8 @@
 
 import { Check, Palette } from "lucide-react";
 import {
-  BOARD_PALETTES,
   WidgetColors,
+  slotLabel,
   type BoardPalette,
   type WidgetColor,
 } from "@artist/shared";
@@ -15,12 +15,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-/** What a slot is called in this palette; `base` is the same in all of them. */
-export function slotLabel(palette: BoardPalette, color: WidgetColor): string {
-  if (color === "base") return "Neutral";
-  const info = BOARD_PALETTES.find((p) => p.id === palette);
-  return info?.slots.find((slot) => slot.key === color)?.label ?? color;
-}
+// Lives in shared now, so the phone names a colour the same way.
+export { slotLabel };
 
 /**
  * Picks which palette slot a widget paints with. The swatches read their color

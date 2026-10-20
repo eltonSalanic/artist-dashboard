@@ -102,6 +102,13 @@ export const BOARD_PALETTES: readonly BoardPaletteInfo[] = [
   },
 ];
 
+/** What a slot is called in this palette; `base` is the same in all of them. */
+export function slotLabel(palette: BoardPalette, color: WidgetColor): string {
+  if (color === 'base') return 'Neutral';
+  const info = BOARD_PALETTES.find((p) => p.id === palette);
+  return info?.slots.find((slot) => slot.key === color)?.label ?? color;
+}
+
 /**
  * Normalize whatever is in `Board.theme` into a full theme — the theming
  * counterpart to `withShippedWidgets`. The column starts out as `{}` and may
