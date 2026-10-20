@@ -20,6 +20,8 @@ import { spacing, usePosterCanvas } from '@/theme';
 import { dueDay, isThisWeek, isToday, shortDate } from '../format';
 import { planMove } from '../reorder';
 import { SpokeHeader } from '../spoke-header';
+import { activeFilters, canDragInView, keepTask, taskQuery } from '../task-view';
+import { TaskViewControls, useTaskView, type TaskViewState } from './task-view-controls';
 
 /** "6 open · 2 due today", or null when there is nothing to count. */
 function openSummary(tasks: TaskDto[], soon: 'today' | 'week'): string | null {
@@ -108,21 +110,42 @@ function StatusDot({ task, boardId }: { task: TaskDto; boardId: string }) {
   );
 }
 
+/** What an empty list says: nothing at all, or nothing this filter lets through. */
+function emptyCopy(state: TaskViewState, title: string, body: string) {
+  return activeFilters(state.view) > 0
+    ? { emptyTitle: 'No tasks match', emptyBody: 'Try another filter, or clear them.' }
+    : { emptyTitle: title, emptyBody: body };
+}
+
 /**
  * Everything on the board, in the board's own order — the order web's To-Do
- * widget shows and an admin can drag. Subtasks are reached through their parent.
+ * widget shows and an admin can drag — unless sorted or filtered otherwise.
+ * Subtasks are reached through their parent.
  */
 export function TodosSpoke({ boardId }: { boardId: string }) {
   const { can } = usePermissions();
-  const tasks = useTasks(boardId, { sort: 'order' });
-  const roots = (tasks.data ?? []).filter((t) => t.parentTaskId === null);
+  const state = useTaskView('order');
+  const tasks = useTasks(boardId, taskQuery(state.view));
+  const roots = (tasks.data ?? []).filter(
+    (t) => t.parentTaskId === null && keepTask(state.view, t),
+  );
   const header = (
-    <SpokeHeader boardId={boardId} widgetType="TODOS" summary={openSummary(roots, 'today')} />
+    <>
+      <SpokeHeader boardId={boardId} widgetType="TODOS" summary={openSummary(roots, 'today')} />
+      <TaskViewControls boardId={boardId} state={state} byAssignee />
+    </>
   );
 
   // Reorder is ADMIN-only at the endpoint (`@BoardRoles('ADMIN')`), and
-  // `task.editFields` is the shared map's name for exactly that.
-  if (can('task.editFields') && !tasks.isPending && !tasks.error && roots.length > 0) {
+  // `task.editFields` is the shared map's name for exactly that. Only in the
+  // board's own order, unfiltered, which is the order a drag changes.
+  if (
+    can('task.editFields') &&
+    canDragInView(state.view) &&
+    !tasks.isPending &&
+    !tasks.error &&
+    roots.length > 0
+  ) {
     return (
       <ReorderableTodos
         tasks={roots}
@@ -140,8 +163,7 @@ export function TodosSpoke({ boardId }: { boardId: string }) {
       onRetry={() => void tasks.refetch()}
       empty={roots.length === 0}
       emptyIcon={{ sf: 'checklist', md: 'checklist' }}
-      emptyTitle="Nothing to do"
-      emptyBody="Tasks added on the web dashboard show up here."
+      {...emptyCopy(state, 'Nothing to do', 'Tasks added on the web dashboard show up here.')}
       header={header}
     >
       <TaskRows tasks={roots} boardId={boardId} />
@@ -269,11 +291,17 @@ function DraggableTaskRow({
   );
 }
 
-/** The caller's own tasks, soonest due first. */
+/** The caller's own tasks, soonest due first unless sorted otherwise. */
 export function MyTasksSpoke({ boardId }: { boardId: string }) {
   const me = useMe(true);
-  const tasks = useTasks(boardId, me.data ? { assigneeId: me.data.user.id, sort: 'dueDate' } : {});
-  const roots = (tasks.data ?? []).filter((t) => t.parentTaskId === null);
+  const state = useTaskView('dueDate');
+  const tasks = useTasks(
+    boardId,
+    me.data ? taskQuery(state.view, { assigneeId: me.data.user.id }) : {},
+  );
+  const roots = (tasks.data ?? []).filter(
+    (t) => t.parentTaskId === null && keepTask(state.view, t),
+  );
 
   return (
     <SpokeList
@@ -282,10 +310,20 @@ export function MyTasksSpoke({ boardId }: { boardId: string }) {
       onRetry={() => void tasks.refetch()}
       empty={roots.length === 0}
       emptyIcon={{ sf: 'person.crop.circle.badge.checkmark', md: 'assignment-ind' }}
-      emptyTitle="Nothing assigned to you"
-      emptyBody="Tasks someone assigns you will appear here."
+      {...emptyCopy(
+        state,
+        'Nothing assigned to you',
+        'Tasks someone assigns you will appear here.',
+      )}
       header={
-        <SpokeHeader boardId={boardId} widgetType="MY_TASKS" summary={openSummary(roots, 'week')} />
+        <>
+          <SpokeHeader
+            boardId={boardId}
+            widgetType="MY_TASKS"
+            summary={openSummary(roots, 'week')}
+          />
+          <TaskViewControls boardId={boardId} state={state} byAssignee={false} />
+        </>
       }
     >
       <TaskRows tasks={roots} boardId={boardId} />
