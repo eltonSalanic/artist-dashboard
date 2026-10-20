@@ -246,10 +246,15 @@ function ChecklistSection({
   const [draft, setDraft] = useState('');
   const done = items.filter((i) => i.done).length;
 
-  const add = () => {
-    const text = draft.trim();
+  // Return hands over the field's own text: `draft` can trail a fast typist
+  // (or a paste) by a keystroke. Only that text is cleared once it saves, so
+  // anything typed while it was saving stays in the field.
+  const add = (typed: string = draft) => {
+    const text = typed.trim();
     if (!text || checklist.add.isPending) return;
-    checklist.add.mutate(text, { onSuccess: () => setDraft('') });
+    checklist.add.mutate(text, {
+      onSuccess: () => setDraft((current) => (current.trim() === text ? '' : current)),
+    });
   };
 
   return (
@@ -324,11 +329,12 @@ function ChecklistSection({
           placeholderTextColor={tokens.mutedForeground}
           value={draft}
           onChangeText={setDraft}
-          onSubmitEditing={add}
+          onSubmitEditing={(event) => add(event.nativeEvent.text)}
           // Keep the keyboard up, so a list can be typed in one go.
           submitBehavior="submit"
           returnKeyType="done"
-          editable={!checklist.add.isPending}
+          // Never locked while saving: on iOS a field made uneditable loses
+          // focus, which would drop the keyboard between items.
           style={[
             posterInput,
             {
@@ -348,7 +354,7 @@ function ChecklistSection({
             accessibilityLabel="Add checklist item"
             hitSlop={10}
             disabled={checklist.add.isPending}
-            onPress={add}
+            onPress={() => add()}
           >
             <PosterText variant="chip" color={tokens.primary}>
               {checklist.add.isPending ? 'Adding…' : 'Add'}
