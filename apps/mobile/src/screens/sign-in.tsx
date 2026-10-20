@@ -170,6 +170,8 @@ export function SignInScreen() {
             autoComplete="one-time-code"
             placeholder="123456"
             maxLength={6}
+            // What fails in this mode is the code, so the outline goes here.
+            error={error}
           />
         )}
 
@@ -192,7 +194,7 @@ export function SignInScreen() {
           onSubmitEditing={() => {
             if (canSubmit) void submit();
           }}
-          error={error}
+          error={mode === 'invite' ? null : error}
         />
 
         {notice !== null && (
