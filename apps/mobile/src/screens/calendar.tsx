@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, View } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { useAllBoardsCalendar, useBoards, type CalendarItemDto } from '@artist/api-client';
@@ -8,6 +8,7 @@ import {
   daysFromToday,
   groupCalendarByDay,
   resolveBoardTheme,
+  withCalendarDay,
   type BoardSummaryDto,
   type BoardTheme,
   type CalendarCategory,
@@ -53,7 +54,8 @@ import {
  *
  * Days with nothing in them are left out. A grid has to draw empty cells to
  * keep its shape; a list that printed 19 empty headings would bury the five
- * days that matter.
+ * days that matter. Today is the exception: this month opens scrolled to it,
+ * so it is there even on a day with nothing booked, and says so.
  */
 export function CalendarScreen() {
   const canvas = usePosterCanvas();
@@ -175,12 +177,54 @@ function Agenda({
 
   const monthName = new Date(year, month, 1).toLocaleDateString(undefined, { month: 'long' });
 
-  const days = useMemo(() => groupCalendarByDay(calendar.data ?? []), [calendar.data]);
+  const now = new Date();
+  const thisMonth = year === now.getFullYear() && month === now.getMonth();
+  const empty = calendar.data !== undefined && calendar.data.length === 0;
+  const days = useMemo(() => {
+    const grouped = groupCalendarByDay(calendar.data ?? []);
+    // Only once the month has loaded, so the spinner still shows until then.
+    return thisMonth && calendar.data !== undefined
+      ? withCalendarDay(grouped, new Date())
+      : grouped;
+  }, [calendar.data, thisMonth]);
+
+  // Opening this month lands on today rather than on the 1st. Once per month
+  // and band shown, so a refetch on focus never yanks the list back while
+  // someone is reading further down.
+  const list = useRef<FlatList<(typeof days)[number]>>(null);
+  const landed = useRef<string | null>(null);
+  const todayIndex = thisMonth ? days.findIndex((day) => isTodayDay(day.parts)) : -1;
+  useEffect(() => {
+    const view = `${year}-${month}-${boardId ?? 'all'}`;
+    if (!thisMonth) {
+      landed.current = null;
+      return;
+    }
+    if (todayIndex < 0 || landed.current === view) return;
+    landed.current = view;
+    // The first day is already right under the month's name.
+    if (todayIndex === 0) return;
+    // Cells are measured a frame after they render, so wait for that.
+    const frame = requestAnimationFrame(() =>
+      list.current?.scrollToIndex({ index: todayIndex, animated: false }),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [year, month, boardId, thisMonth, todayIndex]);
 
   return (
     <FlatList
+      ref={list}
       data={days}
       keyExtractor={(day) => day.key}
+      // A month is a few dozen sections at most. Rendering them all up front
+      // is what lets the list jump straight to today.
+      initialNumToRender={days.length}
+      onScrollToIndexFailed={(info) =>
+        setTimeout(
+          () => list.current?.scrollToIndex({ index: info.index, animated: false }),
+          50,
+        )
+      }
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={{
         paddingHorizontal: spacing.md,
@@ -218,17 +262,35 @@ function Agenda({
             />
           </View>
         ) : (
-          <View style={{ paddingTop: spacing.xl, gap: spacing.sm }}>
-            <PosterText variant="display" color={canvas.ink}>
-              Nothing in {monthName}.
-            </PosterText>
-            <PosterText variant="body" color={canvas.soft}>
-              Shows, rehearsals, meetings, due tasks, goals and reminders all land here.
-            </PosterText>
-          </View>
+          <EmptyMonth monthName={monthName} canvas={canvas} />
         )
       }
+      // This month is never an empty list, since today is always in it, so
+      // an empty month still says so under today.
+      ListFooterComponent={
+        empty && thisMonth ? <EmptyMonth monthName={monthName} canvas={canvas} /> : null
+      }
     />
+  );
+}
+
+const isTodayDay = (parts: { year: number; month: number; day: number }) => {
+  const now = new Date();
+  return (
+    parts.year === now.getFullYear() && parts.month === now.getMonth() && parts.day === now.getDate()
+  );
+};
+
+function EmptyMonth({ monthName, canvas }: { monthName: string; canvas: PosterCanvas }) {
+  return (
+    <View style={{ paddingTop: spacing.xl, gap: spacing.sm }}>
+      <PosterText variant="display" color={canvas.ink}>
+        Nothing in {monthName}.
+      </PosterText>
+      <PosterText variant="body" color={canvas.soft}>
+        Shows, rehearsals, meetings, due tasks, goals and reminders all land here.
+      </PosterText>
+    </View>
   );
 }
 
@@ -398,6 +460,13 @@ function DaySection({
       </View>
 
       <View style={{ flex: 1, gap: spacing.sm, paddingTop: spacing.xs }}>
+        {items.length === 0 && (
+          <View style={{ minHeight: 48, justifyContent: 'center', paddingTop: spacing.sm }}>
+            <PosterText variant="caption" color={canvas.soft}>
+              Nothing for today.
+            </PosterText>
+          </View>
+        )}
         {items.map((item) => {
           const category = calendarCategory(item);
           const ink = inkOf(item, category);
