@@ -1,7 +1,8 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { apiFetch } from "../client";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { BoardSummaryDto } from "@artist/shared";
+import { apiFetch, ApiError, notify } from "../client";
 import type { MeResponse } from "./types";
 
 /**
@@ -14,5 +15,21 @@ export function useMe(enabled: boolean) {
     queryFn: () => apiFetch<MeResponse>("/me/bootstrap", { method: "POST" }),
     enabled,
     staleTime: Infinity,
+  });
+}
+
+/**
+ * Start a new band with the caller as its admin. Resolves once `/me` has
+ * refetched, so the new band is already in `me.boards` when the caller
+ * switches to it.
+ */
+export function useCreateBoard() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (name: string) =>
+      apiFetch<BoardSummaryDto>("/boards", { method: "POST", body: { name } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["me"] }),
+    onError: (error) =>
+      notify.error(error instanceof ApiError ? error.message : "Couldn't create the band"),
   });
 }
