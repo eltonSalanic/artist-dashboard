@@ -3,8 +3,8 @@ import { Prisma } from '../../generated/prisma/client';
 
 /**
  * A new band: the default layout and statuses, with its creator as the only
- * admin. Shared by first sign-in (bootstrap) and "Create a band", so the two
- * can never hand out differently shaped boards.
+ * admin. Kept apart from the service so the demo seed and any future path
+ * hand out the same shape of board as "Create a band".
  */
 export function newBoardData(
   name: string,

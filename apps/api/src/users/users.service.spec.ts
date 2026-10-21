@@ -35,22 +35,18 @@ describe('UsersService.bootstrap', () => {
     });
   });
 
-  it('creates a board with admin membership when the user has none', async () => {
+  it('creates no band for a new user with no invite', async () => {
     tx.invite.findMany.mockResolvedValue([]);
     tx.membership.findFirst.mockResolvedValue(null);
 
     await service.bootstrap(auth);
 
-    expect(tx.board.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          memberships: { create: { userId: 'u1', role: 'ADMIN' } },
-        }),
-      }),
-    );
+    expect(tx.user.upsert).toHaveBeenCalled();
+    expect(tx.board.create).not.toHaveBeenCalled();
+    expect(tx.membership.upsert).not.toHaveBeenCalled();
   });
 
-  it('activates pending invites instead of creating a new board', async () => {
+  it('activates pending invites', async () => {
     tx.invite.findMany.mockResolvedValue([
       { id: 'i1', boardId: 'b9', role: 'USER' },
     ]);
