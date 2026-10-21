@@ -66,16 +66,21 @@ function NoteFields({
     }
   };
 
-  const confirmDelete = () =>
-    Alert.alert(`Delete “${note!.title}”?`, 'This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () =>
-          notes.remove.mutate(note!.id, { onSuccess: () => leave(() => router.back()) }),
-      },
-    ]);
+  // Only built for an existing note. Reading `note!.id` in a closure made
+  // for every render crashed the new-note form: the compiler hoists the
+  // property read into render, where `note` is null.
+  const confirmDelete = note
+    ? () =>
+        Alert.alert(`Delete “${note.title}”?`, 'This cannot be undone.', [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: () =>
+              notes.remove.mutate(note.id, { onSuccess: () => leave(() => router.back()) }),
+          },
+        ])
+    : undefined;
 
   return (
     <FormScreen
@@ -103,7 +108,7 @@ function NoteFields({
         maxLength={10_000}
         style={{ minHeight: 200, textAlignVertical: 'top' }}
       />
-      {note && (
+      {confirmDelete && (
         <Button
           title="Delete note"
           variant="destructive"
