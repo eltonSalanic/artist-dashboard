@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useHeaderHeight } from 'expo-router/react-navigation';
 import { ActivityIndicator, Pressable, TextInput, View } from 'react-native';
 import { useCreateBoard } from '@artist/api-client';
@@ -37,6 +37,8 @@ export function BoardSwitcherSheet() {
   const canvas = usePosterCanvas();
   const scheme = useScheme();
   const { boards, board, select } = useSelectedBoard();
+  // `?create=1` (from the no-band screen) opens with the name field ready.
+  const { create } = useLocalSearchParams<{ create?: string }>();
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
 
@@ -111,6 +113,7 @@ export function BoardSwitcherSheet() {
         );
       })}
       <CreateBand
+        startOpen={create === '1'}
         onCreated={(id) => {
           select(id);
           router.back();
@@ -120,10 +123,16 @@ export function BoardSwitcherSheet() {
   );
 }
 
-function CreateBand({ onCreated }: { onCreated: (boardId: string) => void }) {
+function CreateBand({
+  startOpen = false,
+  onCreated,
+}: {
+  startOpen?: boolean;
+  onCreated: (boardId: string) => void;
+}) {
   const tokens = useTokens();
   const create = useCreateBoard();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(startOpen);
   const [name, setName] = useState('');
 
   const submit = () => {

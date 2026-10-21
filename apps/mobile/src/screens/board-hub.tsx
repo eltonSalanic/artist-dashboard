@@ -72,11 +72,13 @@ export function BoardHubScreen() {
             size={36}
             color={colors.mutedForeground}
           />
-          <ThemedText variant="title">No band yet</ThemedText>
-          <ThemedText variant="subhead" tone="muted" style={{ textAlign: 'center' }}>
-            Start one of your own, or ask a band admin to invite you to theirs.
+          <ThemedText variant="title" style={{ textAlign: 'center' }}>
+            You&apos;re not on any band&apos;s wall yet
           </ThemedText>
-          <Button title="Create a band" size="sm" onPress={() => router.push('/boards')} />
+          <ThemedText variant="subhead" tone="muted" style={{ textAlign: 'center' }}>
+            Join or create one. To join, ask one of the band&apos;s admins to invite you.
+          </ThemedText>
+          <Button title="Create a band" onPress={() => router.push('/boards?create=1')} />
         </View>
       )}
       <Stack.Screen
