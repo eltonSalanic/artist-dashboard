@@ -29,3 +29,4 @@ export * from './dto/attachment.dto';
 export * from './dto/activity.dto';
 export * from './dto/custom-widget.dto';
 export * from './dto/notification.dto';
+export * from './dto/note.dto';

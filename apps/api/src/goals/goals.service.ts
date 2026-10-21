@@ -69,7 +69,6 @@ export class GoalsService {
       data: {
         boardId,
         title: dto.title,
-        description: dto.description,
         period: dto.period,
         dueDate: dto.dueDate ?? null,
       },
@@ -192,7 +191,6 @@ export class GoalsService {
       id: string;
       boardId: string;
       title: string;
-      description: string | null;
       period: string;
       dueDate: Date | null;
       completedAt: Date | null;
@@ -206,7 +204,6 @@ export class GoalsService {
     id: goal.id,
     boardId: goal.boardId,
     title: goal.title,
-    description: goal.description,
     period: goal.period,
     dueDate: goal.dueDate,
     completedAt: goal.completedAt,
