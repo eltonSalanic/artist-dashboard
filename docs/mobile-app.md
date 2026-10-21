@@ -118,7 +118,7 @@ deliberately scheduled after mobile rather than blocking it.
 | **P13** | [Push client](#p13--push-client) | mobile, api, api-client | ☑ |
 | **P14** | [Store builds](#p14--store-builds) | mobile, CI | ☐ |
 | **P15** | [Web board switcher](#p15--web-board-switcher) | **web** | ◐ |
-| **P16** | [Notes-style editor](#p16--notes-style-editor) | mobile, shared | ☐ |
+| **P16** | [Notes-style editor](#p16--notes-style-editor) — **dropped**, replaced by titled notes | api, shared, web, mobile | ◐ |
 | **P17** | [Redesign](#p17--redesign) | mobile, api-client | ☑ |
 | **P18** | [Join links](#p18--join-links) | api, shared, mobile, web | ☐ |
 
@@ -1573,6 +1573,18 @@ open item belongs to the band it was opened in. One-band accounts see the
 plain title as before.
 
 ### P16 — Notes-style editor
+
+**Dropped 2026-10-20 at the user's request.** Instead of a rich-text editor,
+the single description on tasks, events, goals and reminders became a list of
+**titled, plain-text notes** (`Note` table, `/boards/:id/notes`, migration
+`20261021060000_titled_notes` copies each description into a note called
+"Notes" and drops the columns). Web edits them in place in the detail modals;
+the phone lists them on the detail screens and edits one at a time in
+`/board/:id/form/item-note`. Writing needs the item's own edit permission
+(`NOTE_EDIT_ACTION`). The board's **Notes widget is unchanged** (still the
+TipTap document with the marker editor on the phone). The original plan below
+is kept for the record.
+
 
 Raised while verifying P11 (2026-10-03): the marker editor (`**bold**` while typing) is too
 technical for most of the people this app is for, who expect the Notes app.
