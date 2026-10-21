@@ -51,7 +51,6 @@ export function RemindersSpoke({ boardId }: { boardId: string }) {
             key={reminder.id}
             first={index === 0}
             title={reminder.title}
-            meta={reminder.description}
             dim={done}
             trailing={
               reminder.remindAt

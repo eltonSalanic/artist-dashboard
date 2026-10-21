@@ -12,6 +12,7 @@ import {
 } from '@/features/board/detail-poster';
 import { daysAway, timeOfDay } from '@/features/board/format';
 import { EVENT_WIDGET, useWidgetInk } from '@/features/board/spoke-header';
+import { ItemNotesSection } from '@/features/item-notes/item-notes-section';
 import { LinkedTasks } from '@/features/links/linked-tasks';
 import { spacing, useThemeColors } from '@/theme';
 
@@ -113,11 +114,12 @@ export function EventDetailScreen({ boardId, eventId }: { boardId: string; event
           {e.location ? <PosterMeta ink={ink}>{e.location}</PosterMeta> : null}
         </DetailPoster>
 
-        {e.description !== null && e.description.trim() !== '' && (
-          <PosterText variant="paragraph" color={colors.foreground}>
-            {e.description}
-          </PosterText>
-        )}
+        <ItemNotesSection
+          boardId={boardId}
+          kind="EVENT"
+          parentId={e.id}
+          canEdit={can('event.manage')}
+        />
 
         <LinkedTasks boardId={boardId} link={{ eventId: e.id }} archived={e.archivedAt !== null} />
 

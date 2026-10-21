@@ -3,7 +3,6 @@ import { ScrollView } from 'react-native';
 import { usePermissions, useReminder, useUpdateReminder } from '@artist/api-client';
 import { Icon } from '@/components/icon';
 import { PosterPill } from '@/components/poster-pill';
-import { PosterText } from '@/components/poster-text';
 import {
   DetailLoading,
   DetailMissing,
@@ -13,12 +12,12 @@ import {
 } from '@/features/board/detail-poster';
 import { shortDate, timeOfDay } from '@/features/board/format';
 import { useWidgetInk } from '@/features/board/spoke-header';
+import { ItemNotesSection } from '@/features/item-notes/item-notes-section';
 import { spacing, useThemeColors } from '@/theme';
 
 /**
- * One reminder, read in full — web's reminder modal. The list row shows one
- * line of the description; this is where the rest of it is, for every member,
- * not only the ones who may edit it.
+ * One reminder, read in full — web's reminder modal, with its titled notes,
+ * for every member, not only the ones who may edit it.
  *
  * Edit in the header and the done button are for whoever may manage
  * reminders. Wrapped by its route in `BoardPermissions`.
@@ -105,15 +104,12 @@ export function ReminderDetailScreen({
           )}
         </DetailPoster>
 
-        {r.description !== null && r.description.trim() !== '' ? (
-          <PosterText variant="paragraph" color={colors.foreground}>
-            {r.description}
-          </PosterText>
-        ) : (
-          <PosterText variant="cardMeta" color={colors.mutedForeground}>
-            No description.
-          </PosterText>
-        )}
+        <ItemNotesSection
+          boardId={boardId}
+          kind="REMINDER"
+          parentId={r.id}
+          canEdit={canManage}
+        />
       </ScrollView>
     </>
   );

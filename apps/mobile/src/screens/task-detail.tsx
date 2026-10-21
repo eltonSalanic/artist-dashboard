@@ -24,6 +24,7 @@ import {
 } from '@/features/board/detail-poster';
 import { dueDay, shortDate } from '@/features/board/format';
 import { useWidgetInk } from '@/features/board/spoke-header';
+import { ItemNotesSection } from '@/features/item-notes/item-notes-section';
 import { CommentsSection } from '@/features/comments/comments-section';
 import {
   posterInput,
@@ -129,11 +130,12 @@ export function TaskDetailScreen({
           />
         </DetailPoster>
 
-        {t.description !== null && t.description.trim() !== '' && (
-          <PosterText variant="paragraph" color={colors.foreground}>
-            {t.description}
-          </PosterText>
-        )}
+        <ItemNotesSection
+          boardId={boardId}
+          kind="TASK"
+          parentId={t.id}
+          canEdit={can('task.editFields')}
+        />
 
         {t.assignees.length > 0 && (
           <Section title="ASSIGNED TO">

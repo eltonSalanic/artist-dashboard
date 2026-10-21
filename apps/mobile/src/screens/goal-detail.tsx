@@ -4,7 +4,6 @@ import { useGoal, usePermissions } from '@artist/api-client';
 import type { GoalPeriod } from '@artist/shared';
 import { Icon } from '@/components/icon';
 import { PosterPill } from '@/components/poster-pill';
-import { PosterText } from '@/components/poster-text';
 import {
   DetailLoading,
   DetailMissing,
@@ -15,6 +14,7 @@ import {
 import { dueDay, shortDate } from '@/features/board/format';
 import { useGoalCompletion } from '@/features/board/goal-completion';
 import { useWidgetInk } from '@/features/board/spoke-header';
+import { ItemNotesSection } from '@/features/item-notes/item-notes-section';
 import { LinkedTasks } from '@/features/links/linked-tasks';
 import { spacing, useThemeColors } from '@/theme';
 
@@ -106,11 +106,12 @@ export function GoalDetailScreen({ boardId, goalId }: { boardId: string; goalId:
           )}
         </DetailPoster>
 
-        {g.description !== null && g.description.trim() !== '' && (
-          <PosterText variant="paragraph" color={colors.foreground}>
-            {g.description}
-          </PosterText>
-        )}
+        <ItemNotesSection
+          boardId={boardId}
+          kind="GOAL"
+          parentId={g.id}
+          canEdit={canManage}
+        />
 
         <LinkedTasks boardId={boardId} link={{ goalId: g.id }} archived={archived} />
       </ScrollView>
