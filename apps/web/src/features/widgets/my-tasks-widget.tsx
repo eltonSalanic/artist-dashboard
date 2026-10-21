@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2 } from "lucide-react";
 import { apiFetch } from "@artist/api-client";
-import { useMe } from "@artist/api-client";
+import { useMe } from "@/lib/use-me";
 import { usePermissions } from "@artist/api-client";
 import type { BoardDetailDto } from "@artist/api-client";
 import { TasksTable } from "@/features/tasks/tasks-table";

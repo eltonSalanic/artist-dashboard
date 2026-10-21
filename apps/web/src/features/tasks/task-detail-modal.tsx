@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Plus, Trash2, UserRound } from "lucide-react";
 import { apiFetch } from "@artist/api-client";
 import { usePermissions } from "@artist/api-client";
-import { useMe } from "@artist/api-client";
+import { useMe } from "@/lib/use-me";
 import type {
   BoardDetailDto,
   BoardMemberDto,

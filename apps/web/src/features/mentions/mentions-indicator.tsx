@@ -9,11 +9,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { relativeTime } from "@/features/comments/comment-bits";
-import {
-  useClearMentions,
-  useDismissMention,
-  useMentions,
-} from "@artist/api-client";
+import { useClearMentions, useDismissMention, useMentions } from "@artist/api-client";
+import { useMe } from "@/lib/use-me";
 
 /**
  * A "you were mentioned" bell that only appears once you actually have an

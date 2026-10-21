@@ -117,7 +117,7 @@ deliberately scheduled after mobile rather than blocking it.
 | **P12c** | [Polish](#p12c--polish) | mobile (mostly) | ☑ |
 | **P13** | [Push client](#p13--push-client) | mobile, api, api-client | ☑ |
 | **P14** | [Store builds](#p14--store-builds) | mobile, CI | ☐ |
-| **P15** | [Web board switcher](#p15--web-board-switcher) | **web** | ☐ |
+| **P15** | [Web board switcher](#p15--web-board-switcher) | **web** | ◐ |
 | **P16** | [Notes-style editor](#p16--notes-style-editor) | mobile, shared | ☐ |
 | **P17** | [Redesign](#p17--redesign) | mobile, api-client | ☑ |
 | **P18** | [Join links](#p18--join-links) | api, shared, mobile, web | ☐ |
@@ -1562,6 +1562,15 @@ for P5 on-device testing, not just for release.
 Close the deferred consequence of P3's additive approach: teach `apps/web` to
 show all of a user's boards instead of silently using the first. Its own phase
 so it is a deliberate feature rather than collateral damage from mobile work.
+
+**Built (2026-10-21), awaiting verification.** `apps/web/src/lib/use-me.ts`
+wraps the shared `useMe` so `board` and `membership` describe the band the
+person picked (kept in localStorage, shared across tabs; a band they have left
+falls back to the first). Web reads only the board's id and name and the
+membership's role, so only those are swapped. The header shows a band picker
+for anyone in more than one band; a switch goes to the dashboard, since an
+open item belongs to the band it was opened in. One-band accounts see the
+plain title as before.
 
 ### P16 — Notes-style editor
 

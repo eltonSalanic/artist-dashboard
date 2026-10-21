@@ -3,15 +3,8 @@
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import type { BoardRole } from "@artist/shared";
-import {
-  useBoard,
-  useInvites,
-  useMe,
-  usePermissions,
-  useRemoveMember,
-  useRevokeInvite,
-  useSendInvite,
-} from "@artist/api-client";
+import { useBoard, useInvites, usePermissions, useRemoveMember, useRevokeInvite, useSendInvite } from "@artist/api-client";
+import { useMe } from "@/lib/use-me";
 import { AppearanceCard } from "./appearance-card";
 import { DefaultLayoutCard } from "./default-layout-card";
 import { StatusesCard } from "./statuses-card";

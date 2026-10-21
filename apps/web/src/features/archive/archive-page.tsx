@@ -2,7 +2,7 @@
 
 import { Suspense, useMemo, useState } from "react";
 import { Archive } from "lucide-react";
-import { useMe } from "@artist/api-client";
+import { useMe } from "@/lib/use-me";
 import { useDetailParams } from "@/features/planning/use-detail-params";
 import {
   formatDate,

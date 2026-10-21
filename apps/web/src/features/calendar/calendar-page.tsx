@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { ChevronLeft, ChevronRight, UserRound } from "lucide-react";
-import { useMe } from "@artist/api-client";
+import { useMe } from "@/lib/use-me";
 import { useCalendar } from "@artist/api-client";
 import { useDetailParams } from "@/features/planning/use-detail-params";
 import { formatTime } from "@/features/planning/planning-bits";

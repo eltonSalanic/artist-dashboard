@@ -11,7 +11,7 @@ import {
   type WidgetColor,
   type WidgetType,
 } from "@artist/shared";
-import { useMe } from "@artist/api-client";
+import { useMe } from "@/lib/use-me";
 import { usePermissions } from "@artist/api-client";
 import {
   useBoardTheme,

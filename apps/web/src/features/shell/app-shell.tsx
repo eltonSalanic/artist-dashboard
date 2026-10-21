@@ -6,18 +6,16 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Archive,
   CalendarDays,
+  Check,
+  ChevronsUpDown,
   Eye,
   LayoutGrid,
   LogOut,
   Settings,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import {
-  PermissionsProvider,
-  useMe,
-  usePermissions,
-  useSession,
-} from "@artist/api-client";
+import { PermissionsProvider, usePermissions, useSession } from "@artist/api-client";
+import { selectBoard, useMe } from "@/lib/use-me";
 import type { MeResponse } from "@artist/api-client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -87,17 +85,24 @@ function Header({ me }: { me: MeResponse }) {
 
   return (
     <header className="flex items-center justify-between gap-4 border-b px-6 py-3">
-      <Link href="/dashboard" className="flex items-center gap-3">
-        <span className="font-heading text-sm font-semibold tracking-tight">
-          {me.board?.name}
-        </span>
+      <div className="flex items-center gap-3">
+        {me.boards.length > 1 ? (
+          <BandSwitcher me={me} />
+        ) : (
+          <Link
+            href="/dashboard"
+            className="font-heading text-sm font-semibold tracking-tight"
+          >
+            {me.board?.name}
+          </Link>
+        )}
         {viewAsUser && (
           <Badge variant="secondary" className="rounded-full">
             <Eye data-icon="inline-start" />
             User view
           </Badge>
         )}
-      </Link>
+      </div>
 
       <nav className="flex items-center gap-1 rounded-full bg-muted/60 p-1">
         <Button
@@ -176,5 +181,53 @@ function Header({ me }: { me: MeResponse }) {
         </DropdownMenu>
       </div>
     </header>
+  );
+}
+
+/**
+ * Which band the dashboard shows, for anyone in more than one. Everything on
+ * the page is keyed by the band, so switching refetches it all; the one thing
+ * that does not carry over is an open item (`?task=…`), which belongs to the
+ * band it was opened in, so the switch goes to the dashboard without it.
+ */
+function BandSwitcher({ me }: { me: MeResponse }) {
+  const router = useRouter();
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button variant="ghost" size="sm" className="-ml-2 gap-1.5 px-2" />
+        }
+        aria-label="Switch band"
+      >
+        <span className="font-heading text-sm font-semibold tracking-tight">
+          {me.board?.name}
+        </span>
+        <ChevronsUpDown className="size-3.5 text-muted-foreground" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-52">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Your bands</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {me.boards.map((board) => (
+            <DropdownMenuItem
+              key={board.id}
+              onClick={() => {
+                if (board.id === me.board?.id) return;
+                selectBoard(board.id);
+                router.push("/dashboard");
+              }}
+            >
+              {board.id === me.board?.id ? (
+                <Check data-icon="inline-start" />
+              ) : (
+                <span className="size-4" aria-hidden />
+              )}
+              {board.name}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

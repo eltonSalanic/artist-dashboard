@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { Paperclip, Upload } from "lucide-react";
 import { usePermissions } from "@artist/api-client";
-import { useMe } from "@artist/api-client";
+import { useMe } from "@/lib/use-me";
 import { labelStyle } from "@/lib/label-style";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
