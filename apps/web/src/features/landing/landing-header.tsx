@@ -15,7 +15,7 @@ export function LandingHeader() {
             <AudioLines className="size-4.5" />
           </span>
           <span className="font-heading text-base font-bold tracking-tight">
-            Artist Dashboard
+            Band Wall
           </span>
         </a>
 

@@ -67,6 +67,7 @@ model Board {
   reminders     Reminder[]
   comments      Comment[]
   attachments   Attachment[]
+  notes         Note[]
   activities    Activity[]
   customWidget  CustomWidgetContent?
   mentions      MentionNotification[]
@@ -126,7 +127,6 @@ model Task {
   id             String          @id @default(uuid()) @db.Uuid
   boardId        String          @db.Uuid
   title          String
-  description    String?
   priority       Priority        @default(MEDIUM)
   statusId       String          @db.Uuid
   dueDate        DateTime?
@@ -151,6 +151,7 @@ model Task {
   createdBy      User            @relation("TaskCreatedBy", fields: [createdById], references: [id])
   assignees      TaskAssignee[]
   checklist      ChecklistItem[]
+  notes          Note[]
   comments       Comment[]
   attachments    Attachment[]
 
@@ -185,7 +186,6 @@ model Goal {
   id          String     @id @default(uuid()) @db.Uuid
   boardId     String     @db.Uuid
   title       String
-  description String?
   period      GoalPeriod @default(MONTHLY)
   dueDate     DateTime?
   completedAt DateTime?
@@ -194,6 +194,7 @@ model Goal {
   updatedAt   DateTime   @updatedAt
   board       Board      @relation(fields: [boardId], references: [id], onDelete: Cascade)
   tasks       Task[]
+  notes       Note[]
 
   @@index([boardId, period])
   @@index([boardId, archivedAt])
@@ -204,7 +205,6 @@ model Event {
   boardId     String       @db.Uuid
   type        EventType
   title       String
-  description String?
   location    String?
   startsAt    DateTime
   endsAt      DateTime?
@@ -214,6 +214,7 @@ model Event {
   board       Board        @relation(fields: [boardId], references: [id], onDelete: Cascade)
   tasks       Task[]
   attachments Attachment[]
+  notes       Note[]
 
   @@index([boardId, startsAt])
   @@index([boardId, archivedAt])
@@ -234,12 +235,12 @@ model Reminder {
   id          String    @id @default(uuid()) @db.Uuid
   boardId     String    @db.Uuid
   title       String
-  description String?
   remindAt    DateTime?
   done        Boolean   @default(false)
   archivedAt  DateTime?
   createdAt   DateTime  @default(now())
   board       Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  notes       Note[]
 
   @@index([boardId, remindAt])
   @@index([boardId, archivedAt])
@@ -269,6 +270,35 @@ model ChecklistItem {
   task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
   @@index([taskId])
+}
+
+/// A titled, plain-text note on a task, event, goal or reminder. Exactly one
+/// of the four parent ids is set (enforced by a CHECK constraint in the
+/// migration). Replaced the single `description` field, which the
+/// migration copied into a first note titled "Notes".
+model Note {
+  id         String    @id @default(uuid()) @db.Uuid
+  boardId    String    @db.Uuid
+  taskId     String?   @db.Uuid
+  eventId    String?   @db.Uuid
+  goalId     String?   @db.Uuid
+  reminderId String?   @db.Uuid
+  title      String
+  body       String    @default("")
+  sortOrder  Float
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  board      Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  task       Task?     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  event      Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  goal       Goal?     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  reminder   Reminder? @relation(fields: [reminderId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([eventId])
+  @@index([goalId])
+  @@index([reminderId])
+  @@index([boardId])
 }
 
 model Comment {

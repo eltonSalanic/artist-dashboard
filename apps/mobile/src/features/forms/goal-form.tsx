@@ -16,7 +16,6 @@ import {
 } from '@artist/api-client';
 import { ChoiceChips } from '@/components/choice-chips';
 import { DateField } from '@/components/date-field';
-import { TextField } from '@/components/text-field';
 import { FormGate } from './form-gate';
 import { FormScreen } from './form-screen';
 import { useWidgetInk } from '@/features/board/spoke-header';
@@ -58,19 +57,16 @@ function GoalFields({ boardId, goal }: { boardId: string; goal: GoalDto | null }
 
   const initial = {
     title: goal?.title ?? '',
-    description: goal?.description ?? '',
     period: goal?.period ?? ('MONTHLY' as GoalPeriod),
     due: goal?.dueDate ? localDayFromDueDate(goal.dueDate) : null,
   };
   const [title, setTitle] = useState(initial.title);
-  const [description, setDescription] = useState(initial.description);
   const [period, setPeriod] = useState<GoalPeriod>(initial.period);
   const [due, setDue] = useState<Date | null>(initial.due);
 
   const day = (d: Date | null) => (d ? dueDateFromLocalDay(d) : null);
   const dirty =
     title !== initial.title ||
-    description !== initial.description ||
     period !== initial.period ||
     day(due) !== day(initial.due);
 
@@ -78,7 +74,6 @@ function GoalFields({ boardId, goal }: { boardId: string; goal: GoalDto | null }
     if (!goal) {
       await create.mutateAsync({
         title: title.trim(),
-        description: description.trim() || undefined,
         period,
         dueDate: day(due),
       });
@@ -87,9 +82,6 @@ function GoalFields({ boardId, goal }: { boardId: string; goal: GoalDto | null }
         goalId: goal.id,
         dto: {
           ...(title !== initial.title && { title: title.trim() }),
-          ...(description !== initial.description && {
-            description: description.trim() || null,
-          }),
           ...(period !== initial.period && { period }),
           ...(day(due) !== day(initial.due) && { dueDate: day(due) }),
         },
@@ -125,14 +117,6 @@ function GoalFields({ boardId, goal }: { boardId: string; goal: GoalDto | null }
         onChange={setPeriod}
       />
       <DateField label="Target date" value={due} onChange={setDue} />
-      <TextField
-        label="Notes"
-        value={description}
-        onChangeText={setDescription}
-        multiline
-        maxLength={10_000}
-        style={{ minHeight: 100, textAlignVertical: 'top' }}
-      />
 
       {goal && (
         <ItemActions

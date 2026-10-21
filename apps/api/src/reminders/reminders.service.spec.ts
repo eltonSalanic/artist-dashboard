@@ -50,7 +50,6 @@ describe('RemindersService', () => {
       data: {
         boardId: 'b1',
         title: 'Rehearsal might be cancelled',
-        description: null,
         remindAt: null,
       },
     });
@@ -68,7 +67,6 @@ describe('RemindersService', () => {
       data: {
         boardId: 'b1',
         title: 'Load in',
-        description: null,
         remindAt: '2026-03-10T18:00:00.000Z',
       },
     });

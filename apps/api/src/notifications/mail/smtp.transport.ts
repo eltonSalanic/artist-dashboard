@@ -26,7 +26,7 @@ export class SmtpTransport implements MailTransport {
       ignoreTLS: true,
     });
     this.from =
-      config.get<string>('MAIL_FROM') ?? 'Artist Dashboard <dev@localhost>';
+      config.get<string>('MAIL_FROM') ?? 'Band Wall <dev@localhost>';
   }
 
   async send(mail: OutgoingMail): Promise<void> {

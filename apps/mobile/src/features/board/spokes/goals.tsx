@@ -30,7 +30,7 @@ export function GoalsSpoke({ boardId }: { boardId: string }) {
       empty={items.length === 0}
       emptyIcon={{ sf: 'target', md: 'track-changes' }}
       emptyTitle="No goals yet"
-      emptyBody="Goals set on the web dashboard show up here."
+      emptyBody={canManage ? 'Tap + to set the first one.' : 'Goals the band sets will show up here.'}
       header={
         <SpokeHeader
           boardId={boardId}

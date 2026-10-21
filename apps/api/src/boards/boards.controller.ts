@@ -5,12 +5,15 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   Put,
 } from '@nestjs/common';
 import {
   boardThemeSchema,
+  createBoardSchema,
   updateBoardSchema,
   type BoardThemeDto,
+  type CreateBoardDto,
   type UpdateBoardDto,
 } from '@artist/shared';
 import { CurrentUser, type AuthUser } from '../auth/current-user.decorator';
@@ -32,6 +35,18 @@ export class BoardsController {
   @Get()
   findAll(@CurrentUser() user: AuthUser) {
     return this.boards.findAllForUser(user.userId);
+  }
+
+  /**
+   * Start a new band with the caller as its admin. Like `findAll`, no board
+   * guard: anyone signed in may start one.
+   */
+  @Post()
+  create(
+    @CurrentUser() user: AuthUser,
+    @Body(new ZodValidationPipe(createBoardSchema)) dto: CreateBoardDto,
+  ) {
+    return this.boards.create(user.userId, dto);
   }
 
   @Get(':id')

@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
+import { ItemNotes } from "@/features/notes/item-notes";
 
 export function EventDetailModal({ boardId }: { boardId: string }) {
   const { get, close } = useDetailParams();
@@ -117,7 +117,6 @@ function EventDetailBody({
   });
 
   const [title, setTitle] = useState(data.title);
-  const [description, setDescription] = useState(data.description ?? "");
   const [location, setLocation] = useState(data.location ?? "");
   const canManage = can("event.manage");
 
@@ -125,12 +124,6 @@ function EventDetailBody({
     const trimmed = title.trim();
     if (trimmed && trimmed !== data.title) {
       updateEvent.mutate({ eventId: data.id, dto: { title: trimmed } });
-    }
-  };
-  const saveDescription = () => {
-    const value = description.trim() || null;
-    if (value !== (data.description ?? null)) {
-      updateEvent.mutate({ eventId: data.id, dto: { description: value } });
     }
   };
   const saveLocation = () => {
@@ -257,23 +250,12 @@ function EventDetailBody({
         </Field>
       </div>
 
-      <Field>
-        <FieldLabel htmlFor="event-description">Description</FieldLabel>
-        {canManage ? (
-          <Textarea
-            id="event-description"
-            placeholder="Load-in time, set length, notes…"
-            rows={3}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            onBlur={saveDescription}
-          />
-        ) : (
-          <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-            {data.description || "No description."}
-          </p>
-        )}
-      </Field>
+      <ItemNotes
+        boardId={boardId}
+        kind="EVENT"
+        parentId={data.id}
+        canEdit={canManage}
+      />
 
       <Separator />
 

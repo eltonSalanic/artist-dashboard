@@ -106,9 +106,15 @@ export function calendarDayKey(item: CalendarItemLike): string {
  * goal) have no time to sort by, so they come first rather than at an arbitrary
  * hour implied by their UTC midnight.
  */
+export interface CalendarDay<T> {
+  key: string;
+  parts: { year: number; month: number; day: number };
+  items: T[];
+}
+
 export function groupCalendarByDay<T extends CalendarItemLike>(
   items: readonly T[],
-): { key: string; parts: { year: number; month: number; day: number }; items: T[] }[] {
+): CalendarDay<T>[] {
   const days = new Map<string, { parts: ReturnType<typeof calendarDayParts>; items: T[] }>();
 
   for (const item of items) {
@@ -125,6 +131,27 @@ export function groupCalendarByDay<T extends CalendarItemLike>(
       parts: day.parts,
       items: day.items.sort(timeWithinDay),
     }));
+}
+
+/**
+ * The days with one local day forced in, empty when nothing falls on it, and
+ * still in order. The phone's agenda leaves empty days out, but today is the
+ * one it opens on, so today has to be there even on a day with nothing booked.
+ */
+export function withCalendarDay<T>(
+  days: readonly CalendarDay<T>[],
+  date: Date,
+): CalendarDay<T>[] {
+  const parts = {
+    year: date.getFullYear(),
+    month: date.getMonth(),
+    day: date.getDate(),
+  };
+  const key = `${parts.year}-${String(parts.month + 1).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;
+  if (days.some((day) => day.key === key)) return [...days];
+  return [...days, { key, parts, items: [] }].sort((a, b) =>
+    a.key.localeCompare(b.key),
+  );
 }
 
 function timeWithinDay(a: CalendarItemLike, b: CalendarItemLike): number {

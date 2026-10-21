@@ -1,5 +1,6 @@
 import { router, Stack } from 'expo-router';
-import { KeyboardAvoidingView, Pressable, ScrollView, View } from 'react-native';
+import { useState } from 'react';
+import { KeyboardAvoidingView, Pressable, ScrollView, TextInput, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import {
   useCanChangeStatus,
@@ -23,13 +24,22 @@ import {
 } from '@/features/board/detail-poster';
 import { dueDay, shortDate } from '@/features/board/format';
 import { useWidgetInk } from '@/features/board/spoke-header';
+import { ItemNotesSection } from '@/features/item-notes/item-notes-section';
 import { CommentsSection } from '@/features/comments/comments-section';
-import { radius, spacing, useThemeColors, type WidgetInk } from '@/theme';
+import {
+  posterInput,
+  posterRadius,
+  radius,
+  spacing,
+  useThemeColors,
+  useTokens,
+  type WidgetInk,
+} from '@/theme';
 
 /**
- * One task. Status, checklist ticks, comments and attachments are writable
- * here; the task's own fields (title, description, dates, assignees) are an
- * admin's job and stay on web.
+ * One task. Status, the checklist, comments and attachments are writable
+ * here by any member; the task's own fields (title, description, dates,
+ * assignees) are an admin's, behind Edit.
  *
  * Reached from any task row, and addressable, so a mention notification can
  * open the task it is about rather than the board root. Wrapped by its route
@@ -47,7 +57,6 @@ export function TaskDetailScreen({
 }) {
   const colors = useThemeColors();
   const task = useTask(boardId, taskId);
-  const checklist = useChecklist(boardId, taskId);
   const canChangeStatus = useCanChangeStatus();
   const { can } = usePermissions();
   const ink = useWidgetInk(boardId, 'TODOS');
@@ -121,11 +130,12 @@ export function TaskDetailScreen({
           />
         </DetailPoster>
 
-        {t.description !== null && t.description.trim() !== '' && (
-          <PosterText variant="paragraph" color={colors.foreground}>
-            {t.description}
-          </PosterText>
-        )}
+        <ItemNotesSection
+          boardId={boardId}
+          kind="TASK"
+          parentId={t.id}
+          canEdit={can('task.editFields')}
+        />
 
         {t.assignees.length > 0 && (
           <Section title="ASSIGNED TO">
@@ -165,54 +175,7 @@ export function TaskDetailScreen({
           </Section>
         )}
 
-        {t.checklist.length > 0 && (
-          <Section
-            title={`CHECKLIST · ${t.checklist.filter((i) => i.done).length}/${t.checklist.length}`}
-          >
-            {t.checklist.map((item, index) => {
-              // While a tick is in flight, show where it is going. The mutation
-              // stays pending until the refetch lands, so this never flickers
-              // back to the old value in between.
-              const pending =
-                checklist.update.isPending &&
-                checklist.update.variables?.itemId === item.id;
-              const done = pending
-                ? (checklist.update.variables?.dto.done ?? item.done)
-                : item.done;
-              return (
-                <Row
-                  key={item.id}
-                  first={index === 0}
-                  title={item.text}
-                  dim={done}
-                  // Any member may tick an item — the API and web both allow it.
-                  onPress={
-                    pending
-                      ? undefined
-                      : () => {
-                          void Haptics.selectionAsync();
-                          checklist.update.mutate({
-                            itemId: item.id,
-                            dto: { done: !item.done },
-                          });
-                        }
-                  }
-                  lead={
-                    <Icon
-                      name={
-                        done
-                          ? { sf: 'checkmark.circle.fill', md: 'check-circle' }
-                          : { sf: 'circle', md: 'radio-button-unchecked' }
-                      }
-                      size={17}
-                      color={done ? colors.primary : undefined}
-                    />
-                  }
-                />
-              );
-            })}
-          </Section>
-        )}
+        <ChecklistSection boardId={boardId} taskId={t.id} items={t.checklist} />
 
         {/* Web offers subtasks on root tasks only; so does this. */}
         {(t.subtasks.length > 0 || (t.parentTaskId === null && can('task.createSubtask'))) && (
@@ -259,6 +222,149 @@ export function TaskDetailScreen({
         <CommentsSection boardId={boardId} taskId={t.id} />
       </ScrollView>
     </KeyboardAvoidingView>
+  );
+}
+
+/**
+ * The checklist: tick, add and remove, as on web, where any member may do all
+ * three (the API gates none of them). Always drawn, even empty — the add field
+ * is how a checklist starts.
+ *
+ * Remove is a quiet × at the row's end rather than a swipe: web deletes on one
+ * click with no confirmation, and a swipe would be the only one on these
+ * screens.
+ */
+function ChecklistSection({
+  boardId,
+  taskId,
+  items,
+}: {
+  boardId: string;
+  taskId: string;
+  items: { id: string; text: string; done: boolean }[];
+}) {
+  const tokens = useTokens();
+  const checklist = useChecklist(boardId, taskId);
+  const [draft, setDraft] = useState('');
+  const done = items.filter((i) => i.done).length;
+
+  // Return hands over the field's own text: `draft` can trail a fast typist
+  // (or a paste) by a keystroke. Only that text is cleared once it saves, so
+  // anything typed while it was saving stays in the field.
+  const add = (typed: string = draft) => {
+    const text = typed.trim();
+    if (!text || checklist.add.isPending) return;
+    checklist.add.mutate(text, {
+      onSuccess: () => setDraft((current) => (current.trim() === text ? '' : current)),
+    });
+  };
+
+  return (
+    <Section title={items.length > 0 ? `CHECKLIST · ${done}/${items.length}` : 'CHECKLIST'}>
+      {items.map((item, index) => {
+        // While a tick is in flight, show where it is going. The mutation
+        // stays pending until the refetch lands, so this never flickers
+        // back to the old value in between.
+        const pending =
+          checklist.update.isPending && checklist.update.variables?.itemId === item.id;
+        const removing =
+          checklist.remove.isPending && checklist.remove.variables === item.id;
+        const ticked = pending ? (checklist.update.variables?.dto.done ?? item.done) : item.done;
+        return (
+          <Row
+            key={item.id}
+            first={index === 0}
+            title={item.text}
+            dim={ticked || removing}
+            onPress={
+              pending || removing
+                ? undefined
+                : () => {
+                    void Haptics.selectionAsync();
+                    checklist.update.mutate({ itemId: item.id, dto: { done: !item.done } });
+                  }
+            }
+            accessibilityActions={[{ name: 'delete', label: 'Remove item' }]}
+            onAccessibilityAction={(name) => {
+              if (name === 'delete') checklist.remove.mutate(item.id);
+            }}
+            lead={
+              <Icon
+                name={
+                  ticked
+                    ? { sf: 'checkmark.circle.fill', md: 'check-circle' }
+                    : { sf: 'circle', md: 'radio-button-unchecked' }
+                }
+                size={17}
+                color={ticked ? tokens.primary : undefined}
+              />
+            }
+            trailing={
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Remove ${item.text}`}
+                hitSlop={10}
+                disabled={removing}
+                onPress={() => {
+                  void Haptics.selectionAsync();
+                  checklist.remove.mutate(item.id);
+                }}
+                style={({ pressed }) => ({ opacity: pressed ? 0.4 : 1, padding: spacing.xs })}
+              >
+                <Icon name={{ sf: 'xmark', md: 'close' }} size={14} color={tokens.mutedForeground} />
+              </Pressable>
+            }
+          />
+        );
+      })}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
+          marginTop: items.length > 0 ? spacing.xs : 0,
+        }}
+      >
+        <TextInput
+          accessibilityLabel="New checklist item"
+          placeholder="Add checklist item…"
+          placeholderTextColor={tokens.mutedForeground}
+          value={draft}
+          onChangeText={setDraft}
+          onSubmitEditing={(event) => add(event.nativeEvent.text)}
+          // Keep the keyboard up, so a list can be typed in one go.
+          submitBehavior="submit"
+          returnKeyType="done"
+          // Never locked while saving: on iOS a field made uneditable loses
+          // focus, which would drop the keyboard between items.
+          style={[
+            posterInput,
+            {
+              flex: 1,
+              color: tokens.foreground,
+              backgroundColor: tokens.muted,
+              borderRadius: posterRadius.block,
+              borderCurve: 'continuous',
+              paddingHorizontal: spacing.md,
+              paddingVertical: spacing.sm + 3,
+            },
+          ]}
+        />
+        {draft.trim() !== '' && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Add checklist item"
+            hitSlop={10}
+            disabled={checklist.add.isPending}
+            onPress={() => add()}
+          >
+            <PosterText variant="chip" color={tokens.primary}>
+              {checklist.add.isPending ? 'Adding…' : 'Add'}
+            </PosterText>
+          </Pressable>
+        )}
+      </View>
+    </Section>
   );
 }
 

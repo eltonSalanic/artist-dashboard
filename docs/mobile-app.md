@@ -114,12 +114,13 @@ deliberately scheduled after mobile rather than blocking it.
 | **P11** | [Notes widget](#p11--notes-widget) | mobile, shared | ☑ |
 | **P12** | [Mobile layout editor](#p12--mobile-layout-editor) | mobile, shared | ☑ |
 | **P12b** | [Phone arrangement](#p12b--phone-arrangement) | mobile, shared, api, api-client | ☑ |
-| **P12c** | [Polish](#p12c--polish) | mobile (mostly) | ◐ |
-| **P13** | [Push client](#p13--push-client) | mobile, api, api-client | ◐ |
+| **P12c** | [Polish](#p12c--polish) | mobile (mostly) | ☑ |
+| **P13** | [Push client](#p13--push-client) | mobile, api, api-client | ☑ |
 | **P14** | [Store builds](#p14--store-builds) | mobile, CI | ☐ |
-| **P15** | [Web board switcher](#p15--web-board-switcher) | **web** | ☐ |
-| **P16** | [Notes-style editor](#p16--notes-style-editor) | mobile, shared | ☐ |
+| **P15** | [Web board switcher](#p15--web-board-switcher) | **web** | ◐ |
+| **P16** | [Notes-style editor](#p16--notes-style-editor) — **dropped**, replaced by titled notes | api, shared, web, mobile | ◐ |
 | **P17** | [Redesign](#p17--redesign) | mobile, api-client | ☑ |
+| **P18** | [Join links](#p18--join-links) | api, shared, mobile, web | ☐ |
 
 Each phase ends with a **hard stop for manual verification** before the next
 begins, per the project's phase-gated convention. What to verify is tracked
@@ -1562,7 +1563,28 @@ Close the deferred consequence of P3's additive approach: teach `apps/web` to
 show all of a user's boards instead of silently using the first. Its own phase
 so it is a deliberate feature rather than collateral damage from mobile work.
 
+**Built (2026-10-21), awaiting verification.** `apps/web/src/lib/use-me.ts`
+wraps the shared `useMe` so `board` and `membership` describe the band the
+person picked (kept in localStorage, shared across tabs; a band they have left
+falls back to the first). Web reads only the board's id and name and the
+membership's role, so only those are swapped. The header shows a band picker
+for anyone in more than one band; a switch goes to the dashboard, since an
+open item belongs to the band it was opened in. One-band accounts see the
+plain title as before.
+
 ### P16 — Notes-style editor
+
+**Dropped 2026-10-20 at the user's request.** Instead of a rich-text editor,
+the single description on tasks, events, goals and reminders became a list of
+**titled, plain-text notes** (`Note` table, `/boards/:id/notes`, migration
+`20261021060000_titled_notes` copies each description into a note called
+"Notes" and drops the columns). Web edits them in place in the detail modals;
+the phone lists them on the detail screens and edits one at a time in
+`/board/:id/form/item-note`. Writing needs the item's own edit permission
+(`NOTE_EDIT_ACTION`). The board's **Notes widget is unchanged** (still the
+TipTap document with the marker editor on the phone). The original plan below
+is kept for the record.
+
 
 Raised while verifying P11 (2026-10-03): the marker editor (`**bold**` while typing) is too
 technical for most of the people this app is for, who expect the Notes app.
@@ -1697,6 +1719,47 @@ not touched.
   open item, Step 4's first-run notification prompt, has its own Backlog
   reminder) and `feat/mobile-redesign` merged into `feat/mobile-app`. The
   branded splash and icon are a follow-up, not part of P17.
+
+### P18 — Join links
+
+Chosen 2026-10-20, replacing the email-invite code flow (P10c invites, the
+`6be2633` join-with-code sign-in). Researched against BAND (link, short code,
+reusable QR) and Discord (one link per server).
+
+**Decisions (user, 2026-10-20):** links never expire; every join needs an
+admin's approval; admins get an alert on the board's widget page and a push
+when someone asks to join.
+
+**Flow**
+1. Each band has one join link + short code, e.g. `bandwall.app/j/K7Q2MX`.
+   Admins can reset it (old link stops working). Never expires.
+2. Phone band Settings: **Share invite** → iOS share sheet (Messages,
+   WhatsApp…), plus the code and a QR for in-person. Web Settings gets the same.
+3. Opening the link: app installed → "Join Neon Harbor?"; not installed → a
+   web page with the App Store button and the code. In-app "Have a band code?"
+   on sign-in / Your bands covers the install gap (no deferred deep links in
+   Expo without a paid service).
+4. Sign in or create an account → **Ask to join** → a pending join request.
+   The person sees "Waiting for an admin" until decided.
+5. Admins: an alert block on the band's widget page ("Sam wants to join ·
+   Approve / Decline") and a push (new `JOIN_REQUEST` category, routes to the
+   band). Approve creates the Membership (USER); decline removes the request.
+   The requester gets a push either way.
+6. Email invites stay as a secondary option, sending the same link.
+
+**Build steps**
+- API: `Board.joinCode` (unique, regenerable), `JoinRequest` model
+  (board, user, status, createdAt), endpoints: preview by code, request,
+  list pending (admin), approve/decline, reset code. Permission
+  `member.invite` in the shared map. Jest units only.
+- Notifications: `JOIN_REQUEST` (admins) and `JOIN_DECIDED` (requester),
+  push + preference category.
+- Mobile: universal-link route `/j/[code]`, join screen, code entry, Share
+  invite + QR in Settings, pending-requests alert on the hub, waiting state.
+- Web: `/j/[code]` page (join or get the app), Settings share/reset, pending
+  requests on the dashboard.
+- Retire: the invite-code sign-in mode and custom invite email template.
+- Needs: associated domain / universal links → a new dev build.
 
 ## Library replacement reference
 

@@ -31,7 +31,6 @@ export class RemindersService {
       data: {
         boardId,
         title: dto.title,
-        description: dto.description ?? null,
         remindAt: dto.remindAt ?? null,
       },
     });

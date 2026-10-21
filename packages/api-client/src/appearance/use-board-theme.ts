@@ -5,7 +5,7 @@ import { notify } from "../client";
 import { resolveBoardTheme, type BoardTheme } from "@artist/shared";
 import { apiFetch, ApiError } from "../client";
 import { useMe } from "../auth/use-me";
-import type { MeResponse } from "../auth/types";
+import type { BoardDetailDto, MeResponse } from "../auth/types";
 
 const showError = (error: unknown) =>
   notify.error(
@@ -29,17 +29,28 @@ export function useSaveBoardTheme(boardId: string) {
         method: "PUT",
         body: theme,
       }),
-    // Optimistic: recoloring a card should feel instant, so patch `/me` before
-    // the round-trip and roll back to the snapshot if the save fails.
+    // Optimistic: recoloring a card should feel instant, so patch the cache
+    // before the round-trip and roll back to the snapshot if the save fails.
+    // Both copies: web paints from `/me`, the phone from the board itself.
+    // `/me` carries one board only, so it is patched only if it is this one.
     onMutate: (theme) => {
-      const previous = queryClient.getQueryData<MeResponse>(["me"]);
+      const previousMe = queryClient.getQueryData<MeResponse>(["me"]);
+      const previousBoard = queryClient.getQueryData<BoardDetailDto>(["board", boardId]);
       queryClient.setQueryData<MeResponse>(["me"], (current) =>
-        current?.board ? { ...current, board: { ...current.board, theme } } : current,
+        current?.board?.id === boardId
+          ? { ...current, board: { ...current.board, theme } }
+          : current,
       );
-      return { previous };
+      queryClient.setQueryData<BoardDetailDto>(["board", boardId], (current) =>
+        current ? { ...current, theme } : current,
+      );
+      return { previousMe, previousBoard };
     },
     onError: (error, _theme, context) => {
-      if (context?.previous) queryClient.setQueryData(["me"], context.previous);
+      if (context?.previousMe) queryClient.setQueryData(["me"], context.previousMe);
+      if (context?.previousBoard) {
+        queryClient.setQueryData(["board", boardId], context.previousBoard);
+      }
       showError(error);
     },
     onSuccess: () => {

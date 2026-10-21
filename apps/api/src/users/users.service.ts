@@ -1,10 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import {
-  DEFAULT_BOARD_LAYOUT,
-  DEFAULT_TASK_STATUSES,
-  resolveBoardTheme,
-} from '@artist/shared';
-import { Prisma } from '../../generated/prisma/client';
+import { resolveBoardTheme } from '@artist/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
 import { toBoardSummary } from '../boards/board-summary';
@@ -21,7 +16,9 @@ export class UsersService {
    * Idempotent first-call setup for an authenticated Supabase user:
    * 1. Upsert the local User row.
    * 2. Activate any pending invites matching the verified email.
-   * 3. If the user still has no board, create one and make them its admin.
+   *
+   * It never creates a band: someone who signs up with no invite lands on
+   * "Join or create one" and starts a band themselves (POST /boards).
    */
   async bootstrap(auth: AuthUser) {
     const displayName = auth.email.split('@')[0];
@@ -72,23 +69,6 @@ export class UsersService {
             },
           });
         }
-      }
-
-      const membership = await tx.membership.findFirst({
-        where: { userId: auth.userId },
-      });
-      if (!membership) {
-        await tx.board.create({
-          data: {
-            name: `${displayName}'s band`,
-            defaultLayout:
-              DEFAULT_BOARD_LAYOUT as unknown as Prisma.InputJsonValue,
-            memberships: {
-              create: { userId: auth.userId, role: 'ADMIN' },
-            },
-            statuses: { create: DEFAULT_TASK_STATUSES },
-          },
-        });
       }
     });
 

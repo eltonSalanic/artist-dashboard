@@ -55,6 +55,14 @@ export class ReminderDueJob {
           gte: new Date(now.getTime() - BACKFILL_WINDOW_MS),
         },
       },
+      // The first note stands in for the old description in the message.
+      include: {
+        notes: {
+          orderBy: { sortOrder: 'asc' },
+          take: 1,
+          select: { body: true },
+        },
+      },
     });
 
     let queued = 0;
@@ -78,7 +86,7 @@ export class ReminderDueJob {
           payload: {
             reminderId: reminder.id,
             title: reminder.title,
-            description: reminder.description,
+            description: reminder.notes[0]?.body || null,
             remindAt: reminder.remindAt!.toISOString(),
           },
         })),

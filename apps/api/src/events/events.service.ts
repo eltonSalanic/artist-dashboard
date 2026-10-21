@@ -70,7 +70,6 @@ export class EventsService {
           boardId,
           type: dto.type,
           title: dto.title,
-          description: dto.description,
           location: dto.location,
           startsAt: dto.startsAt,
           endsAt: dto.endsAt ?? null,
@@ -203,7 +202,6 @@ export class EventsService {
     boardId: string;
     type: string;
     title: string;
-    description: string | null;
     location: string | null;
     startsAt: Date;
     endsAt: Date | null;
@@ -216,7 +214,6 @@ export class EventsService {
     boardId: event.boardId,
     type: event.type,
     title: event.title,
-    description: event.description,
     location: event.location,
     startsAt: event.startsAt,
     endsAt: event.endsAt,

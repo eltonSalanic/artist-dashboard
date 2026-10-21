@@ -23,7 +23,6 @@ import {
 import { ChoiceChips } from '@/components/choice-chips';
 import { DateField } from '@/components/date-field';
 import { PickOne, type PickOption } from '@/components/pick-one';
-import { TextField } from '@/components/text-field';
 import { FormScreen } from './form-screen';
 import { useWidgetInk } from '@/features/board/spoke-header';
 import { FormPoster } from './form-poster';
@@ -105,7 +104,6 @@ function TaskFields({
 
   const initial = {
     title: task?.title ?? '',
-    description: task?.description ?? '',
     priority: task?.priority ?? ('MEDIUM' as Priority),
     due: task?.dueDate ? localDayFromDueDate(task.dueDate) : null,
     assignees: task?.assignees.map((a) => a.id) ?? [],
@@ -113,7 +111,6 @@ function TaskFields({
     event: task ? (task.event?.id ?? null) : (eventId ?? null),
   };
   const [title, setTitle] = useState(initial.title);
-  const [description, setDescription] = useState(initial.description);
   const [priority, setPriority] = useState<Priority>(initial.priority);
   const [due, setDue] = useState<Date | null>(initial.due);
   const [assignees, setAssigneeIds] = useState<string[]>(initial.assignees);
@@ -130,7 +127,6 @@ function TaskFields({
     [...assignees].sort().join() !== [...initial.assignees].sort().join();
   const dirty =
     title !== initial.title ||
-    description !== initial.description ||
     priority !== initial.priority ||
     dueIso !== initialDueIso ||
     assigneesChanged ||
@@ -146,7 +142,6 @@ function TaskFields({
     if (!task) {
       await create.mutateAsync({
         title: title.trim(),
-        description: description.trim() || undefined,
         priority,
         dueDate: dueIso,
         assigneeIds: assignees,
@@ -159,9 +154,6 @@ function TaskFields({
       // activity entry for edits nobody made.
       const dto = {
         ...(title !== initial.title && { title: title.trim() }),
-        ...(description !== initial.description && {
-          description: description.trim() || null,
-        }),
         ...(priority !== initial.priority && { priority }),
         ...(dueIso !== initialDueIso && { dueDate: dueIso }),
         ...(goal !== initial.goal && { goalId: goal }),
@@ -197,14 +189,6 @@ function TaskFields({
         onChangeText={setTitle}
         autoFocus={!task}
         maxLength={200}
-      />
-      <TextField
-        label="Description"
-        value={description}
-        onChangeText={setDescription}
-        multiline
-        maxLength={10_000}
-        style={{ minHeight: 100, textAlignVertical: 'top' }}
       />
       <ChoiceChips
         label="Priority"

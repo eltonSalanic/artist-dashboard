@@ -79,14 +79,12 @@ function EventFields({
     type: event?.type ?? initialType ?? ('SHOW' as EventType),
     title: event?.title ?? '',
     location: event?.location ?? '',
-    description: event?.description ?? '',
     startsAt: event ? new Date(event.startsAt) : null,
     endsAt: event?.endsAt ? new Date(event.endsAt) : null,
   };
   const [type, setType] = useState<EventType>(initial.type);
   const [title, setTitle] = useState(initial.title);
   const [location, setLocation] = useState(initial.location);
-  const [description, setDescription] = useState(initial.description);
   const [startsAt, setStartsAt] = useState<Date | null>(initial.startsAt);
   const [endsAt, setEndsAt] = useState<Date | null>(initial.endsAt);
 
@@ -95,7 +93,6 @@ function EventFields({
     type !== initial.type ||
     title !== initial.title ||
     location !== initial.location ||
-    description !== initial.description ||
     iso(startsAt) !== iso(initial.startsAt) ||
     iso(endsAt) !== iso(initial.endsAt);
   // The API refuses this too; saying so here keeps the person on the form.
@@ -109,7 +106,6 @@ function EventFields({
         type,
         title: title.trim(),
         location: location.trim() || undefined,
-        description: description.trim() || undefined,
         startsAt: startsAt.toISOString(),
         endsAt: iso(endsAt),
       });
@@ -118,9 +114,6 @@ function EventFields({
         ...(type !== initial.type && { type }),
         ...(title !== initial.title && { title: title.trim() }),
         ...(location !== initial.location && { location: location.trim() || null }),
-        ...(description !== initial.description && {
-          description: description.trim() || null,
-        }),
         ...(iso(startsAt) !== iso(initial.startsAt) && {
           startsAt: startsAt.toISOString(),
         }),
@@ -180,14 +173,6 @@ function EventFields({
         value={location}
         onChangeText={setLocation}
         maxLength={300}
-      />
-      <TextField
-        label="Notes"
-        value={description}
-        onChangeText={setDescription}
-        multiline
-        maxLength={10_000}
-        style={{ minHeight: 100, textAlignVertical: 'top' }}
       />
 
       {event && (

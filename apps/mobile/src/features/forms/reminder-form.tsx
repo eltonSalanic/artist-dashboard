@@ -9,7 +9,6 @@ import {
   type ReminderDto,
 } from '@artist/api-client';
 import { DateField } from '@/components/date-field';
-import { TextField } from '@/components/text-field';
 import { FormGate } from './form-gate';
 import { FormScreen } from './form-screen';
 import { useWidgetInk } from '@/features/board/spoke-header';
@@ -44,24 +43,20 @@ function ReminderFields({ boardId, reminder }: { boardId: string; reminder: Remi
 
   const initial = {
     title: reminder?.title ?? '',
-    description: reminder?.description ?? '',
     remindAt: reminder?.remindAt ? new Date(reminder.remindAt) : null,
   };
   const [title, setTitle] = useState(initial.title);
-  const [description, setDescription] = useState(initial.description);
   const [remindAt, setRemindAt] = useState<Date | null>(initial.remindAt);
 
   const iso = (d: Date | null) => d?.toISOString() ?? null;
   const dirty =
     title !== initial.title ||
-    description !== initial.description ||
     iso(remindAt) !== iso(initial.remindAt);
 
   const save = async () => {
     if (!reminder) {
       await create.mutateAsync({
         title: title.trim(),
-        description: description.trim() || undefined,
         remindAt: iso(remindAt),
       });
     } else {
@@ -69,9 +64,6 @@ function ReminderFields({ boardId, reminder }: { boardId: string; reminder: Remi
         reminderId: reminder.id,
         dto: {
           ...(title !== initial.title && { title: title.trim() }),
-          ...(description !== initial.description && {
-            description: description.trim() || null,
-          }),
           ...(iso(remindAt) !== iso(initial.remindAt) && { remindAt: iso(remindAt) }),
         },
       });
@@ -105,14 +97,6 @@ function ReminderFields({ boardId, reminder }: { boardId: string; reminder: Remi
         value={remindAt}
         onChange={setRemindAt}
         emptyLabel="No date"
-      />
-      <TextField
-        label="Notes"
-        value={description}
-        onChangeText={setDescription}
-        multiline
-        maxLength={10_000}
-        style={{ minHeight: 100, textAlignVertical: 'top' }}
       />
 
       {reminder && (

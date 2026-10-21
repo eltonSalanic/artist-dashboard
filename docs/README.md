@@ -1,4 +1,4 @@
-# Artist Dashboard — Feature Documentation
+# Band Wall — Feature Documentation
 
 Reference docs for *what the product does* and the rules behind it, one file per
 feature area. This is the behavioural spec: what fires when, who can do what,

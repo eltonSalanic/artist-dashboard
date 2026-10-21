@@ -8,7 +8,7 @@ const reminder = (overrides: Partial<Record<string, unknown>> = {}) => ({
   id: 'r1',
   boardId: 'b1',
   title: 'Load in at 4',
-  description: null,
+  notes: [] as { body: string }[],
   remindAt: new Date('2026-09-05T17:58:00.000Z'),
   done: false,
   archivedAt: null,

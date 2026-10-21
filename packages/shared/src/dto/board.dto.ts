@@ -40,6 +40,10 @@ export const updateBoardSchema = z.object({
 });
 export type UpdateBoardDto = z.infer<typeof updateBoardSchema>;
 
+/** A new band: just its name; it starts with the default layout and statuses. */
+export const createBoardSchema = updateBoardSchema;
+export type CreateBoardDto = UpdateBoardDto;
+
 /** Board-wide appearance: one predefined palette + per-widget slot picks. */
 export const boardThemeSchema = z.object({
   palette: z.enum(BoardPalettes),

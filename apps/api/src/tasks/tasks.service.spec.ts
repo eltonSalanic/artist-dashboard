@@ -258,7 +258,6 @@ describe('TasksService', () => {
         ...baseTask,
         id: 't2',
         title: 'Subtask',
-        description: null,
         priority: 'MEDIUM',
         statusId: 's1',
         dueDate: null,
@@ -311,7 +310,6 @@ describe('TasksService', () => {
       prisma.task.update.mockResolvedValue({
         ...baseTask,
         title: 'T',
-        description: null,
         priority: 'MEDIUM',
         statusId: 's2',
         dueDate: null,

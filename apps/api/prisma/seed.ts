@@ -17,7 +17,7 @@
  * bandmates are upserted, so reruns never duplicate them.
  */
 import 'dotenv/config';
-import { PrismaClient } from '../generated/prisma/client';
+import { Prisma, PrismaClient } from '../generated/prisma/client';
 import { createPgAdapter } from '../src/prisma/pg-adapter';
 import {
   ActivityType,
@@ -70,7 +70,9 @@ function days(n: number): Date {
 }
 
 /** The board's statuses, resolved to the four buckets the seed places tasks in. */
-function statusBuckets(statuses: { id: string; name: string; sortOrder: number; isDone: boolean }[]) {
+function statusBuckets(
+  statuses: { id: string; name: string; sortOrder: number; isDone: boolean }[],
+) {
   const byName = new Map(statuses.map((s) => [s.name, s.id]));
   const ordered = [...statuses].sort((a, b) => a.sortOrder - b.sortOrder);
   const done = statuses.find((s) => s.isDone) ?? ordered[ordered.length - 1];
@@ -116,7 +118,9 @@ async function main() {
     const board = realOwner.memberships[0].board;
     boardId = board.id;
     owner = { id: realOwner.id, displayName: realOwner.displayName };
-    console.log(`Seeding into ${DEMO_OWNER_EMAIL}'s board "${board.name}" (${boardId})…`);
+    console.log(
+      `Seeding into ${DEMO_OWNER_EMAIL}'s board "${board.name}" (${boardId})…`,
+    );
 
     // Wipe the board's existing content so reseeds are clean. Memberships,
     // statuses, and personal layouts are preserved. Deleting tasks cascades
@@ -132,7 +136,10 @@ async function main() {
 
     // Give the board a clear demo identity and add the synthetic bandmates as
     // members (so they're valid assignees). The real owner keeps their role.
-    await prisma.board.update({ where: { id: boardId }, data: { name: 'Neon Harbor' } });
+    await prisma.board.update({
+      where: { id: boardId },
+      data: { name: 'Neon Harbor' },
+    });
     for (const m of [BAND.mia, BAND.diego, BAND.sam]) {
       await prisma.membership.upsert({
         where: { boardId_userId: { boardId, userId: m.id } },
@@ -150,7 +157,11 @@ async function main() {
     );
     await prisma.board.deleteMany({ where: { id: boardId } });
     await prisma.board.create({
-      data: { id: boardId, name: 'Neon Harbor', defaultLayout: DEFAULT_BOARD_LAYOUT as object[] },
+      data: {
+        id: boardId,
+        name: 'Neon Harbor',
+        defaultLayout: DEFAULT_BOARD_LAYOUT as unknown as Prisma.InputJsonValue,
+      },
     });
     await prisma.membership.createMany({
       data: [
@@ -170,9 +181,21 @@ async function main() {
   // Focus pins.
   await prisma.focusPin.createMany({
     data: [
-      { boardId: boardId, period: FocusPeriod.WEEK, text: 'Lock the Summer Kickoff setlist' },
-      { boardId: boardId, period: FocusPeriod.MONTH, text: 'Finish mixing “Coastlines”' },
-      { boardId: boardId, period: FocusPeriod.YEAR, text: 'Release the debut album' },
+      {
+        boardId: boardId,
+        period: FocusPeriod.WEEK,
+        text: 'Lock the Summer Kickoff setlist',
+      },
+      {
+        boardId: boardId,
+        period: FocusPeriod.MONTH,
+        text: 'Finish mixing “Coastlines”',
+      },
+      {
+        boardId: boardId,
+        period: FocusPeriod.YEAR,
+        text: 'Release the debut album',
+      },
     ],
   });
 
@@ -181,7 +204,14 @@ async function main() {
     data: {
       boardId: boardId,
       title: 'Release debut album “Neon Harbor”',
-      description: 'Ten tracks, mastered and distributed to all platforms.',
+      notes: {
+        create: {
+          boardId,
+          title: 'Notes',
+          body: 'Ten tracks, mastered and distributed to all platforms.',
+          sortOrder: 100,
+        },
+      },
       period: GoalPeriod.YEARLY,
       dueDate: days(150),
     },
@@ -228,7 +258,22 @@ async function main() {
       boardId: boardId,
       type: EventType.MEETING,
       title: 'Label sync',
-      description: 'Quarterly check-in with the label on release timing.',
+      notes: {
+        create: [
+          {
+            boardId,
+            title: 'Agenda',
+            body: 'Quarterly check-in with the label on release timing.',
+            sortOrder: 100,
+          },
+          {
+            boardId,
+            title: 'Questions for the label',
+            body: 'Vinyl run size? Who pays for the video?',
+            sortOrder: 200,
+          },
+        ],
+      },
       startsAt: days(5),
     },
   });
@@ -246,9 +291,22 @@ async function main() {
   // Reminders.
   await prisma.reminder.createMany({
     data: [
-      { boardId: boardId, title: 'Renew rehearsal space booking', remindAt: days(3) },
-      { boardId: boardId, title: 'Submit Coastfest application', remindAt: days(7) },
-      { boardId: boardId, title: 'Order new guitar strings', remindAt: days(-2), done: true },
+      {
+        boardId: boardId,
+        title: 'Renew rehearsal space booking',
+        remindAt: days(3),
+      },
+      {
+        boardId: boardId,
+        title: 'Submit Coastfest application',
+        remindAt: days(7),
+      },
+      {
+        boardId: boardId,
+        title: 'Order new guitar strings',
+        remindAt: days(-2),
+        done: true,
+      },
     ],
   });
 
@@ -260,7 +318,7 @@ async function main() {
     title: string;
     statusId: string;
     priority?: Priority;
-    description?: string;
+    notes?: { title: string; body: string }[];
     dueDate?: Date | null;
     assignees?: string[];
     goalId?: string;
@@ -272,7 +330,16 @@ async function main() {
       data: {
         boardId: boardId,
         title: input.title,
-        description: input.description ?? null,
+        notes: input.notes
+          ? {
+              create: input.notes.map((n, i) => ({
+                boardId,
+                title: n.title,
+                body: n.body,
+                sortOrder: (i + 1) * 100,
+              })),
+            }
+          : undefined,
         priority: input.priority ?? Priority.MEDIUM,
         statusId: input.statusId,
         dueDate: input.dueDate ?? null,
@@ -301,7 +368,13 @@ async function main() {
     title: 'Finalize setlist for Summer Kickoff',
     statusId: S.inProgress,
     priority: Priority.HIGH,
-    description: 'Twelve songs, ~55 minutes. Open loud, close with the new single.',
+    notes: [
+      {
+        title: 'Notes',
+        body: 'Twelve songs, ~55 minutes. Open loud, close with the new single.',
+      },
+      { title: 'Gear', body: 'Two DI boxes, spare strings, the capo.' },
+    ],
     dueDate: days(8),
     assignees: [BAND.mia.id, BAND.diego.id],
     eventId: showKickoff.id,
@@ -319,14 +392,22 @@ async function main() {
     assignees: [BAND.mia.id],
     // subtask of the setlist task
   }).then((t) =>
-    prisma.task.update({ where: { id: t.id }, data: { parentTaskId: setlist.id } }),
+    prisma.task.update({
+      where: { id: t.id },
+      data: { parentTaskId: setlist.id },
+    }),
   );
 
   const master = await makeTask({
     title: 'Master “Coastlines”',
     statusId: S.waiting,
     priority: Priority.HIGH,
-    description: 'Waiting on the final mix bounce before mastering.',
+    notes: [
+      {
+        title: 'Notes',
+        body: 'Waiting on the final mix bounce before mastering.',
+      },
+    ],
     dueDate: days(11),
     assignees: [BAND.sam.id],
     goalId: goalMix.id,
@@ -418,12 +499,16 @@ async function main() {
           },
           {
             type: 'bulletList',
-            content: ['Water + towels', 'Set times taped to the wall', 'Merch float cash'].map(
-              (t) => ({
-                type: 'listItem',
-                content: [{ type: 'paragraph', content: [{ type: 'text', text: t }] }],
-              }),
-            ),
+            content: [
+              'Water + towels',
+              'Set times taped to the wall',
+              'Merch float cash',
+            ].map((t) => ({
+              type: 'listItem',
+              content: [
+                { type: 'paragraph', content: [{ type: 'text', text: t }] },
+              ],
+            })),
           },
         ],
       },
@@ -476,7 +561,11 @@ async function main() {
     {
       type: ActivityType.FILE_UPLOADED,
       actorId: BAND.sam.id,
-      meta: { fileName: 'coastlines-mix-v3.mp3', taskId: master.id, taskTitle: master.title },
+      meta: {
+        fileName: 'coastlines-mix-v3.mp3',
+        taskId: master.id,
+        taskTitle: master.title,
+      },
       createdAt: days(-5),
     },
     {

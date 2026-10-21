@@ -1,23 +1,26 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Archive,
   CalendarDays,
+  Check,
+  ChevronsUpDown,
   Eye,
   LayoutGrid,
   LogOut,
+  Plus,
   Settings,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import {
   PermissionsProvider,
-  useMe,
   usePermissions,
   useSession,
 } from "@artist/api-client";
+import { selectBoard, useMe } from "@/lib/use-me";
 import type { MeResponse } from "@artist/api-client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -35,6 +38,8 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { MentionsIndicator } from "@/features/mentions/mentions-indicator";
 import { ThemeToggle } from "@/features/shell/theme-toggle";
+import { CreateBandDialog } from "@/features/shell/create-band-dialog";
+import { NoBand } from "@/features/shell/no-band";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -52,6 +57,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <Skeleton className="h-64 w-full" />
       </div>
     );
+  }
+
+  if (me.data && me.data.boards.length === 0) {
+    return <NoBand email={me.data.user.email} />;
   }
 
   if (me.isError || !me.data?.membership || !me.data.board) {
@@ -87,17 +96,15 @@ function Header({ me }: { me: MeResponse }) {
 
   return (
     <header className="flex items-center justify-between gap-4 border-b px-6 py-3">
-      <Link href="/dashboard" className="flex items-center gap-3">
-        <span className="font-heading text-sm font-semibold tracking-tight">
-          {me.board?.name}
-        </span>
+      <div className="flex items-center gap-3">
+        <BandSwitcher me={me} />
         {viewAsUser && (
           <Badge variant="secondary" className="rounded-full">
             <Eye data-icon="inline-start" />
             User view
           </Badge>
         )}
-      </Link>
+      </div>
 
       <nav className="flex items-center gap-1 rounded-full bg-muted/60 p-1">
         <Button
@@ -176,5 +183,64 @@ function Header({ me }: { me: MeResponse }) {
         </DropdownMenu>
       </div>
     </header>
+  );
+}
+
+/**
+ * Which band the dashboard shows, and where a new one is started. Shown to
+ * everyone, since anyone may create a band; with one band it lists just that
+ * one and "Create a band…". Everything on
+ * the page is keyed by the band, so switching refetches it all; the one thing
+ * that does not carry over is an open item (`?task=…`), which belongs to the
+ * band it was opened in, so the switch goes to the dashboard without it.
+ */
+function BandSwitcher({ me }: { me: MeResponse }) {
+  const router = useRouter();
+  const [creating, setCreating] = useState(false);
+  return (
+    <>
+      <CreateBandDialog open={creating} onOpenChange={setCreating} />
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button variant="ghost" size="sm" className="-ml-2 gap-1.5 px-2" />
+          }
+          aria-label="Switch band"
+        >
+          <span className="font-heading text-sm font-semibold tracking-tight">
+            {me.board?.name}
+          </span>
+          <ChevronsUpDown className="size-3.5 text-muted-foreground" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="min-w-52">
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Your bands</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {me.boards.map((board) => (
+              <DropdownMenuItem
+                key={board.id}
+                onClick={() => {
+                  if (board.id === me.board?.id) return;
+                  selectBoard(board.id);
+                  router.push("/dashboard");
+                }}
+              >
+                {board.id === me.board?.id ? (
+                  <Check data-icon="inline-start" />
+                ) : (
+                  <span className="size-4" aria-hidden />
+                )}
+                {board.name}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setCreating(true)}>
+            <Plus data-icon="inline-start" />
+            Create a band…
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
   );
 }

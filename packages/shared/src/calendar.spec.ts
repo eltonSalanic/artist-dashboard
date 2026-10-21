@@ -6,6 +6,7 @@ import {
   daysFromToday,
   dueDateFromLocalDay,
   groupCalendarByDay,
+  withCalendarDay,
   localDayFromDueDate,
   type CalendarItemLike,
 } from './calendar';
@@ -199,5 +200,33 @@ describe('daysFromToday', () => {
     // by an hour and can round to the wrong day.
     const before = new Date(2026, 2, 1, 12, 0, 0);
     expect(daysFromToday(at(0, 12), before)).toBe(13);
+  });
+});
+
+describe('withCalendarDay', () => {
+  const days = groupCalendarByDay([
+    item({ date: '2026-03-12T18:00:00.000Z' }),
+    item({ date: '2026-03-20T18:00:00.000Z' }),
+  ]);
+
+  it('adds an empty day in its place when nothing falls on it', () => {
+    const next = withCalendarDay(days, new Date(2026, 2, 14, 9));
+    expect(next.map((d) => d.key)).toEqual(['2026-03-12', '2026-03-14', '2026-03-20']);
+    expect(next[1]).toEqual({
+      key: '2026-03-14',
+      parts: { year: 2026, month: 2, day: 14 },
+      items: [],
+    });
+  });
+
+  it('keeps a day that already has things on it as it is', () => {
+    const next = withCalendarDay(days, new Date(2026, 2, 12, 23));
+    expect(next).toEqual(days);
+  });
+
+  // Late evening west of UTC is already tomorrow in UTC; the day is the local one.
+  it('reads the date in local time', () => {
+    const next = withCalendarDay([], new Date('2026-03-15T05:30:00.000Z'));
+    expect(next.map((d) => d.key)).toEqual(['2026-03-14']);
   });
 });

@@ -18,8 +18,19 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
-import { useBoard, useResetMobileLayout, useSaveMobileLayout } from '@artist/api-client';
-import { WIDGET_META, resolveBoardTheme, type MobileLayoutItem } from '@artist/shared';
+import {
+  useBoard,
+  usePermissions,
+  useResetMobileLayout,
+  useSaveBoardTheme,
+  useSaveMobileLayout,
+} from '@artist/api-client';
+import {
+  WIDGET_META,
+  resolveBoardTheme,
+  type BoardTheme,
+  type MobileLayoutItem,
+} from '@artist/shared';
 import { Button } from '@/components/button';
 import { Icon } from '@/components/icon';
 import { PosterText } from '@/components/poster-text';
@@ -42,6 +53,8 @@ import { radius, spacing, usePosterCanvas, useThemeColors } from '@/theme';
  *
  * Holding a card (or ⋯ → Edit widgets) puts the hub in edit mode (P12b): move,
  * resize and hide cards in place, then Done saves the phone's arrangement.
+ * Someone allowed to change the band's look can recolour cards there too;
+ * colours are the band's, so Done saves those for everyone, web included.
  */
 export function BoardHubScreen() {
   const colors = useThemeColors();
@@ -59,11 +72,13 @@ export function BoardHubScreen() {
             size={36}
             color={colors.mutedForeground}
           />
-          <ThemedText variant="title">No band yet</ThemedText>
-          <ThemedText variant="subhead" tone="muted" style={{ textAlign: 'center' }}>
-            Signing in normally creates your first board. Ask an admin to invite you, or start one
-            on the web.
+          <ThemedText variant="title" style={{ textAlign: 'center' }}>
+            You&apos;re not on any band&apos;s wall yet
           </ThemedText>
+          <ThemedText variant="subhead" tone="muted" style={{ textAlign: 'center' }}>
+            Join or create one. To join, ask one of the band&apos;s admins to invite you.
+          </ThemedText>
+          <Button title="Create a band" onPress={() => router.push('/boards?create=1')} />
         </View>
       )}
       <Stack.Screen
@@ -93,6 +108,12 @@ const TAB_BAR = 49;
 const signature = (items: MobileLayoutItem[]) =>
   items.map((i) => `${i.widgetType}:${i.w}x${i.h}:${i.hidden ? 0 : 1}`).join();
 
+const colourSignature = (widgets: BoardTheme['widgets']) =>
+  Object.entries(widgets)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([type, color]) => `${type}:${color}`)
+    .join();
+
 /**
  * Mounted only once a board exists, so none of the nine widget queries fire
  * against a `/boards//...` URL while the selection is still resolving.
@@ -102,9 +123,15 @@ function BoardHub({ boardId, name }: { boardId: string; name: string }) {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   useRefetchOnFocus();
+  const { can } = usePermissions();
   const detail = useBoard(boardId);
-  const hub = useHubCards(boardId, resolveBoardTheme(detail.data?.theme));
+  const saved = resolveBoardTheme(detail.data?.theme);
+  // Colours picked in edit mode, painted at once but saved only with Done.
+  const [colours, setColours] = useState<BoardTheme['widgets'] | null>(null);
+  const theme = colours ? { ...saved, widgets: colours } : saved;
+  const hub = useHubCards(boardId, theme);
   const save = useSaveMobileLayout(boardId);
+  const saveTheme = useSaveBoardTheme(boardId);
   const reset = useResetMobileLayout(boardId);
 
   // The arrangement being edited; null when not editing.
@@ -112,8 +139,16 @@ function BoardHub({ boardId, name }: { boardId: string; name: string }) {
   const [dragging, setDragging] = useState(false);
   const editing = draft !== null;
   const items = draft ?? hub.items;
-  const dirty = draft !== null && signature(draft) !== signature(hub.items);
+  const layoutDirty = draft !== null && signature(draft) !== signature(hub.items);
+  const coloursDirty =
+    colours !== null && colourSignature(colours) !== colourSignature(saved.widgets);
+  const dirty = layoutDirty || coloursDirty;
   const shown = items.filter((item) => !item.hidden).length;
+
+  const stopEditing = () => {
+    setDraft(null);
+    setColours(null);
+  };
 
   const startEditing = useCallback(() => {
     if (hub.loading) return;
@@ -129,17 +164,26 @@ function BoardHub({ boardId, name }: { boardId: string; name: string }) {
     [],
   );
 
-  const done = () => {
-    if (!dirty || draft === null) return setDraft(null);
+  const done = async () => {
+    if (!dirty || draft === null) return stopEditing();
     // Saves keep the draft until they land: a failed save leaves you editing.
-    save.mutate(draft, { onSuccess: () => setDraft(null) });
+    // Each mutation reports its own failure, so there is nothing to add here.
+    try {
+      await Promise.all([
+        layoutDirty ? save.mutateAsync(draft) : null,
+        coloursDirty && colours ? saveTheme.mutateAsync({ ...saved, widgets: colours }) : null,
+      ]);
+      stopEditing();
+    } catch {
+      // Still editing, with the toast saying why.
+    }
   };
 
   const cancel = () => {
-    if (!dirty) return setDraft(null);
+    if (!dirty) return stopEditing();
     Alert.alert('Discard changes?', 'Your cards go back to how they were.', [
       { text: 'Keep editing', style: 'cancel' },
-      { text: 'Discard', style: 'destructive', onPress: () => setDraft(null) },
+      { text: 'Discard', style: 'destructive', onPress: stopEditing },
     ]);
   };
 
@@ -152,7 +196,7 @@ function BoardHub({ boardId, name }: { boardId: string; name: string }) {
         {
           text: 'Follow web',
           style: 'destructive',
-          onPress: () => reset.mutate(undefined, { onSuccess: () => setDraft(null) }),
+          onPress: () => reset.mutate(undefined, { onSuccess: stopEditing }),
         },
       ],
     );
@@ -246,6 +290,9 @@ function BoardHub({ boardId, name }: { boardId: string; name: string }) {
             >
               <ThemedText variant="footnote" tone="muted">
                 Hold a card to move it. Drag its corner to resize it, or tap its eye to hide it.
+                {can('board.appearance')
+                  ? " Its palette changes the card's colour for the whole band, on web too."
+                  : ''}
                 {hub.source === 'web'
                   ? ' Your phone follows your web dashboard until you save here; web stays as it is.'
                   : " This is your phone's own arrangement; it doesn't change web."}
@@ -311,6 +358,18 @@ function BoardHub({ boardId, name }: { boardId: string; name: string }) {
                 cards={hub.cards}
                 items={items}
                 editing={editing}
+                recolour={
+                  can('board.appearance')
+                    ? {
+                        palette: theme.palette,
+                        onPick: (type, color) =>
+                          setColours((current) => ({
+                            ...(current ?? saved.widgets),
+                            [type]: color,
+                          })),
+                      }
+                    : undefined
+                }
                 scroll={{
                   ref: scrollRef,
                   offset,
@@ -352,8 +411,8 @@ function BoardHub({ boardId, name }: { boardId: string; name: string }) {
                 <HeaderText
                   title="Done"
                   bold
-                  disabled={save.isPending || shown === 0}
-                  onPress={done}
+                  disabled={save.isPending || saveTheme.isPending || shown === 0}
+                  onPress={() => void done()}
                 />
               )
             : () => <BoardMenuButton />,

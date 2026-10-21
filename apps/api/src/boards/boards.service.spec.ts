@@ -268,3 +268,48 @@ describe('BoardsService.findAllForUser', () => {
     expect(board.palette).toBe('playful');
   });
 });
+
+describe('BoardsService.create', () => {
+  const prisma = { board: { create: jest.fn() } };
+  const service = new BoardsService(
+    prisma as unknown as PrismaService,
+    new ActivityService(prisma as unknown as PrismaService),
+  );
+
+  it('makes the caller the only admin, with default statuses and layout', async () => {
+    prisma.board.create.mockResolvedValue({
+      id: 'b9',
+      name: 'Side Project',
+      theme: {},
+      memberships: [{ id: 'm9', role: 'ADMIN' }],
+    });
+
+    const summary = await service.create('u1', { name: 'Side Project' });
+
+    const [args] = prisma.board.create.mock.calls[0] as [
+      {
+        data: {
+          name: string;
+          defaultLayout: unknown[];
+          memberships: { create: unknown };
+          statuses: { create: unknown[] };
+        };
+      },
+    ];
+    expect(args.data.name).toBe('Side Project');
+    expect(args.data.memberships.create).toEqual({
+      userId: 'u1',
+      role: 'ADMIN',
+    });
+    expect(args.data.statuses.create.length).toBeGreaterThan(0);
+    expect(args.data.defaultLayout.length).toBeGreaterThan(0);
+    expect(summary).toEqual(
+      expect.objectContaining({
+        id: 'b9',
+        name: 'Side Project',
+        membershipId: 'm9',
+        role: 'ADMIN',
+      }),
+    );
+  });
+});

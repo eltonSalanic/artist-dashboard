@@ -167,7 +167,6 @@ export class TasksService {
         data: {
           boardId,
           title: dto.title,
-          description: dto.description,
           priority: dto.priority,
           statusId,
           dueDate: dto.dueDate ?? null,
@@ -752,7 +751,6 @@ export class TasksService {
     id: string;
     boardId: string;
     title: string;
-    description: string | null;
     priority: string;
     statusId: string;
     dueDate: Date | null;
@@ -784,7 +782,6 @@ export class TasksService {
     id: task.id,
     boardId: task.boardId,
     title: task.title,
-    description: task.description,
     priority: task.priority,
     statusId: task.statusId,
     status: {

@@ -1,4 +1,4 @@
-# Artist Dashboard
+# Band Wall
 
 A shared workspace for a band or artist to run the business side of making music: a customizable dashboard of tasks, goals, shows, rehearsals, reminders, and notes, scoped to a board the whole group shares.
 

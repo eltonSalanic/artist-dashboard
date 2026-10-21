@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Plus, Trash2, UserRound } from "lucide-react";
 import { apiFetch } from "@artist/api-client";
 import { usePermissions } from "@artist/api-client";
-import { useMe } from "@artist/api-client";
+import { useMe } from "@/lib/use-me";
 import type {
   BoardDetailDto,
   BoardMemberDto,
@@ -71,7 +71,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
+import { ItemNotes } from "@/features/notes/item-notes";
 import { useTaskStatusChange } from "@/features/tasks/task-completion";
 
 export function TaskDetailModal({ boardId }: { boardId: string }) {
@@ -319,7 +319,6 @@ function TaskDetailBody({
   const { changeStatus, dialog } = useTaskStatusChange(boardId);
 
   const [title, setTitle] = useState(data.title);
-  const [description, setDescription] = useState(data.description ?? "");
   const [subtaskTitle, setSubtaskTitle] = useState("");
   const [checklistText, setChecklistText] = useState("");
 
@@ -331,12 +330,6 @@ function TaskDetailBody({
     const trimmed = title.trim();
     if (trimmed && trimmed !== data.title) {
       updateTask.mutate({ taskId, dto: { title: trimmed } });
-    }
-  };
-  const saveDescription = () => {
-    const value = description.trim() || null;
-    if (value !== (data.description ?? null)) {
-      updateTask.mutate({ taskId, dto: { description: value } });
     }
   };
 
@@ -484,25 +477,12 @@ function TaskDetailBody({
 
       <TaskLinks boardId={boardId} taskId={taskId} data={data} />
 
-      <Field>
-        <FieldLabel htmlFor="task-description" className={metaLabel}>
-          Description
-        </FieldLabel>
-        {canEdit ? (
-          <Textarea
-            id="task-description"
-            placeholder="Add details…"
-            rows={3}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            onBlur={saveDescription}
-          />
-        ) : (
-          <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-            {data.description || "No description."}
-          </p>
-        )}
-      </Field>
+      <ItemNotes
+        boardId={boardId}
+        kind="TASK"
+        parentId={taskId}
+        canEdit={canEdit}
+      />
 
       <Separator />
 

@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { Paperclip, Pencil, Trash2, X } from "lucide-react";
 import type { BoardMemberDto } from "@artist/api-client";
 import { usePermissions } from "@artist/api-client";
-import { useMe } from "@artist/api-client";
+import { useMe } from "@/lib/use-me";
 import { labelStyle } from "@/lib/label-style";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";

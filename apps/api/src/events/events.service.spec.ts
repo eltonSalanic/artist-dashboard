@@ -12,7 +12,6 @@ describe('EventsService notifications', () => {
     boardId: 'b1',
     type: 'SHOW',
     title: 'Neon Harbor at The Echo',
-    description: null,
     location: 'The Echo',
     startsAt,
     endsAt: null,

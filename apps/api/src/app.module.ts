@@ -25,6 +25,7 @@ import { AttachmentsModule } from './attachments/attachments.module';
 import { CustomWidgetModule } from './custom-widget/custom-widget.module';
 import { MentionsModule } from './mentions/mentions.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { NotesModule } from './notes/notes.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     EventsModule,
     FocusModule,
     RemindersModule,
+    NotesModule,
     CalendarModule,
     ArchiveModule,
     CommentsModule,

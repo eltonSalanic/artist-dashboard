@@ -1,9 +1,15 @@
 import { useLocalSearchParams } from 'expo-router';
-import { EventTypes, type EventType } from '@artist/shared';
+import {
+  EventTypes,
+  NoteParentKinds,
+  type EventType,
+  type NoteParentKind,
+} from '@artist/shared';
 import { BoardPermissions } from '@/features/board/board-permissions';
 import { EventForm } from '@/features/forms/event-form';
 import { FocusForm } from '@/features/forms/focus-form';
 import { GoalForm } from '@/features/forms/goal-form';
+import { ItemNoteForm } from '@/features/forms/item-note-form';
 import { NoteForm } from '@/features/forms/note-form';
 import { ReminderForm } from '@/features/forms/reminder-form';
 import { TaskForm } from '@/features/forms/task-form';
@@ -15,12 +21,13 @@ import { TaskForm } from '@/features/forms/task-form';
  *   ?parentTaskId=…  a new subtask (kind `task`)
  *   ?goalId=…, ?eventId=…  a new task already linked to that goal or event
  *   ?type=SHOW|…     what a new event starts as (kind `event`)
+ *   ?on=TASK|…&parentId=…  what a titled note hangs off (kind `item-note`)
  *
  * One route rather than ten: the forms share their frame, and the stack only
  * has to be told once that this is a modal.
  */
 export default function Form() {
-  const { boardId, kind, id, parentTaskId, goalId, eventId, type } =
+  const { boardId, kind, id, parentTaskId, goalId, eventId, type, on, parentId } =
     useLocalSearchParams<{
       boardId: string;
       kind: string;
@@ -29,6 +36,8 @@ export default function Form() {
       goalId?: string;
       eventId?: string;
       type?: string;
+      on?: string;
+      parentId?: string;
     }>();
 
   // Query parameters come from a URL, so they can be anything.
@@ -48,6 +57,15 @@ export default function Form() {
         return <FocusForm boardId={boardId} />;
       case 'note':
         return <NoteForm boardId={boardId} />;
+      case 'item-note':
+        return (NoteParentKinds as readonly string[]).includes(on ?? '') && parentId ? (
+          <ItemNoteForm
+            boardId={boardId}
+            kind={on as NoteParentKind}
+            parentId={parentId}
+            noteId={id}
+          />
+        ) : null;
       default:
         return (
           <TaskForm

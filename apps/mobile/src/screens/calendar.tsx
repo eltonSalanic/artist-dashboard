@@ -1,19 +1,23 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, View } from 'react-native';
 import { Stack, router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAllBoardsCalendar, useBoards, type CalendarItemDto } from '@artist/api-client';
 import {
   CALENDAR_CATEGORY_COPY,
+  CalendarCategories,
   calendarCategory,
   daysFromToday,
   groupCalendarByDay,
   resolveBoardTheme,
+  withCalendarDay,
   type BoardSummaryDto,
   type BoardTheme,
   type CalendarCategory,
   type WidgetType,
 } from '@artist/shared';
 import { BoardFilter } from '@/components/board-filter';
+import { ChoiceChips } from '@/components/choice-chips';
 import { Icon, type IconName } from '@/components/icon';
 import { ListState } from '@/components/list-state';
 import { PosterText } from '@/components/poster-text';
@@ -53,7 +57,13 @@ import {
  *
  * Days with nothing in them are left out. A grid has to draw empty cells to
  * keep its shape; a list that printed 19 empty headings would bury the five
- * days that matter.
+ * days that matter. Today is the exception: this month opens scrolled to it,
+ * so it is there even on a day with nothing booked, and says so.
+ *
+ * The round filter button beside the steppers narrows it to some kinds of
+ * thing, as web's legend chips do. The chips are the Archive's: additive, none
+ * picked means everything, rather than web's all-on-and-tap-to-hide, so the
+ * phone's two type filters work one way.
  */
 export function CalendarScreen() {
   const canvas = usePosterCanvas();
@@ -63,6 +73,9 @@ export function CalendarScreen() {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
   });
+
+  const [types, setTypes] = useState<CalendarCategory[]>([]);
+  const [picking, setPicking] = useState(false);
 
   const toToday = () => {
     const now = new Date();
@@ -74,7 +87,29 @@ export function CalendarScreen() {
       <View style={{ marginHorizontal: -spacing.md }}>
         <BoardFilter boards={scope.boards} boardId={scope.boardId} onSelect={scope.select} />
       </View>
-      <MonthHeader cursor={cursor} onChange={setCursor} onToday={toToday} canvas={canvas} />
+      <MonthHeader
+        cursor={cursor}
+        onChange={setCursor}
+        onToday={toToday}
+        canvas={canvas}
+        filter={{
+          on: types.length > 0,
+          open: picking,
+          onPress: () => setPicking(!picking),
+        }}
+      />
+      {picking && (
+        <ChoiceChips
+          label={types.length > 0 ? 'Showing only' : 'Show only'}
+          multiple
+          choices={CalendarCategories.map((c) => ({
+            value: c,
+            label: CALENDAR_CATEGORY_COPY[c].label,
+          }))}
+          value={types}
+          onChange={setTypes}
+        />
+      )}
     </>
   );
 
@@ -83,16 +118,30 @@ export function CalendarScreen() {
       {/* Mounted only once the stored filter has been read, so the first request
           is the one the person actually asked for rather than every band
           followed by a snap to one. */}
-      {scope.ready ? (
+      {/* Pinned: the band filter and the month stay put while the days
+          scroll under them, so which band and which month is always on
+          screen. A plain view above the list rather than a sticky header,
+          because the type chips under the month open and close, and a sticky
+          list header that changes height jolts the scroll position. */}
+      <View
+        style={{
+          paddingHorizontal: spacing.md,
+          paddingBottom: spacing.sm,
+          gap: spacing.md,
+          backgroundColor: canvas.background,
+          zIndex: 1,
+        }}
+      >
+        {top}
+      </View>
+      {scope.ready && (
         <Agenda
           year={cursor.year}
           month={cursor.month}
           boardId={scope.boardId}
           boards={scope.boards}
-          top={top}
+          types={types}
         />
-      ) : (
-        <View style={{ paddingHorizontal: spacing.md }}>{top}</View>
       )}
 
       <Stack.Screen
@@ -120,13 +169,14 @@ function Agenda({
   month,
   boardId,
   boards,
-  top,
+  types,
 }: {
   year: number;
   month: number;
   boardId: string | undefined;
   boards: BoardSummaryDto[];
-  top: React.ReactNode;
+  /** The kinds of thing to show; empty for all of them. */
+  types: CalendarCategory[];
 }) {
   const canvas = usePosterCanvas();
   const scheme = useScheme();
@@ -175,16 +225,152 @@ function Agenda({
 
   const monthName = new Date(year, month, 1).toLocaleDateString(undefined, { month: 'long' });
 
-  const days = useMemo(() => groupCalendarByDay(calendar.data ?? []), [calendar.data]);
+  const now = new Date();
+  const thisMonth = year === now.getFullYear() && month === now.getMonth();
+  // Filtered here, not in the request: the API has no type param, and a
+  // month's items are a few dozen at most.
+  const shown = useMemo(
+    () =>
+      types.length === 0
+        ? calendar.data
+        : calendar.data?.filter((item) => types.includes(calendarCategory(item))),
+    [calendar.data, types],
+  );
+  const empty = shown !== undefined && shown.length === 0;
+  const days = useMemo(() => {
+    const grouped = groupCalendarByDay(shown ?? []);
+    // Only once the month has loaded, so the spinner still shows until then.
+    return thisMonth && calendar.data !== undefined
+      ? withCalendarDay(grouped, new Date())
+      : grouped;
+  }, [shown, calendar.data, thisMonth]);
+
+  // Opening this month lands on today rather than on the 1st, set in the
+  // middle of what can be seen, so the days either side of it show too.
+  // Near the end of a month there is not enough below today to centre it, so
+  // it goes as far down as the list goes. Once per view, so a refetch on focus never yanks the list back
+  // while someone is reading further down.
+  const list = useRef<FlatList<(typeof days)[number]>>(null);
+  const landed = useRef<string | null>(null);
+  const todayIndex = thisMonth ? days.findIndex((day) => isTodayDay(day.parts)) : -1;
+
+  // The list runs on under the tab bar. Inside the tab, the bottom safe-area
+  // inset is the bar's height (it includes the home indicator), so that is
+  // what is covered. The list is not the screen's first scroll view any
+  // more, and iOS's own inset applied to a drag but not to a jump from code,
+  // so it is switched off and the list's end is padded by the bar's height
+  // instead: one allowance, the same for both.
+  const insets = useSafeAreaInsets();
+  const covered = insets.bottom;
+  const contentHeight = useRef(0);
+  const firstView = useRef<View>(null);
+  const todayView = useRef<View>(null);
+
+  // Each re-centre waits a frame, so it measures the layout that caused it
+  // rather than the one before (a filter that drops days above today moved
+  // it up after the measure, and it landed 90pt low).
+  // A day measures its true height a frame or two after it renders (a day
+  // with two items wraps taller than the first guess), and the list moves
+  // down when the band chips above it arrive, which can be well after the
+  // first frame. A jump made before either lands wrong. So until the person
+  // first drags the list, every change in its size or its content's
+  // re-centres today. Untouched, the list is still on today, so a re-centre
+  // never moves anyone from what they were reading; once they drag, it stops.
+  const settling = useRef(false);
+
+  /**
+   * Today's middle on the middle of what shows between the header and the
+   * tab bar, measured rather than estimated: today's block and the first
+   * day's are both measured in the scroll view, and today's distance below
+   * the first day (the top of the content) is where it sits in the list
+   * whatever the current scroll, which is the same for both and cancels out.
+   * The offset is clamped to the list's real range. React Native's own clamp leaves out the room iOS adds under the
+   * tab bar, so near the end of a month it stopped a bar's height short of
+   * as-far-down-as-it-goes.
+   */
+  const centreToday = useCallback(() => {
+    if (todayIndex <= 0) return;
+    // measureLayout measures against an ancestor; the scroll view is one of
+    // both days, where the first day is not one of today's.
+    const scroller = list.current?.getNativeScrollRef() as View | null | undefined;
+    const first = firstView.current;
+    const day = todayView.current;
+    if (!scroller || !first || !day) return;
+    // The list's height is measured here, not kept from a render: it changes
+    // as the screen settles (the band chips arrive after the first layout and
+    // push the list down), and a centring done against the old height sat
+    // today well above the middle.
+    scroller.measure((_sx, _sy, _sw, listHeight) => {
+      first.measureLayout(scroller, (_fx, firstY) => {
+        day.measureLayout(scroller, (_dx, dayY, _w, dayHeight) => {
+          const top = dayY - firstY;
+          const visible = listHeight - covered;
+          const furthest = Math.max(0, contentHeight.current - listHeight);
+          const offset = Math.min(furthest, Math.max(0, top + dayHeight / 2 - visible / 2));
+          list.current?.scrollToOffset({ offset, animated: false });
+        });
+      });
+    });
+  }, [todayIndex, covered]);
+  // The latest centring, for the frame callback below: the effect that
+  // schedules it does not cancel it when it re-runs, so it must not hold a
+  // stale index.
+  const centreLatest = useEffectEvent(() => centreToday());
+
+  // Each new view (month, band or kinds picked) starts in a known place: this
+  // month on today, any other month at its top. Without it the list kept the
+  // last view's scroll, so a band with less in it opened scrolled past its
+  // own content, today's block cut off under the header.
+  const view = `${year}-${month}-${boardId ?? 'all'}-${types.join(',')}`;
+  useEffect(() => {
+    if (landed.current === view) return;
+    if (!thisMonth) {
+      landed.current = view;
+      settling.current = false;
+      list.current?.scrollToOffset({ offset: 0, animated: false });
+      return;
+    }
+    // This month waits for its days.
+    if (todayIndex < 0) return;
+    landed.current = view;
+    // The first day belongs at the top, where centring it would clamp to.
+    if (todayIndex === 0) {
+      settling.current = false;
+      list.current?.scrollToOffset({ offset: 0, animated: false });
+      return;
+    }
+    settling.current = true;
+    // Cells are measured a frame after they render, so wait for that. Not
+    // cancelled when the effect re-runs: it re-runs as the index settles and
+    // returns early, and the centring must still happen.
+    requestAnimationFrame(() => centreLatest());
+  }, [view, thisMonth, todayIndex]);
 
   return (
     <FlatList
+      ref={list}
       data={days}
       keyExtractor={(day) => day.key}
-      contentInsetAdjustmentBehavior="automatic"
+      // A month is a few dozen sections at most. Rendering them all up front
+      // is what lets the list jump straight to today.
+      initialNumToRender={days.length}
+      onLayout={() => {
+        if (settling.current) requestAnimationFrame(centreToday);
+      }}
+      onContentSizeChange={(_width, height) => {
+        contentHeight.current = height;
+        if (settling.current) requestAnimationFrame(centreToday);
+      }}
+      onScrollBeginDrag={() => {
+        settling.current = false;
+      }}
+      // The bar is allowed for by the padding below, so iOS must not add its own
+      // inset too: it did on a drag, leaving the bar's height again of empty
+      // space under the last day, while a jump from code stopped short of it.
+      contentInsetAdjustmentBehavior="never"
       contentContainerStyle={{
         paddingHorizontal: spacing.md,
-        paddingBottom: spacing.xxl,
+        paddingBottom: spacing.xxl + covered,
         flexGrow: 1,
       }}
       refreshControl={
@@ -194,17 +380,21 @@ function Agenda({
           tintColor={canvas.soft}
         />
       }
-      ListHeaderComponent={
-        <View style={{ gap: spacing.md, paddingBottom: spacing.sm }}>{top}</View>
-      }
-      renderItem={({ item: day }) => (
-        <DaySection
-          date={new Date(day.parts.year, day.parts.month, day.parts.day)}
-          items={day.items}
-          namesBoards={namesBoards}
-          inkOf={inkOf}
-          canvas={canvas}
-        />
+      renderItem={({ item: day, index }) => (
+        // Today's block is measured from the first day's to centre it; the
+        // wrappers are real native views so they can be.
+        <View
+          ref={index === todayIndex ? todayView : index === 0 ? firstView : undefined}
+          collapsable={false}
+        >
+          <DaySection
+            date={new Date(day.parts.year, day.parts.month, day.parts.day)}
+            items={day.items}
+            namesBoards={namesBoards}
+            inkOf={inkOf}
+            canvas={canvas}
+          />
+        </View>
       )}
       ListEmptyComponent={
         calendar.isPending || calendar.error ? (
@@ -218,17 +408,47 @@ function Agenda({
             />
           </View>
         ) : (
-          <View style={{ paddingTop: spacing.xl, gap: spacing.sm }}>
-            <PosterText variant="display" color={canvas.ink}>
-              Nothing in {monthName}.
-            </PosterText>
-            <PosterText variant="body" color={canvas.soft}>
-              Shows, rehearsals, meetings, due tasks, goals and reminders all land here.
-            </PosterText>
-          </View>
+          <EmptyMonth monthName={monthName} filtered={types.length > 0} canvas={canvas} />
         )
       }
+      // This month is never an empty list, since today is always in it, so
+      // an empty month still says so under today.
+      ListFooterComponent={
+        empty && thisMonth ? (
+          <EmptyMonth monthName={monthName} filtered={types.length > 0} canvas={canvas} />
+        ) : null
+      }
     />
+  );
+}
+
+const isTodayDay = (parts: { year: number; month: number; day: number }) => {
+  const now = new Date();
+  return (
+    parts.year === now.getFullYear() && parts.month === now.getMonth() && parts.day === now.getDate()
+  );
+};
+
+function EmptyMonth({
+  monthName,
+  filtered,
+  canvas,
+}: {
+  monthName: string;
+  filtered: boolean;
+  canvas: PosterCanvas;
+}) {
+  return (
+    <View style={{ paddingTop: spacing.xl, gap: spacing.sm }}>
+      <PosterText variant="display" color={canvas.ink}>
+        Nothing in {monthName}.
+      </PosterText>
+      <PosterText variant="body" color={canvas.soft}>
+        {filtered
+          ? 'Nothing of the kinds picked, anyway. Untick them to see everything.'
+          : 'Shows, rehearsals, meetings, due tasks, goals and reminders all land here.'}
+      </PosterText>
+    </View>
   );
 }
 
@@ -241,11 +461,14 @@ function MonthHeader({
   onChange,
   onToday,
   canvas,
+  filter,
 }: {
   cursor: { year: number; month: number };
   onChange: (next: { year: number; month: number }) => void;
   onToday: () => void;
   canvas: PosterCanvas;
+  /** The type filter's button: `on` while it narrows the month. */
+  filter: { on: boolean; open: boolean; onPress: () => void };
 }) {
   const shift = (delta: number) => {
     const shifted = new Date(cursor.year, cursor.month + delta, 1);
@@ -279,6 +502,14 @@ function MonthHeader({
       </Pressable>
       <View style={{ flexDirection: 'row', gap: spacing.sm, paddingBottom: 10 }}>
         <Stepper
+          icon={{ sf: 'line.3.horizontal.decrease', md: 'filter-list' }}
+          label={filter.on ? 'Filter by type, on' : 'Filter by type'}
+          onPress={filter.onPress}
+          canvas={canvas}
+          filled={filter.on}
+          expanded={filter.open}
+        />
+        <Stepper
           icon={{ sf: 'chevron.left', md: 'chevron-left' }}
           label="Previous month"
           onPress={() => shift(-1)}
@@ -300,16 +531,22 @@ function Stepper({
   label,
   onPress,
   canvas,
+  filled = false,
+  expanded,
 }: {
   icon: IconName;
   label: string;
   onPress: () => void;
   canvas: PosterCanvas;
+  /** Solid in ink, as a pressed stepper is: a filter that is narrowing. */
+  filled?: boolean;
+  expanded?: boolean;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={expanded === undefined ? undefined : { expanded }}
       onPress={onPress}
       style={({ pressed }) => ({
         width: 44,
@@ -319,11 +556,15 @@ function Stepper({
         borderColor: canvas.ink,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: pressed ? canvas.ink : 'transparent',
+        backgroundColor: pressed !== filled ? canvas.ink : 'transparent',
       })}
     >
       {({ pressed }) => (
-        <Icon name={icon} size={16} color={pressed ? canvas.background : canvas.ink} />
+        <Icon
+          name={icon}
+          size={16}
+          color={pressed !== filled ? canvas.background : canvas.ink}
+        />
       )}
     </Pressable>
   );
@@ -398,6 +639,13 @@ function DaySection({
       </View>
 
       <View style={{ flex: 1, gap: spacing.sm, paddingTop: spacing.xs }}>
+        {items.length === 0 && (
+          <View style={{ minHeight: 48, justifyContent: 'center', paddingTop: spacing.sm }}>
+            <PosterText variant="caption" color={canvas.soft}>
+              Nothing for today.
+            </PosterText>
+          </View>
+        )}
         {items.map((item) => {
           const category = calendarCategory(item);
           const ink = inkOf(item, category);
@@ -425,12 +673,16 @@ function DaySection({
   );
 }
 
-const openItem = (item: CalendarItemDto, category: CalendarCategory) =>
-  router.push(
-    item.kind === 'TASK'
-      ? `/board/${item.boardId}/task/${item.id}`
-      : `/board/${item.boardId}/w/${CATEGORY_WIDGET[category]}`,
-  );
+/** Each item opens its own screen, in its band, as web's calendar opens its modal. */
+const DETAIL_ROUTE: Record<CalendarItemDto['kind'], string> = {
+  TASK: 'task',
+  EVENT: 'event',
+  GOAL: 'goal',
+  REMINDER: 'reminder',
+};
+
+const openItem = (item: CalendarItemDto) =>
+  router.push(`/board/${item.boardId}/${DETAIL_ROUTE[item.kind]}/${item.id}`);
 
 /**
  * A show, rehearsal or meeting: a solid block in the colour of its widget.
@@ -461,7 +713,7 @@ function EventBlock({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={[kind, item.title, time, meta].filter(Boolean).join(', ')}
-      onPress={() => openItem(item, category)}
+      onPress={() => openItem(item)}
       style={({ pressed }) => ({
         backgroundColor: color.bg,
         borderRadius: posterRadius.block,
@@ -536,7 +788,7 @@ function LightRow({
       accessibilityLabel={[item.title, meta, mine ? 'yours' : null, done ? 'done' : null]
         .filter(Boolean)
         .join(', ')}
-      onPress={() => openItem(item, category)}
+      onPress={() => openItem(item)}
       style={({ pressed }) => ({
         flexDirection: 'row',
         alignItems: 'center',
