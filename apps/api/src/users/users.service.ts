@@ -1,13 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import {
-  DEFAULT_BOARD_LAYOUT,
-  DEFAULT_TASK_STATUSES,
-  resolveBoardTheme,
-} from '@artist/shared';
-import { Prisma } from '../../generated/prisma/client';
+import { resolveBoardTheme } from '@artist/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
 import { toBoardSummary } from '../boards/board-summary';
+import { newBoardData } from '../boards/new-board';
 import type { AuthUser } from '../auth/current-user.decorator';
 
 @Injectable()
@@ -79,15 +75,7 @@ export class UsersService {
       });
       if (!membership) {
         await tx.board.create({
-          data: {
-            name: `${displayName}'s band`,
-            defaultLayout:
-              DEFAULT_BOARD_LAYOUT as unknown as Prisma.InputJsonValue,
-            memberships: {
-              create: { userId: auth.userId, role: 'ADMIN' },
-            },
-            statuses: { create: DEFAULT_TASK_STATUSES },
-          },
+          data: newBoardData(`${displayName}'s band`, auth.userId),
         });
       }
     });

@@ -17,7 +17,7 @@
  * bandmates are upserted, so reruns never duplicate them.
  */
 import 'dotenv/config';
-import { PrismaClient } from '../generated/prisma/client';
+import { Prisma, PrismaClient } from '../generated/prisma/client';
 import { createPgAdapter } from '../src/prisma/pg-adapter';
 import {
   ActivityType,
@@ -160,7 +160,7 @@ async function main() {
       data: {
         id: boardId,
         name: 'Neon Harbor',
-        defaultLayout: DEFAULT_BOARD_LAYOUT,
+        defaultLayout: DEFAULT_BOARD_LAYOUT as unknown as Prisma.InputJsonValue,
       },
     });
     await prisma.membership.createMany({

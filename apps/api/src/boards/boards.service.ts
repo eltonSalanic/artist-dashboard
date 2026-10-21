@@ -8,11 +8,13 @@ import {
   withShippedWidgets,
   type BoardSummaryDto,
   type BoardThemeDto,
+  type CreateBoardDto,
   type LayoutItem,
   type UpdateBoardDto,
 } from '@artist/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { toBoardSummary } from './board-summary';
+import { newBoardData } from './new-board';
 import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
@@ -48,6 +50,25 @@ export class BoardsService {
     });
 
     return memberships.map(toBoardSummary);
+  }
+
+  /** A new band with the caller as its only admin, as a board summary. */
+  async create(userId: string, dto: CreateBoardDto): Promise<BoardSummaryDto> {
+    const board = await this.prisma.board.create({
+      data: newBoardData(dto.name, userId),
+      select: {
+        id: true,
+        name: true,
+        theme: true,
+        memberships: { select: { id: true, role: true } },
+      },
+    });
+    const [membership] = board.memberships;
+    return toBoardSummary({
+      id: membership.id,
+      role: membership.role,
+      board: { id: board.id, name: board.name, theme: board.theme },
+    });
   }
 
   async findOne(boardId: string) {
