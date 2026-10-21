@@ -74,8 +74,9 @@ export function BoardHubScreen() {
           />
           <ThemedText variant="title">No band yet</ThemedText>
           <ThemedText variant="subhead" tone="muted" style={{ textAlign: 'center' }}>
-            Signing up creates your first band. Ask a band admin to invite you to theirs.
+            Start one of your own, or ask a band admin to invite you to theirs.
           </ThemedText>
+          <Button title="Create a band" size="sm" onPress={() => router.push('/boards')} />
         </View>
       )}
       <Stack.Screen

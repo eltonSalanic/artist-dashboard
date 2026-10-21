@@ -1,11 +1,21 @@
+import { useState } from 'react';
 import { router } from 'expo-router';
 import { useHeaderHeight } from 'expo-router/react-navigation';
-import { Pressable, View } from 'react-native';
+import { ActivityIndicator, Pressable, TextInput, View } from 'react-native';
+import { useCreateBoard } from '@artist/api-client';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/icon';
 import { PosterText } from '@/components/poster-text';
 import { useSelectedBoard } from '@/features/board/selected-board';
-import { boardAccent, posterRadius, spacing, usePosterCanvas, useScheme } from '@/theme';
+import {
+  boardAccent,
+  posterInput,
+  posterRadius,
+  spacing,
+  usePosterCanvas,
+  useScheme,
+  useTokens,
+} from '@/theme';
 
 /**
  * The board switcher, reached by tapping the board name in the header — the
@@ -18,6 +28,10 @@ import { boardAccent, posterRadius, spacing, usePosterCanvas, useScheme } from '
  * sheet reads as the wall of bands you can step into. The one you are in has a
  * filled tick; two bands can share a colour, so the tick and the name say which
  * is which, never the colour alone.
+ *
+ * Below the bands, "Create a band" opens a name field in place: the sheet
+ * stays put rather than dismissing and pushing a form, which is the sequence
+ * that half-drew Settings from the board menu (react-native-screens#4651).
  */
 export function BoardSwitcherSheet() {
   const canvas = usePosterCanvas();
@@ -96,6 +110,107 @@ export function BoardSwitcherSheet() {
           </Pressable>
         );
       })}
+      <CreateBand
+        onCreated={(id) => {
+          select(id);
+          router.back();
+        }}
+      />
+    </View>
+  );
+}
+
+function CreateBand({ onCreated }: { onCreated: (boardId: string) => void }) {
+  const tokens = useTokens();
+  const create = useCreateBoard();
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState('');
+
+  const submit = () => {
+    const trimmed = name.trim();
+    if (!trimmed || create.isPending) return;
+    create.mutate(trimmed, { onSuccess: (board) => onCreated(board.id) });
+  };
+
+  const block = {
+    minHeight: 64,
+    borderRadius: posterRadius.block,
+    borderCurve: 'continuous' as const,
+    borderWidth: 1.5,
+    borderStyle: 'dashed' as const,
+    borderColor: tokens.mutedForeground,
+  };
+
+  if (!open) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Create a band"
+        onPress={() => setOpen(true)}
+        style={({ pressed }) => ({
+          ...block,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
+          padding: spacing.md - 2,
+          transform: [{ scale: pressed ? 0.98 : 1 }],
+        })}
+      >
+        <Icon name={{ sf: 'plus', md: 'add' }} size={17} color={tokens.foreground} />
+        <PosterText variant="cardTitle" color={tokens.foreground}>
+          Create a band
+        </PosterText>
+      </Pressable>
+    );
+  }
+
+  return (
+    <View style={{ ...block, padding: spacing.md - 2, gap: spacing.sm }}>
+      <PosterText variant="label" color={tokens.mutedForeground}>
+        NEW BAND · YOU&apos;LL BE ITS ADMIN
+      </PosterText>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+        <TextInput
+          accessibilityLabel="Band name"
+          autoFocus
+          placeholder="Band name"
+          placeholderTextColor={tokens.mutedForeground}
+          maxLength={80}
+          returnKeyType="done"
+          value={name}
+          onChangeText={setName}
+          onSubmitEditing={submit}
+          style={[
+            posterInput,
+            {
+              flex: 1,
+              color: tokens.foreground,
+              backgroundColor: tokens.muted,
+              borderRadius: posterRadius.block,
+              paddingHorizontal: spacing.md,
+              paddingVertical: spacing.sm,
+            },
+          ]}
+        />
+        {create.isPending ? (
+          <ActivityIndicator />
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Create band"
+            disabled={!name.trim()}
+            hitSlop={10}
+            onPress={submit}
+          >
+            <PosterText
+              variant="chip"
+              color={name.trim() ? tokens.primary : tokens.mutedForeground}
+            >
+              Create
+            </PosterText>
+          </Pressable>
+        )}
+      </View>
     </View>
   );
 }
