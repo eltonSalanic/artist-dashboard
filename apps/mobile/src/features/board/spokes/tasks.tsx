@@ -169,7 +169,11 @@ export function TodosSpoke({ boardId }: { boardId: string }) {
       onRetry={() => void tasks.refetch()}
       empty={roots.length === 0}
       emptyIcon={{ sf: 'checklist', md: 'checklist' }}
-      {...emptyCopy(state, 'Nothing to do', 'Tasks added on the web dashboard show up here.')}
+      {...emptyCopy(
+        state,
+        'Nothing to do',
+        can('task.create') ? 'Tap + to add the first task.' : 'Tasks the band adds will show up here.',
+      )}
       header={header}
     >
       <TaskRows tasks={roots} boardId={boardId} />

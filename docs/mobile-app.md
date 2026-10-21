@@ -114,8 +114,8 @@ deliberately scheduled after mobile rather than blocking it.
 | **P11** | [Notes widget](#p11--notes-widget) | mobile, shared | ☑ |
 | **P12** | [Mobile layout editor](#p12--mobile-layout-editor) | mobile, shared | ☑ |
 | **P12b** | [Phone arrangement](#p12b--phone-arrangement) | mobile, shared, api, api-client | ☑ |
-| **P12c** | [Polish](#p12c--polish) | mobile (mostly) | ◐ |
-| **P13** | [Push client](#p13--push-client) | mobile, api, api-client | ◐ |
+| **P12c** | [Polish](#p12c--polish) | mobile (mostly) | ☑ |
+| **P13** | [Push client](#p13--push-client) | mobile, api, api-client | ☑ |
 | **P14** | [Store builds](#p14--store-builds) | mobile, CI | ☐ |
 | **P15** | [Web board switcher](#p15--web-board-switcher) | **web** | ☐ |
 | **P16** | [Notes-style editor](#p16--notes-style-editor) | mobile, shared | ☐ |

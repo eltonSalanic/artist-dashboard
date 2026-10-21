@@ -74,8 +74,7 @@ export function BoardHubScreen() {
           />
           <ThemedText variant="title">No band yet</ThemedText>
           <ThemedText variant="subhead" tone="muted" style={{ textAlign: 'center' }}>
-            Signing in normally creates your first board. Ask an admin to invite you, or start one
-            on the web.
+            Signing up creates your first band. Ask a band admin to invite you to theirs.
           </ThemedText>
         </View>
       )}
