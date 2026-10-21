@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
+import { ItemNotes } from "@/features/notes/item-notes";
 
 export function GoalDetailModal({ boardId }: { boardId: string }) {
   const { get, close } = useDetailParams();
@@ -114,7 +114,6 @@ function GoalDetailBody({
   });
 
   const [title, setTitle] = useState(data.title);
-  const [description, setDescription] = useState(data.description ?? "");
   const canManage = can("goal.manage");
   const completed = data.completedAt !== null;
 
@@ -122,12 +121,6 @@ function GoalDetailBody({
     const trimmed = title.trim();
     if (trimmed && trimmed !== data.title) {
       updateGoal.mutate({ goalId: data.id, dto: { title: trimmed } });
-    }
-  };
-  const saveDescription = () => {
-    const value = description.trim() || null;
-    if (value !== (data.description ?? null)) {
-      updateGoal.mutate({ goalId: data.id, dto: { description: value } });
     }
   };
 
@@ -230,23 +223,12 @@ function GoalDetailBody({
         </Field>
       </div>
 
-      <Field>
-        <FieldLabel htmlFor="goal-description">Description</FieldLabel>
-        {canManage ? (
-          <Textarea
-            id="goal-description"
-            placeholder="What does hitting this goal look like?"
-            rows={3}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            onBlur={saveDescription}
-          />
-        ) : (
-          <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-            {data.description || "No description."}
-          </p>
-        )}
-      </Field>
+      <ItemNotes
+        boardId={boardId}
+        kind="GOAL"
+        parentId={data.id}
+        canEdit={canManage}
+      />
 
       <Separator />
 

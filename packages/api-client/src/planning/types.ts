@@ -4,7 +4,6 @@ export interface GoalDto {
   id: string;
   boardId: string;
   title: string;
-  description: string | null;
   period: GoalPeriod;
   dueDate: string | null;
   completedAt: string | null;
@@ -30,7 +29,6 @@ export interface EventDto {
   boardId: string;
   type: EventType;
   title: string;
-  description: string | null;
   location: string | null;
   startsAt: string;
   endsAt: string | null;
@@ -56,7 +54,6 @@ export interface ReminderDto {
   id: string;
   boardId: string;
   title: string;
-  description: string | null;
   /** Null for standing notes that aren't tied to a moment. */
   remindAt: string | null;
   done: boolean;

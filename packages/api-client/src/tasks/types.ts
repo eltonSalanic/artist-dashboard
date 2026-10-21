@@ -17,7 +17,6 @@ export interface TaskDto {
   id: string;
   boardId: string;
   title: string;
-  description: string | null;
   priority: Priority;
   statusId: string;
   status: Pick<TaskStatusDto, "id" | "name" | "color" | "isDone">;

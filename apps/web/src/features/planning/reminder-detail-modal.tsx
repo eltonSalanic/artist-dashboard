@@ -29,7 +29,7 @@ import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
+import { ItemNotes } from "@/features/notes/item-notes";
 
 export function ReminderDetailModal({ boardId }: { boardId: string }) {
   const { get, close } = useDetailParams();
@@ -109,22 +109,12 @@ function ReminderDetailBody({
   const deleteReminder = useDeleteReminder(boardId);
 
   const [title, setTitle] = useState(data.title);
-  const [description, setDescription] = useState(data.description ?? "");
   const canManage = can("reminder.manage");
 
   const saveTitle = () => {
     const trimmed = title.trim();
     if (trimmed && trimmed !== data.title) {
       updateReminder.mutate({ reminderId: data.id, dto: { title: trimmed } });
-    }
-  };
-  const saveDescription = () => {
-    const value = description.trim() || null;
-    if (value !== (data.description ?? null)) {
-      updateReminder.mutate({
-        reminderId: data.id,
-        dto: { description: value },
-      });
     }
   };
 
@@ -191,23 +181,12 @@ function ReminderDetailBody({
         </Field>
       </div>
 
-      <Field>
-        <FieldLabel htmlFor="reminder-description">Details</FieldLabel>
-        {canManage ? (
-          <Textarea
-            id="reminder-description"
-            placeholder="Who's affected, what changes, what to do about it…"
-            rows={4}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            onBlur={saveDescription}
-          />
-        ) : (
-          <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-            {data.description || "No details."}
-          </p>
-        )}
-      </Field>
+      <ItemNotes
+        boardId={boardId}
+        kind="REMINDER"
+        parentId={data.id}
+        canEdit={canManage}
+      />
 
       {canManage && (
         <>
