@@ -39,6 +39,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ItemNotes } from "@/features/notes/item-notes";
+import { ShowMoney } from "@/features/finances/show-money";
 
 export function EventDetailModal({ boardId }: { boardId: string }) {
   const { get, close } = useDetailParams();
@@ -270,6 +271,13 @@ function EventDetailBody({
       <Separator />
 
       <TaskAttachments boardId={boardId} parent={{ eventId: data.id }} />
+
+      {data.type === "SHOW" && (
+        <>
+          <Separator />
+          <ShowMoney boardId={boardId} eventId={data.id} />
+        </>
+      )}
 
       {canManage && (
         <>

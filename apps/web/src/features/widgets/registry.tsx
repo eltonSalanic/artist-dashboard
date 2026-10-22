@@ -9,6 +9,7 @@ import {
   Target,
   UserCheck,
   Users,
+  Wallet,
   Zap,
 } from "lucide-react";
 import { WIDGET_META, type WidgetColor, type WidgetType } from "@artist/shared";
@@ -25,6 +26,10 @@ import {
   ActivityWidget,
   ActivityWidgetExpanded,
 } from "./activity-widget";
+import {
+  FinancesWidget,
+  FinancesWidgetExpanded,
+} from "./finances-widget";
 import {
   CustomWidget,
   CustomWidgetExpanded,
@@ -131,6 +136,14 @@ export const widgetRegistry: Partial<Record<WidgetType, WidgetDefinition>> = {
     icon: NotebookPen,
     Collapsed: CustomWidget,
     Expanded: CustomWidgetExpanded,
+    defaultSize: { w: 4, h: 4 },
+    minSize: { w: 3, h: 3 },
+  },
+  FINANCES: {
+    ...WIDGET_META.FINANCES,
+    icon: Wallet,
+    Collapsed: FinancesWidget,
+    Expanded: FinancesWidgetExpanded,
     defaultSize: { w: 4, h: 4 },
     minSize: { w: 3, h: 3 },
   },

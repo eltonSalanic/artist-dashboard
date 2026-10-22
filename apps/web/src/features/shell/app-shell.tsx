@@ -13,6 +13,7 @@ import {
   LogOut,
   Plus,
   Settings,
+  Wallet,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import {
@@ -93,6 +94,7 @@ function Header({ me }: { me: MeResponse }) {
   const onDashboard = pathname === "/dashboard";
   const onCalendar = pathname.startsWith("/calendar");
   const onArchive = pathname.startsWith("/archive");
+  const onFinances = pathname.startsWith("/finances");
 
   return (
     <header className="flex items-center justify-between gap-4 border-b px-6 py-3">
@@ -136,6 +138,16 @@ function Header({ me }: { me: MeResponse }) {
         >
           <Archive data-icon="inline-start" />
           Archive
+        </Button>
+        <Button
+          variant={onFinances ? "default" : "ghost"}
+          size="sm"
+          className="rounded-full"
+          nativeButton={false}
+          render={<Link href="/finances" />}
+        >
+          <Wallet data-icon="inline-start" />
+          Finances
         </Button>
       </nav>
 

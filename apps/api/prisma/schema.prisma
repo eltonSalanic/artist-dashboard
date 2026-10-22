@@ -24,55 +24,66 @@ enum InviteStatus {
 }
 
 model User {
-  id            String                   @id @db.Uuid // = Supabase auth user id
-  email         String                   @unique
-  displayName   String
-  avatarUrl     String?
-  createdAt     DateTime                 @default(now())
-  memberships   Membership[]
-  sentInvites   Invite[]                 @relation("InvitedBy")
-  createdTasks  Task[]                   @relation("TaskCreatedBy")
-  taskAssignees TaskAssignee[]
-  layouts       UserLayout[]
-  mobileLayouts MobileLayout[]
-  comments      Comment[]
-  attachments   Attachment[]
-  activities    Activity[]
-  mentions      MentionNotification[]
-  notifications NotificationDelivery[]
-  notifyPrefs   NotificationPreference[]
-  devices       DeviceToken[]
+  id                    String                   @id @db.Uuid // = Supabase auth user id
+  email                 String                   @unique
+  displayName           String
+  avatarUrl             String?
+  createdAt             DateTime                 @default(now())
+  memberships           Membership[]
+  sentInvites           Invite[]                 @relation("InvitedBy")
+  createdTasks          Task[]                   @relation("TaskCreatedBy")
+  taskAssignees         TaskAssignee[]
+  layouts               UserLayout[]
+  mobileLayouts         MobileLayout[]
+  comments              Comment[]
+  attachments           Attachment[]
+  activities            Activity[]
+  mentions              MentionNotification[]
+  notifications         NotificationDelivery[]
+  notifyPrefs           NotificationPreference[]
+  devices               DeviceToken[]
+  financeEntriesCreated FinanceEntry[]           @relation("FinanceEntryCreatedBy")
+  financeEntriesHandled FinanceEntry[]           @relation("FinanceEntryHandledBy")
+  financeSplits         FinanceSplit[]
+  splitShares           SplitShare[]
+  payouts               Payout[]                 @relation("PayoutMember")
+  payoutsRecorded       Payout[]                 @relation("PayoutCreatedBy")
 }
 
 model Board {
-  id            String                   @id @default(uuid()) @db.Uuid
-  name          String
-  defaultLayout Json                     @default("[]")
+  id             String                   @id @default(uuid()) @db.Uuid
+  name           String
+  defaultLayout  Json                     @default("[]")
   /// Board-wide appearance (palette + per-widget color slots). Starts empty and
   /// is normalized by `resolveBoardTheme` on read, so no backfill is needed.
-  theme         Json                     @default("{}")
+  theme          Json                     @default("{}")
   /// IANA zone the board's wall-clock notifications fire in (day-of show
   /// summary, tasks-due-tomorrow digest). A band shares a local time.
-  timezone      String                   @default("America/Los_Angeles")
-  createdAt     DateTime                 @default(now())
-  memberships   Membership[]
-  invites       Invite[]
-  statuses      TaskStatus[]
-  tasks         Task[]
-  userLayouts   UserLayout[]
-  mobileLayouts MobileLayout[]
-  goals         Goal[]
-  events        Event[]
-  focusPins     FocusPin[]
-  reminders     Reminder[]
-  comments      Comment[]
-  attachments   Attachment[]
-  notes         Note[]
-  activities    Activity[]
-  customWidget  CustomWidgetContent?
-  mentions      MentionNotification[]
-  notifications NotificationDelivery[]
-  notifyPrefs   NotificationPreference[]
+  timezone       String                   @default("America/Los_Angeles")
+  /// ISO 4217 code the band keeps its books in. One currency per board.
+  currency       String                   @default("USD")
+  createdAt      DateTime                 @default(now())
+  memberships    Membership[]
+  invites        Invite[]
+  statuses       TaskStatus[]
+  tasks          Task[]
+  userLayouts    UserLayout[]
+  mobileLayouts  MobileLayout[]
+  goals          Goal[]
+  events         Event[]
+  focusPins      FocusPin[]
+  reminders      Reminder[]
+  comments       Comment[]
+  attachments    Attachment[]
+  notes          Note[]
+  activities     Activity[]
+  customWidget   CustomWidgetContent?
+  mentions       MentionNotification[]
+  notifications  NotificationDelivery[]
+  notifyPrefs    NotificationPreference[]
+  financeEntries FinanceEntry[]
+  splitShares    SplitShare[]
+  payouts        Payout[]
 }
 
 model Membership {
@@ -201,20 +212,21 @@ model Goal {
 }
 
 model Event {
-  id          String       @id @default(uuid()) @db.Uuid
-  boardId     String       @db.Uuid
-  type        EventType
-  title       String
-  location    String?
-  startsAt    DateTime
-  endsAt      DateTime?
-  archivedAt  DateTime?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  board       Board        @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  tasks       Task[]
-  attachments Attachment[]
-  notes       Note[]
+  id             String         @id @default(uuid()) @db.Uuid
+  boardId        String         @db.Uuid
+  type           EventType
+  title          String
+  location       String?
+  startsAt       DateTime
+  endsAt         DateTime?
+  archivedAt     DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  board          Board          @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  tasks          Task[]
+  attachments    Attachment[]
+  notes          Note[]
+  financeEntries FinanceEntry[]
 
   @@index([boardId, startsAt])
   @@index([boardId, archivedAt])
@@ -232,15 +244,15 @@ model FocusPin {
 }
 
 model Reminder {
-  id          String    @id @default(uuid()) @db.Uuid
-  boardId     String    @db.Uuid
-  title       String
-  remindAt    DateTime?
-  done        Boolean   @default(false)
-  archivedAt  DateTime?
-  createdAt   DateTime  @default(now())
-  board       Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  notes       Note[]
+  id         String    @id @default(uuid()) @db.Uuid
+  boardId    String    @db.Uuid
+  title      String
+  remindAt   DateTime?
+  done       Boolean   @default(false)
+  archivedAt DateTime?
+  createdAt  DateTime  @default(now())
+  board      Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  notes      Note[]
 
   @@index([boardId, remindAt])
   @@index([boardId, archivedAt])
@@ -322,28 +334,32 @@ model Comment {
 }
 
 model Attachment {
-  id           String   @id @default(uuid()) @db.Uuid
-  boardId      String   @db.Uuid
+  id             String        @id @default(uuid()) @db.Uuid
+  boardId        String        @db.Uuid
   /// Object key inside the private `attachments` bucket.
-  storagePath  String   @unique
-  fileName     String
-  mimeType     String
-  size         Int
-  taskId       String?  @db.Uuid
-  commentId    String?  @db.Uuid
+  storagePath    String        @unique
+  fileName       String
+  mimeType       String
+  size           Int
+  taskId         String?       @db.Uuid
+  commentId      String?       @db.Uuid
   /// A show's rider, stage plot or setlist — any event can carry files.
-  eventId      String?  @db.Uuid
-  uploadedById String   @db.Uuid
-  createdAt    DateTime @default(now())
-  board        Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  task         Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  comment      Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  event        Event?   @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  uploadedBy   User     @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  eventId        String?       @db.Uuid
+  /// A receipt on a ledger entry.
+  financeEntryId String?       @db.Uuid
+  uploadedById   String        @db.Uuid
+  createdAt      DateTime      @default(now())
+  board          Board         @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  task           Task?         @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  comment        Comment?      @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  event          Event?        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  financeEntry   FinanceEntry? @relation(fields: [financeEntryId], references: [id], onDelete: Cascade)
+  uploadedBy     User          @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
 
   @@index([taskId])
   @@index([commentId])
   @@index([eventId])
+  @@index([financeEntryId])
   @@index([boardId, createdAt])
 }
 
@@ -356,6 +372,9 @@ enum ActivityType {
   GOAL_COMPLETED
   FILE_UPLOADED
   COMMENT_ADDED
+  FINANCE_ENTRY_ADDED
+  SHOW_SETTLED
+  PAYOUT_RECORDED
 }
 
 model Activity {
@@ -551,4 +570,97 @@ model EmailSuppression {
   /// bounce | complaint | manual
   reason    String
   createdAt DateTime @default(now())
+}
+
+enum FinanceKind {
+  INCOME
+  EXPENSE
+}
+
+/// EXPECTED: promised, not in hand (a show fee still owed). VOID replaces
+/// delete, so the books never quietly lose a row.
+enum FinanceState {
+  EXPECTED
+  SETTLED
+  VOID
+}
+
+/// One line in a band's books. Balances are computed from these and never
+/// stored, so there is no running total to drift.
+model FinanceEntry {
+  id           String         @id @default(uuid()) @db.Uuid
+  boardId      String         @db.Uuid
+  kind         FinanceKind
+  state        FinanceState   @default(SETTLED)
+  /// A `FINANCE_CATEGORIES` key from packages/shared.
+  category     String
+  /// Always positive; `kind` gives the sign. Board currency, minor units.
+  amountCents  Int
+  occurredOn   DateTime       @db.Date
+  counterparty String?
+  description  String         @default("")
+  /// The show this money belongs to. SetNull: deleting a show never deletes
+  /// its money.
+  eventId      String?        @db.Uuid
+  /// Member whose own money this went through (paid an expense, or pocketed
+  /// income for the band). Null is the band's own account.
+  handledById  String?        @db.Uuid
+  /// Null once the account is gone — the books outlive it.
+  createdById  String?        @db.Uuid
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  board        Board          @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  event        Event?         @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  handledBy    User?          @relation("FinanceEntryHandledBy", fields: [handledById], references: [id], onDelete: SetNull)
+  createdBy    User?          @relation("FinanceEntryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  splits       FinanceSplit[]
+  receipts     Attachment[]
+
+  @@index([boardId, occurredOn])
+  @@index([eventId])
+}
+
+/// How one entry is divided, snapshotted from the board's split when the entry
+/// is written, so changing the split later never rewrites past money.
+model FinanceSplit {
+  id       String       @id @default(uuid()) @db.Uuid
+  entryId  String       @db.Uuid
+  /// Null is the band fund. A deleted account's share falls back to the fund.
+  userId   String?      @db.Uuid
+  shareBps Int
+  entry    FinanceEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  user     User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([entryId])
+}
+
+/// The board's default split. No rows means equal shares among members.
+model SplitShare {
+  id       String  @id @default(uuid()) @db.Uuid
+  boardId  String  @db.Uuid
+  /// Null is the band fund.
+  userId   String? @db.Uuid
+  shareBps Int
+  board    Board   @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user     User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([boardId])
+}
+
+/// Money that changed hands between the band and a member outside the app.
+model Payout {
+  id          String   @id @default(uuid()) @db.Uuid
+  boardId     String   @db.Uuid
+  userId      String   @db.Uuid
+  /// Positive: the band paid the member. Negative: the member paid the band.
+  amountCents Int
+  paidOn      DateTime @db.Date
+  note        String   @default("")
+  createdById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  board       Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user        User     @relation("PayoutMember", fields: [userId], references: [id], onDelete: Cascade)
+  createdBy   User?    @relation("PayoutCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([boardId, paidOn])
 }

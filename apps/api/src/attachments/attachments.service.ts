@@ -29,8 +29,15 @@ export class AttachmentsService {
   ) {}
 
   async list(boardId: string, query: AttachmentQueryDto) {
-    if (!query.taskId && !query.commentId && !query.eventId) {
-      throw new BadRequestException('Pass a taskId, commentId or eventId');
+    if (
+      !query.taskId &&
+      !query.commentId &&
+      !query.eventId &&
+      !query.financeEntryId
+    ) {
+      throw new BadRequestException(
+        'Pass a taskId, commentId, eventId or financeEntryId',
+      );
     }
     const rows = await this.prisma.attachment.findMany({
       where: {
@@ -38,6 +45,9 @@ export class AttachmentsService {
         ...(query.taskId ? { taskId: query.taskId } : {}),
         ...(query.commentId ? { commentId: query.commentId } : {}),
         ...(query.eventId ? { eventId: query.eventId } : {}),
+        ...(query.financeEntryId
+          ? { financeEntryId: query.financeEntryId }
+          : {}),
       },
       include: attachmentInclude,
       orderBy: { createdAt: 'asc' },
@@ -68,6 +78,9 @@ export class AttachmentsService {
     const eventTitle = dto.eventId
       ? await this.assertEventInBoard(boardId, dto.eventId)
       : null;
+    if (dto.financeEntryId) {
+      await this.assertFinanceEntryInBoard(boardId, dto.financeEntryId);
+    }
 
     return this.prisma.$transaction(async (tx) => {
       const attachment = await tx.attachment.create({
@@ -80,6 +93,7 @@ export class AttachmentsService {
           taskId: dto.taskId ?? null,
           commentId: dto.commentId ?? null,
           eventId: dto.eventId ?? null,
+          financeEntryId: dto.financeEntryId ?? null,
           uploadedById: userId,
         },
         include: attachmentInclude,
@@ -95,6 +109,7 @@ export class AttachmentsService {
           taskTitle,
           eventId: dto.eventId ?? null,
           eventTitle,
+          isReceipt: !!dto.financeEntryId,
         },
       });
       return toDto(attachment);
@@ -185,6 +200,14 @@ export class AttachmentsService {
     return event.title;
   }
 
+  private async assertFinanceEntryInBoard(boardId: string, entryId: string) {
+    const entry = await this.prisma.financeEntry.findFirst({
+      where: { id: entryId, boardId },
+      select: { id: true },
+    });
+    if (!entry) throw new NotFoundException('Entry not found');
+  }
+
   private async assertCommentInBoard(boardId: string, commentId: string) {
     const comment = await this.prisma.comment.findFirst({
       where: { id: commentId, boardId },
@@ -203,6 +226,7 @@ function toDto(attachment: {
   taskId: string | null;
   commentId: string | null;
   eventId: string | null;
+  financeEntryId: string | null;
   createdAt: Date;
   uploadedBy: { id: string; displayName: string };
 }) {
@@ -214,6 +238,7 @@ function toDto(attachment: {
     taskId: attachment.taskId,
     commentId: attachment.commentId,
     eventId: attachment.eventId,
+    financeEntryId: attachment.financeEntryId,
     createdAt: attachment.createdAt,
     uploadedBy: attachment.uploadedBy,
   };

@@ -26,6 +26,7 @@ import { CustomWidgetModule } from './custom-widget/custom-widget.module';
 import { MentionsModule } from './mentions/mentions.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { NotesModule } from './notes/notes.module';
+import { FinancesModule } from './finances/finances.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { NotesModule } from './notes/notes.module';
     AttachmentsModule,
     CustomWidgetModule,
     MentionsModule,
+    FinancesModule,
   ],
   controllers: [HealthController],
   providers: [

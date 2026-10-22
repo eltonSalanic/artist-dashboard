@@ -34,6 +34,7 @@ export const WIDGET_META: Record<WidgetType, WidgetMeta> = {
   REMINDERS: { title: 'Reminders', defaultColor: 'c3' },
   ACTIVITY_FEED: { title: 'Activity' },
   CUSTOM: { title: 'Notes' },
+  FINANCES: { title: 'Finances' },
   // A full page rather than a card on either platform, but listed so this map
   // stays exhaustive over `WidgetType` and a new widget cannot be forgotten.
   CALENDAR: { title: 'Calendar' },

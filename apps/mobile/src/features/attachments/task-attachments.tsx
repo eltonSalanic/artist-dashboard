@@ -32,7 +32,7 @@ export function TaskAttachments({
   parent,
 }: {
   boardId: string;
-  parent: { taskId: string } | { eventId: string };
+  parent: { taskId: string } | { eventId: string } | { financeEntryId: string };
 }) {
   const colors = useThemeColors();
   const { can } = usePermissions();
@@ -44,7 +44,15 @@ export function TaskAttachments({
   const [picked, setPicked] = useState<{ source: UploadSource; preview?: string } | null>(null);
   const myId = me.data?.user.id;
   // Whoever manages the parent may rename or delete anyone's upload.
-  const manages = can('eventId' in parent ? 'event.manage' : 'task.editFields');
+  const manages = can(
+    'eventId' in parent
+      ? 'event.manage'
+      : 'financeEntryId' in parent
+        ? 'finance.manage'
+        : 'task.editFields',
+  );
+  const receipts = 'financeEntryId' in parent;
+  const heading = receipts ? 'RECEIPTS' : 'ATTACHMENTS';
 
   const add = async () => {
     try {
@@ -60,7 +68,7 @@ export function TaskAttachments({
   const files = attachments.data ?? [];
 
   return (
-    <Section title={files.length > 0 ? `ATTACHMENTS · ${files.length}` : 'ATTACHMENTS'}>
+    <Section title={files.length > 0 ? `${heading} · ${files.length}` : heading}>
       {attachments.isPending ? (
         <Skeleton width="100%" height={110} />
       ) : files.length > 0 ? (
@@ -76,7 +84,7 @@ export function TaskAttachments({
         />
       ) : (
         <PosterText variant="cardMeta" color={colors.mutedForeground}>
-          No files attached.
+          {receipts ? 'No receipt yet.' : 'No files attached.'}
         </PosterText>
       )}
 
@@ -88,7 +96,7 @@ export function TaskAttachments({
 
       {can('file.upload') && (
         <Button
-          title="Add Attachment"
+          title={receipts ? 'Add Receipt' : 'Add Attachment'}
           variant="secondary"
           size="sm"
           disabled={upload.isPending}

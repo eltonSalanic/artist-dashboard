@@ -745,6 +745,12 @@ Run it from the `feat/mobile-redesign` branch with `npm run mobile` (or `npm run
 
 
 
+## Band finances
+
+Checks live on the Trello card [Band finances testing](https://trello.com/c/ML7yp6EI), one checklist for web and one for the phone. Run `npx prisma migrate deploy` from `apps/api` first (new migration `20261022200000_band_finances`), then `npm run db:seed -w apps/api` for a demo ledger.
+
+---
+
 ## P14–P16 — not yet built
 
 Each gets a Trello testing card when it lands, linked from a short section here. Known in advance:

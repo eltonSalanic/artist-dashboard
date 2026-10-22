@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, Pressable, View, useWindowDimensions, type ViewToken } from 'react-native';
+import { FlatList, Pressable, ScrollView, View, useWindowDimensions, type ViewToken } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { WIDGET_META, type WidgetType } from '@artist/shared';
 import { usePermissions } from '@artist/api-client';
@@ -157,24 +157,43 @@ function PositionStrip({
   const shadows = useShadows();
   const ink = useWidgetInk(boardId, pages[index] ?? pages[0]);
 
-  const stripRef = useRef<FlatList<WidgetType>>(null);
+  const stripRef = useRef<ScrollView>(null);
+  const stripWidth = useRef(0);
+  const contentWidth = useRef(0);
+  const chips = useRef(new Map<number, { x: number; width: number }>());
+  const placed = useRef(false);
 
-  // Keep the active chip on screen. Ten widgets overflow the strip, so without
-  // this, swiping to the eighth leaves the strip showing the first four and the
-  // position indicator stops indicating anything.
+  // Keep the active chip on screen, centred. Ten widgets overflow the strip, so
+  // without this, opening or swiping to the eighth leaves the strip showing the
+  // first four and the position indicator stops indicating anything. Chips are
+  // text-width, so the offset comes from their measured layout: a FlatList's
+  // `scrollToIndex` ran before anything was measured on open and did nothing.
+  const centre = useCallback(
+    (animated: boolean) => {
+      const chip = chips.current.get(index);
+      if (!chip || stripWidth.current === 0 || contentWidth.current === 0) return false;
+      const centred = chip.x + chip.width / 2 - stripWidth.current / 2;
+      // iOS will scroll past the end if asked to, leaving a gap after the last chip.
+      const end = Math.max(0, contentWidth.current - stripWidth.current);
+      stripRef.current?.scrollTo({ x: Math.min(Math.max(0, centred), end), animated });
+      return true;
+    },
+    [index],
+  );
+
   useEffect(() => {
-    stripRef.current?.scrollToIndex({
-      index,
-      animated: true,
-      viewPosition: 0.5,
-    });
-  }, [index]);
+    if (placed.current) centre(true);
+  }, [centre]);
+
+  // The first placement happens once the active chip, the strip and its
+  // content are all measured, without animating: the strip should open already in place.
+  const placeOnce = () => {
+    if (!placed.current) placed.current = centre(false);
+  };
 
   return (
-    <FlatList
+    <ScrollView
       ref={stripRef}
-      data={pages}
-      keyExtractor={(type) => type}
       horizontal
       showsHorizontalScrollIndicator={false}
       // A horizontal list grows by default, so above the pager it took half the
@@ -187,10 +206,16 @@ function PositionStrip({
         paddingVertical: spacing.sm,
         gap: spacing.xs,
       }}
-      // Chips are text-width, so there is no layout to precompute; a scroll
-      // before measurement just does nothing rather than throwing.
-      onScrollToIndexFailed={() => undefined}
-      renderItem={({ item: type, index: i }) => {
+      onContentSizeChange={(w) => {
+        contentWidth.current = w;
+        placeOnce();
+      }}
+      onLayout={(e) => {
+        stripWidth.current = e.nativeEvent.layout.width;
+        placeOnce();
+      }}
+    >
+      {pages.map((type, i) => {
         const active = i === index;
         // A plain widget has no colour of its own, and its card colour is one
         // step off the resting grey: in the dark the active chip looked like
@@ -199,6 +224,12 @@ function PositionStrip({
         const label = ink.plain ? colors.background : ink.ink;
         return (
           <Pressable
+            key={type}
+            onLayout={(e) => {
+              const { x, width } = e.nativeEvent.layout;
+              chips.current.set(i, { x, width });
+              if (i === index) placeOnce();
+            }}
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
             onPress={() => onSelect(i)}
@@ -220,7 +251,7 @@ function PositionStrip({
             </PosterText>
           </Pressable>
         );
-      }}
-    />
+      })}
+    </ScrollView>
   );
 }

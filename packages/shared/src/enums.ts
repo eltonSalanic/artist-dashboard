@@ -22,6 +22,9 @@ export const ActivityTypes = [
   'GOAL_COMPLETED',
   'FILE_UPLOADED',
   'COMMENT_ADDED',
+  'FINANCE_ENTRY_ADDED',
+  'SHOW_SETTLED',
+  'PAYOUT_RECORDED',
 ] as const;
 export type ActivityType = (typeof ActivityTypes)[number];
 
@@ -40,6 +43,18 @@ export const WidgetTypes = [
   'MY_TASKS',
   'CUSTOM',
   'ACTIVITY_FEED',
+  'FINANCES',
   'CALENDAR',
 ] as const;
 export type WidgetType = (typeof WidgetTypes)[number];
+
+/** Which way money moved. Amounts are always positive; the kind is the sign. */
+export const FinanceKinds = ['INCOME', 'EXPENSE'] as const;
+export type FinanceKind = (typeof FinanceKinds)[number];
+
+/**
+ * EXPECTED is money promised but not in hand yet (a show fee the promoter still
+ * owes). VOID replaces delete: a ledger that quietly loses rows can't be trusted.
+ */
+export const FinanceStates = ['EXPECTED', 'SETTLED', 'VOID'] as const;
+export type FinanceState = (typeof FinanceStates)[number];
