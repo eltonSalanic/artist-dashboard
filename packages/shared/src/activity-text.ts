@@ -41,6 +41,7 @@ export function activityText(item: ActivityRow): string {
     case 'GOAL_COMPLETED':
       return `completed goal “${str(m.goalTitle, 'a goal')}”`;
     case 'FILE_UPLOADED':
+      if (m.isReceipt) return 'added a receipt';
       return `attached ${str(m.fileName, 'a file')}${
         m.taskTitle
           ? ` to “${str(m.taskTitle)}”`
