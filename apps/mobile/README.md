@@ -9,13 +9,15 @@ Conventions for writing code here: [`AGENTS.md`](AGENTS.md).
 
 ## Running it on a phone
 
-**A phone is not your laptop.** `localhost` on a phone is the phone, so every
-URL in `.env` has to be the LAN address of the machine running the stack — this
-is the single most common reason the app comes up but can't sign in.
+**A phone is not your laptop.** `localhost` on a phone is the phone. In a dev
+build the API and Supabase URLs default to the address Metro is served from,
+which Expo picks afresh on every `expo start` — so on a new network (another
+Wi-Fi, a phone hotspot) restart `npm run mobile` and scan the new QR. Set
+`EXPO_PUBLIC_API_URL` / `EXPO_PUBLIC_SUPABASE_URL` in `.env` only to point
+somewhere else; set, they win.
 
 ```bash
 cp apps/mobile/.env.example apps/mobile/.env
-ipconfig getifaddr en0          # your LAN IP, e.g. 192.168.1.10
 npx supabase status             # the anon key goes in .env
 ```
 

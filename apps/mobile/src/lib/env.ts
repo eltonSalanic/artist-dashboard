@@ -10,12 +10,20 @@
  * the web app embeds. Server-only secrets never appear here.
  */
 
+import Constants from 'expo-constants';
+import { urlOnDevHost } from './dev-host';
+
+/** The ports `npm run dev` and `npx supabase start` listen on. */
+const API_PORT = 3001;
+const SUPABASE_PORT = 54321;
+const metroHost = __DEV__ ? Constants.expoConfig?.hostUri : undefined;
+
 function required(name: string, value: string | undefined): string {
   if (!value) {
     throw new Error(
       `Missing ${name}. Copy apps/mobile/.env.example to apps/mobile/.env and ` +
         `fill it in — a phone cannot reach localhost, so these must be your ` +
-        `machine's LAN address.`,
+        `machine's LAN address (in a dev build they default to Metro's).`,
     );
   }
   return value;
@@ -26,12 +34,19 @@ function origin(name: string, value: string | undefined): string {
   return required(name, value).replace(/\/+$/, '');
 }
 
+/**
+ * A URL set in `.env` (or by `tunnel.sh`) wins. Left out, a dev build points at
+ * the machine serving Metro, so changing networks needs only a fresh scan.
+ */
 export const env = {
   /** Origin of the NestJS API, no trailing slash. */
-  apiUrl: origin('EXPO_PUBLIC_API_URL', process.env.EXPO_PUBLIC_API_URL),
+  apiUrl: origin(
+    'EXPO_PUBLIC_API_URL',
+    process.env.EXPO_PUBLIC_API_URL || urlOnDevHost(metroHost, API_PORT),
+  ),
   supabaseUrl: origin(
     'EXPO_PUBLIC_SUPABASE_URL',
-    process.env.EXPO_PUBLIC_SUPABASE_URL,
+    process.env.EXPO_PUBLIC_SUPABASE_URL || urlOnDevHost(metroHost, SUPABASE_PORT),
   ),
   supabaseAnonKey: required(
     'EXPO_PUBLIC_SUPABASE_ANON_KEY',
