@@ -50,6 +50,16 @@ export function activityText(item: ActivityRow): string {
       }`;
     case 'COMMENT_ADDED':
       return `commented on “${str(m.taskTitle, 'a task')}”`;
+    case 'FINANCE_ENTRY_ADDED':
+      return `logged ${m.kind === 'INCOME' ? 'income' : 'an expense'}${
+        m.label ? ` “${str(m.label)}”` : ''
+      }${m.amount ? ` of ${str(m.amount)}` : ''}`;
+    case 'SHOW_SETTLED':
+      return `settled the money for “${str(m.eventTitle, 'a show')}”`;
+    case 'PAYOUT_RECORDED':
+      return `recorded a payment ${
+        m.toBand ? 'from' : 'to'
+      } ${str(m.memberName, 'a member')}${m.amount ? ` of ${str(m.amount)}` : ''}`;
     default:
       // A row written by a newer build than this one. Saying something vague is
       // better than an empty line or a crash.

@@ -20,11 +20,16 @@ export const createAttachmentSchema = z
     taskId: z.uuid().optional(),
     commentId: z.uuid().optional(),
     eventId: z.uuid().optional(),
+    /** A receipt on a ledger entry. */
+    financeEntryId: z.uuid().optional(),
   })
   .refine(
-    (dto) => [dto.taskId, dto.commentId, dto.eventId].filter(Boolean).length === 1,
+    (dto) =>
+      [dto.taskId, dto.commentId, dto.eventId, dto.financeEntryId].filter(Boolean)
+        .length === 1,
     {
-      message: 'An attachment belongs to exactly one task, comment or event',
+      message:
+        'An attachment belongs to exactly one task, comment, event or ledger entry',
       path: ['taskId'],
     },
   );
@@ -40,5 +45,6 @@ export const attachmentQuerySchema = z.object({
   taskId: z.uuid().optional(),
   commentId: z.uuid().optional(),
   eventId: z.uuid().optional(),
+  financeEntryId: z.uuid().optional(),
 });
 export type AttachmentQueryDto = z.infer<typeof attachmentQuerySchema>;
