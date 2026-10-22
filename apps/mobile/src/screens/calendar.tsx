@@ -58,7 +58,8 @@ import {
  * Days with nothing in them are left out. A grid has to draw empty cells to
  * keep its shape; a list that printed 19 empty headings would bury the five
  * days that matter. Today is the exception: this month opens scrolled to it,
- * so it is there even on a day with nothing booked, and says so.
+ * so it is there even on a day with nothing booked, and says so. A month with
+ * nothing in it at all leaves today out too, and just says the month is empty.
  *
  * The round filter button beside the steppers narrows it to some kinds of
  * thing, as web's legend chips do. The chips are the Archive's: additive, none
@@ -239,8 +240,10 @@ function Agenda({
   const empty = shown !== undefined && shown.length === 0;
   const days = useMemo(() => {
     const grouped = groupCalendarByDay(shown ?? []);
-    // Only once the month has loaded, so the spinner still shows until then.
-    return thisMonth && calendar.data !== undefined
+    // Only once the month has loaded, so the spinner still shows until then,
+    // and only when the month has something in it: an empty month is just the
+    // empty message, without a lone "Nothing for today." above it.
+    return thisMonth && calendar.data !== undefined && grouped.length > 0
       ? withCalendarDay(grouped, new Date())
       : grouped;
   }, [shown, calendar.data, thisMonth]);
@@ -324,7 +327,8 @@ function Agenda({
   const view = `${year}-${month}-${boardId ?? 'all'}-${types.join(',')}`;
   useEffect(() => {
     if (landed.current === view) return;
-    if (!thisMonth) {
+    // An empty month has no today to land on, so it starts at the top too.
+    if (!thisMonth || empty) {
       landed.current = view;
       settling.current = false;
       list.current?.scrollToOffset({ offset: 0, animated: false });
@@ -344,7 +348,7 @@ function Agenda({
     // cancelled when the effect re-runs: it re-runs as the index settles and
     // returns early, and the centring must still happen.
     requestAnimationFrame(() => centreLatest());
-  }, [view, thisMonth, todayIndex]);
+  }, [view, thisMonth, empty, todayIndex]);
 
   return (
     <FlatList
@@ -396,6 +400,7 @@ function Agenda({
           />
         </View>
       )}
+      // An empty month, this one included, is an empty list.
       ListEmptyComponent={
         calendar.isPending || calendar.error ? (
           <View style={{ paddingTop: spacing.lg }}>
@@ -410,13 +415,6 @@ function Agenda({
         ) : (
           <EmptyMonth monthName={monthName} filtered={types.length > 0} canvas={canvas} />
         )
-      }
-      // This month is never an empty list, since today is always in it, so
-      // an empty month still says so under today.
-      ListFooterComponent={
-        empty && thisMonth ? (
-          <EmptyMonth monthName={monthName} filtered={types.length > 0} canvas={canvas} />
-        ) : null
       }
     />
   );
