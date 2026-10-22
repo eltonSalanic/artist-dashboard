@@ -3,9 +3,11 @@ import {
   useActivityFeed,
   useCustomWidget,
   useEvents,
+  useFinanceSummary,
   useFocus,
   useGoals,
   useMe,
+  usePermissions,
   useReminders,
   useTasks,
 } from '@artist/api-client';
@@ -13,6 +15,9 @@ import {
   FocusPeriods,
   WIDGET_META,
   activityText,
+  categoryLabel,
+  formatMoney,
+  monthToDate,
   resolveWidgetColor,
   type BoardTheme,
   type CardWidgetType,
@@ -112,6 +117,10 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
   const meetings = useEvents(boardId, { type: 'MEETING', from, limit: 20 });
   const reminders = useReminders(boardId);
   const activity = useActivityFeed(boardId);
+  const { can } = usePermissions();
+  // Same reasoning as `from`: a fresh range each render is a fresh query key.
+  const month = useMemo(() => monthToDate(), []);
+  const finances = useFinanceSummary(boardId, month, can('finance.view'));
 
   const summaries: Record<WidgetType, Omit<HubCard, keyof CardChrome>> = {
     FOCUS: (() => {
@@ -248,6 +257,48 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
           text: `${item.actor?.displayName ?? 'Someone'} ${activityText(item)}`,
           meta: shortAgo(item.createdAt),
         })),
+      };
+    })(),
+
+    FINANCES: (() => {
+      const data = finances.data;
+      if (!data) {
+        return {
+          primary: null,
+          qualifier: null,
+          urgent: false,
+          loading: finances.isPending && can('finance.view'),
+          lines: [],
+        };
+      }
+      const money = (cents: number) => formatMoney(cents, data.currency);
+      const mine =
+        data.balances.members.find((m) => m.userId === me.data?.user.id)?.balanceCents ?? 0;
+      const touched = data.totals.incomeCents > 0 || data.totals.expenseCents > 0;
+      return {
+        primary: touched ? money(data.totals.netCents) : null,
+        qualifier:
+          mine > 0
+            ? `${money(mine)} owed to you`
+            : mine < 0
+              ? `you owe ${money(-mine)}`
+              : touched
+                ? 'net this month'
+                : null,
+        urgent: data.unpaidShows.length > 0,
+        loading: false,
+        lines: [
+          ...data.unpaidShows.map((show) => ({
+            key: show.eventId,
+            text: `${show.title} owes ${money(show.expectedCents)}`,
+            meta: shortDate(show.startsAt),
+          })),
+          ...data.totals.byCategory.map((c) => ({
+            key: c.category,
+            text: categoryLabel(c.category),
+            meta: money(c.kind === 'INCOME' ? c.cents : -c.cents),
+          })),
+        ].slice(0, LINES),
       };
     })(),
 

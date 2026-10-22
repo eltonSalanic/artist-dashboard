@@ -14,6 +14,7 @@ import { daysAway, timeOfDay } from '@/features/board/format';
 import { EVENT_WIDGET, useWidgetInk } from '@/features/board/spoke-header';
 import { ItemNotesSection } from '@/features/item-notes/item-notes-section';
 import { LinkedTasks } from '@/features/links/linked-tasks';
+import { ShowMoney } from '@/features/board/show-money';
 import { spacing, useThemeColors } from '@/theme';
 
 const TYPE_TITLE = { SHOW: 'Show', REHEARSAL: 'Rehearsal', MEETING: 'Meeting' } as const;
@@ -124,6 +125,8 @@ export function EventDetailScreen({ boardId, eventId }: { boardId: string; event
         <LinkedTasks boardId={boardId} link={{ eventId: e.id }} archived={e.archivedAt !== null} />
 
         <TaskAttachments boardId={boardId} parent={{ eventId: e.id }} />
+
+        {e.type === 'SHOW' && <ShowMoney boardId={boardId} eventId={e.id} />}
       </ScrollView>
     </>
   );

@@ -6,10 +6,12 @@ const as = (role: BoardRole) => (action: Parameters<typeof can>[1]) => can(role,
 describe('spokeAction', () => {
   // The shared map is the source of truth; this pins that the header reads it
   // and never offers a member a form the API would refuse.
-  it('offers a member nothing anywhere', () => {
+  it('offers a member nothing but logging money', () => {
     for (const type of WidgetTypes) {
+      if (type === 'FINANCES') continue;
       expect(spokeAction(type, 'b1', as('USER'))).toBeNull();
     }
+    expect(spokeAction('FINANCES', 'b1', as('USER'))?.href).toBe('/board/b1/form/finance');
   });
 
   it('gives an admin the right form for each spoke', () => {

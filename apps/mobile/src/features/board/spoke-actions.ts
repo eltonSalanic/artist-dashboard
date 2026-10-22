@@ -16,6 +16,9 @@ export interface SpokeAction {
  * permission is tested, not just eyeballed. My Tasks offers nothing: a new
  * task there would need assigning to yourself, which is an admin's call, and
  * the To-Do spoke one swipe away already has the button.
+ *
+ * Finances is the one a member gets too: whoever bought the strings is the
+ * one holding the receipt.
  */
 export function spokeAction(
   type: WidgetType,
@@ -47,6 +50,10 @@ export function spokeAction(
     case 'CUSTOM':
       return can('widget.manage')
         ? { label: 'Edit note', href: `${base}/note`, edit: true }
+        : null;
+    case 'FINANCES':
+      return can('finance.create')
+        ? { label: 'Log money', href: `${base}/finance` }
         : null;
     default:
       return null;

@@ -20,5 +20,6 @@ export const WIDGET_ICONS: Record<WidgetType, IconName> = {
   REMINDERS: { sf: 'bell.fill', md: 'notifications' },
   ACTIVITY_FEED: { sf: 'waveform.path.ecg', md: 'timeline' },
   CUSTOM: { sf: 'square.and.pencil', md: 'edit-note' },
+  FINANCES: { sf: 'dollarsign.circle.fill', md: 'account-balance-wallet' },
   CALENDAR: { sf: 'calendar', md: 'calendar-month' },
 };
