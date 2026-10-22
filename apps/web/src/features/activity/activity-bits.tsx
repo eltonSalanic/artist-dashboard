@@ -2,12 +2,14 @@ import type { ComponentType } from "react";
 import {
   CheckCircle2,
   FileUp,
+  HandCoins,
   MessageSquare,
   Plus,
   RefreshCw,
   Target,
   UserMinus,
   UserPlus,
+  Wallet,
 } from "lucide-react";
 import { activityText, type ActivityType } from "@artist/shared";
 import type { ActivityItemDto } from "@artist/api-client";
@@ -28,6 +30,9 @@ const icons: Record<ActivityType, ComponentType<{ className?: string }>> = {
   GOAL_COMPLETED: Target,
   FILE_UPLOADED: FileUp,
   COMMENT_ADDED: MessageSquare,
+  FINANCE_ENTRY_ADDED: Wallet,
+  SHOW_SETTLED: HandCoins,
+  PAYOUT_RECORDED: HandCoins,
 };
 
 /**
