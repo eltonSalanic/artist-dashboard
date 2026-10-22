@@ -27,7 +27,12 @@ import {
   FocusPeriod,
   Priority,
 } from '../generated/prisma/enums';
-import { DEFAULT_BOARD_LAYOUT, DEFAULT_TASK_STATUSES } from '@artist/shared';
+import {
+  DEFAULT_BOARD_LAYOUT,
+  DEFAULT_TASK_STATUSES,
+  equalSplit,
+  localDayISO,
+} from '@artist/shared';
 
 const prisma = new PrismaClient({ adapter: createPgAdapter() });
 
@@ -133,6 +138,10 @@ async function main() {
     await prisma.reminder.deleteMany({ where: { boardId } });
     await prisma.focusPin.deleteMany({ where: { boardId } });
     await prisma.customWidgetContent.deleteMany({ where: { boardId } });
+    // Entries take their splits and receipts with them.
+    await prisma.financeEntry.deleteMany({ where: { boardId } });
+    await prisma.payout.deleteMany({ where: { boardId } });
+    await prisma.splitShare.deleteMany({ where: { boardId } });
 
     // Give the board a clear demo identity and add the synthetic bandmates as
     // members (so they're valid assignees). The real owner keeps their role.
@@ -277,7 +286,7 @@ async function main() {
       startsAt: days(5),
     },
   });
-  await prisma.event.create({
+  const showWarmup = await prisma.event.create({
     data: {
       boardId: boardId,
       type: EventType.SHOW,
@@ -595,6 +604,141 @@ async function main() {
   ];
   await prisma.activity.createMany({
     data: feed.map((f) => ({ boardId: boardId, ...f })),
+  });
+
+  // Finances: 10% to the band fund, the rest split evenly. Entries snapshot
+  // the split, as the API does, so changing it later leaves these alone.
+  const members = await prisma.membership.findMany({
+    where: { boardId },
+    orderBy: { createdAt: 'asc' },
+    select: { userId: true },
+  });
+  const split = equalSplit(
+    members.map((m) => m.userId),
+    1000,
+  );
+  await prisma.splitShare.createMany({
+    data: split.map((share) => ({ boardId, ...share })),
+  });
+  const day = (offset: number) =>
+    new Date(`${localDayISO(days(offset))}T00:00:00.000Z`);
+  const ledger: {
+    kind: 'INCOME' | 'EXPENSE';
+    category: string;
+    amountCents: number;
+    on: number;
+    description: string;
+    counterparty?: string;
+    eventId?: string;
+    handledById?: string;
+    expected?: boolean;
+  }[] = [
+    {
+      kind: 'INCOME',
+      category: 'SHOW_FEE',
+      amountCents: 45_000,
+      on: -20,
+      description: 'Guarantee',
+      counterparty: 'The Echo',
+      eventId: showWarmup.id,
+    },
+    {
+      kind: 'INCOME',
+      category: 'MERCH_SALES',
+      amountCents: 21_500,
+      on: -20,
+      description: 'Merch table',
+      eventId: showWarmup.id,
+      handledById: BAND.mia.id,
+    },
+    {
+      kind: 'EXPENSE',
+      category: 'TRAVEL',
+      amountCents: 6_240,
+      on: -20,
+      description: 'Van gas',
+      eventId: showWarmup.id,
+      handledById: BAND.diego.id,
+    },
+    {
+      kind: 'EXPENSE',
+      category: 'FEES',
+      amountCents: 5_000,
+      on: -20,
+      description: 'Sound tech',
+      counterparty: 'The Echo',
+      eventId: showWarmup.id,
+    },
+    {
+      kind: 'EXPENSE',
+      category: 'REHEARSAL_SPACE',
+      amountCents: 32_000,
+      on: -14,
+      description: 'Studio B, monthly',
+      counterparty: 'Studio B',
+    },
+    {
+      kind: 'EXPENSE',
+      category: 'GEAR',
+      amountCents: 2_499,
+      on: -9,
+      description: 'Bass strings',
+      handledById: BAND.sam.id,
+    },
+    {
+      kind: 'INCOME',
+      category: 'STREAMING',
+      amountCents: 8_312,
+      on: -6,
+      description: 'Distributor payout',
+      counterparty: 'DistroKid',
+    },
+    {
+      kind: 'EXPENSE',
+      category: 'MERCH_STOCK',
+      amountCents: 18_000,
+      on: -4,
+      description: '40 tees',
+      counterparty: 'Print Shop',
+    },
+    {
+      kind: 'INCOME',
+      category: 'SHOW_FEE',
+      amountCents: 80_000,
+      on: -1,
+      description: 'Guarantee',
+      counterparty: 'The Fillmore',
+      eventId: showKickoff.id,
+      expected: true,
+    },
+  ];
+  for (const line of ledger) {
+    await prisma.financeEntry.create({
+      data: {
+        boardId,
+        kind: line.kind,
+        state: line.expected ? 'EXPECTED' : 'SETTLED',
+        category: line.category,
+        amountCents: line.amountCents,
+        occurredOn: day(line.on),
+        description: line.description,
+        counterparty: line.counterparty ?? null,
+        eventId: line.eventId ?? null,
+        handledById: line.handledById ?? null,
+        createdById: owner.id,
+        splits: { create: split },
+      },
+    });
+  }
+  await prisma.payout.create({
+    data: {
+      boardId,
+      userId: BAND.diego.id,
+      amountCents: 6_240,
+      paidOn: day(-3),
+      note: 'Gas money back, Venmo',
+      createdById: owner.id,
+    },
   });
 
   const counts = await prisma.$transaction([
