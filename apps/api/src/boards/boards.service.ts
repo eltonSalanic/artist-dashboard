@@ -87,6 +87,7 @@ export class BoardsService {
         board.defaultLayout as unknown as LayoutItem[],
       ),
       theme: resolveBoardTheme(board.theme),
+      currency: board.currency,
       statuses: board.statuses,
       members: board.memberships.map((m) => ({
         membershipId: m.id,

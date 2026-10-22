@@ -378,3 +378,17 @@ export function financeCsv(
     ]);
   return [header, ...rows].map((r) => r.map(csvCell).join(',')).join('\n') + '\n';
 }
+
+/** A date on the local calendar, as the `YYYY-MM-DD` the API takes. */
+export function localDayISO(date = new Date()): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/** The first of this month through today, for "this month" totals. */
+export function monthToDate(now = new Date()): { from: string; to: string } {
+  const today = localDayISO(now);
+  return { from: `${today.slice(0, 7)}-01`, to: today };
+}

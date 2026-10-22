@@ -50,6 +50,8 @@ export interface BoardDetailDto {
   name: string;
   defaultLayout: LayoutItem[];
   theme: BoardTheme;
+  /** ISO 4217 code the band keeps its books in. */
+  currency: string;
   statuses: TaskStatusDto[];
   members: BoardMemberDto[];
 }

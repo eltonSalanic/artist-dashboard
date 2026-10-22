@@ -59,6 +59,15 @@ export function useFinanceEntries(
   });
 }
 
+export function useFinanceEntry(boardId: string, entryId: string | null) {
+  return useQuery({
+    queryKey: ["finances", boardId, "entry", entryId],
+    queryFn: () =>
+      apiFetch<FinanceEntryDto>(`${base(boardId)}/entries/${entryId}`),
+    enabled: !!entryId,
+  });
+}
+
 export function useFinanceSummary(
   boardId: string,
   range: FinanceSummaryQueryDto = {},
