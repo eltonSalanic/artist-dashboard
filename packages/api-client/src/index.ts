@@ -34,6 +34,7 @@ export * from './comments/use-comments';
 export * from './custom-widget/use-custom-widget';
 export * from './dashboard/use-layout';
 export * from './dashboard/use-mobile-layout';
+export * from './finances/use-finances';
 export * from './mentions/types';
 export * from './mentions/use-inbox';
 export * from './mentions/use-mentions';
