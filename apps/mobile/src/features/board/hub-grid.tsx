@@ -222,8 +222,7 @@ export function HubGrid({
   const absY = useSharedValue(0);
   const scrollStart = useSharedValue(0);
   const target = useSharedValue('');
-  // One object for the life of the grid: the cards' gestures depend on it,
-  // and a gesture rebuilt mid-drag is cancelled.
+  // Every card reads the same drag session, including across reorders.
   const drag = useMemo<Drag>(
     () => ({
       type: dragType,
@@ -274,13 +273,16 @@ export function HubGrid({
   useAnimatedReaction(
     () => {
       const type = drag.type.get();
-      if (type === '') return null;
+      const dx = drag.tx.get();
+      const dy = drag.ty.get();
+      // A stationary hold enters edit mode; only movement can reorder cards.
+      if (type === '' || (dx === 0 && dy === 0)) return null;
       return {
         type,
-        x: drag.startX.get() + drag.tx.get() + drag.width.get() / 2,
+        x: drag.startX.get() + dx + drag.width.get() / 2,
         y:
           drag.startY.get() +
-          drag.ty.get() +
+          dy +
           scroll.offset.get() -
           drag.scrollStart.get() +
           drag.height.get() / 2,
@@ -330,7 +332,8 @@ export function HubGrid({
   // A card held near the top or bottom of the screen scrolls the hub, faster
   // the closer it gets, so a card can travel the whole board in one drag.
   useFrameCallback(() => {
-    if (drag.type.get() === '') return;
+    // Holding near an edge must not start scrolling before the finger moves.
+    if (drag.type.get() === '' || (drag.tx.get() === 0 && drag.ty.get() === 0)) return;
     const top = scroll.top.get();
     const bottom = scroll.bottom.get();
     // Not measured yet: scrolling against an edge at 0 would run away.
@@ -483,24 +486,25 @@ function GridCard({
   useEffect(() => {
     slot.set(frame);
     size.set({ w: placement.w, h: placement.h });
+    // Keep the held card's visible size until release, including a lone card
+    // that stops stretching to a full row when edit mode opens.
+    if (drag.type.get() === type) return;
     width.set(withTiming(frame.width, MORPH));
     height.set(withTiming(frame.height, MORPH));
-    if (drag.type.get() === type) return;
     x.set(withSpring(frame.x, SETTLE));
     y.set(withSpring(frame.y, SETTLE));
   }, [frame, placement.w, placement.h, slot, size, drag, type, x, y, width, height]);
 
-  // Memoised on what cannot change mid-drag: a gesture rebuilt while active
-  // is cancelled, and every reorder re-renders this card.
+  // Keep the pan attached before editing starts so it owns the original touch.
+  // Updating its hold duration preserves the native handler's active gesture.
   const pan = useMemo(
     () =>
       Gesture.Pan()
-        .enabled(editing)
-        .activateAfterLongPress(DRAG_HOLD)
+        .activateAfterLongPress(editing ? DRAG_HOLD : HOLD_TO_EDIT)
         .simultaneousWithExternalGesture(resize)
         .onBegin(() => {
           if (resizing.get()) return;
-          press.set(withTiming(SINK_SCALE, SINK_TO_DRAG));
+          press.set(withTiming(SINK_SCALE, editing ? SINK_TO_DRAG : SINK_TO_EDIT));
         })
         .onStart((event) => {
           // A touch that began on the corner is a resize, not a move.
@@ -509,8 +513,8 @@ function GridCard({
           drag.type.set(type);
           drag.startX.set(x.get());
           drag.startY.set(y.get());
-          drag.width.set(slot.get().width);
-          drag.height.set(slot.get().height);
+          drag.width.set(width.get());
+          drag.height.set(height.get());
           drag.tx.set(0);
           drag.ty.set(0);
           drag.absY.set(event.absoluteY);
@@ -518,9 +522,11 @@ function GridCard({
           drag.target.set(type);
           scale.set(withTiming(1.03, { duration: 150 }));
           scheduleOnRN(onDragging, true);
-          scheduleOnRN(lift);
+          if (editing) scheduleOnRN(lift);
+          else scheduleOnRN(onStartEditing);
         })
         .onUpdate((event) => {
+          if (drag.type.get() !== type) return;
           drag.tx.set(event.translationX);
           drag.ty.set(event.translationY);
           drag.absY.set(event.absoluteY);
@@ -534,11 +540,16 @@ function GridCard({
           x.set(drag.startX.get() + drag.tx.get());
           y.set(drag.startY.get() + drag.ty.get() + scrollOffset.get() - drag.scrollStart.get());
           drag.type.set('');
+          width.set(withTiming(slot.get().width, MORPH));
+          height.set(withTiming(slot.get().height, MORPH));
           x.set(withSpring(slot.get().x, SNAP));
           y.set(withSpring(slot.get().y, SNAP));
           scheduleOnRN(onDragging, false);
         }),
-    [editing, type, drag, x, y, slot, scale, press, resizing, resize, scrollOffset, onDragging],
+    [
+      editing, type, drag, x, y, width, height, slot, scale, press, resizing,
+      resize, scrollOffset, onDragging, onStartEditing,
+    ],
   );
 
   const animated = useAnimatedStyle(() => {
@@ -621,17 +632,6 @@ function GridCard({
           card={card}
           tall={placement.h === 2}
           onPress={editing ? undefined : () => onOpen(type)}
-          onLongPress={
-            editing
-              ? undefined
-              : () => {
-                  // The hold took: pop back up as edit mode starts.
-                  press.set(withSpring(1, SNAP));
-                  onStartEditing();
-                }
-          }
-          onPressIn={editing ? undefined : () => press.set(withTiming(SINK_SCALE, SINK_TO_EDIT))}
-          onPressOut={editing ? undefined : () => press.set(withSpring(1, SETTLE))}
         />
 
         {editing && (

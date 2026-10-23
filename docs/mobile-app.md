@@ -1334,7 +1334,10 @@ two-column grid where a card can be **up to 2×2**. Asked, they chose:
   because on two columns they mostly make holes.
 - **Edit mode** entered by holding a card or ⋯ → Edit widgets, with Cancel
   and Done in the header, over always-editable cards (which fight scrolling
-  and tap-to-open on a touchscreen).
+  and tap-to-open on a touchscreen). The hold that enters edit mode also lifts
+  that card for dragging: keep the same finger down and move it immediately.
+  Edit guidance and hidden-card controls sit below the grid so entering edit
+  mode does not shift the widgets under that touch.
 - **Resize by dragging the corner**, as on web, snapping between one and two
   cells each way.
 - **A two-row card lists the first few things** behind its number (the next

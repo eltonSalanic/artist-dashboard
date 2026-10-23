@@ -281,6 +281,52 @@ function BoardHub({ boardId, name }: { boardId: string; name: string }) {
             <Masthead name={name} />
           </Animated.View>
 
+          {hub.loading ? (
+            // The arrangement decides how many cards there are, so until it
+            // lands the count is a guess. Six keeps the screen from jumping much.
+            <View style={styles.skeletons}>
+              {Array.from({ length: 6 }, (_, index) => (
+                <View key={index} style={styles.skeleton}>
+                  <HubCardSkeleton />
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Animated.View layout={SLIDE}>
+              <HubGrid
+                cards={hub.cards}
+                items={items}
+                editing={editing}
+                recolour={
+                  can('board.appearance')
+                    ? {
+                        palette: theme.palette,
+                        onPick: (type, color) =>
+                          setColours((current) => ({
+                            ...(current ?? saved.widgets),
+                            [type]: color,
+                          })),
+                      }
+                    : undefined
+                }
+                scroll={{
+                  ref: scrollRef,
+                  offset,
+                  min: minOffset,
+                  max: maxOffset,
+                  top: viewTop,
+                  bottom: viewBottom,
+                }}
+                onOpen={(type) => router.push(`/board/${boardId}/w/${type}`)}
+                onStartEditing={startEditing}
+                onChange={change}
+                onDragging={setDragging}
+              />
+            </Animated.View>
+          )}
+
+          {/* Edit-only content stays below the grid so a hold never shifts
+              the cards or changes the held card's reorder target. */}
           {editing && (
             <Animated.View
               entering={APPEAR}
@@ -339,50 +385,6 @@ function BoardHub({ boardId, name }: { boardId: string; name: string }) {
                   ))}
                 </Animated.View>
               )}
-            </Animated.View>
-          )}
-
-          {hub.loading ? (
-            // The arrangement decides how many cards there are, so until it
-            // lands the count is a guess. Six keeps the screen from jumping much.
-            <View style={styles.skeletons}>
-              {Array.from({ length: 6 }, (_, index) => (
-                <View key={index} style={styles.skeleton}>
-                  <HubCardSkeleton />
-                </View>
-              ))}
-            </View>
-          ) : (
-            <Animated.View layout={SLIDE}>
-              <HubGrid
-                cards={hub.cards}
-                items={items}
-                editing={editing}
-                recolour={
-                  can('board.appearance')
-                    ? {
-                        palette: theme.palette,
-                        onPick: (type, color) =>
-                          setColours((current) => ({
-                            ...(current ?? saved.widgets),
-                            [type]: color,
-                          })),
-                      }
-                    : undefined
-                }
-                scroll={{
-                  ref: scrollRef,
-                  offset,
-                  min: minOffset,
-                  max: maxOffset,
-                  top: viewTop,
-                  bottom: viewBottom,
-                }}
-                onOpen={(type) => router.push(`/board/${boardId}/w/${type}`)}
-                onStartEditing={startEditing}
-                onChange={change}
-                onDragging={setDragging}
-              />
             </Animated.View>
           )}
 

@@ -705,6 +705,19 @@ the API (`npm run dev`) and Expo (`npm run mobile`) first.
 - [x] 🔵 ↻ On web, drag and resize widgets, then Reset layout → Same as before; and a phone that has its own arrangement keeps it
 - [ ] ↻ Tap a card outside edit mode → Its spoke opens, as before
 
+### Continuous hold-to-drag — 2026-10-23
+
+Trello: [Keep dragging the widget held to enter edit mode](https://trello.com/c/ZierGtDw).
+Follow-up: [Entering widget edit mode shifts the grid and reorders the held card](https://trello.com/c/4LQF3vOr).
+
+- [x] 🔵 Hold a widget outside edit mode, keep the same finger down, then move → That widget follows immediately; no second hold is needed (user confirmed on simulator)
+- [x] 🔵 Enter edit mode by holding a widget in a lower row without moving → Other widgets stay in place, and releasing does not reorder anything (user confirmed on simulator)
+- [ ] 🔵 Drag it over another widget, release, and tap Done → The new order survives reopening the board
+- [x] Hold without moving, then release → Edit mode stays open and the widget stays in its original position (user confirmed on simulator)
+- [ ] Start on a lone one-column widget drawn across the row → It stays under the finger as edit controls appear, then settles to its edit size on release
+- [ ] While editing, drag near the screen edges → Auto-scroll still follows; drag the corner handle → It resizes
+- [ ] Outside edit mode, tap a widget → Its spoke opens; swipe promptly → The dashboard scrolls without entering edit mode
+
 ---
 
 
