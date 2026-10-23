@@ -11,6 +11,7 @@
     "test": "npm run test -w packages/shared && npm run test -w packages/api-client && npm run test -w apps/api && npm run test -w apps/web && npm run test -w apps/mobile",
     "mobile": "npm run start -w apps/mobile",
     "mobile:tunnel": "./tunnel.sh",
+    "mobile:tunnel:cf": "TUNNEL_PROVIDER=cloudflare ./tunnel.sh",
     "mobile:ios": "npm run ios -w apps/mobile -- --device"
   },
   "devDependencies": {
