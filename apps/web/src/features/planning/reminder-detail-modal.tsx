@@ -29,6 +29,7 @@ import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ItemLinks } from "@/features/links/item-links";
 import { ItemNotes } from "@/features/notes/item-notes";
 
 export function ReminderDetailModal({ boardId }: { boardId: string }) {
@@ -187,6 +188,8 @@ function ReminderDetailBody({
         parentId={data.id}
         canEdit={canManage}
       />
+
+      <ItemLinks boardId={boardId} kind="REMINDER" parentId={data.id} />
 
       {canManage && (
         <>

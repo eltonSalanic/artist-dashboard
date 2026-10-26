@@ -24,6 +24,7 @@ import {
 } from '@/features/board/detail-poster';
 import { dueDay, shortDate } from '@/features/board/format';
 import { useWidgetInk } from '@/features/board/spoke-header';
+import { ItemLinksSection } from '@/features/item-links/item-links-section';
 import { ItemNotesSection } from '@/features/item-notes/item-notes-section';
 import { CommentsSection } from '@/features/comments/comments-section';
 import {
@@ -136,6 +137,8 @@ export function TaskDetailScreen({
           parentId={t.id}
           canEdit={can('task.editFields')}
         />
+
+        <ItemLinksSection boardId={boardId} kind="TASK" parentId={t.id} />
 
         {t.assignees.length > 0 && (
           <Section title="ASSIGNED TO">

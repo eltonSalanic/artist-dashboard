@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ItemLinks } from "@/features/links/item-links";
 import { ItemNotes } from "@/features/notes/item-notes";
 import { ShowMoney } from "@/features/finances/show-money";
 
@@ -257,6 +258,8 @@ function EventDetailBody({
         parentId={data.id}
         canEdit={canManage}
       />
+
+      <ItemLinks boardId={boardId} kind="EVENT" parentId={data.id} />
 
       <Separator />
 

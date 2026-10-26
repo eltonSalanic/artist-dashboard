@@ -71,6 +71,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ItemLinks } from "@/features/links/item-links";
 import { ItemNotes } from "@/features/notes/item-notes";
 import { useTaskStatusChange } from "@/features/tasks/task-completion";
 
@@ -483,6 +484,8 @@ function TaskDetailBody({
         parentId={taskId}
         canEdit={canEdit}
       />
+
+      <ItemLinks boardId={boardId} kind="TASK" parentId={taskId} />
 
       <Separator />
 

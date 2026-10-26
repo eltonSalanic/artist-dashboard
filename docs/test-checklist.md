@@ -776,3 +776,14 @@ rewritten for the new editor.
 > `expo export` proves resolution and types; `expo start` is what proves the
 > toolchain, and only a phone proves the app.
 
+
+
+## Links on items
+
+Checks live on [Attach links to items](https://trello.com/c/jhggFZOC). Tasks, events (shows, rehearsals, meetings), goals, and reminders now have a Links section on web and mobile. Tap **Add a link**, optionally name it, paste a web address, and save. Existing items only; save a new item first.
+
+The local migration `20261025183000_item_links` is applied. Other environments need `npx prisma migrate deploy` from `apps/api`; regenerate the Prisma client after updating the schema. No mobile rebuild is needed.
+
+Automated checks: 24 API link/validation cases, six web interaction tests (including failed-save retry), full API/client/web/mobile suites, TypeScript and targeted lint checks pass. The database matches the schema.
+
+Verified 2026-10-26: the October 25 feature-test run (API, database, simulator) and a re-run on October 26 (live API, database and the web form in a browser) passed, and the user confirmed the three phone checks. All checks are ticked on the card.

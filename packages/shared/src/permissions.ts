@@ -9,6 +9,8 @@ export const Actions = [
   'task.createSubtask',
   'task.comment',
   'file.upload',
+  'link.add',
+  'link.manage',
   'member.invite',
   'widget.manage',
   'board.appearance',
@@ -31,6 +33,7 @@ const USER_ACTIONS: ReadonlySet<Action> = new Set<Action>([
   'task.createSubtask',
   'task.comment',
   'file.upload',
+  'link.add',
   // Everyone can browse the archive; only admins can move things in and out
   // of it ('item.archive') or delete them for good.
   'archive.view',

@@ -14,6 +14,7 @@ import {
 import { dueDay, shortDate } from '@/features/board/format';
 import { useGoalCompletion } from '@/features/board/goal-completion';
 import { useWidgetInk } from '@/features/board/spoke-header';
+import { ItemLinksSection } from '@/features/item-links/item-links-section';
 import { ItemNotesSection } from '@/features/item-notes/item-notes-section';
 import { LinkedTasks } from '@/features/links/linked-tasks';
 import { spacing, useThemeColors } from '@/theme';
@@ -112,6 +113,8 @@ export function GoalDetailScreen({ boardId, goalId }: { boardId: string; goalId:
           parentId={g.id}
           canEdit={canManage}
         />
+
+        <ItemLinksSection boardId={boardId} kind="GOAL" parentId={g.id} />
 
         <LinkedTasks boardId={boardId} link={{ goalId: g.id }} archived={archived} />
       </ScrollView>

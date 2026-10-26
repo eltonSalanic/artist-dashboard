@@ -1,3 +1,4 @@
+import type { Ref } from 'react';
 import { TextInput, View, type TextInputProps } from 'react-native';
 import { posterInput, posterRadius, spacing, useTokens } from '@/theme';
 import { FieldLabel } from './field-label';
@@ -18,7 +19,7 @@ export function TextField({
   error,
   style,
   ...props
-}: TextInputProps & { label: string; error?: string | null }) {
+}: TextInputProps & { label: string; error?: string | null; ref?: Ref<TextInput> }) {
   const tokens = useTokens();
   const failed = error != null && error !== '';
 

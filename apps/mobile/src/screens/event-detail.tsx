@@ -12,6 +12,7 @@ import {
 } from '@/features/board/detail-poster';
 import { daysAway, timeOfDay } from '@/features/board/format';
 import { EVENT_WIDGET, useWidgetInk } from '@/features/board/spoke-header';
+import { ItemLinksSection } from '@/features/item-links/item-links-section';
 import { ItemNotesSection } from '@/features/item-notes/item-notes-section';
 import { LinkedTasks } from '@/features/links/linked-tasks';
 import { ShowMoney } from '@/features/board/show-money';
@@ -121,6 +122,8 @@ export function EventDetailScreen({ boardId, eventId }: { boardId: string; event
           parentId={e.id}
           canEdit={can('event.manage')}
         />
+
+        <ItemLinksSection boardId={boardId} kind="EVENT" parentId={e.id} />
 
         <LinkedTasks boardId={boardId} link={{ eventId: e.id }} archived={e.archivedAt !== null} />
 

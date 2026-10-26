@@ -31,4 +31,5 @@ export * from './dto/activity.dto';
 export * from './dto/custom-widget.dto';
 export * from './dto/notification.dto';
 export * from './dto/note.dto';
+export * from './dto/item-link.dto';
 export * from './dto/finance.dto';

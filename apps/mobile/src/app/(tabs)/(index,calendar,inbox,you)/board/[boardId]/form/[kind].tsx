@@ -3,6 +3,8 @@ import {
   EventTypes,
   FinanceKinds,
   NoteParentKinds,
+  LinkParentKinds,
+  type LinkParentKind,
   type EventType,
   type FinanceKind,
   type NoteParentKind,
@@ -12,6 +14,7 @@ import { EventForm } from '@/features/forms/event-form';
 import { FinanceForm } from '@/features/forms/finance-form';
 import { FocusForm } from '@/features/forms/focus-form';
 import { GoalForm } from '@/features/forms/goal-form';
+import { ItemLinkForm } from '@/features/forms/item-link-form';
 import { ItemNoteForm } from '@/features/forms/item-note-form';
 import { NoteForm } from '@/features/forms/note-form';
 import { ReminderForm } from '@/features/forms/reminder-form';
@@ -79,6 +82,10 @@ export default function Form() {
         );
       case 'settle':
         return eventId ? <SettleForm boardId={boardId} eventId={eventId} /> : null;
+      case 'item-link':
+        return (LinkParentKinds as readonly string[]).includes(on ?? '') && parentId ? (
+          <ItemLinkForm boardId={boardId} kind={on as LinkParentKind} parentId={parentId} />
+        ) : null;
       case 'item-note':
         return (NoteParentKinds as readonly string[]).includes(on ?? '') && parentId ? (
           <ItemNoteForm
