@@ -9,13 +9,15 @@ Conventions for writing code here: [`AGENTS.md`](AGENTS.md).
 
 ## Running it on a phone
 
-**A phone is not your laptop.** `localhost` on a phone is the phone, so every
-URL in `.env` has to be the LAN address of the machine running the stack — this
-is the single most common reason the app comes up but can't sign in.
+**A phone is not your laptop.** `localhost` on a phone is the phone. In a dev
+build the API and Supabase URLs default to the address Metro is served from,
+which Expo picks afresh on every `expo start` — so on a new network (another
+Wi-Fi, a phone hotspot) restart `npm run mobile` and scan the new QR. Set
+`EXPO_PUBLIC_API_URL` / `EXPO_PUBLIC_SUPABASE_URL` in `.env` only to point
+somewhere else; set, they win.
 
 ```bash
 cp apps/mobile/.env.example apps/mobile/.env
-ipconfig getifaddr en0          # your LAN IP, e.g. 192.168.1.10
 npx supabase status             # the anon key goes in .env
 ```
 
@@ -47,7 +49,11 @@ Native's `fetch` is not a browser and sends no `Origin`, so the API's
 
 Public Wi-Fi usually isolates devices from each other, and an IPv6-only
 hotspot (T-Mobile's, for one) gives the laptop an IPv4 address — `192.0.0.2` —
-that nothing else can dial, so the app cannot reach Metro. Tunnel instead:
+that nothing else can dial, so the app cannot reach Metro. On iOS that shows
+up on scanning as *"The resource could not be loaded because the App Transport
+Security policy requires the use of a secure connection"*: `192.0.0.2` is not a
+private address, so ATS will not allow plain HTTP to it. Loosening ATS would not
+help, since the phone still could not reach that address. Tunnel instead:
 
 ```bash
 npm run mobile:tunnel           # from the repo root; stop `npm run mobile` first
@@ -61,6 +67,13 @@ already up, opens ngrok tunnels for the API (3001), Supabase (54321) and Metro
 - **Needs ngrok, logged in:** `brew install ngrok`, then
   `ngrok config add-authtoken <token>`. It runs three tunnels at once. Your
   own `ngrok.yml` is read for the token, never edited.
+- **Or Cloudflare, no account:** `npm run mobile:tunnel:cf` (or
+  `TUNNEL_PROVIDER=cloudflare npm run mobile:tunnel`) opens three Cloudflare
+  quick tunnels instead — `brew install cloudflared`, no login, no bandwidth
+  cap. Use it when ngrok's free plan runs out of data. The
+  `*.trycloudflare.com` URLs are new every run, so scan the fresh QR each time.
+- **Expo already running?** `METRO_PORT=8082 npm run mobile:tunnel` runs this
+  Metro beside it instead of asking you to stop it.
 - **Supabase is tunnelled too**, because the phone signs in against Supabase
   directly, not through the API.
 - **`.env` is not edited.** The tunnel URLs are set on Expo's process, and Expo
@@ -81,7 +94,7 @@ already up, opens ngrok tunnels for the API (3001), Supabase (54321) and Metro
 - **No keyboard shortcuts** — shake the phone → Reload. Each run starts Metro
   with `--clear`, since the URLs are new every time and inlined at bundle time,
   so the first load is slow.
-- Logs (API, ngrok, Expo) go to a temp folder whose path is printed.
+- Logs (API, the tunnels, Expo) go to a temp folder whose path is printed.
 
 ⚠️ This puts your local Supabase and API on the public internet, and the local
 Supabase stack runs on well-known default secrets. Stop it when you're done.

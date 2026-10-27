@@ -2,6 +2,7 @@ import type { ComponentType } from 'react';
 import type { WidgetType } from '@artist/shared';
 import { ActivitySpoke } from './spokes/activity';
 import { makeEventsSpoke } from './spokes/events';
+import { FinancesSpoke } from './spokes/finances';
 import { FocusSpoke } from './spokes/focus';
 import { GoalsSpoke } from './spokes/goals';
 import { NoteSpoke } from './spokes/note';
@@ -30,4 +31,5 @@ export const SPOKES: Partial<Record<WidgetType, ComponentType<SpokeProps>>> = {
   REMINDERS: RemindersSpoke,
   ACTIVITY_FEED: ActivitySpoke,
   CUSTOM: NoteSpoke,
+  FINANCES: FinancesSpoke,
 };

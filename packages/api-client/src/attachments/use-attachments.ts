@@ -19,11 +19,13 @@ interface UploadUrlResponse {
   signedUrl: string;
 }
 
-/** An attachment belongs to exactly one task, comment or event. */
+/** An attachment belongs to exactly one task, comment, event or ledger entry. */
 export interface AttachmentParent {
   taskId?: string;
   commentId?: string;
   eventId?: string;
+  /** A receipt. */
+  financeEntryId?: string;
 }
 
 /**
@@ -48,7 +50,9 @@ const parentQuery = (parent: AttachmentParent) =>
     ? `taskId=${parent.taskId}`
     : parent.eventId
       ? `eventId=${parent.eventId}`
-      : `commentId=${parent.commentId}`;
+      : parent.financeEntryId
+        ? `financeEntryId=${parent.financeEntryId}`
+        : `commentId=${parent.commentId}`;
 
 export function useAttachments(boardId: string, parent: AttachmentParent) {
   const key = parentQuery(parent);
@@ -56,7 +60,12 @@ export function useAttachments(boardId: string, parent: AttachmentParent) {
     queryKey: ["attachments", boardId, key],
     queryFn: () =>
       apiFetch<AttachmentDto[]>(`/boards/${boardId}/attachments?${key}`),
-    enabled: !!(parent.taskId || parent.commentId || parent.eventId),
+    enabled: !!(
+      parent.taskId ||
+      parent.commentId ||
+      parent.eventId ||
+      parent.financeEntryId
+    ),
   });
 }
 
@@ -117,6 +126,10 @@ export function useUploadAttachment(boardId: string, parent: AttachmentParent) {
         queryClient.invalidateQueries({ queryKey: ["comments", boardId] });
       }
       queryClient.invalidateQueries({ queryKey: ["activity", boardId] });
+      // A ledger row shows how many receipts it has.
+      if (parent.financeEntryId) {
+        queryClient.invalidateQueries({ queryKey: ["finances", boardId] });
+      }
     },
     onError: showError,
   });
@@ -137,6 +150,9 @@ export function useDeleteAttachment(boardId: string, parent: AttachmentParent) {
       // A comment carries its attachments inline, so its list is stale too.
       if (parent.commentId) {
         queryClient.invalidateQueries({ queryKey: ["comments", boardId] });
+      }
+      if (parent.financeEntryId) {
+        queryClient.invalidateQueries({ queryKey: ["finances", boardId] });
       }
     },
     onError: showError,

@@ -1,5 +1,13 @@
+import { FINANCE_COLORS } from '@artist/shared';
 import { Pressable, View } from 'react-native';
-import { ThemeTokensProvider, radius, spacing, useShadows, useSlotTokens } from '@/theme';
+import {
+  ThemeTokensProvider,
+  radius,
+  spacing,
+  useShadows,
+  useSlotTokens,
+  useScheme,
+} from '@/theme';
 import type { HubCard } from '@/features/board/use-hub-cards';
 import { Icon } from './icon';
 import { PosterText } from './poster-text';
@@ -40,6 +48,7 @@ export function HubStatCard({
 }) {
   const tokens = useSlotTokens(card.slot);
   const shadows = useShadows();
+  const financeColors = FINANCE_COLORS[useScheme()];
   const hero = card.kind === 'hero';
   const lines = tall && !card.loading ? card.lines : [];
 
@@ -106,7 +115,7 @@ export function HubStatCard({
           <View style={{ gap: 2 }}>
             <PosterText
               variant={hero ? 'prose' : 'stat'}
-              color={tokens.foreground}
+              color={card.primaryTone ? financeColors[card.primaryTone] : tokens.foreground}
               numberOfLines={hero ? (tall ? 4 : 3) : 1}
               adjustsFontSizeToFit={!hero}
               minimumFontScale={0.6}
@@ -155,6 +164,7 @@ export function HubStatCard({
 export function HubCardSkeleton() {
   const tokens = useSlotTokens('base');
   const shadows = useShadows();
+  const financeColors = FINANCE_COLORS[useScheme()];
   return (
     <View
       style={{

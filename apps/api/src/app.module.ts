@@ -26,6 +26,8 @@ import { CustomWidgetModule } from './custom-widget/custom-widget.module';
 import { MentionsModule } from './mentions/mentions.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { NotesModule } from './notes/notes.module';
+import { LinksModule } from './links/links.module';
+import { FinancesModule } from './finances/finances.module';
 
 @Module({
   imports: [
@@ -49,12 +51,14 @@ import { NotesModule } from './notes/notes.module';
     FocusModule,
     RemindersModule,
     NotesModule,
+    LinksModule,
     CalendarModule,
     ArchiveModule,
     CommentsModule,
     AttachmentsModule,
     CustomWidgetModule,
     MentionsModule,
+    FinancesModule,
   ],
   controllers: [HealthController],
   providers: [

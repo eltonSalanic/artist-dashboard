@@ -20,6 +20,9 @@ const icons: Record<ActivityType, IconName> = {
   GOAL_COMPLETED: { sf: 'target', md: 'track-changes' },
   FILE_UPLOADED: { sf: 'paperclip', md: 'attach-file' },
   COMMENT_ADDED: { sf: 'bubble.left', md: 'chat-bubble-outline' },
+  FINANCE_ENTRY_ADDED: { sf: 'dollarsign.circle', md: 'account-balance-wallet' },
+  SHOW_SETTLED: { sf: 'banknote', md: 'payments' },
+  PAYOUT_RECORDED: { sf: 'banknote', md: 'payments' },
 };
 
 /**

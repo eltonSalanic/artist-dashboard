@@ -25,7 +25,7 @@ export function TaskAttachments({
   parent,
 }: {
   boardId: string;
-  parent: { taskId: string } | { eventId: string };
+  parent: { taskId: string } | { eventId: string } | { financeEntryId: string };
 }) {
   const { can } = usePermissions();
   const me = useMe(true);
@@ -35,7 +35,13 @@ export function TaskAttachments({
   const rename = useRenameAttachment(boardId, parent);
   const named = useNamedUpload((source) => upload.mutate(source));
   // Anyone may delete their own upload; whoever manages the parent, anyone's.
-  const manages = can("eventId" in parent ? "event.manage" : "task.editFields");
+  const manages = can(
+    "eventId" in parent
+      ? "event.manage"
+      : "financeEntryId" in parent
+        ? "finance.manage"
+        : "task.editFields",
+  );
   const fileInput = useRef<HTMLInputElement>(null);
   const canUpload = can("file.upload");
   const myId = me.data?.user.id;
@@ -43,7 +49,9 @@ export function TaskAttachments({
   return (
     <section className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <h3 className={labelStyle}>Attachments</h3>
+        <h3 className={labelStyle}>
+          {"financeEntryId" in parent ? "Receipts" : "Attachments"}
+        </h3>
         {canUpload && (
           <Button
             variant="outline"

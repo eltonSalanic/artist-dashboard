@@ -1,0 +1,2 @@
+ALTER TABLE "FinanceEntry"
+ADD COLUMN "note" TEXT NOT NULL DEFAULT '';

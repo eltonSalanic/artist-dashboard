@@ -12,6 +12,7 @@ import {
 } from '@/features/board/detail-poster';
 import { shortDate, timeOfDay } from '@/features/board/format';
 import { useWidgetInk } from '@/features/board/spoke-header';
+import { ItemLinksSection } from '@/features/item-links/item-links-section';
 import { ItemNotesSection } from '@/features/item-notes/item-notes-section';
 import { spacing, useThemeColors } from '@/theme';
 
@@ -110,6 +111,8 @@ export function ReminderDetailScreen({
           parentId={r.id}
           canEdit={canManage}
         />
+
+        <ItemLinksSection boardId={boardId} kind="REMINDER" parentId={r.id} />
       </ScrollView>
     </>
   );

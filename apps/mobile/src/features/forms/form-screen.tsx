@@ -16,9 +16,9 @@ import { face, spacing, usePosterCanvas, useThemeColors } from '@/theme';
  * the unsaved-changes prompt. Anything that navigates away from inside a form
  * goes through this.
  */
-const LeaveContext = createContext<(navigate: () => void) => void>((navigate) =>
-  navigate(),
-);
+export type LeaveForm = (navigate: () => void) => void;
+
+const LeaveContext = createContext<LeaveForm>((navigate) => navigate());
 export const useLeaveForm = () => use(LeaveContext);
 
 /**
@@ -53,7 +53,8 @@ export function FormScreen({
   dirty: boolean;
   canSave: boolean;
   saving: boolean;
-  onSave: () => Promise<unknown>;
+  /** Save handlers can use `leave` to navigate to the saved record. */
+  onSave: (leave: LeaveForm) => Promise<unknown>;
   /**
    * False when the content brings its own scroller — a virtualised or
    * reorderable list cannot sit inside a ScrollView.
@@ -65,8 +66,10 @@ export function FormScreen({
   const navigation = useNavigation();
   const leaving = useRef(false);
 
-  usePreventRemove(dirty, ({ data }) => {
+  usePreventRemove(dirty || saving, ({ data }) => {
     if (leaving.current) return navigation.dispatch(data.action);
+    // Finish saving (including any receipt upload) before allowing dismissal.
+    if (saving) return;
     Alert.alert('Discard changes?', undefined, [
       { text: 'Keep editing', style: 'cancel' },
       {
@@ -83,8 +86,13 @@ export function FormScreen({
   };
 
   const save = () =>
-    onSave().then(
-      () => leave(() => router.back()),
+    onSave(leave).then(
+      () => {
+        // Some saves deliberately navigate to a newly created detail record
+        // instead of closing the form. In that case the save handler already
+        // called `leave`, so don't also pop the screen.
+        if (!leaving.current) leave(() => router.back());
+      },
       () => undefined,
     );
 
@@ -98,17 +106,14 @@ export function FormScreen({
           options={{
             title,
             headerTitle: postered ? '' : undefined,
-            headerLeft: () => <HeaderText title="Cancel" onPress={() => router.back()} />,
+            headerLeft: () => (
+              <HeaderText title="Cancel" disabled={saving} onPress={() => router.back()} />
+            ),
             headerRight: () =>
               saving ? (
                 <ActivityIndicator />
               ) : (
-                <HeaderText
-                  title="Save"
-                  bold
-                  disabled={!canSave}
-                  onPress={() => void save()}
-                />
+                <HeaderText title="Save" bold disabled={!canSave} onPress={() => void save()} />
               ),
           }}
         />
