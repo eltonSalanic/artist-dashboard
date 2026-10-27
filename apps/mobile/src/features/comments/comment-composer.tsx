@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import {
   applyMention,
   findMentionQuery,
   matchMembers,
   type MentionTarget,
 } from '@artist/shared';
+import { TextInput } from '@/components/text-input';
 import { Button } from '@/components/button';
 import { PosterText } from '@/components/poster-text';
 import { poster, posterRadius, radius, spacing, useTokens } from '@/theme';

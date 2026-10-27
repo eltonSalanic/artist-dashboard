@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Modal, TextInput, View } from 'react-native';
+import { Modal, View } from 'react-native';
 import { Image } from 'expo-image';
 import { splitFileName, withExtension } from '@artist/shared';
+import { TextInput } from '@/components/text-input';
 import { FieldLabel } from '@/components/field-label';
 import { PosterText } from '@/components/poster-text';
 import { HeaderText } from '@/features/forms/form-screen';

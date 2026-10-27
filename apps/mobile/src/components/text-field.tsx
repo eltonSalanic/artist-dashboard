@@ -1,5 +1,6 @@
 import type { Ref } from 'react';
-import { TextInput, View, type TextInputProps } from 'react-native';
+import { View, type TextInputProps } from 'react-native';
+import { TextInput } from './text-input';
 import { posterInput, posterRadius, spacing, useTokens } from '@/theme';
 import { FieldLabel } from './field-label';
 import { PosterText } from './poster-text';
