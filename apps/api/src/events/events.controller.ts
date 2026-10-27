@@ -7,13 +7,17 @@ import {
   Patch,
   Post,
   Query,
+  Req,
 } from '@nestjs/common';
 import {
   cascadeQuerySchema,
+  changeShowStatusSchema,
   createEventSchema,
   eventQuerySchema,
   updateEventSchema,
+  type BoardRole,
   type CascadeQueryDto,
+  type ChangeShowStatusDto,
   type CreateEventDto,
   type EventQueryDto,
   type UpdateEventDto,
@@ -22,6 +26,10 @@ import { CurrentUser, type AuthUser } from '../auth/current-user.decorator';
 import { BoardRoles } from '../common/board-roles.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { EventsService } from './events.service';
+
+interface RequestWithMembership {
+  membership: { role: BoardRole };
+}
 
 @Controller('boards/:boardId/events')
 @BoardRoles('USER')
@@ -63,6 +71,25 @@ export class EventsController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.events.update(boardId, eventId, dto, user.userId);
+  }
+
+  /** Open to members; the service checks 'show.changeStatus'. */
+  @Patch(':eventId/status')
+  changeStatus(
+    @Param('boardId') boardId: string,
+    @Param('eventId') eventId: string,
+    @Body(new ZodValidationPipe(changeShowStatusSchema))
+    dto: ChangeShowStatusDto,
+    @CurrentUser() user: AuthUser,
+    @Req() req: RequestWithMembership,
+  ) {
+    return this.events.changeStatus(
+      boardId,
+      eventId,
+      dto,
+      user.userId,
+      req.membership.role,
+    );
   }
 
   @Delete(':eventId')
