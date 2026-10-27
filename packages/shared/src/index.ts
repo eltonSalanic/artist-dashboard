@@ -17,6 +17,7 @@ export * from './dto/invite.dto';
 export * from './dto/board.dto';
 export * from './dto/task.dto';
 export * from './dto/status.dto';
+export * from './dto/show-status.dto';
 export * from './dto/layout.dto';
 export * from './dto/mobile-layout.dto';
 export * from './dto/goal.dto';

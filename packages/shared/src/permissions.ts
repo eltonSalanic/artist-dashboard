@@ -16,6 +16,7 @@ export const Actions = [
   'board.appearance',
   'status.manage',
   'event.manage',
+  'show.changeStatus',
   'goal.manage',
   'reminder.manage',
   'focus.manage',
@@ -32,6 +33,10 @@ const USER_ACTIONS: ReadonlySet<Action> = new Set<Action>([
   'task.changeStatus',
   'task.createSubtask',
   'task.comment',
+  // Whoever got the set time from the promoter can move the show along, the
+  // way anyone can move a task. Renaming statuses and editing the show itself
+  // stay with admins ('status.manage', 'event.manage').
+  'show.changeStatus',
   'file.upload',
   'link.add',
   // Everyone can browse the archive; only admins can move things in and out

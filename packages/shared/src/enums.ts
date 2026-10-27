@@ -7,6 +7,13 @@ export type Priority = (typeof Priorities)[number];
 export const EventTypes = ['SHOW', 'MEETING', 'REHEARSAL'] as const;
 export type EventType = (typeof EventTypes)[number];
 
+/**
+ * What the app reads from a show status. "Played" is deliberately missing: a
+ * held or booked show whose date has passed reads as played on its own.
+ */
+export const ShowStatusCategories = ['HOLD', 'BOOKED', 'CANCELLED'] as const;
+export type ShowStatusCategory = (typeof ShowStatusCategories)[number];
+
 export const GoalPeriods = ['YEARLY', 'MONTHLY', 'DAILY'] as const;
 export type GoalPeriod = (typeof GoalPeriods)[number];
 
@@ -25,6 +32,7 @@ export const ActivityTypes = [
   'FINANCE_ENTRY_ADDED',
   'SHOW_SETTLED',
   'PAYOUT_RECORDED',
+  'SHOW_STATUS_CHANGED',
 ] as const;
 export type ActivityType = (typeof ActivityTypes)[number];
 
