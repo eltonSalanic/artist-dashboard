@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useHeaderHeight } from 'expo-router/react-navigation';
-import { ActivityIndicator, Pressable, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 import { useCreateBoard } from '@artist/api-client';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TextInput } from '@/components/text-input';
 import { Icon } from '@/components/icon';
 import { PosterText } from '@/components/poster-text';
 import { useSelectedBoard } from '@/features/board/selected-board';

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
 import { useBoard, useMe } from '@artist/api-client';
 import { Priorities } from '@artist/shared';
+import { TextInput } from '@/components/text-input';
 import { ChoiceChips, type Choice } from '@/components/choice-chips';
 import { Icon, type IconName } from '@/components/icon';
 import { PosterText } from '@/components/poster-text';

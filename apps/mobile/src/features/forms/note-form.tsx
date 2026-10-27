@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Alert, Pressable, TextInput, View, type TextStyle } from 'react-native';
+import { Alert, Pressable, View, type TextStyle } from 'react-native';
 import { router, Stack } from 'expo-router';
 import {
   isMarkdownEditable,
@@ -13,6 +13,7 @@ import {
   useSaveCustomWidget,
   type CustomWidgetDto,
 } from '@artist/api-client';
+import { TextInput } from '@/components/text-input';
 import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
 import { toggleList, toggleWrap, type Edit, type Selection } from '@/features/notes/editing';

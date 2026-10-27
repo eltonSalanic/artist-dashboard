@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
-import { TextInput } from 'react-native';
 import { itemLinkInputSchema, type LinkParentKind } from '@artist/shared';
 import { ApiError, useItemLinks, usePermissions } from '@artist/api-client';
+import { TextInput } from '@/components/text-input';
 import { PosterText } from '@/components/poster-text';
 import { TextField } from '@/components/text-field';
 import { useTokens } from '@/theme';

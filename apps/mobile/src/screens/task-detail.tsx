@@ -1,6 +1,6 @@
 import { router, Stack } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Pressable, ScrollView, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import {
   useCanChangeStatus,
@@ -8,6 +8,7 @@ import {
   usePermissions,
   useTask,
 } from '@artist/api-client';
+import { TextInput } from '@/components/text-input';
 import { Badge } from '@/components/badge';
 import { Icon } from '@/components/icon';
 import { PosterPill } from '@/components/poster-pill';

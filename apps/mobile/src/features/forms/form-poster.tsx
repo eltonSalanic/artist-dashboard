@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { TextInput, View } from 'react-native';
+import { View } from 'react-native';
+import { TextInput } from '@/components/text-input';
 import { PosterText } from '@/components/poster-text';
 import { DISPLAY_SCALE, poster, posterRadius, spacing, useShadows, type WidgetInk } from '@/theme';
 
