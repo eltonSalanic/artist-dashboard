@@ -1,0 +1,204 @@
+{
+  "createdAt": "2026-10-25T20:25:39.653Z",
+  "accounts": [
+    {
+      "role": "owner",
+      "email": "ft-links-owner-mvoa1zk6@demo.band",
+      "id": "bba7eb0d-1eb1-403b-9b16-6d3c08320372"
+    },
+    {
+      "role": "member",
+      "email": "ft-links-member-mvoa1zk6@demo.band",
+      "id": "7528c346-1de1-4026-b815-42f01e360c30"
+    }
+  ],
+  "boards": [
+    {
+      "id": "78267435-7851-46c9-84b2-c7c3b2f931e9",
+      "name": "FT Links QA",
+      "membershipId": "c78f619d-9114-469e-bd2b-e0e3f4000e49",
+      "role": "ADMIN",
+      "palette": "playful"
+    },
+    {
+      "id": "426fc26a-53bc-46eb-8c41-e61a440e2921",
+      "name": "FT Links Isolation",
+      "membershipId": "7461c718-d935-4f4e-b695-ff03f826ff6f",
+      "role": "ADMIN",
+      "palette": "playful"
+    }
+  ],
+  "parents": [
+    {
+      "id": "4dfe8820-ff5c-4ed6-9e88-e7dbe76af547",
+      "kind": "TASK",
+      "title": "FT Links TASK",
+      "resource": "tasks"
+    },
+    {
+      "id": "ba411fa9-0d4b-4065-be48-206f7290935a",
+      "kind": "EVENT",
+      "eventType": "SHOW",
+      "title": "FT Links SHOW",
+      "resource": "events"
+    },
+    {
+      "id": "1c7a4b9d-8e03-461c-9972-10833992313c",
+      "kind": "EVENT",
+      "eventType": "REHEARSAL",
+      "title": "FT Links REHEARSAL",
+      "resource": "events"
+    },
+    {
+      "id": "ad1ee7d1-3262-4d3e-a449-d544f5c27c14",
+      "kind": "EVENT",
+      "eventType": "MEETING",
+      "title": "FT Links MEETING",
+      "resource": "events"
+    },
+    {
+      "id": "4421bdaa-1869-4575-abc6-8010b0bbc73a",
+      "kind": "GOAL",
+      "title": "FT Links GOAL",
+      "resource": "goals"
+    },
+    {
+      "id": "7a812eb7-731d-4bc4-a61a-ff880f507692",
+      "kind": "REMINDER",
+      "title": "FT Links REMINDER",
+      "resource": "reminders"
+    }
+  ],
+  "rows": [
+    {
+      "table": "User",
+      "id": "bba7eb0d-1eb1-403b-9b16-6d3c08320372",
+      "purpose": "Disposable links QA owner"
+    },
+    {
+      "table": "User",
+      "id": "7528c346-1de1-4026-b815-42f01e360c30",
+      "purpose": "Disposable links QA member"
+    },
+    {
+      "table": "Board",
+      "id": "78267435-7851-46c9-84b2-c7c3b2f931e9",
+      "purpose": "FT Links QA"
+    },
+    {
+      "table": "Board",
+      "id": "426fc26a-53bc-46eb-8c41-e61a440e2921",
+      "purpose": "FT Links Isolation"
+    },
+    {
+      "table": "Membership",
+      "id": "e4f2c546-137e-4b2f-a651-e45c2cf75ec6",
+      "purpose": "QA member access to the QA board only"
+    },
+    {
+      "table": "tasks",
+      "id": "4dfe8820-ff5c-4ed6-9e88-e7dbe76af547",
+      "purpose": "FT Links TASK"
+    },
+    {
+      "table": "events",
+      "id": "ba411fa9-0d4b-4065-be48-206f7290935a",
+      "purpose": "FT Links SHOW"
+    },
+    {
+      "table": "events",
+      "id": "1c7a4b9d-8e03-461c-9972-10833992313c",
+      "purpose": "FT Links REHEARSAL"
+    },
+    {
+      "table": "events",
+      "id": "ad1ee7d1-3262-4d3e-a449-d544f5c27c14",
+      "purpose": "FT Links MEETING"
+    },
+    {
+      "table": "goals",
+      "id": "4421bdaa-1869-4575-abc6-8010b0bbc73a",
+      "purpose": "FT Links GOAL"
+    },
+    {
+      "table": "reminders",
+      "id": "7a812eb7-731d-4bc4-a61a-ff880f507692",
+      "purpose": "FT Links REMINDER"
+    }
+  ],
+  "isolatedTaskId": "edbc6b5b-bc48-4f16-9ada-706b90a95b58",
+  "links": [
+    {
+      "id": "d37ac927-c930-4788-b6ae-e069ce6d57b6",
+      "title": "FT shared TASK",
+      "url": "https://docs.google.com/spreadsheets/d/qa-example?usp=sharing#gid=12",
+      "createdById": "7528c346-1de1-4026-b815-42f01e360c30",
+      "createdAt": "2026-10-25T20:27:54.368Z",
+      "parentId": "4dfe8820-ff5c-4ed6-9e88-e7dbe76af547",
+      "kind": "TASK"
+    },
+    {
+      "id": "008b7585-119c-42fc-bd7e-6ecef0dcaf59",
+      "title": "FT shared SHOW",
+      "url": "https://docs.google.com/spreadsheets/d/qa-example?usp=sharing#gid=12",
+      "createdById": "7528c346-1de1-4026-b815-42f01e360c30",
+      "createdAt": "2026-10-25T20:27:54.387Z",
+      "parentId": "ba411fa9-0d4b-4065-be48-206f7290935a",
+      "kind": "EVENT"
+    },
+    {
+      "id": "11f7a2c0-4e34-43b1-a699-8665eb0c55bb",
+      "title": "FT shared REHEARSAL",
+      "url": "https://docs.google.com/spreadsheets/d/qa-example?usp=sharing#gid=12",
+      "createdById": "7528c346-1de1-4026-b815-42f01e360c30",
+      "createdAt": "2026-10-25T20:27:54.394Z",
+      "parentId": "1c7a4b9d-8e03-461c-9972-10833992313c",
+      "kind": "EVENT"
+    },
+    {
+      "id": "86bdb38e-1fce-4e17-a275-e8dc5e7586f9",
+      "title": "FT shared MEETING",
+      "url": "https://docs.google.com/spreadsheets/d/qa-example?usp=sharing#gid=12",
+      "createdById": "7528c346-1de1-4026-b815-42f01e360c30",
+      "createdAt": "2026-10-25T20:27:54.400Z",
+      "parentId": "ad1ee7d1-3262-4d3e-a449-d544f5c27c14",
+      "kind": "EVENT"
+    },
+    {
+      "id": "d2ecb2f6-8232-4609-a184-4ad9f47a0e35",
+      "title": "FT shared GOAL",
+      "url": "https://docs.google.com/spreadsheets/d/qa-example?usp=sharing#gid=12",
+      "createdById": "7528c346-1de1-4026-b815-42f01e360c30",
+      "createdAt": "2026-10-25T20:27:54.410Z",
+      "parentId": "4421bdaa-1869-4575-abc6-8010b0bbc73a",
+      "kind": "GOAL"
+    },
+    {
+      "id": "d888d22b-e97c-4f36-bc08-bd404f06b9eb",
+      "title": "FT shared REMINDER",
+      "url": "https://docs.google.com/spreadsheets/d/qa-example?usp=sharing#gid=12",
+      "createdById": "7528c346-1de1-4026-b815-42f01e360c30",
+      "createdAt": "2026-10-25T20:27:54.422Z",
+      "parentId": "7a812eb7-731d-4bc4-a61a-ff880f507692",
+      "kind": "REMINDER"
+    },
+    {
+      "id": "07a89fb7-4fc5-4fc1-ba15-3ee30678dcb9",
+      "title": "drive.google.com",
+      "url": "https://drive.google.com/drive/folders/qa-example",
+      "createdById": "7528c346-1de1-4026-b815-42f01e360c30",
+      "createdAt": "2026-10-25T20:27:54.429Z",
+      "parentId": "4dfe8820-ff5c-4ed6-9e88-e7dbe76af547",
+      "kind": "TASK"
+    },
+    {
+      "id": "ed52c936-2178-4a21-b7b4-2b51c1c65c4c",
+      "title": "FT owner link",
+      "url": "https://example.com/owner",
+      "createdById": "bba7eb0d-1eb1-403b-9b16-6d3c08320372",
+      "createdAt": "2026-10-25T20:27:54.504Z",
+      "parentId": "4dfe8820-ff5c-4ed6-9e88-e7dbe76af547",
+      "kind": "TASK"
+    }
+  ]
+}

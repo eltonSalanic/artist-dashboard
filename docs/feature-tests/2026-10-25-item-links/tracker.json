@@ -1,0 +1,162 @@
+[
+  {
+    "id": "C1",
+    "checklistId": "ari:cloud:trello::checklist/workspace/685d78b09a1caa02ca3d6f5c/6ade659be58570babcb4185a",
+    "item": {
+      "id": "ari:cloud:trello::check-item/workspace/685d78b09a1caa02ca3d6f5c/6ade6b4763b9022c19ecd58f",
+      "name": "🔵 C1 — A member can attach a named link to tasks, shows, rehearsals, meetings, goals and reminders.",
+      "state": "INCOMPLETE",
+      "position": 140737488355328
+    }
+  },
+  {
+    "id": "C2",
+    "checklistId": "ari:cloud:trello::checklist/workspace/685d78b09a1caa02ca3d6f5c/6ade659be58570babcb4185a",
+    "item": {
+      "id": "ari:cloud:trello::check-item/workspace/685d78b09a1caa02ca3d6f5c/6ade6b482ed06fe90e9a8199",
+      "name": "🔵 C2 — Saved links persist and the same destination is visible to another band member.",
+      "state": "INCOMPLETE",
+      "position": 140737488371712
+    }
+  },
+  {
+    "id": "C3",
+    "checklistId": "ari:cloud:trello::checklist/workspace/685d78b09a1caa02ca3d6f5c/6ade659be58570babcb4185a",
+    "item": {
+      "id": "ari:cloud:trello::check-item/workspace/685d78b09a1caa02ca3d6f5c/6ade6b4919df74ba7c355e46",
+      "name": "C3 — Members can remove their own links.",
+      "state": "INCOMPLETE",
+      "position": 140737488388096
+    }
+  },
+  {
+    "id": "C4",
+    "checklistId": "ari:cloud:trello::checklist/workspace/685d78b09a1caa02ca3d6f5c/6ade659be58570babcb4185a",
+    "item": {
+      "id": "ari:cloud:trello::check-item/workspace/685d78b09a1caa02ca3d6f5c/6ade6b4a8904a0c1657ed803",
+      "name": "🔵 C4 — Members cannot remove another person’s link; admins can remove members’ links.",
+      "state": "INCOMPLETE",
+      "position": 140737488404480
+    }
+  },
+  {
+    "id": "C5",
+    "checklistId": "ari:cloud:trello::checklist/workspace/685d78b09a1caa02ca3d6f5c/6ade659be58570babcb4185a",
+    "item": {
+      "id": "ari:cloud:trello::check-item/workspace/685d78b09a1caa02ca3d6f5c/6ade6b4c16c447e4b6868e01",
+      "name": "C5 — Missing schemes default to HTTPS, blank names use the hostname, query/fragment survive, and unsafe/invalid URLs are rejected.",
+      "state": "INCOMPLETE",
+      "position": 140737488420864
+    }
+  },
+  {
+    "id": "C6",
+    "checklistId": "ari:cloud:trello::checklist/workspace/685d78b09a1caa02ca3d6f5c/6ade659be58570babcb4185a",
+    "item": {
+      "id": "ari:cloud:trello::check-item/workspace/685d78b09a1caa02ca3d6f5c/6ade6b4e27af9ff45ec8a7c1",
+      "name": "🔵 C6 — Anonymous and cross-board reads/writes are denied.",
+      "state": "INCOMPLETE",
+      "position": 140737488437248
+    }
+  },
+  {
+    "id": "C7",
+    "checklistId": "ari:cloud:trello::checklist/workspace/685d78b09a1caa02ca3d6f5c/6ade659be58570babcb4185a",
+    "item": {
+      "id": "ari:cloud:trello::check-item/workspace/685d78b09a1caa02ca3d6f5c/6ade6b4f8e7e11ea72610df8",
+      "name": "C7 — Each link has one parent, protected storage, and deleting its parent cleans up its links.",
+      "state": "INCOMPLETE",
+      "position": 140737488453632
+    }
+  },
+  {
+    "id": "C8",
+    "checklistId": "ari:cloud:trello::checklist/workspace/685d78b09a1caa02ca3d6f5c/6ade659be58570babcb4185a",
+    "item": {
+      "id": "ari:cloud:trello::check-item/workspace/685d78b09a1caa02ca3d6f5c/6ade6b5076b86c2df02e2ff6",
+      "name": "C8 — Web controls preserve drafts after failed saves, focus invalid URL input and render safe new-tab links (unit evidence; browser visual check may remain blocked).",
+      "state": "INCOMPLETE",
+      "position": 140737488470016
+    }
+  },
+  {
+    "id": "C9",
+    "checklistId": "ari:cloud:trello::checklist/workspace/685d78b09a1caa02ca3d6f5c/6ade659be58570babcb4185a",
+    "item": {
+      "id": "ari:cloud:trello::check-item/workspace/685d78b09a1caa02ca3d6f5c/6ade6b512893ca7e2e3d0e20",
+      "name": "🔵 C9 — Native Add a link focuses Name first, flags invalid/blank URL and protects a cancelled draft.",
+      "state": "INCOMPLETE",
+      "position": 140737488486400
+    }
+  },
+  {
+    "id": "C10",
+    "checklistId": "ari:cloud:trello::checklist/workspace/685d78b09a1caa02ca3d6f5c/6ade659be58570babcb4185a",
+    "item": {
+      "id": "ari:cloud:trello::check-item/workspace/685d78b09a1caa02ca3d6f5c/6ade6b52ef8a5e7e54b7987c",
+      "name": "C10 — All six native item detail screens show their saved link names and destinations.",
+      "state": "INCOMPLETE",
+      "position": 140737488502784
+    }
+  },
+  {
+    "id": "C11",
+    "checklistId": "ari:cloud:trello::checklist/workspace/685d78b09a1caa02ca3d6f5c/6ade659be58570babcb4185a",
+    "item": {
+      "id": "ari:cloud:trello::check-item/workspace/685d78b09a1caa02ca3d6f5c/6ade6b54d96097446713d3ce",
+      "name": "🔵 C11 — A link added through the native form is visible after leaving and reopening its item.",
+      "state": "INCOMPLETE",
+      "position": 140737488519168
+    }
+  },
+  {
+    "id": "C12",
+    "checklistId": "ari:cloud:trello::checklist/workspace/685d78b09a1caa02ca3d6f5c/6ade659be58570babcb4185a",
+    "item": {
+      "id": "ari:cloud:trello::check-item/workspace/685d78b09a1caa02ca3d6f5c/6ade6b55e0f291b94da9f8ee",
+      "name": "C12 — Dedicated unit tests, web/mobile/client TypeScript checks and touched-file lint pass.",
+      "state": "INCOMPLETE",
+      "position": 140737488535552
+    }
+  },
+  {
+    "id": "P1",
+    "checklistId": "ari:cloud:trello::checklist/workspace/685d78b09a1caa02ca3d6f5c/6ade659d1cf4f86faaccb3ff",
+    "item": {
+      "id": "ari:cloud:trello::check-item/workspace/685d78b09a1caa02ca3d6f5c/6ade6b56d6eec72e1de8b8c8",
+      "name": "🔵 P1 — On a physical phone, tap actual Drive and Sheets links and confirm the expected app/browser opens with the sharing access your band expects.",
+      "state": "INCOMPLETE",
+      "position": 140737488355328
+    }
+  },
+  {
+    "id": "P2",
+    "checklistId": "ari:cloud:trello::checklist/workspace/685d78b09a1caa02ca3d6f5c/6ade659d1cf4f86faaccb3ff",
+    "item": {
+      "id": "ari:cloud:trello::check-item/workspace/685d78b09a1caa02ca3d6f5c/6ade6b577a69f77b2bc7ce23",
+      "name": "P2 — On a physical phone, change network or lose connectivity during Save; the draft remains and can be retried after reconnection.",
+      "state": "INCOMPLETE",
+      "position": 140737488371712
+    }
+  },
+  {
+    "id": "C13",
+    "checklistId": "ari:cloud:trello::checklist/workspace/685d78b09a1caa02ca3d6f5c/6ade659be58570babcb4185a",
+    "item": {
+      "id": "ari:cloud:trello::check-item/workspace/685d78b09a1caa02ca3d6f5c/6ade702252e322b0c4bd1e0a",
+      "name": "🔵 C13 — A failed native save keeps the name and URL; retrying the unchanged draft saves successfully.",
+      "state": "INCOMPLETE",
+      "position": 140737488551936
+    }
+  },
+  {
+    "id": "P3",
+    "checklistId": "ari:cloud:trello::checklist/workspace/685d78b09a1caa02ca3d6f5c/6ade659d1cf4f86faaccb3ff",
+    "item": {
+      "id": "ari:cloud:trello::check-item/workspace/685d78b09a1caa02ca3d6f5c/6ade70247b88f88dc908829a",
+      "name": "P3 — On a physical phone, type and paste a multiword link name and a long URL, then save promptly; the full text is preserved and Save stays reachable above the keyboard.",
+      "state": "INCOMPLETE",
+      "position": 140737488388096
+    }
+  }
+]

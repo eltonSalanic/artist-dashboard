@@ -1,0 +1,14 @@
+[
+  {
+    "time": "2026-10-25T21:06:20.027Z",
+    "method": "POST",
+    "path": "/boards/78267435-7851-46c9-84b2-c7c3b2f931e9/links",
+    "status": 503
+  },
+  {
+    "time": "2026-10-25T21:06:36.680Z",
+    "method": "POST",
+    "path": "/boards/78267435-7851-46c9-84b2-c7c3b2f931e9/links",
+    "status": 201
+  }
+]
