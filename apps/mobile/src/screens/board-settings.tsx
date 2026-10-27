@@ -6,12 +6,18 @@ import {
   NOTIFICATION_CATEGORY_COPY,
   NotificationCategories,
   resolveBoardTheme,
+  ShowStatusCategories,
   type BoardRole,
+  type ShowStatusCategory,
 } from '@artist/shared';
 import {
   useBoard,
+  useCreateShowStatus,
   useCreateStatus,
+  useDeleteShowStatus,
   useDeleteStatus,
+  useShowStatuses,
+  useUpdateShowStatus,
   useInvites,
   useMe,
   useNotificationPreferences,
@@ -23,6 +29,7 @@ import {
   useSendInvite,
   useStatuses,
   useUpdateStatus,
+  type ShowStatusDto,
   type TaskStatusDto,
 } from '@artist/api-client';
 import { Badge } from '@/components/badge';
@@ -69,6 +76,7 @@ export function BoardSettingsScreen({ boardId }: { boardId: string }) {
       {can('member.invite') && <MembersSection boardId={boardId} />}
       {can('member.invite') && <InviteSection boardId={boardId} />}
       {can('status.manage') && <StatusesSection boardId={boardId} />}
+      {can('status.manage') && <ShowStatusesSection boardId={boardId} />}
       {can('board.appearance') && <PaletteSection boardId={boardId} />}
     </ScrollView>
   );
@@ -410,6 +418,206 @@ function StatusEditor({
               `Delete "${status.name}"?`,
               // The API refuses while tasks use it, and says how many.
               'Tasks still in this status have to be moved first.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete',
+                  style: 'destructive',
+                  onPress: () => remove.mutate(status.id, { onSuccess: onClose }),
+                },
+              ],
+            )
+          }
+        />
+        <Button
+          title="Done"
+          variant="secondary"
+          size="sm"
+          style={{ flex: 1 }}
+          onPress={() => {
+            rename();
+            onClose();
+          }}
+        />
+      </View>
+    </View>
+  );
+}
+
+const CATEGORY_CHOICES: { value: ShowStatusCategory; label: string }[] =
+  ShowStatusCategories.map((value) => ({
+    value,
+    label: { HOLD: 'Hold', BOOKED: 'Booked', CANCELLED: 'Cancelled' }[value],
+  }));
+
+const categoryLabel = (category: ShowStatusCategory) =>
+  CATEGORY_CHOICES.find((c) => c.value === category)?.label ?? category;
+
+/**
+ * Show statuses: task statuses' twin, with a type in place of "Counts as
+ * done" and an order that matters (a new show starts in the first one that is
+ * not cancelled), so the editor can move a status up or down.
+ */
+function ShowStatusesSection({ boardId }: { boardId: string }) {
+  const statuses = useShowStatuses(boardId);
+  const create = useCreateShowStatus(boardId);
+  const [open, setOpen] = useState<string | null>(null);
+  const [name, setName] = useState('');
+  const [color, setColor] = useState(STATUS_SWATCHES[1]);
+  const [category, setCategory] = useState<ShowStatusCategory>('BOOKED');
+  const list = statuses.data ?? [];
+
+  const add = () =>
+    create.mutate(
+      { name: name.trim(), color, category },
+      { onSuccess: () => setName('') },
+    );
+
+  return (
+    <Section title="SHOW STATUSES">
+      <ThemedText variant="footnote" tone="muted">
+        Where a show stands. Holds look tentative, booked shows count, cancelled
+        ones drop out of lists. Past shows read as played on their own.
+      </ThemedText>
+      {statuses.isPending && <Skeleton width="100%" height={96} />}
+      {list.map((status, index) =>
+        open === status.id ? (
+          <ShowStatusEditor
+            key={status.id}
+            boardId={boardId}
+            status={status}
+            above={list[index - 1]}
+            below={list[index + 1]}
+            onClose={() => setOpen(null)}
+          />
+        ) : (
+          <Row
+            key={status.id}
+            first={index === 0}
+            title={status.name}
+            meta={categoryLabel(status.category)}
+            lead={<Dot color={status.color} size={12} />}
+            onPress={() => setOpen(status.id)}
+          />
+        ),
+      )}
+
+      <View style={{ gap: spacing.sm, marginTop: spacing.md }}>
+        <TextField
+          label="New show status"
+          value={name}
+          onChangeText={setName}
+          placeholder="e.g. Advanced"
+          maxLength={40}
+        />
+        <Swatches value={color} onChange={setColor} />
+        <ChoiceChips
+          label="Type"
+          choices={CATEGORY_CHOICES}
+          value={category}
+          onChange={setCategory}
+        />
+        <Button
+          title="Add show status"
+          variant="secondary"
+          loading={create.isPending}
+          disabled={!name.trim()}
+          onPress={add}
+        />
+      </View>
+    </Section>
+  );
+}
+
+function ShowStatusEditor({
+  boardId,
+  status,
+  above,
+  below,
+  onClose,
+}: {
+  boardId: string;
+  status: ShowStatusDto;
+  above?: ShowStatusDto;
+  below?: ShowStatusDto;
+  onClose: () => void;
+}) {
+  const colors = useThemeColors();
+  const update = useUpdateShowStatus(boardId);
+  const remove = useDeleteShowStatus(boardId);
+  const [name, setName] = useState(status.name);
+
+  const rename = () => {
+    const trimmed = name.trim();
+    if (trimmed && trimmed !== status.name) {
+      update.mutate({ statusId: status.id, dto: { name: trimmed } });
+    }
+  };
+  // Swapping with the neighbour keeps every sort order distinct.
+  const swap = (other: ShowStatusDto) => {
+    update.mutate({ statusId: status.id, dto: { sortOrder: other.sortOrder } });
+    update.mutate({ statusId: other.id, dto: { sortOrder: status.sortOrder } });
+  };
+
+  return (
+    <View
+      style={{
+        gap: spacing.sm,
+        padding: spacing.md,
+        marginVertical: spacing.xs,
+        borderRadius: posterRadius.block,
+        borderCurve: 'continuous',
+        backgroundColor: colors.card,
+      }}
+    >
+      <TextField
+        label="Name"
+        value={name}
+        onChangeText={setName}
+        onBlur={rename}
+        onSubmitEditing={rename}
+        maxLength={40}
+        returnKeyType="done"
+      />
+      <Swatches
+        value={status.color}
+        onChange={(next) => update.mutate({ statusId: status.id, dto: { color: next } })}
+      />
+      <ChoiceChips
+        label="Type"
+        choices={CATEGORY_CHOICES}
+        value={status.category}
+        onChange={(next) => update.mutate({ statusId: status.id, dto: { category: next } })}
+      />
+      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+        <Button
+          title="Move up"
+          variant="secondary"
+          size="sm"
+          style={{ flex: 1 }}
+          disabled={!above}
+          onPress={() => above && swap(above)}
+        />
+        <Button
+          title="Move down"
+          variant="secondary"
+          size="sm"
+          style={{ flex: 1 }}
+          disabled={!below}
+          onPress={() => below && swap(below)}
+        />
+      </View>
+      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+        <Button
+          title="Delete"
+          variant="destructive"
+          size="sm"
+          style={{ flex: 1 }}
+          onPress={() =>
+            Alert.alert(
+              `Delete "${status.name}"?`,
+              // The API refuses while shows use it, and says how many.
+              'Shows still in this status have to be moved first.',
               [
                 { text: 'Cancel', style: 'cancel' },
                 {

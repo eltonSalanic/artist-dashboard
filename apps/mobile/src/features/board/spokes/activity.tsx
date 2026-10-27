@@ -23,6 +23,7 @@ const icons: Record<ActivityType, IconName> = {
   FINANCE_ENTRY_ADDED: { sf: 'dollarsign.circle', md: 'account-balance-wallet' },
   SHOW_SETTLED: { sf: 'banknote', md: 'payments' },
   PAYOUT_RECORDED: { sf: 'banknote', md: 'payments' },
+  SHOW_STATUS_CHANGED: { sf: 'arrow.triangle.2.circlepath', md: 'sync' },
 };
 
 /**

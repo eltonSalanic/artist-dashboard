@@ -16,6 +16,8 @@ import { ItemLinksSection } from '@/features/item-links/item-links-section';
 import { ItemNotesSection } from '@/features/item-notes/item-notes-section';
 import { LinkedTasks } from '@/features/links/linked-tasks';
 import { ShowMoney } from '@/features/board/show-money';
+import { showStatusLabel } from '@/features/board/show-status';
+import { StatusPill } from '@/features/board/status-pill';
 import { spacing, useThemeColors } from '@/theme';
 
 const TYPE_TITLE = { SHOW: 'Show', REHEARSAL: 'Rehearsal', MEETING: 'Meeting' } as const;
@@ -53,6 +55,7 @@ export function EventDetailScreen({ boardId, eventId }: { boardId: string; event
 
   const e = event.data;
   const kind = TYPE_TITLE[e.type];
+  const status = showStatusLabel(e.showStatus, e.startsAt, e.endsAt);
   const starts = new Date(e.startsAt);
   // An end equal to the start is "no end set", not a zero-length show.
   const time =
@@ -114,6 +117,20 @@ export function EventDetailScreen({ boardId, eventId }: { boardId: string; event
             </View>
           </View>
           {e.location ? <PosterMeta ink={ink}>{e.location}</PosterMeta> : null}
+          {status && e.showStatus ? (
+            <View style={{ flexDirection: 'row' }}>
+              <StatusPill
+                ink={ink}
+                name={status.label}
+                color={e.showStatus.color}
+                onPress={
+                  can('show.changeStatus') && !e.archivedAt
+                    ? () => router.push(`/board/${boardId}/show-status/${e.id}`)
+                    : undefined
+                }
+              />
+            </View>
+          ) : null}
         </DetailPoster>
 
         <ItemNotesSection

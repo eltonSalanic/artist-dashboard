@@ -88,6 +88,15 @@ export default function TabStackLayout({ segment }: { segment: string }) {
         }}
       />
       <Stack.Screen
+        name="board/[boardId]/show-status/[eventId]"
+        options={{
+          presentation: 'formSheet',
+          sheetGrabberVisible: true,
+          sheetAllowedDetents: 'fitToContents',
+          ...sheetTitle('Show status'),
+        }}
+      />
+      <Stack.Screen
         name="board/[boardId]/form/[kind]"
         options={{
           // A page sheet on iOS, full screen on Android. The form sets its
