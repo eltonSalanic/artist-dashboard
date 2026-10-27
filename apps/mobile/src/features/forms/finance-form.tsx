@@ -229,6 +229,7 @@ function FinanceFields({
           placeholder={kind === 'INCOME' ? 'Door split at The Echo' : 'New strings'}
           value={description}
           onChangeText={editable ? setDescription : () => undefined}
+          autoFocus={!entry}
           maxLength={2000}
         />
 
@@ -268,7 +269,6 @@ function FinanceFields({
             onChangeText={setAmount}
             keyboardType="decimal-pad"
             placeholder="0.00"
-            autoFocus={!entry}
             error={amount !== '' && cents === null ? 'Enter an amount like 12.50' : null}
           />
 
