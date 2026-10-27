@@ -98,6 +98,7 @@ describe('BoardsService board theme', () => {
     defaultLayout: [],
     theme,
     statuses: [],
+    showStatuses: [],
     memberships: [],
   });
 
@@ -293,6 +294,7 @@ describe('BoardsService.create', () => {
           defaultLayout: unknown[];
           memberships: { create: unknown };
           statuses: { create: unknown[] };
+          showStatuses: { create: { name: string }[] };
         };
       },
     ];
@@ -302,6 +304,12 @@ describe('BoardsService.create', () => {
       role: 'ADMIN',
     });
     expect(args.data.statuses.create.length).toBeGreaterThan(0);
+    expect(args.data.showStatuses.create.map((s) => s.name)).toEqual([
+      'Hold',
+      'Details pending',
+      'Confirmed',
+      'Cancelled',
+    ]);
     expect(args.data.defaultLayout.length).toBeGreaterThan(0);
     expect(summary).toEqual(
       expect.objectContaining({

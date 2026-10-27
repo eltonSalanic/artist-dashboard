@@ -12,6 +12,7 @@ import { BoardsModule } from './boards/boards.module';
 import { InvitesModule } from './invites/invites.module';
 import { TasksModule } from './tasks/tasks.module';
 import { StatusesModule } from './statuses/statuses.module';
+import { ShowStatusesModule } from './show-statuses/show-statuses.module';
 import { LayoutsModule } from './layouts/layouts.module';
 import { GoalsModule } from './goals/goals.module';
 import { EventsModule } from './events/events.module';
@@ -45,6 +46,7 @@ import { FinancesModule } from './finances/finances.module';
     InvitesModule,
     TasksModule,
     StatusesModule,
+    ShowStatusesModule,
     LayoutsModule,
     GoalsModule,
     EventsModule,

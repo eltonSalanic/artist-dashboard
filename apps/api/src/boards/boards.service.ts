@@ -76,6 +76,7 @@ export class BoardsService {
       where: { id: boardId },
       include: {
         statuses: { orderBy: { sortOrder: 'asc' } },
+        showStatuses: { orderBy: { sortOrder: 'asc' } },
         memberships: { include: { user: true }, orderBy: { createdAt: 'asc' } },
       },
     });
@@ -89,6 +90,7 @@ export class BoardsService {
       theme: resolveBoardTheme(board.theme),
       currency: board.currency,
       statuses: board.statuses,
+      showStatuses: board.showStatuses,
       members: board.memberships.map((m) => ({
         membershipId: m.id,
         role: m.role,

@@ -1,4 +1,8 @@
-import { DEFAULT_BOARD_LAYOUT, DEFAULT_TASK_STATUSES } from '@artist/shared';
+import {
+  DEFAULT_BOARD_LAYOUT,
+  DEFAULT_SHOW_STATUSES,
+  DEFAULT_TASK_STATUSES,
+} from '@artist/shared';
 import { Prisma } from '../../generated/prisma/client';
 
 /**
@@ -15,5 +19,6 @@ export function newBoardData(
     defaultLayout: DEFAULT_BOARD_LAYOUT as unknown as Prisma.InputJsonValue,
     memberships: { create: { userId: adminId, role: 'ADMIN' } },
     statuses: { create: DEFAULT_TASK_STATUSES },
+    showStatuses: { create: DEFAULT_SHOW_STATUSES },
   };
 }
