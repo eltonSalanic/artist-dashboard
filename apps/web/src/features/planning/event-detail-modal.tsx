@@ -1,8 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { EventTypes, type EventType } from "@artist/shared";
-import { usePermissions } from "@artist/api-client";
+import {
+  useBoard,
+  useChangeShowStatus,
+  usePermissions,
+} from "@artist/api-client";
 import { ArchivedBanner } from "@/features/archive/archived-banner";
 import { ItemActions } from "@/features/archive/item-actions";
 import { useTasks } from "@artist/api-client";
@@ -13,8 +18,10 @@ import {
   eventTypeLabel,
   formatDateTime,
   fromLocalInputValue,
+  ShowStatusPill,
   toLocalInputValue,
 } from "./planning-bits";
+import { StatusSelect } from "@/features/tasks/task-bits";
 import { LinkedTasks } from "./linked-tasks";
 import { TaskAttachments } from "@/features/comments/task-attachments";
 import type { EventDto } from "@artist/api-client";
@@ -111,6 +118,8 @@ function EventDetailBody({
   const { can } = usePermissions();
   const updateEvent = useUpdateEvent(boardId);
   const deleteEvent = useDeleteEvent(boardId);
+  const changeShowStatus = useChangeShowStatus(boardId);
+  const showStatuses = useBoard(boardId).data?.showStatuses ?? [];
   // An archived event keeps its tasks — showing them is the whole point of
   // looking one up in the archive.
   const tasks = useTasks(boardId, {
@@ -151,8 +160,13 @@ function EventDetailBody({
         ) : (
           <DialogTitle>{data.title}</DialogTitle>
         )}
-        <DialogDescription>
+        <DialogDescription className="flex flex-wrap items-center gap-2">
           {eventTypeLabel[data.type]} · {formatDateTime(data.startsAt)}
+          <ShowStatusPill
+            status={data.showStatus}
+            startsAt={data.startsAt}
+            endsAt={data.endsAt}
+          />
         </DialogDescription>
       </DialogHeader>
 
@@ -191,6 +205,35 @@ function EventDetailBody({
             <EventTypeBadge type={data.type} />
           )}
         </Field>
+        {data.type === "SHOW" && data.showStatusId && (
+          <Field>
+            <FieldLabel htmlFor="event-status">Status</FieldLabel>
+            <StatusSelect
+              id="event-status"
+              value={data.showStatusId}
+              statuses={showStatuses}
+              disabled={!can("show.changeStatus") || data.archivedAt !== null}
+              onChange={(showStatusId) =>
+                changeShowStatus.mutate(
+                  { eventId: data.id, dto: { showStatusId } },
+                  {
+                    onSuccess: ({ expectedIncomeCount }) => {
+                      if (expectedIncomeCount > 0) {
+                        toast.message(
+                          `${expectedIncomeCount} expected ${
+                            expectedIncomeCount === 1 ? "payment is" : "payments are"
+                          } still logged for this show. Void ${
+                            expectedIncomeCount === 1 ? "it" : "them"
+                          } under Money if the fee is off too`,
+                        );
+                      }
+                    },
+                  },
+                )
+              }
+            />
+          </Field>
+        )}
         <Field>
           <FieldLabel htmlFor="event-location">Location</FieldLabel>
           {canManage ? (

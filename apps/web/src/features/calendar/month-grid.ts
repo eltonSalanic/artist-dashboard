@@ -112,3 +112,11 @@ export const CATEGORY_ACCENT: Record<
   REMINDER: { border: "border-l-amber-500", dot: "bg-amber-500" },
   GOAL: { border: "border-l-emerald-500", dot: "bg-emerald-500" },
 };
+
+/**
+ * A show the band called off. The calendar still receives these so a band can
+ * look one up; the grid hides them unless "Cancelled shows" is switched on.
+ */
+export function isCancelledShow(item: CalendarItemDto): boolean {
+  return item.event?.showStatus?.category === "CANCELLED";
+}

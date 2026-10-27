@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, UserRound } from "lucide-react";
 import { useMe } from "@/lib/use-me";
 import { useCalendar } from "@artist/api-client";
 import { useDetailParams } from "@/features/planning/use-detail-params";
+import { showPhase } from "@artist/shared";
 import { formatTime } from "@/features/planning/planning-bits";
 import { GoalDetailModal } from "@/features/planning/goal-detail-modal";
 import { EventDetailModal } from "@/features/planning/event-detail-modal";
@@ -16,6 +17,7 @@ import {
   calendarCategory,
   CALENDAR_CATEGORIES,
   CATEGORY_ACCENT,
+  isCancelledShow,
   monthRange,
   WEEKDAY_LABELS,
   type CalendarCategory,
@@ -58,10 +60,15 @@ function MonthView({ boardId }: { boardId: string }) {
       return next;
     });
 
+  // Cancelled shows stay on record but off the grid until asked for.
+  const [showCancelled, setShowCancelled] = useState(false);
+
   const { from, to } = monthRange(year, month);
   const calendar = useCalendar(boardId, from.toISOString(), to.toISOString());
   const visibleItems = (calendar.data ?? []).filter(
-    (item) => !hidden.has(calendarCategory(item)),
+    (item) =>
+      !hidden.has(calendarCategory(item)) &&
+      (showCancelled || !isCancelledShow(item)),
   );
   const cells = buildMonthGrid(year, month, visibleItems, today);
 
@@ -130,6 +137,18 @@ function MonthView({ boardId }: { boardId: string }) {
             </button>
           );
         })}
+        <button
+          type="button"
+          aria-pressed={showCancelled}
+          onClick={() => setShowCancelled((v) => !v)}
+          className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
+            showCancelled
+              ? "border-transparent bg-accent text-foreground"
+              : "border-dashed border-border text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {showCancelled ? "Hide cancelled shows" : "Show cancelled shows"}
+        </button>
       </div>
 
       <div className="grid grid-cols-7 gap-px text-center text-xs font-medium text-muted-foreground">
@@ -207,21 +226,36 @@ function CalendarChip({ item }: { item: CalendarItemDto }) {
   const muted =
     item.kind !== "EVENT" && item.kind !== "REMINDER" && !assignedToMe;
 
+  const status = item.event?.showStatus ?? null;
+  const phase = status
+    ? showPhase({ startsAt: item.date, endsAt: item.event?.endsAt }, status.category)
+    : null;
+
+  // A hold reads tentative (dashed accent); a cancelled show is struck through.
   const className = `flex flex-col rounded-sm border-l-2 bg-accent/40 px-1 py-0.5 text-left text-[11px] leading-tight ${accent} ${
-    muted ? "text-muted-foreground" : ""
+    muted || phase === "CANCELLED" ? "text-muted-foreground" : ""
+  } ${phase === "HOLD" ? "border-dashed" : ""} ${
+    phase === "CANCELLED" ? "line-through" : ""
   } ${assignedToMe ? "font-medium" : ""}`;
 
   return (
     <button
       type="button"
       className={`${className} hover:bg-accent`}
-      title={assignedToMe ? `${item.title} · Assigned to you` : item.title}
+      title={
+        assignedToMe
+          ? `${item.title} · Assigned to you`
+          : status
+            ? `${item.title} · ${phase === "PLAYED" ? "Played" : status.name}`
+            : item.title
+      }
       onClick={() => open(target, item.id)}
     >
       {label}
       {item.kind === "EVENT" && (
         <span className="truncate text-[10px] text-muted-foreground">
           {formatTime(item.date)}
+          {status && ` · ${phase === "PLAYED" ? "Played" : status.name}`}
         </span>
       )}
     </button>

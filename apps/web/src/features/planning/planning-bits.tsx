@@ -1,6 +1,11 @@
 "use client";
 
-import type { EventType, GoalPeriod } from "@artist/shared";
+import {
+  showPhase,
+  type EventType,
+  type GoalPeriod,
+  type ShowStatusCategory,
+} from "@artist/shared";
 import { CalendarDays, Mic2, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -88,4 +93,40 @@ export function toLocalInputValue(iso: string): string {
 /** Inverse of `toLocalInputValue` — local wall time back to an ISO instant. */
 export function fromLocalInputValue(value: string): string {
   return new Date(value).toISOString();
+}
+
+/**
+ * A show's status as a small pill: the band's own name and colour, except
+ * that a held or booked show whose date has passed reads "Played", and a
+ * cancelled one is struck through.
+ */
+export function ShowStatusPill({
+  status,
+  startsAt,
+  endsAt,
+  className = "",
+}: {
+  status: { name: string; color: string; category: ShowStatusCategory } | null;
+  startsAt: string;
+  endsAt?: string | null;
+  className?: string;
+}) {
+  if (!status) return null;
+  const phase = showPhase({ startsAt, endsAt }, status.category);
+  const played = phase === "PLAYED";
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs ${
+        phase === "HOLD" ? "border-dashed" : ""
+      } ${phase === "CANCELLED" ? "text-muted-foreground line-through" : ""} ${className}`}
+      title={played ? `Played (was ${status.name})` : status.name}
+    >
+      <span
+        aria-hidden
+        className="size-2 rounded-full"
+        style={{ backgroundColor: played ? "var(--muted-foreground)" : status.color }}
+      />
+      {played ? "Played" : status.name}
+    </span>
+  );
 }
