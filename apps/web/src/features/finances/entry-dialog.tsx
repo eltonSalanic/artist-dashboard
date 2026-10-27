@@ -230,7 +230,6 @@ function EntryForm({
               <FieldLabel htmlFor="entry-amount">Amount ({currency})</FieldLabel>
               <Input
                 id="entry-amount"
-                autoFocus={!saved}
                 inputMode="decimal"
                 placeholder="0.00"
                 value={amount}
@@ -266,6 +265,7 @@ function EntryForm({
             <FieldLabel htmlFor="entry-description">What for</FieldLabel>
             <Input
               id="entry-description"
+              autoFocus={!saved}
               maxLength={2000}
               placeholder={kind === "INCOME" ? "Door split" : "New strings"}
               value={description}
