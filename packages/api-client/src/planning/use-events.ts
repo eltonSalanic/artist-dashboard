@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { notify } from "../client";
 import type {
+  ChangeShowStatusDto,
   CreateEventDto,
   EventType,
   UpdateEventDto,
@@ -20,6 +21,9 @@ export interface EventFilters {
   /** ISO instant — only events starting before this. */
   to?: string;
   limit?: number;
+  showStatusId?: string;
+  /** Cancelled shows are left out unless this is set. */
+  includeCancelled?: boolean;
 }
 
 export function useEvents(boardId: string, filters: EventFilters = {}) {
@@ -28,6 +32,8 @@ export function useEvents(boardId: string, filters: EventFilters = {}) {
   if (filters.from) params.set("from", filters.from);
   if (filters.to) params.set("to", filters.to);
   if (filters.limit) params.set("limit", String(filters.limit));
+  if (filters.showStatusId) params.set("showStatusId", filters.showStatusId);
+  if (filters.includeCancelled) params.set("includeCancelled", "true");
   const qs = params.toString();
   return useQuery({
     queryKey: ["events", boardId, filters],
@@ -107,6 +113,35 @@ export function useDeleteEvent(boardId: string) {
         { method: "DELETE" },
       ),
     onSuccess: invalidate,
+    onError: showError,
+  });
+}
+
+/**
+ * Move a show to another status. Open to members, unlike `useUpdateEvent`.
+ * The response carries `expectedIncomeCount` after a cancellation, so the
+ * caller can point at money still expected for the show.
+ */
+export function useChangeShowStatus(boardId: string) {
+  const invalidate = useInvalidateEvents(boardId);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      eventId,
+      dto,
+    }: {
+      eventId: string;
+      dto: ChangeShowStatusDto;
+    }) =>
+      apiFetch<EventDto & { expectedIncomeCount: number }>(
+        `/boards/${boardId}/events/${eventId}/status`,
+        { method: "PATCH", body: dto },
+      ),
+    onSuccess: () =>
+      Promise.all([
+        invalidate(),
+        queryClient.invalidateQueries({ queryKey: ["activity", boardId] }),
+      ]),
     onError: showError,
   });
 }

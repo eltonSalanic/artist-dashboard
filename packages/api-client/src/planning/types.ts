@@ -1,4 +1,10 @@
-import type { EventType, FocusPeriod, GoalPeriod } from "@artist/shared";
+import type {
+  EventType,
+  FocusPeriod,
+  GoalPeriod,
+  ShowStatusCategory,
+} from "@artist/shared";
+import type { ShowStatusDto } from "../auth/types";
 
 export interface GoalDto {
   id: string;
@@ -36,6 +42,9 @@ export interface EventDto {
   archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Shows only; null for meetings and rehearsals. */
+  showStatusId: string | null;
+  showStatus: Omit<ShowStatusDto, "sortOrder"> | null;
   /** Live tasks only — the number the "also archive N tasks" prompt shows. */
   taskCount: number;
   /** Tasks archived as part of this event. Detail responses only. */
@@ -76,7 +85,17 @@ export interface CalendarItemDto {
   boardName: string;
   title: string;
   date: string;
-  event?: { type: EventType; endsAt: string | null; location: string | null };
+  event?: {
+    type: EventType;
+    endsAt: string | null;
+    location: string | null;
+    /** Shows only. Cancelled shows are included; filter them client-side. */
+    showStatus: {
+      name: string;
+      color: string;
+      category: ShowStatusCategory;
+    } | null;
+  };
   task?: {
     statusColor: string;
     statusName: string;

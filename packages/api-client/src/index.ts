@@ -52,6 +52,7 @@ export * from './settings/use-invites';
 export * from './settings/use-members';
 export * from './settings/use-notification-preferences';
 export * from './settings/use-statuses';
+export * from './settings/use-show-statuses';
 export * from './tasks/types';
 export * from './tasks/use-can-change-status';
 export * from './tasks/use-tasks';
