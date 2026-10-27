@@ -9,3 +9,6 @@ supabase/.branches/
 .DS_Store
 coverage/
 generated/
+
+# QA reports and screenshots from /feature-test runs
+docs/feature-tests/
