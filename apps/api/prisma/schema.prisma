@@ -67,6 +67,7 @@ model Board {
   memberships    Membership[]
   invites        Invite[]
   statuses       TaskStatus[]
+  showStatuses   ShowStatus[]
   tasks          Task[]
   userLayouts    UserLayout[]
   mobileLayouts  MobileLayout[]
@@ -126,6 +127,31 @@ model TaskStatus {
   createdAt DateTime @default(now())
   board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
   tasks     Task[]
+
+  @@index([boardId])
+}
+
+/// What the app reads from a show status; the name and colour are the band's.
+/// "Played" is not one of these: a held or booked show whose date has passed
+/// reads as played on its own.
+enum ShowStatusCategory {
+  HOLD
+  BOOKED
+  CANCELLED
+}
+
+/// Where a show stands (Hold, Details pending, …). Shows only — meetings and
+/// rehearsals have none, enforced by a CHECK on Event.
+model ShowStatus {
+  id        String             @id @default(uuid()) @db.Uuid
+  boardId   String             @db.Uuid
+  name      String
+  color     String
+  sortOrder Int
+  category  ShowStatusCategory
+  createdAt DateTime           @default(now())
+  board     Board              @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  events    Event[]
 
   @@index([boardId])
 }
@@ -223,10 +249,13 @@ model Event {
   location       String?
   startsAt       DateTime
   endsAt         DateTime?
+  /// Set exactly when `type` is SHOW (CHECK "Event_show_status").
+  showStatusId   String?        @db.Uuid
   archivedAt     DateTime?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   board          Board          @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  showStatus     ShowStatus?    @relation(fields: [showStatusId], references: [id], onDelete: Restrict)
   tasks          Task[]
   attachments    Attachment[]
   notes          Note[]
@@ -235,6 +264,7 @@ model Event {
 
   @@index([boardId, startsAt])
   @@index([boardId, archivedAt])
+  @@index([showStatusId])
 }
 
 model FocusPin {
@@ -380,6 +410,7 @@ enum ActivityType {
   COMMENT_ADDED
   FINANCE_ENTRY_ADDED
   SHOW_SETTLED
+  SHOW_STATUS_CHANGED
   PAYOUT_RECORDED
 }
 
