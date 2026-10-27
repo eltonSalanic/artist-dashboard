@@ -35,7 +35,8 @@ export function FinancesWidget({ boardId }: { boardId: string }) {
 
   const { totals, balances, currency, unpaidShows } = summary.data;
   const mine =
-    balances.members.find((m) => m.userId === me.data?.user.id)?.balanceCents ?? 0;
+    balances.members.find((m) => m.userId === me.data?.user.id)?.balanceCents ??
+    0;
 
   return (
     <div className="flex h-full flex-col gap-3">
@@ -47,11 +48,9 @@ export function FinancesWidget({ boardId }: { boardId: string }) {
           </dd>
         </div>
         <div>
-          <dt className="text-xs text-muted-foreground">
-            {mine < 0 ? "You owe the band" : "Band owes you"}
-          </dt>
+          <dt className="text-xs text-muted-foreground">Band owes you</dt>
           <dd className="text-lg font-semibold">
-            <Amount cents={Math.abs(mine)} currency={currency} />
+            <Amount cents={Math.max(0, mine)} currency={currency} />
           </dd>
         </div>
         <div>

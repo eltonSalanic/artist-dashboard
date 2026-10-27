@@ -37,6 +37,7 @@ const entryFields = {
   occurredOn: isoDate,
   counterparty: z.string().trim().max(200).nullish(),
   description: z.string().trim().max(2_000).optional(),
+  note: z.string().trim().max(2_000).optional(),
   /** Member whose own money this went through; null is the band's account. */
   handledById: z.uuid().nullish(),
   /** Overrides the board's default split for this one entry. */
@@ -161,6 +162,7 @@ export interface FinanceEntryDto {
   occurredOn: string;
   counterparty: string | null;
   description: string;
+  note: string;
   eventId: string | null;
   eventTitle: string | null;
   handledById: string | null;

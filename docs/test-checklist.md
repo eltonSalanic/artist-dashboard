@@ -777,6 +777,16 @@ rewritten for the new editor.
 > toolchain, and only a phone proves the app.
 
 
+## Finance member history, colors, and filters
+
+Implemented on mobile and web; interaction checks are pending on these Testing tickets:
+
+- [View a member’s finance expenses and payouts](https://trello.com/c/pxlHLAhg): open an owed member; confirm their all-time personal expenses and payments, dates, notes, and empty states. Changing the ledger period must not shorten member history.
+- [Color finance profits green and losses red](https://trello.com/c/ix836zac): check positive, negative, and zero totals in light and dark mode; signs and labels should remain readable. Check the mobile hub's net value too.
+- [Filter and sort finance entries](https://trello.com/c/onUwJaAu): combine type, member, category, status, and period; try all four sort orders, no matches, and Reset filters. On web, exported CSV should match the visible ledger order.
+
+TypeScript checks cover both apps. No database migration is needed for these three changes.
+
 
 ## Links on items
 

@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Empty, EmptyDescription } from "@/components/ui/empty";
+import { MemberHistory } from "./member-history";
 import { Amount, formatDay, memberNamer, todayISO } from "./finance-bits";
 
 /**
@@ -47,43 +49,63 @@ export function BalancesSection({
   const { can } = usePermissions();
   const payouts = usePayouts(boardId);
   const deletePayout = useDeletePayout(boardId);
-  const [paying, setPaying] = useState<{ userId: string; cents: number } | null>(
-    null,
-  );
+  const [paying, setPaying] = useState<{
+    userId: string;
+    cents: number;
+  } | null>(null);
+  const [viewing, setViewing] = useState<string | null>(null);
   const name = memberNamer(summary.members);
   const manages = can("finance.manage");
   const { currency } = summary;
 
-  // Everyone on the board shows, even before any money touched them.
-  const rows = summary.members.map(
-    (m) =>
-      summary.balances.members.find((b) => b.userId === m.id) ?? {
-        userId: m.id,
-        shareCents: 0,
-        frontedCents: 0,
-        collectedCents: 0,
-        paidOutCents: 0,
-        balanceCents: 0,
-      },
-  );
+  const rows = summary.members
+    .map(
+      (m) =>
+        summary.balances.members.find((b) => b.userId === m.id) ?? {
+          userId: m.id,
+          shareCents: 0,
+          frontedCents: 0,
+          collectedCents: 0,
+          paidOutCents: 0,
+          balanceCents: 0,
+        },
+    )
+    .filter((row) => row.balanceCents > 0);
 
   return (
     <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
       <Card>
         <CardHeader>
-          <CardTitle>Balances</CardTitle>
+          <CardTitle>Who&apos;s owed</CardTitle>
           <CardDescription>
-            Each member&apos;s cut, plus what they fronted, minus cash they
-            hold and what they&apos;ve been paid. Band fund:{" "}
-            <Amount cents={summary.balances.bandFundCents} currency={currency} />
+            Each member&apos;s cut, plus what they fronted, minus cash they hold
+            and what they&apos;ve been paid. Band fund:{" "}
+            <Amount
+              cents={summary.balances.bandFundCents}
+              currency={currency}
+            />
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {rows.length === 0 && (
+            <Empty>
+              <EmptyDescription>
+                Nobody is owed money right now.
+              </EmptyDescription>
+            </Empty>
+          )}
           <ul className="flex flex-col divide-y">
             {rows.map((row) => (
               <li key={row.userId} className="flex items-center gap-3 py-2">
                 <div className="min-w-0 flex-1">
-                  <div className="font-medium">{name(row.userId)}</div>
+                  <Button
+                    variant="link"
+                    className="h-auto justify-start whitespace-normal p-0 text-left"
+                    onClick={() => setViewing(row.userId)}
+                    aria-label={`View expenses and payouts for ${name(row.userId)}`}
+                  >
+                    {name(row.userId)}
+                  </Button>
                   <div className="text-xs text-muted-foreground">
                     Cut {formatMoney(row.shareCents, currency)} · fronted{" "}
                     {formatMoney(row.frontedCents, currency)} · holding{" "}
@@ -98,11 +120,7 @@ export function BalancesSection({
                     className="font-medium"
                   />
                   <div className="text-xs text-muted-foreground">
-                    {row.balanceCents > 0
-                      ? "band owes them"
-                      : row.balanceCents < 0
-                        ? "owes the band"
-                        : "settled up"}
+                    band owes them
                   </div>
                 </div>
                 {manages && (
@@ -126,7 +144,9 @@ export function BalancesSection({
       <Card>
         <CardHeader>
           <CardTitle>Payments</CardTitle>
-          <CardDescription>Money paid between the band and members.</CardDescription>
+          <CardDescription>
+            Money paid between the band and members.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {(payouts.data ?? []).length === 0 ? (
@@ -164,6 +184,15 @@ export function BalancesSection({
         </CardContent>
       </Card>
 
+      {viewing && (
+        <MemberHistory
+          boardId={boardId}
+          userId={viewing}
+          memberName={name(viewing)}
+          currency={currency}
+          onClose={() => setViewing(null)}
+        />
+      )}
       {paying && (
         <PayoutDialog
           boardId={boardId}
@@ -250,7 +279,9 @@ function PayoutDialog({
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field>
-              <FieldLabel htmlFor="payout-amount">Amount ({currency})</FieldLabel>
+              <FieldLabel htmlFor="payout-amount">
+                Amount ({currency})
+              </FieldLabel>
               <Input
                 id="payout-amount"
                 autoFocus

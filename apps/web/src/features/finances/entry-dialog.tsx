@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { NONE, OptionSelect, todayISO } from "./finance-bits";
@@ -116,6 +117,7 @@ function EntryForm({
   );
   const [occurredOn, setOccurredOn] = useState(entry?.occurredOn ?? todayISO());
   const [description, setDescription] = useState(entry?.description ?? "");
+  const [note, setNote] = useState(entry?.note ?? "");
   const [counterparty, setCounterparty] = useState(entry?.counterparty ?? "");
   const [eventId, setEventId] = useState(
     entry?.eventId ?? initialEventId ?? NONE,
@@ -146,6 +148,7 @@ function EntryForm({
       amountCents: cents,
       occurredOn,
       description: description.trim(),
+      note: note.trim(),
       counterparty: counterparty.trim() || null,
       eventId: eventId === NONE ? null : eventId,
       handledById: handledById === NONE ? null : handledById,
@@ -267,6 +270,18 @@ function EntryForm({
               placeholder={kind === "INCOME" ? "Door split" : "New strings"}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+            />
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor="entry-note">Note</FieldLabel>
+            <Textarea
+              id="entry-note"
+              maxLength={2000}
+              placeholder="Optional details"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={3}
             />
           </Field>
 

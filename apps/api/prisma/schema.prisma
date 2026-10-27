@@ -605,6 +605,7 @@ model FinanceEntry {
   occurredOn   DateTime       @db.Date
   counterparty String?
   description  String         @default("")
+  note         String         @default("")
   /// The show this money belongs to. SetNull: deleting a show never deletes
   /// its money.
   eventId      String?        @db.Uuid

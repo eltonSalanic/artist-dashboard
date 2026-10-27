@@ -119,6 +119,7 @@ export class FinancesService {
           occurredOn: toDate(dto.occurredOn),
           counterparty: dto.counterparty ?? null,
           description: dto.description ?? '',
+          note: dto.note ?? '',
           eventId: dto.eventId ?? null,
           handledById: dto.handledById ?? null,
           createdById: actor.userId,
@@ -180,6 +181,7 @@ export class FinancesService {
           ...(dto.description !== undefined
             ? { description: dto.description }
             : {}),
+          ...(dto.note !== undefined ? { note: dto.note } : {}),
           ...(dto.eventId !== undefined ? { eventId: dto.eventId } : {}),
           ...(dto.handledById !== undefined
             ? { handledById: dto.handledById }
@@ -627,6 +629,7 @@ function toEntryDto(row: EntryRow): FinanceEntryDto {
     occurredOn: fromDate(row.occurredOn),
     counterparty: row.counterparty,
     description: row.description,
+    note: row.note,
     eventId: row.eventId,
     eventTitle: row.event?.title ?? null,
     handledById: row.handledById,

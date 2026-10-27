@@ -49,6 +49,8 @@ export interface HubCard {
   icon: IconName;
   /** The one big thing. Null means "nothing here yet". */
   primary: string | null;
+  /** Optional money direction; other widget values keep their normal ink. */
+  primaryTone?: 'positive' | 'negative';
   /** One line under it, or null. */
   qualifier: string | null;
   /** Something wants attention today — the card picks up an accent. */
@@ -146,9 +148,7 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
 
     CUSTOM: {
       primary: notePreview(note.data?.content),
-      qualifier: note.data?.updatedAt
-        ? `edited ${shortAgo(note.data.updatedAt)}`
-        : null,
+      qualifier: note.data?.updatedAt ? `edited ${shortAgo(note.data.updatedAt)}` : null,
       urgent: false,
       loading: note.isPending,
       // The paragraphs after the first, which `primary` already shows.
@@ -161,9 +161,7 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
       // Subtasks belong to their parent, so the board's own count is roots only.
       const roots = (tasks.data ?? []).filter((t) => t.parentTaskId === null);
       const open = roots.filter((t) => !t.status.isDone);
-      const dueToday = open.filter(
-        (t) => t.dueDate !== null && isToday(dueDay(t.dueDate)),
-      ).length;
+      const dueToday = open.filter((t) => t.dueDate !== null && isToday(dueDay(t.dueDate))).length;
       return {
         primary: open.length === 0 ? null : count(open.length),
         qualifier: dueToday > 0 ? `${dueToday} due today` : null,
@@ -174,9 +172,7 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
     })(),
 
     MY_TASKS: (() => {
-      const mine = (myTasks.data ?? []).filter(
-        (t) => t.parentTaskId === null && !t.status.isDone,
-      );
+      const mine = (myTasks.data ?? []).filter((t) => t.parentTaskId === null && !t.status.isDone);
       const thisWeek = mine.filter(
         (t) => t.dueDate !== null && isThisWeek(dueDay(t.dueDate)),
       ).length;
@@ -195,10 +191,7 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
       const done = all.length - active.length;
       return {
         primary: active.length === 0 ? null : count(active.length),
-        qualifier:
-          all.length > 0
-            ? `${Math.round((done / all.length) * 100)}% complete`
-            : null,
+        qualifier: all.length > 0 ? `${Math.round((done / all.length) * 100)}% complete` : null,
         urgent: false,
         loading: goals.isPending,
         lines: active.slice(0, LINES).map((goal) => ({
@@ -215,9 +208,7 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
 
     REMINDERS: (() => {
       const open = (reminders.data ?? []).filter((r) => !r.done);
-      const due = open.filter(
-        (r) => r.remindAt !== null && new Date(r.remindAt) <= new Date(),
-      );
+      const due = open.filter((r) => r.remindAt !== null && new Date(r.remindAt) <= new Date());
       const next = open
         .filter((r) => r.remindAt !== null)
         .sort((a, b) => a.remindAt!.localeCompare(b.remindAt!))[0];
@@ -229,7 +220,11 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
         lines: [...open]
           // Timed ones first, soonest first; standing notes after.
           .sort((a, b) =>
-            a.remindAt === null ? 1 : b.remindAt === null ? -1 : a.remindAt.localeCompare(b.remindAt),
+            a.remindAt === null
+              ? 1
+              : b.remindAt === null
+                ? -1
+                : a.remindAt.localeCompare(b.remindAt),
           )
           .slice(0, LINES)
           .map((reminder) => ({
@@ -277,14 +272,9 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
       const touched = data.totals.incomeCents > 0 || data.totals.expenseCents > 0;
       return {
         primary: touched ? money(data.totals.netCents) : null,
-        qualifier:
-          mine > 0
-            ? `${money(mine)} owed to you`
-            : mine < 0
-              ? `you owe ${money(-mine)}`
-              : touched
-                ? 'net this month'
-                : null,
+        primaryTone:
+          data.totals.netCents > 0 ? 'positive' : data.totals.netCents < 0 ? 'negative' : undefined,
+        qualifier: mine > 0 ? `${money(mine)} owed to you` : touched ? 'net this month' : null,
         urgent: data.unpaidShows.length > 0,
         loading: false,
         lines: [
@@ -315,11 +305,7 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
   const card = (widgetType: CardWidgetType): HubCard => ({
     widgetType,
     title: WIDGET_META[widgetType].title,
-    slot: resolveWidgetColor(
-      theme,
-      widgetType,
-      WIDGET_META[widgetType].defaultColor ?? 'base',
-    ),
+    slot: resolveWidgetColor(theme, widgetType, WIDGET_META[widgetType].defaultColor ?? 'base'),
     icon: WIDGET_ICONS[widgetType],
     kind: HERO_WIDGETS.includes(widgetType) ? 'hero' : 'stat',
     ...summaries[widgetType],
@@ -339,10 +325,7 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
 }
 
 /** The fields the layout supplies, which each summary does not. */
-type CardChrome = Pick<
-  HubCard,
-  'widgetType' | 'title' | 'slot' | 'icon' | 'kind'
->;
+type CardChrome = Pick<HubCard, 'widgetType' | 'title' | 'slot' | 'icon' | 'kind'>;
 
 /**
  * Shows, rehearsals and meetings are the same card over a different event

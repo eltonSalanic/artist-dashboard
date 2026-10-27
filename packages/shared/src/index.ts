@@ -33,3 +33,5 @@ export * from './dto/notification.dto';
 export * from './dto/note.dto';
 export * from './dto/item-link.dto';
 export * from './dto/finance.dto';
+
+export * from './finance-view';

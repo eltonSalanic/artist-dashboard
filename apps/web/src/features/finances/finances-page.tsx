@@ -10,6 +10,11 @@ import {
   Wallet,
 } from "lucide-react";
 import {
+  DEFAULT_FINANCE_FILTERS,
+  FINANCE_CATEGORIES,
+  FINANCE_SORTS,
+  filterFinanceEntries,
+  type FinanceSort,
   categoryLabel,
   financeCsv,
   ledgerTotals,
@@ -39,6 +44,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -54,6 +60,7 @@ import { BalancesSection } from "./balances-section";
 import { EntryDialog } from "./entry-dialog";
 import {
   Amount,
+  OptionSelect,
   PERIODS,
   formatDay,
   formatMonth,
@@ -81,6 +88,7 @@ export function FinancesPage() {
 
 function Finances({ boardId }: { boardId: string }) {
   const { can } = usePermissions();
+  const [filters, setFilters] = useState(DEFAULT_FINANCE_FILTERS);
   const [period, setPeriod] = useState<Period>("month");
   const [tab, setTab] = useState<Tab>("ledger");
   const [showVoid, setShowVoid] = useState(false);
@@ -107,10 +115,15 @@ function Finances({ boardId }: { boardId: string }) {
   const currency = data?.currency ?? "USD";
   const members = data?.members ?? [];
   const rows = entries.data ?? [];
+  const filteredRows = filterFinanceEntries(rows, filters);
+  const hasFilters = Object.entries(filters).some(
+    ([key, value]) =>
+      value !== DEFAULT_FINANCE_FILTERS[key as keyof typeof filters],
+  );
 
   const exportCsv = () => {
     const name = memberNamer(members);
-    const csv = financeCsv(rows, (id) => name(id));
+    const csv = financeCsv(filteredRows, (id) => name(id));
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
     const link = document.createElement("a");
     link.href = url;
@@ -145,7 +158,11 @@ function Finances({ boardId }: { boardId: string }) {
           </div>
           {can("finance.create") && (
             <>
-              <Button size="sm" variant="outline" onClick={() => setLogging("INCOME")}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setLogging("INCOME")}
+              >
                 <Plus data-icon="inline-start" />
                 Income
               </Button>
@@ -162,9 +179,22 @@ function Finances({ boardId }: { boardId: string }) {
         <Skeleton className="h-24" />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Stat label="In" cents={data.totals.incomeCents} currency={currency} />
-          <Stat label="Out" cents={-data.totals.expenseCents} currency={currency} />
-          <Stat label="Net" cents={data.totals.netCents} currency={currency} strong />
+          <Stat
+            label="In"
+            cents={data.totals.incomeCents}
+            currency={currency}
+          />
+          <Stat
+            label="Out"
+            cents={-data.totals.expenseCents}
+            currency={currency}
+          />
+          <Stat
+            label="Net"
+            cents={data.totals.netCents}
+            currency={currency}
+            strong
+          />
           <Stat
             label="Still owed to the band"
             cents={data.totals.expectedCents}
@@ -175,7 +205,10 @@ function Finances({ boardId }: { boardId: string }) {
       )}
 
       {data && data.unpaidShows.length > 0 && (
-        <UnpaidShows data={data} onSettle={can("finance.manage") ? setSettling : null} />
+        <UnpaidShows
+          data={data}
+          onSettle={can("finance.manage") ? setSettling : null}
+        />
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -196,12 +229,19 @@ function Finances({ boardId }: { boardId: string }) {
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-2 text-xs text-muted-foreground">
               Show voided
-              <Switch checked={showVoid} onCheckedChange={setShowVoid} />
+              <Switch
+                checked={showVoid}
+                onCheckedChange={(checked) => {
+                  setShowVoid(checked);
+                  if (!checked && filters.state === "VOID")
+                    setFilters({ ...filters, state: "all" });
+                }}
+              />
             </label>
             <Button
               size="sm"
               variant="outline"
-              disabled={rows.length === 0}
+              disabled={filteredRows.length === 0}
               onClick={exportCsv}
             >
               <Download data-icon="inline-start" />
@@ -211,24 +251,131 @@ function Finances({ boardId }: { boardId: string }) {
         )}
       </div>
 
+      {tab === "ledger" && (
+        <div className="flex flex-col gap-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <Field>
+              <FieldLabel htmlFor="finance-kind">Type</FieldLabel>
+              <OptionSelect
+                id="finance-kind"
+                value={filters.kind}
+                onChange={(kind) => setFilters({ ...filters, kind })}
+                options={[
+                  { value: "all", label: "All types" },
+                  { value: "INCOME", label: "Income" },
+                  { value: "EXPENSE", label: "Expenses" },
+                ]}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="finance-member">Handled by</FieldLabel>
+              <OptionSelect
+                id="finance-member"
+                value={filters.member}
+                onChange={(member) => setFilters({ ...filters, member })}
+                options={[
+                  { value: "all", label: "All members" },
+                  { value: "band", label: "Band account" },
+                  ...members.map((m) => ({
+                    value: m.id,
+                    label: m.displayName,
+                  })),
+                ]}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="finance-category">Category</FieldLabel>
+              <OptionSelect
+                id="finance-category"
+                value={filters.category}
+                onChange={(category) => setFilters({ ...filters, category })}
+                options={[
+                  { value: "all", label: "All categories" },
+                  ...FINANCE_CATEGORIES.map((c) => ({
+                    value: c.key,
+                    label: c.label,
+                  })),
+                ]}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="finance-state">Status</FieldLabel>
+              <OptionSelect
+                id="finance-state"
+                value={filters.state}
+                onChange={(state) => {
+                  setFilters({ ...filters, state });
+                  if (state === "VOID") setShowVoid(true);
+                }}
+                options={[
+                  { value: "all", label: "All statuses" },
+                  { value: "SETTLED", label: "Settled" },
+                  { value: "EXPECTED", label: "Expected" },
+                  ...(showVoid ? [{ value: "VOID", label: "Voided" }] : []),
+                ]}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="finance-sort">Sort</FieldLabel>
+              <OptionSelect
+                id="finance-sort"
+                value={filters.sort}
+                onChange={(sort) =>
+                  setFilters({ ...filters, sort: sort as FinanceSort })
+                }
+                options={FINANCE_SORTS.map((s) => ({ ...s }))}
+              />
+            </Field>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm text-muted-foreground">
+              {filteredRows.length} entries
+            </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setFilters(DEFAULT_FINANCE_FILTERS);
+                setPeriod("month");
+                setShowVoid(false);
+              }}
+            >
+              Reset filters
+            </Button>
+          </div>
+        </div>
+      )}
       {tab === "ledger" &&
-        (entries.isPending ? (
+        (entries.error ? (
+          <div role="alert" className="flex items-center gap-3">
+            <p>Could not load finance entries.</p>
+            <Button variant="outline" onClick={() => void entries.refetch()}>
+              Try again
+            </Button>
+          </div>
+        ) : entries.isPending ? (
           <Skeleton className="h-64" />
-        ) : rows.length === 0 ? (
+        ) : filteredRows.length === 0 ? (
           <Empty>
             <EmptyHeader>
               <EmptyMedia variant="icon">
                 <Wallet />
               </EmptyMedia>
-              <EmptyTitle>Nothing in the books for this period</EmptyTitle>
+              <EmptyTitle>
+                {hasFilters
+                  ? "No entries match these filters"
+                  : "Nothing in the books for this period"}
+              </EmptyTitle>
               <EmptyDescription>
-                Log a show fee, a merch night or a receipt to get started.
+                {hasFilters
+                  ? "Change or reset the filters to see more entries."
+                  : "Log a show fee, a merch night or a receipt to get started."}
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
         ) : (
           <Ledger
-            rows={rows}
+            rows={filteredRows}
             currency={currency}
             name={memberNamer(members)}
             onOpen={setEditing}
@@ -299,7 +446,7 @@ function Stat({
           <Amount
             cents={cents}
             currency={currency}
-            className={cn(muted && "text-foreground")}
+            className={cn(muted && "text-foreground dark:text-foreground")}
           />
         </CardTitle>
       </CardHeader>
@@ -331,7 +478,11 @@ function UnpaidShows({
               </span>
               <Amount cents={show.expectedCents} currency={data.currency} />
               {onSettle && (
-                <Button size="xs" variant="outline" onClick={() => onSettle(show.eventId)}>
+                <Button
+                  size="xs"
+                  variant="outline"
+                  onClick={() => onSettle(show.eventId)}
+                >
                   Settle
                 </Button>
               )}
@@ -387,17 +538,23 @@ function Ledger({
                     aria-label={`${e.receiptCount} receipt${e.receiptCount === 1 ? "" : "s"}`}
                   />
                 )}
-                {e.state === "EXPECTED" && <Badge variant="secondary">Owed</Badge>}
+                {e.state === "EXPECTED" && (
+                  <Badge variant="secondary">Owed</Badge>
+                )}
                 {e.state === "VOID" && <Badge variant="outline">Void</Badge>}
               </div>
               {e.counterparty && (
-                <div className="text-xs text-muted-foreground">{e.counterparty}</div>
+                <div className="text-xs text-muted-foreground">
+                  {e.counterparty}
+                </div>
               )}
             </TableCell>
             <TableCell className="hidden md:table-cell">
               {categoryLabel(e.category)}
             </TableCell>
-            <TableCell className="hidden lg:table-cell">{e.eventTitle ?? ""}</TableCell>
+            <TableCell className="hidden lg:table-cell">
+              {e.eventTitle ?? ""}
+            </TableCell>
             <TableCell className="hidden md:table-cell text-muted-foreground">
               {e.handledById ? name(e.handledById) : "Band account"}
             </TableCell>
@@ -406,7 +563,10 @@ function Ledger({
                 cents={e.kind === "INCOME" ? e.amountCents : -e.amountCents}
                 currency={currency}
                 signed
-                className={cn(e.state !== "SETTLED" && "text-muted-foreground")}
+                className={cn(
+                  e.state !== "SETTLED" &&
+                    "text-muted-foreground dark:text-muted-foreground",
+                )}
               />
             </TableCell>
           </TableRow>
@@ -417,13 +577,25 @@ function Ledger({
 }
 
 /** Profit and loss for the period, plus what each show made. */
-function Reports({ rows, currency }: { rows: FinanceEntryDto[]; currency: string }) {
+function Reports({
+  rows,
+  currency,
+}: {
+  rows: FinanceEntryDto[];
+  currency: string;
+}) {
   const totals = useMemo(() => ledgerTotals(rows), [rows]);
   const shows = useMemo(() => {
-    const byShow = new Map<string, { title: string; entries: FinanceEntryDto[] }>();
+    const byShow = new Map<
+      string,
+      { title: string; entries: FinanceEntryDto[] }
+    >();
     for (const e of rows) {
       if (!e.eventId) continue;
-      const show = byShow.get(e.eventId) ?? { title: e.eventTitle ?? "Show", entries: [] };
+      const show = byShow.get(e.eventId) ?? {
+        title: e.eventTitle ?? "Show",
+        entries: [],
+      };
       show.entries.push(e);
       byShow.set(e.eventId, show);
     }
@@ -470,7 +642,10 @@ function Reports({ rows, currency }: { rows: FinanceEntryDto[]; currency: string
                     <Amount cents={-m.expenseCents} currency={currency} />
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    <Amount cents={m.incomeCents - m.expenseCents} currency={currency} />
+                    <Amount
+                      cents={m.incomeCents - m.expenseCents}
+                      currency={currency}
+                    />
                   </TableCell>
                 </TableRow>
               ))}
@@ -525,7 +700,9 @@ function Reports({ rows, currency }: { rows: FinanceEntryDto[]; currency: string
                   <TableHead className="text-right">In</TableHead>
                   <TableHead className="text-right">Costs</TableHead>
                   <TableHead className="text-right">Net</TableHead>
-                  <TableHead className="hidden text-right sm:table-cell">Owed</TableHead>
+                  <TableHead className="hidden text-right sm:table-cell">
+                    Owed
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
