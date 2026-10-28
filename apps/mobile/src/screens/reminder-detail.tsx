@@ -72,6 +72,7 @@ export function ReminderDetailScreen({
         contentContainerStyle={{ padding: spacing.md, gap: spacing.lg }}
       >
         <DetailPoster
+          boardId={boardId}
           ink={ink}
           label="Reminder"
           aside={archived ? 'Archived' : done ? 'Done' : overdue ? 'Due' : null}

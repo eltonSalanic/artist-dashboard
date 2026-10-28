@@ -76,6 +76,7 @@ export function GoalDetailScreen({ boardId, goalId }: { boardId: string; goalId:
         contentContainerStyle={{ padding: spacing.md, gap: spacing.lg }}
       >
         <DetailPoster
+          boardId={boardId}
           ink={ink}
           label={`${PERIOD_LABEL[g.period]} goal`}
           aside={archived ? 'Archived' : done ? 'Completed' : null}

@@ -91,6 +91,7 @@ export function EventDetailScreen({ boardId, eventId }: { boardId: string; event
         contentContainerStyle={{ padding: spacing.md, gap: spacing.lg }}
       >
         <DetailPoster
+          boardId={boardId}
           ink={ink}
           label={kind}
           aside={e.archivedAt ? 'Archived' : daysAway(e.startsAt)}

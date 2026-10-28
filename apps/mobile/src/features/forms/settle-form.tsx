@@ -137,6 +137,7 @@ function SettleFields({ boardId, data }: { boardId: string; data: ShowSettlement
       postered
     >
       <FormPoster
+        boardId={boardId}
         ink={ink}
         label={`Settle ${data.event.title}`}
         fieldLabel="Note on the costs"

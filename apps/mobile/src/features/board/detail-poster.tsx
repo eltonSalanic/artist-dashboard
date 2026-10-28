@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
+import { useBoard } from '@artist/api-client';
 import { Icon } from '@/components/icon';
 import { PosterText } from '@/components/poster-text';
 import { Skeleton } from '@/components/skeleton';
@@ -19,9 +20,12 @@ import {
  * tapped, opened up. A show is the Shows colour, a task its To-Do's.
  *
  * The kind is written in small caps across the top, so the colour never says
- * it alone; `aside` takes the top right ("In 4 days", "Archived").
+ * it alone; `aside` takes the top right ("In 4 days", "Archived"). Above it
+ * sits the band's name, so someone in several bands always knows whose item
+ * this is, however they reached it.
  */
 export function DetailPoster({
+  boardId,
   ink,
   label,
   aside,
@@ -29,6 +33,7 @@ export function DetailPoster({
   done = false,
   children,
 }: {
+  boardId: string;
   ink: WidgetInk;
   label: string;
   aside?: string | null;
@@ -50,6 +55,7 @@ export function DetailPoster({
         boxShadow: ink.plain ? shadows.card : shadows.raised,
       }}
     >
+      <BandTag boardId={boardId} ink={ink} />
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
         <PosterText variant="label" color={ink.ink} style={{ flex: 1 }}>
           {label.toUpperCase()}
@@ -69,6 +75,37 @@ export function DetailPoster({
         {title}
       </PosterText>
       {children}
+    </View>
+  );
+}
+
+/**
+ * The band an item belongs to, as a filled capsule in the block's ink: the
+ * loudest small thing on the block, so it is read before the title. Takes no
+ * room until the board has loaded (it almost always has, from the hub).
+ */
+export function BandTag({ boardId, ink }: { boardId: string; ink: WidgetInk }) {
+  const name = useBoard(boardId).data?.name;
+  if (!name) return null;
+  return (
+    <View
+      accessibilityLabel={`Band: ${name}`}
+      style={{
+        alignSelf: 'flex-start',
+        maxWidth: '100%',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+        paddingVertical: 4,
+        paddingHorizontal: spacing.sm + 2,
+        borderRadius: posterRadius.chip,
+        backgroundColor: ink.ink,
+      }}
+    >
+      <Icon name={{ sf: 'music.note', md: 'music-note' }} size={13} color={ink.bg} />
+      <PosterText variant="chip" color={ink.bg} numberOfLines={1} style={{ flexShrink: 1 }}>
+        {name}
+      </PosterText>
     </View>
   );
 }

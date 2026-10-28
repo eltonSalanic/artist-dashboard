@@ -82,6 +82,7 @@ function ReminderFields({ boardId, reminder }: { boardId: string; reminder: Remi
       postered
     >
       <FormPoster
+        boardId={boardId}
         ink={ink}
         label={reminder ? 'Edit reminder' : 'New reminder'}
         fieldLabel="Remember to"

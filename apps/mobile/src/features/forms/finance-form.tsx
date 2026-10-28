@@ -223,6 +223,7 @@ function FinanceFields({
     >
       <View pointerEvents={saving ? 'none' : 'auto'} style={{ gap: spacing.lg }}>
         <FormPoster
+          boardId={boardId}
           ink={ink}
           label={title}
           fieldLabel="What for"

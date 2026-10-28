@@ -101,6 +101,7 @@ function GoalFields({ boardId, goal }: { boardId: string; goal: GoalDto | null }
       postered
     >
       <FormPoster
+        boardId={boardId}
         ink={ink}
         label={goal ? 'Edit goal' : 'New goal'}
         fieldLabel="Goal"

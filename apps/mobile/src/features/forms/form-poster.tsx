@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { TextInput } from '@/components/text-input';
 import { PosterText } from '@/components/poster-text';
+import { BandTag } from '@/features/board/detail-poster';
 import { DISPLAY_SCALE, poster, posterRadius, spacing, useShadows, type WidgetInk } from '@/theme';
 
 /**
@@ -11,9 +12,11 @@ import { DISPLAY_SCALE, poster, posterRadius, spacing, useShadows, type WidgetIn
  * the form already looks like what saving it makes.
  *
  * The title wraps rather than scrolling sideways: a long one is still read
- * whole, as it will be on the detail screen.
+ * whole, as it will be on the detail screen. The band's name tops it as it
+ * does the detail block, so nobody adds a show to the wrong band.
  */
 export function FormPoster({
+  boardId,
   ink,
   label,
   fieldLabel,
@@ -24,6 +27,7 @@ export function FormPoster({
   maxLength,
   children,
 }: {
+  boardId: string;
   ink: WidgetInk;
   /** The kind across the top: "New task", "Edit show". */
   label: string;
@@ -49,6 +53,7 @@ export function FormPoster({
         boxShadow: ink.plain ? shadows.card : shadows.raised,
       }}
     >
+      <BandTag boardId={boardId} ink={ink} />
       <PosterText variant="label" color={ink.ink} accessibilityRole="header">
         {label.toUpperCase()}
       </PosterText>

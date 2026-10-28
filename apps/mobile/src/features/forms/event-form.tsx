@@ -140,6 +140,7 @@ function EventFields({
       postered
     >
       <FormPoster
+        boardId={boardId}
         ink={ink}
         label={event ? `Edit ${label}` : `New ${label}`}
         fieldLabel="Title"
