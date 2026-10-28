@@ -44,6 +44,13 @@ describe('toUserMessage', () => {
     );
   });
 
+  it('trusts a message the API coded itself, even on a 5xx', () => {
+    const error = new ApiError(502, "Couldn't send the invite email.", {
+      code: 'INVITE_EMAIL_FAILED',
+    });
+    expect(toUserMessage(error)).toBe("Couldn't send the invite email.");
+  });
+
   it('uses the caller fallback for anything else', () => {
     expect(toUserMessage(new Error('boom'), 'Upload failed')).toBe(
       'Upload failed',

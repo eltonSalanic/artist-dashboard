@@ -56,6 +56,11 @@ export function toUserMessage(
     const label = fieldLabel(issue.path);
     return label ? `${label}: ${issue.message}` : issue.message;
   }
+  // A code the API chose itself carries a message written for users, even on
+  // a 5xx (e.g. the invite email provider failing).
+  if (error.code && error.code !== 'INTERNAL' && error.message) {
+    return error.message;
+  }
   if (error.status === 401) return MESSAGES.sessionExpired;
   if (error.status === 429) return MESSAGES.rateLimited;
   if (error.status >= 500) return MESSAGES.server;

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, HttpException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient } from '@supabase/supabase-js';
 
@@ -11,6 +11,7 @@ import { createClient } from '@supabase/supabase-js';
 export class SupabaseAdminService {
   private readonly client: ReturnType<typeof createClient>;
   private readonly redirectTo: string;
+  private readonly logger = new Logger(SupabaseAdminService.name);
 
   constructor(config: ConfigService) {
     this.client = createClient(
@@ -32,7 +33,20 @@ export class SupabaseAdminService {
     });
     if (error) {
       if (error.code === 'email_exists') return 'already_registered';
-      throw error;
+      // Rate limits and SMTP failures used to surface as a bare 500. Log the
+      // real cause (no address: it's personal data) and tell the user what
+      // happened instead.
+      this.logger.error(
+        `Invite email failed: ${error.code ?? 'unknown'} (status ${error.status ?? '?'}): ${error.message}`,
+      );
+      throw new HttpException(
+        {
+          message:
+            "Couldn't send the invite email. Try again in a few minutes.",
+          code: 'INVITE_EMAIL_FAILED',
+        },
+        HttpStatus.BAD_GATEWAY,
+      );
     }
     return 'sent';
   }
