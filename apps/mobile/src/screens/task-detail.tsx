@@ -110,6 +110,7 @@ export function TaskDetailScreen({
         contentContainerStyle={{ padding: spacing.md, gap: spacing.lg }}
       >
         <DetailPoster
+          boardId={boardId}
           ink={ink}
           label={t.parentTaskId === null ? 'Task' : 'Subtask'}
           // Reached from the Archive; Edit → Unarchive brings it back.

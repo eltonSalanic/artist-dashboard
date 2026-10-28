@@ -35,6 +35,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { NONE, OptionSelect, todayISO } from "./finance-bits";
+import { BandTag } from "@/features/shell/band-tag";
 
 /**
  * Log or edit one line of the books. A new entry turns into the saved one in
@@ -186,6 +187,7 @@ function EntryForm({
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
       <DialogHeader>
+        <BandTag boardId={boardId} />
         <DialogTitle>
           {justCreated
             ? "Saved"

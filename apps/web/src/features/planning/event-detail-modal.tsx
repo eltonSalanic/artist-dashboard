@@ -52,6 +52,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ItemLinks } from "@/features/links/item-links";
 import { ItemNotes } from "@/features/notes/item-notes";
 import { ShowMoney } from "@/features/finances/show-money";
+import { BandTag } from "@/features/shell/band-tag";
 
 export function EventDetailModal({ boardId }: { boardId: string }) {
   const { get, close } = useDetailParams();
@@ -154,6 +155,7 @@ function EventDetailBody({
     <div className="flex flex-col gap-5">
       <ArchivedBanner archivedAt={data.archivedAt} />
       <DialogHeader>
+        <BandTag boardId={boardId} />
         {canManage ? (
           <Input
             aria-label="Event title"

@@ -74,6 +74,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ItemLinks } from "@/features/links/item-links";
 import { ItemNotes } from "@/features/notes/item-notes";
 import { useTaskStatusChange } from "@/features/tasks/task-completion";
+import { BandTag } from "@/features/shell/band-tag";
 
 export function TaskDetailModal({ boardId }: { boardId: string }) {
   const router = useRouter();
@@ -339,6 +340,7 @@ function TaskDetailBody({
       {dialog}
       <ArchivedBanner archivedAt={data.archivedAt} />
       <DialogHeader>
+        <BandTag boardId={boardId} />
         {canEdit ? (
           <Input
             aria-label="Task title"

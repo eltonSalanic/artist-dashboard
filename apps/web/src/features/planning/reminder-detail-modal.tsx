@@ -31,6 +31,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ItemLinks } from "@/features/links/item-links";
 import { ItemNotes } from "@/features/notes/item-notes";
+import { BandTag } from "@/features/shell/band-tag";
 
 export function ReminderDetailModal({ boardId }: { boardId: string }) {
   const { get, close } = useDetailParams();
@@ -123,6 +124,7 @@ function ReminderDetailBody({
     <div className="flex flex-col gap-5">
       <ArchivedBanner archivedAt={data.archivedAt} />
       <DialogHeader>
+        <BandTag boardId={boardId} />
         {canManage ? (
           <Input
             aria-label="Reminder title"

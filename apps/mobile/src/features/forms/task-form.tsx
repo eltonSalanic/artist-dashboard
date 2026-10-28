@@ -181,6 +181,7 @@ function TaskFields({
       postered
     >
       <FormPoster
+        boardId={boardId}
         ink={ink}
         label={task ? `Edit ${label}` : `New ${label}`}
         fieldLabel="Title"

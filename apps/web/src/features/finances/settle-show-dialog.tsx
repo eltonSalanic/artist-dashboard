@@ -35,6 +35,7 @@ import {
   memberNamer,
   todayISO,
 } from "./finance-bits";
+import { BandTag } from "@/features/shell/band-tag";
 
 interface Line {
   key: number;
@@ -174,6 +175,7 @@ function SettleForm({
   return (
     <div className="flex flex-col gap-4">
       <DialogHeader>
+        <BandTag boardId={boardId} />
         <DialogTitle>Settle {data.event.title}</DialogTitle>
         <DialogDescription>
           Enter what came in and what it cost. Everything is split by the
