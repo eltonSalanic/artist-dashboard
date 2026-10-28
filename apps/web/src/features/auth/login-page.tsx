@@ -24,14 +24,15 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
 
+  const [expired, setExpired] = useState(false);
+
   // Read directly rather than via useSearchParams, which would need a
-  // Suspense boundary just for this one flag.
+  // Suspense boundary just for this one flag. Shown on the card rather than
+  // as a toast: this effect runs before the Toaster has mounted, so a toast
+  // from here is dropped.
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).has("expired")) {
-      toast.info("Your session expired. Please sign in again.", {
-        id: "session-expired",
-      });
-    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reads the URL once on mount
+    setExpired(new URLSearchParams(window.location.search).has("expired"));
   }, []);
 
   const submit = async (event: React.FormEvent) => {
@@ -74,6 +75,11 @@ export function LoginPage() {
               ? "Sign in to your band's dashboard."
               : "Start a dashboard for your band."}
           </CardDescription>
+          {expired && mode === "signin" && (
+            <p role="status" className="text-sm text-destructive">
+              Your session expired. Please sign in again.
+            </p>
+          )}
         </CardHeader>
         <CardContent>
           <form onSubmit={submit}>
