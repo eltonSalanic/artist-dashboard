@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { maskEmail } from '../common/redact';
 
 /**
  * The two Resend events that mean "stop sending here". Everything else Resend
@@ -44,7 +45,7 @@ export class SuppressionsService {
         create: { email, reason },
         update: {},
       });
-      this.logger.warn(`Suppressing ${email}: ${reason}`);
+      this.logger.warn(`Suppressing ${maskEmail(email)}: ${reason}`);
     }
     return recipients;
   }
