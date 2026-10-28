@@ -27,6 +27,7 @@ for build conventions and skills read [CLAUDE.md](../CLAUDE.md). Those describe
 | [Plans](plans/README.md) — implementation plans shared by Claude, Codex, and Obsidian, with Trello links | Setup in progress; imported plans will be indexed here |
 | [Notifications](notifications.md) — every trigger, recipient, channel, and suppression rule | Email shipped; push plumbed, not yet reachable |
 | [Mobile app](mobile-app.md) — the Expo/React Native app: phase tracker, navigation design, locked decisions | In progress — P0–P4 done, P5–P8 built and awaiting verification |
+| [Error handling and logging](error-handling.md) — error shape, user-facing copy, dev vs staging/prod logs, Sentry | Built; Sentry off until DSNs are set |
 | [Feature test checklist](test-checklist.md) — what a person must click and see work, per phase | Live — P1–P4 listed |
 | Permissions — the `can()` map, role matrix, and where each action is enforced | Not yet written |
 | Tasks — statuses, subtasks, assignees, checklists, ordering | Not yet written |
