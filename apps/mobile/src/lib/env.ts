@@ -11,6 +11,7 @@
  */
 
 import Constants from 'expo-constants';
+import { parseAppEnv } from '@artist/shared';
 import { urlOnDevHost } from './dev-host';
 
 /** The ports `npm run dev` and `npx supabase start` listen on. */
@@ -52,4 +53,9 @@ export const env = {
     'EXPO_PUBLIC_SUPABASE_ANON_KEY',
     process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
   ),
+  /**
+   * development | staging | production, set per build profile in eas.json.
+   * Tags error reports so a staging build's crashes never mix with prod's.
+   */
+  appEnv: parseAppEnv(process.env.EXPO_PUBLIC_APP_ENV),
 } as const;

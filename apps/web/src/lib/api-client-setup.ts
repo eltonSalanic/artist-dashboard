@@ -1,5 +1,6 @@
 import { toast } from "sonner";
 import { configureApiClient, configureSessionSource } from "@artist/api-client";
+import { env } from "./env";
 import { supabase } from "./supabase";
 
 /**
@@ -14,7 +15,7 @@ import { supabase } from "./supabase";
 let signingOut = false;
 
 configureApiClient({
-  baseUrl: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001",
+  baseUrl: env.apiUrl,
   getAccessToken: async () => {
     const {
       data: { session },
