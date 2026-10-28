@@ -11,6 +11,14 @@ import { setErrorReporter } from './common/error-reporter';
  * sent: expected 4xx errors stay in the logs. `environment` keeps staging and
  * production apart in one Sentry project.
  */
+// This runs before ConfigModule has read .env, so a local dev run would never
+// see SENTRY_DSN. Deployed hosts set real env vars and have no .env file.
+try {
+  process.loadEnvFile('.env');
+} catch {
+  // No .env (deployed, or tests): the real environment is all there is.
+}
+
 const dsn = process.env.SENTRY_DSN;
 
 if (dsn) {

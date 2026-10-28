@@ -46,7 +46,14 @@
       "expo-image",
       "expo-sharing",
       "expo-notifications",
-      "@sentry/react-native"
+      [
+        "@sentry/react-native",
+        {
+          "organization": "elton-salanic",
+          "project": "band-wall-mobile",
+          "url": "https://sentry.io/"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false,
