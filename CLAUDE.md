@@ -7,7 +7,7 @@ npm-workspaces monorepo:
 ```
 apps/api            NestJS 11 + Prisma 7 (driver adapter, PrismaPg)   → owns the DB schema
 apps/web            Next.js 16 (CLIENT-ONLY — routing/SEO only, no RSC/server actions)
-apps/mobile         Expo 57 / React Native (IN PROGRESS — see docs/mobile-app.md)
+apps/mobile         Expo 57 / React Native (P14 store builds and P18 join links still open — see docs/mobile-app.md)
 packages/shared     Zod DTOs + permission map + layout logic, consumed as TS source
 packages/api-client apiFetch + React Query hooks — platform-agnostic, shared by web + mobile
 supabase/           local stack (config.toml, seed.sql) — Postgres, Auth, Storage, Mailpit
@@ -49,7 +49,7 @@ Prisma skills are installed under `apps/api/.claude/skills/` and are **scoped to
 ### Mobile — `apps/mobile` (Expo / React Native)
 17 skills are installed under `apps/mobile/.claude/skills/` and are **scoped to `apps/mobile/`** — they stay inert while you edit `apps/web`, which matters because several carry opinions that are wrong advice for the Next app. The per-area routing table lives in [apps/mobile/AGENTS.md](apps/mobile/AGENTS.md); read it before writing mobile code.
 
-- Official Expo (15): `expo-overview`, `expo-project-structure`, `expo-router`, `expo-dev-client`, `expo-web-to-native`, `expo-data-fetching`, `expo-design-system`, `expo-native-ui`, `expo-animation`, `expo-upgrade`, `eas-app-stores`, `eas-update`, `eas-workflows`, `eas-simulator`.
+- Official Expo (14): `expo-overview`, `expo-project-structure`, `expo-router`, `expo-dev-client`, `expo-web-to-native`, `expo-data-fetching`, `expo-design-system`, `expo-native-ui`, `expo-animation`, `expo-upgrade`, `eas-app-stores`, `eas-update`, `eas-workflows`, `eas-simulator`.
 - Third-party (3): `animate-expo`, `vercel-react-native-skills`, `upgrading-react-native`.
 - ⚠️ **No skill covers Expo push notifications or `expo-secure-store`/auth sessions.** Those are the two highest-risk areas (plan phases P5 and P13) — work from Expo's docs and verify on a physical device.
 - ⚠️ **`expo-tailwind-setup`, `expo-ui`, `use-dom`/`expo-dom` are deliberately NOT installed.** Mobile styling is React Native `StyleSheet` (NativeWind declined), and webviews are out — Expo was chosen over a Capacitor wrapper to avoid one.
@@ -65,6 +65,7 @@ These are project rules the user has set. Follow them without re-litigating.
 - **`⚠️ This is not the Next.js you know.`** Next 16 has breaking changes vs. training data. Per [apps/web/AGENTS.md](apps/web/AGENTS.md), consult `node_modules/next/dist/docs/` before writing Next code.
 - **API tests are Jest units only.** No supertest / e2e HTTP tests. Mock Prisma (see the `*.spec.ts` alongside services).
 - **No `Co-Authored-By` trailer on commits.** Leave it off entirely.
+- **Keep the docs current.** Any major change (a new feature, a changed behaviour or flow, a new env var, command or migration, a new route or module) updates the docs in the same branch: the root [README.md](README.md) feature list and setup, the matching file in [docs/](docs/README.md) and its status line in the docs index, [docs/test-checklist.md](docs/test-checklist.md), the plan's state in [docs/plans/](docs/plans/README.md), and the app README or `.env.example` it touches. Before calling work done, check that no doc still describes the old behaviour.
 - **Permissions have one source of truth.** `packages/shared/src/permissions.ts` (`can()` map) is enforced server-side *and* mirrored in the UI. Never hardcode a role check — extend the shared map.
 
 ---
@@ -110,7 +111,7 @@ Neither Prisma nor Supabase deploys the NestJS/Next.js *code* — those need the
 
 ```bash
 npm run dev                 # both apps (concurrently) — from repo root
-npm run test                # api + web test suites
+npm run test                # shared, api-client, api, web and mobile test suites
 npm run db:seed -w apps/api # (re)seed the demo board — DESTRUCTIVE, dev only
 npx prisma migrate dev      # from apps/api — new migration in dev
 npx prisma migrate deploy   # from apps/api — apply migrations in prod/CI

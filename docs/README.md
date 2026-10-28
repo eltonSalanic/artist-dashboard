@@ -24,11 +24,11 @@ for build conventions and skills read [CLAUDE.md](../CLAUDE.md). Those describe
 
 | Area | Status |
 |---|---|
-| [Plans](plans/README.md) — implementation plans shared by Claude, Codex, and Obsidian, with Trello links | Setup in progress; imported plans will be indexed here |
-| [Notifications](notifications.md) — every trigger, recipient, channel, and suppression rule | Email shipped; push plumbed, not yet reachable |
-| [Mobile app](mobile-app.md) — the Expo/React Native app: phase tracker, navigation design, locked decisions | In progress — P0–P4 done, P5–P8 built and awaiting verification |
+| [Plans](plans/README.md) — implementation plans, kept in the repo and openable in Obsidian, with Trello links | Live — show statuses complete, tours in draft |
+| [Notifications](notifications.md) — every trigger, recipient, channel, and suppression rule | Email and push shipped; no push-only preferences yet |
+| [Mobile app](mobile-app.md) — the Expo/React Native app: phase tracker, navigation design, locked decisions | In progress — P0–P13 and P17 done; P14 and P18 not started |
 | [Error handling and logging](error-handling.md) — error shape, user-facing copy, dev vs staging/prod logs, Sentry | Built; Sentry off until DSNs are set |
-| [Feature test checklist](test-checklist.md) — what a person must click and see work, per phase | Live — P1–P4 listed |
+| [Feature test checklist](test-checklist.md) — what a person must click and see work, per phase and feature | Live — P1–P17, finances, links, show statuses, band name tag |
 | Permissions — the `can()` map, role matrix, and where each action is enforced | Not yet written |
 | Tasks — statuses, subtasks, assignees, checklists, ordering | Not yet written |
 | Planning — goals, events, reminders, focus pins, calendar | Not yet written |
@@ -36,3 +36,6 @@ for build conventions and skills read [CLAUDE.md](../CLAUDE.md). Those describe
 | Comments & attachments — markdown, mentions, the signed-URL upload flow | Not yet written |
 | Archive — the two-tier archive/delete model and its cascade rules | Not yet written |
 | Board appearance — palettes and per-widget colour slots | Not yet written |
+| Finances — ledger, splits, payouts, receipts, member history | Not yet written; see the [Band finances](test-checklist.md#band-finances) checks |
+| Show statuses — per-band show steps, categories, cancelled filtering | Not yet written; see the [plan](plans/show-statuses.md) |
+| Links on items — named web links on tasks, events, goals and reminders | Not yet written; see the [Links on items](test-checklist.md#links-on-items) checks |

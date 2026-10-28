@@ -764,13 +764,13 @@ Checks live on the Trello card [Band finances testing](https://trello.com/c/ML7y
 
 ---
 
-## P14–P16 — not yet built
+## P14, P15, P16 and P18
 
-Each gets a Trello testing card when it lands, linked from a short section here. Known in advance:
+Each gets a Trello testing card when it lands, linked from a short section here.
 
-- **P15** is the only phase that intentionally changes web behaviour.
-- **P16** (Notes-style editor) takes over P11's deferred editing checks,
-rewritten for the new editor.
+- **P14** (store builds) and **P18** (join links) are not built yet.
+- **P15** (web band picker) is built and awaiting verification. It's the only phase that intentionally changes web behaviour: anyone in more than one band gets a band picker in the header.
+- **P16** (Notes-style editor) was dropped on 2026-10-20 in favour of titled notes, so P11's deferred editing checks belong to the notes widget as it is now.
 
 > **Lesson from P7, for every phase left:** bundling is not running.
 > `expo export` proves resolution and types; `expo start` is what proves the
@@ -797,3 +797,17 @@ The local migration `20261025183000_item_links` is applied. Other environments n
 Automated checks: 24 API link/validation cases, six web interaction tests (including failed-save retry), full API/client/web/mobile suites, TypeScript and targeted lint checks pass. The database matches the schema.
 
 Verified 2026-10-26: the October 25 feature-test run (API, database, simulator) and a re-run on October 26 (live API, database and the web form in a browser) passed, and the user confirmed the three phone checks. All checks are ticked on the card.
+
+
+## Show statuses
+
+Checks live on [Show statuses testing](https://trello.com/c/YyHbu8qz), with the plan in [plans/show-statuses.md](plans/show-statuses.md). Run `npx prisma migrate deploy` from `apps/api` first (new migration `20261027234513_show_statuses`, which backfills existing shows as Confirmed), then `npm run db:seed -w apps/api` for demo shows in every status plus a custom "Advanced" one.
+
+Verified 2026-10-28: Elton checked every item on web and phone, and the card's checklists are ticked.
+
+
+## Band name on detail views
+
+Every task, event, goal and reminder detail view shows which band the item belongs to, on web and phone (`b67b946`). There's no Trello card for it.
+
+Verified 2026-10-28 in a feature test with one account in two bands. Elton checked off every item.

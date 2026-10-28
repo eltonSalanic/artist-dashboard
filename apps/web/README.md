@@ -1,36 +1,36 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# `apps/web` — Band Wall on the web
 
-## Getting Started
+Next.js 16, React 19, Tailwind 4 and shadcn/ui. **Client-only:** Next is used
+for routing and SEO metadata, not Server Components or server actions. Data
+goes web → NestJS API (TanStack Query hooks from `packages/api-client`) →
+Prisma → Postgres. Next 16 differs from what you may know; read
+[AGENTS.md](AGENTS.md) before writing Next code.
 
-First, run the development server:
+## Running it
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local   # anon key from `npx supabase status`
+npm run dev                  # port 3000, or `npm run dev` from the repo root for api + web
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+A production build fails without `NEXT_PUBLIC_API_URL`. `NEXT_PUBLIC_APP_ENV`
+and `NEXT_PUBLIC_SENTRY_DSN` are described in
+[docs/error-handling.md](../../docs/error-handling.md).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Layout
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **`src/app`** holds only routes: `/login`, `/auth/callback`, `/unsubscribe`,
+  and inside `(app)` the signed-in pages `/dashboard`, `/calendar`,
+  `/finances`, `/archive` and `/settings`, plus the error and not-found pages.
+- **`src/features`** holds the screens and components, one folder per area
+  (tasks, planning, finances, notes, links, dashboard, widgets, settings,
+  shell and so on).
+- **`src/lib/use-me.ts`** wraps the shared `useMe` so `board` and `membership`
+  describe the band picked in the header's band picker.
 
-## Learn More
+## Tests
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm test         # Jest
+npm run lint
+```

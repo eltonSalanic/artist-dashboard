@@ -155,5 +155,23 @@ Each would otherwise read as an oversight:
 ## Tests
 
 `npm test -w apps/mobile` typechecks (`tsc --noEmit`) and then runs units.
-Nothing here renders a component yet: the one thing worth testing in this phase
-is the chunking store, which is pure logic because its backend is injected.
+They are plain `ts-jest` tests of logic pulled out of the screens (the chunking
+store, dev-host detection, push routing and token changes, reorder, note
+editing, finance drafts and so on). Nothing here renders a component, so how a
+screen looks and behaves is checked on a phone, per
+[docs/test-checklist.md](../../docs/test-checklist.md).
+
+## EAS build profiles
+
+[`eas.json`](eas.json) has three profiles, and each sets `EXPO_PUBLIC_APP_ENV`
+so logs and error reports know where they came from (see
+[docs/error-handling.md](../../docs/error-handling.md)):
+
+| Profile | Use | `EXPO_PUBLIC_APP_ENV` |
+|---|---|---|
+| `development` | The dev client you install once with `npm run mobile:ios` | `development` |
+| `preview` | Internal-distribution build for testing against staging | `staging` |
+| `production` | Store build, build number auto-incremented | `production` |
+
+`EXPO_PUBLIC_SENTRY_DSN` turns on error reporting, but only in a build made
+after the `@sentry/react-native` plugin was added (October 2026).

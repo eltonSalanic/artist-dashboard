@@ -1,9 +1,12 @@
 # Mobile App (React Native + Expo)
 
-> **Status:** in progress. P0–P4 done and verified; **P5–P9 built, awaiting
-> verification on a phone** — `apps/mobile/` signs in, has its four tabs, every
-> widget reads end to end (hub card → spoke → task), and the Calendar and Inbox
-> span every band you are in. Nothing writes yet. P10 (write parity) is next.
+> **Status:** in progress. P0–P13 and P17 (the redesign) are done:
+> `apps/mobile/` signs in, reads and edits board content and settings across
+> every band you are in, edits its own layout, and receives push. Open: P14
+> (store builds) and P18 (join links) are not started; P15 (web band switcher)
+> is built and awaiting verification; P16 was dropped for titled notes.
+> Features built since the phases (finances, links on items, show statuses,
+> the band name tag) are tracked in [the test checklist](test-checklist.md).
 >
 > **Progress is tracked in [the phase table](#phases).** Update the Status
 > column in the same commit that lands the work. ☑ done and user-verified ·
