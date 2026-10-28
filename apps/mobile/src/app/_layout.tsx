@@ -1,6 +1,8 @@
 // Side-effect import, and it must stay first: it configures the API client and
 // the session source that every hook below reaches for.
 import '@/lib/api-client-setup';
+// Next, so a crash during the first render is reported.
+import '@/lib/sentry';
 
 import { useEffect } from 'react';
 import { AppState } from 'react-native';

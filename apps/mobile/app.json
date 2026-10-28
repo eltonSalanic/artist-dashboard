@@ -45,7 +45,8 @@
       "@react-native-community/datetimepicker",
       "expo-image",
       "expo-sharing",
-      "expo-notifications"
+      "expo-notifications",
+      "@sentry/react-native"
     ],
     "experiments": {
       "typedRoutes": false,
