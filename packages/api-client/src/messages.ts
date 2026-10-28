@@ -88,6 +88,21 @@ export function toUserMessage(
   return fallback;
 }
 
+/**
+ * Query `meta` for a screen that shows its own error state (a detail modal,
+ * the dashboard, the app shell). Apps skip their global "couldn't load" toast
+ * for these, so the user isn't told the same thing twice.
+ */
+export const INLINE_ERROR = { inlineError: true } as const;
+
+export function showsInlineError(meta: unknown): boolean {
+  return (
+    typeof meta === 'object' &&
+    meta !== null &&
+    (meta as { inlineError?: unknown }).inlineError === true
+  );
+}
+
 /** True for a 404 — lets a detail view say "deleted" only when it was. */
 export function isNotFound(error: unknown): boolean {
   return error instanceof ApiError && error.status === 404;

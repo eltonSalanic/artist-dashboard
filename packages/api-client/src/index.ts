@@ -19,11 +19,13 @@ export {
 } from './client';
 
 export {
+  INLINE_ERROR,
   MESSAGES,
   authErrorMessage,
   type AuthErrorLike,
   isNotFound,
   isUnexpectedError,
+  showsInlineError,
   toUserMessage,
 } from './messages';
 

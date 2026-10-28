@@ -11,7 +11,7 @@ import type {
   UpdateTaskDto,
 } from "@artist/shared";
 import { apiFetch } from "../client";
-import { toUserMessage } from "../messages";
+import { INLINE_ERROR, toUserMessage } from "../messages";
 import type { TaskDetailDto, TaskDto, TaskFilters } from "./types";
 
 const showError = (error: unknown) =>
@@ -34,6 +34,7 @@ export function useTasks(boardId: string, filters: TaskFilters = {}) {
 
 export function useTask(boardId: string, taskId: string | null) {
   return useQuery({
+    meta: INLINE_ERROR,
     queryKey: ["task", boardId, taskId],
     queryFn: () =>
       apiFetch<TaskDetailDto>(`/boards/${boardId}/tasks/${taskId}`),

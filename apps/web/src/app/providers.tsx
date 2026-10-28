@@ -7,7 +7,7 @@ import {
   QueryClientProvider,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { toUserMessage } from "@artist/api-client";
+import { showsInlineError, toUserMessage } from "@artist/api-client";
 import { ThemeProvider } from "next-themes";
 import { useEffect, useState } from "react";
 import { clearCacheOnUserChange } from "@/lib/clear-cache-on-user-change";
@@ -28,6 +28,9 @@ function makeQueryClient(): QueryClient {
         // and stays quiet. One shared toast id, so a dead connection
         // doesn't stack a toast per widget.
         if (query.state.data !== undefined) return;
+        // Screens with their own error state (detail modals, the dashboard,
+        // the app shell) already say it; don't say it twice.
+        if (showsInlineError(query.meta)) return;
         toast.error(
           toUserMessage(error, "Couldn't load some of your band's data."),
           {

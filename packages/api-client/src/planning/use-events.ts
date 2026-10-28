@@ -9,7 +9,7 @@ import type {
   UpdateEventDto,
 } from "@artist/shared";
 import { apiFetch } from "../client";
-import { toUserMessage } from "../messages";
+import { INLINE_ERROR, toUserMessage } from "../messages";
 import type { EventDto } from "./types";
 
 const showError = (error: unknown) =>
@@ -45,6 +45,7 @@ export function useEvents(boardId: string, filters: EventFilters = {}) {
 
 export function useEvent(boardId: string, eventId: string | null) {
   return useQuery({
+    meta: INLINE_ERROR,
     queryKey: ["event", boardId, eventId],
     queryFn: () => apiFetch<EventDto>(`/boards/${boardId}/events/${eventId}`),
     enabled: !!eventId,

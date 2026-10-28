@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { BoardSummaryDto } from "@artist/shared";
 import { apiFetch, notify } from "../client";
-import { toUserMessage } from "../messages";
+import { INLINE_ERROR, toUserMessage } from "../messages";
 import type { MeResponse } from "./types";
 
 /**
@@ -12,6 +12,7 @@ import type { MeResponse } from "./types";
  */
 export function useMe(enabled: boolean) {
   return useQuery({
+    meta: INLINE_ERROR,
     queryKey: ["me"],
     queryFn: () => apiFetch<MeResponse>("/me/bootstrap", { method: "POST" }),
     enabled,

@@ -8,7 +8,7 @@ import type {
   UpdateGoalDto,
 } from "@artist/shared";
 import { apiFetch } from "../client";
-import { toUserMessage } from "../messages";
+import { INLINE_ERROR, toUserMessage } from "../messages";
 import type { GoalDto } from "./types";
 
 const showError = (error: unknown) =>
@@ -33,6 +33,7 @@ export function useGoals(boardId: string, filters: GoalFilters = {}) {
 
 export function useGoal(boardId: string, goalId: string | null) {
   return useQuery({
+    meta: INLINE_ERROR,
     queryKey: ["goal", boardId, goalId],
     queryFn: () => apiFetch<GoalDto>(`/boards/${boardId}/goals/${goalId}`),
     enabled: !!goalId,
