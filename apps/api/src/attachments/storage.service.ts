@@ -1,5 +1,9 @@
 import { randomUUID } from 'node:crypto';
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient } from '@supabase/supabase-js';
 
@@ -15,6 +19,7 @@ const DOWNLOAD_URL_TTL_SECONDS = 60;
  */
 @Injectable()
 export class StorageService {
+  private readonly logger = new Logger(StorageService.name);
   private readonly client: ReturnType<typeof createClient>;
 
   constructor(config: ConfigService) {
@@ -71,7 +76,18 @@ export class StorageService {
   /** Best-effort object cleanup; the DB row is the source of truth. */
   async remove(storagePaths: string[]) {
     if (storagePaths.length === 0) return;
-    await this.client.storage.from(BUCKET).remove(storagePaths);
+    // supabase-js returns `{ error }` rather than throwing, so an unchecked
+    // call silently left orphaned private files behind. Still best-effort
+    // (the row is already gone), but now it leaves a trail to clean up from.
+    const { error } = await this.client.storage
+      .from(BUCKET)
+      .remove(storagePaths);
+    if (error) {
+      this.logger.warn({
+        msg: `Storage cleanup failed: ${error.message}`,
+        paths: storagePaths,
+      });
+    }
   }
 }
 

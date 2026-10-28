@@ -1,15 +1,24 @@
+import { Logger } from '@nestjs/common';
+
 /**
  * Email bodies are read outside the app, where there's no browser locale to
  * lean on — every timestamp is rendered in the board's own timezone and says
  * which one it is, so nobody has to work it out.
  */
 const SAFE_ZONE = 'UTC';
+const logger = new Logger('EmailFormat');
+const warnedZones = new Set<string>();
 
 const withZone = (timeZone: string, options: Intl.DateTimeFormatOptions) => {
   try {
     return new Intl.DateTimeFormat('en-US', { ...options, timeZone });
   } catch {
     // An unknown IANA name would otherwise throw mid-render and fail the send.
+    // Said once per bad zone, so the board's setting can be fixed.
+    if (!warnedZones.has(timeZone)) {
+      warnedZones.add(timeZone);
+      logger.warn(`Unknown timezone "${timeZone}", rendering email in UTC`);
+    }
     return new Intl.DateTimeFormat('en-US', {
       ...options,
       timeZone: SAFE_ZONE,
