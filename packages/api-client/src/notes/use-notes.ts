@@ -2,10 +2,11 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { NoteDto, NoteParentKind, UpdateNoteDto } from "@artist/shared";
-import { apiFetch, ApiError, notify } from "../client";
+import { apiFetch, notify } from "../client";
+import { toUserMessage } from "../messages";
 
 const showError = (error: unknown) =>
-  notify.error(error instanceof ApiError ? error.message : "Something went wrong");
+  notify.error(toUserMessage(error));
 
 export const notesKey = (boardId: string, kind: NoteParentKind, parentId: string) =>
   ["notes", boardId, kind, parentId] as const;

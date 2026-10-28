@@ -1,7 +1,8 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiFetch, ApiError, notify } from "../client";
+import { apiFetch, notify } from "../client";
+import { toUserMessage } from "../messages";
 
 /**
  * Members themselves arrive on `GET /boards/:id` (`useBoard().members`); this
@@ -21,6 +22,6 @@ export function useRemoveMember(boardId: string) {
       notify.success("Member removed");
     },
     onError: (error) =>
-      notify.error(error instanceof ApiError ? error.message : "Remove failed"),
+      notify.error(toUserMessage(error, "Remove failed")),
   });
 }

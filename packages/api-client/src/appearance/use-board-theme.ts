@@ -3,13 +3,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { notify } from "../client";
 import { resolveBoardTheme, type BoardTheme } from "@artist/shared";
-import { apiFetch, ApiError } from "../client";
+import { apiFetch } from "../client";
+import { toUserMessage } from "../messages";
 import { useMe } from "../auth/use-me";
 import type { BoardDetailDto, MeResponse } from "../auth/types";
 
 const showError = (error: unknown) =>
   notify.error(
-    error instanceof ApiError ? error.message : "Couldn't save appearance",
+    toUserMessage(error, "Couldn't save appearance"),
   );
 
 /**

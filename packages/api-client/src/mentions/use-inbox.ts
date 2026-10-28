@@ -1,7 +1,8 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiFetch, ApiError, notify } from "../client";
+import { apiFetch, notify } from "../client";
+import { toUserMessage } from "../messages";
 import type { MentionNotificationDto } from "./types";
 
 /**
@@ -21,7 +22,7 @@ import type { MentionNotificationDto } from "./types";
  * than another band's rows.
  */
 const showError = (error: unknown) =>
-  notify.error(error instanceof ApiError ? error.message : "Something went wrong");
+  notify.error(toUserMessage(error));
 
 /** `undefined` (no filter) and a board id are different cached lists. */
 const inboxKey = (boardId?: string) => ["inbox", boardId ?? "all"];

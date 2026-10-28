@@ -5,7 +5,8 @@ import type {
   NotificationCategory,
   NotificationPreferencesDto,
 } from "@artist/shared";
-import { apiFetch, ApiError, notify } from "../client";
+import { apiFetch, notify } from "../client";
+import { toUserMessage } from "../messages";
 
 /** Personal, per board: what this board may email *you* about. */
 export function useNotificationPreferences(boardId: string) {
@@ -41,7 +42,7 @@ export function useSaveNotificationPreference(boardId: string) {
     },
     onError: (error, _input, context) => {
       if (context?.previous) queryClient.setQueryData(queryKey, context.previous);
-      notify.error(error instanceof ApiError ? error.message : "Couldn't save that");
+      notify.error(toUserMessage(error, "Couldn't save that"));
     },
     onSuccess: (fresh) => queryClient.setQueryData(queryKey, fresh),
   });

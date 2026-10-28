@@ -8,10 +8,11 @@ import {
   type UploadUrlDto,
 } from "@artist/shared";
 import { apiFetch, ApiError, notify } from "../client";
+import { toUserMessage } from "../messages";
 import type { AttachmentDto } from "../comments/types";
 
 const showError = (error: unknown) =>
-  notify.error(error instanceof ApiError ? error.message : "Upload failed");
+  notify.error(toUserMessage(error, "Upload failed"));
 
 interface UploadUrlResponse {
   path: string;
@@ -186,7 +187,7 @@ export function useRenameAttachment(boardId: string, parent: AttachmentParent) {
       ]),
     onError: (error: unknown) =>
       notify.error(
-        error instanceof ApiError ? error.message : "Could not rename the file",
+        toUserMessage(error, "Could not rename the file"),
       ),
   });
 }

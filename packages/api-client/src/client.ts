@@ -15,12 +15,42 @@
  * silently sending an unauthenticated request to `undefined`.
  */
 
+import type { ApiErrorBody, ApiErrorIssue } from '@artist/shared';
+
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
     message: string,
+    /** The parsed error body, when the server sent JSON. */
+    public readonly body: Partial<ApiErrorBody> = {},
   ) {
     super(message);
+    this.name = 'ApiError';
+  }
+
+  get code(): ApiErrorBody['code'] {
+    return this.body.code;
+  }
+
+  get issues(): ApiErrorIssue[] {
+    return this.body.issues ?? [];
+  }
+
+  get requestId(): string | undefined {
+    return this.body.requestId;
+  }
+}
+
+/**
+ * The request never got a response: offline, DNS, CORS, or the API is down.
+ * `fetch` reports all of these as a bare `TypeError` whose text differs per
+ * platform ("Failed to fetch" on web, "Network request failed" on RN), so it
+ * is wrapped once here and every caller can branch on the type instead.
+ */
+export class NetworkError extends Error {
+  constructor(public readonly original: unknown) {
+    super('Network request failed');
+    this.name = 'NetworkError';
   }
 }
 
@@ -43,6 +73,12 @@ export interface ApiClientConfig {
   getAccessToken: () => Promise<string | null>;
   /** Renders user-facing success/error feedback. */
   notify: Notifier;
+  /**
+   * Called when a signed-in request comes back 401, i.e. the session is gone
+   * server-side. Apps sign out and send the user to log in again; without it
+   * the user stays stuck on toasts reading "Unauthorized".
+   */
+  onUnauthorized?: () => void;
 }
 
 let config: ApiClientConfig | null = null;
@@ -96,34 +132,61 @@ export async function apiFetch<T>(
   const token = await getAccessToken();
 
   const { body, headers, ...rest } = init;
-  const response = await fetch(`${baseUrl}${path}`, {
-    ...rest,
-    headers: {
-      ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...headers,
-    },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  let response: Awaited<ReturnType<typeof fetch>>;
+  try {
+    response = await fetch(`${baseUrl}${path}`, {
+      ...rest,
+      headers: {
+        ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...headers,
+      },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  } catch (error) {
+    // An abort is the caller's own doing (React Query cancelling a stale
+    // query), not a connectivity problem; let it through untouched.
+    if (error instanceof Error && error.name === 'AbortError') throw error;
+    throw new NetworkError(error);
+  }
 
   if (!response.ok) {
-    let message = response.statusText;
+    // statusText is empty over HTTP/2 and on React Native, so never rely on
+    // it alone for the message.
+    let message = response.statusText || `Request failed (${response.status})`;
+    let parsed: Partial<ApiErrorBody> = {};
     try {
       // Narrowed rather than trusted: outside lib.dom, `json()` is `unknown`,
       // and an error body is the least trustworthy payload we handle.
       const data: unknown = await response.json();
-      if (
-        typeof data === 'object' &&
-        data !== null &&
-        'message' in data &&
-        typeof (data as { message: unknown }).message === 'string'
-      ) {
-        message = (data as { message: string }).message;
+      if (typeof data === 'object' && data !== null) {
+        parsed = readErrorBody(data as Record<string, unknown>);
+        if (parsed.message) message = parsed.message;
       }
     } catch {
-      // non-JSON error body; keep statusText
+      // non-JSON error body (a proxy's HTML 502, say); keep the fallback
     }
-    throw new ApiError(response.status, message);
+    if (response.status === 401 && token) config?.onUnauthorized?.();
+    throw new ApiError(response.status, message, parsed);
   }
   return response.json() as Promise<T>;
+}
+
+function readErrorBody(data: Record<string, unknown>): Partial<ApiErrorBody> {
+  const body: Partial<ApiErrorBody> = {};
+  if (typeof data.message === 'string') body.message = data.message;
+  if (typeof data.code === 'string') {
+    body.code = data.code as ApiErrorBody['code'];
+  }
+  if (typeof data.requestId === 'string') body.requestId = data.requestId;
+  if (Array.isArray(data.issues)) {
+    body.issues = data.issues.filter(
+      (i): i is ApiErrorIssue =>
+        typeof i === 'object' &&
+        i !== null &&
+        typeof (i as ApiErrorIssue).message === 'string' &&
+        typeof (i as ApiErrorIssue).path === 'string',
+    );
+  }
+  return body;
 }

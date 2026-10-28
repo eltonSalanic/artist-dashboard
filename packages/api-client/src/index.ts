@@ -8,6 +8,7 @@
 
 export {
   ApiError,
+  NetworkError,
   apiFetch,
   configureApiClient,
   notify,
@@ -16,6 +17,13 @@ export {
   type ApiFetchInit,
   type Notifier,
 } from './client';
+
+export {
+  MESSAGES,
+  isNotFound,
+  isUnexpectedError,
+  toUserMessage,
+} from './messages';
 
 export { PermissionsProvider, usePermissions } from './auth/permissions';
 

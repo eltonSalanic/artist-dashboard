@@ -7,11 +7,12 @@ import type {
   GoalPeriod,
   UpdateGoalDto,
 } from "@artist/shared";
-import { apiFetch, ApiError } from "../client";
+import { apiFetch } from "../client";
+import { toUserMessage } from "../messages";
 import type { GoalDto } from "./types";
 
 const showError = (error: unknown) =>
-  notify.error(error instanceof ApiError ? error.message : "Something went wrong");
+  notify.error(toUserMessage(error));
 
 export interface GoalFilters {
   period?: GoalPeriod;

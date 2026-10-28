@@ -1,5 +1,6 @@
 import {
   ApiError,
+  NetworkError,
   apiFetch,
   configureApiClient,
   notify,
@@ -92,6 +93,77 @@ describe('api client', () => {
     await expect(apiFetch('/tasks')).rejects.toMatchObject({
       message: 'Gateway Timeout',
     });
+  });
+
+  it('keeps validation issues, code and request id from the body', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 400,
+      statusText: '',
+      json: async () => ({
+        message: 'Validation failed',
+        code: 'VALIDATION_FAILED',
+        requestId: 'req-1',
+        issues: [{ path: 'title', message: 'Required' }, { bogus: true }],
+      }),
+    });
+    const error = await apiFetch('/tasks').catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).issues).toEqual([
+      { path: 'title', message: 'Required' },
+    ]);
+    expect((error as ApiError).code).toBe('VALIDATION_FAILED');
+    expect((error as ApiError).requestId).toBe('req-1');
+  });
+
+  // HTTP/2 and React Native leave statusText empty.
+  it('never produces an empty message', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 502,
+      statusText: '',
+      json: async () => {
+        throw new Error('html');
+      },
+    });
+    await expect(apiFetch('/tasks')).rejects.toMatchObject({
+      message: 'Request failed (502)',
+    });
+  });
+
+  it('wraps a failed fetch in NetworkError', async () => {
+    fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
+    await expect(apiFetch('/tasks')).rejects.toBeInstanceOf(NetworkError);
+  });
+
+  it('lets an abort through untouched', async () => {
+    const abort = Object.assign(new Error('aborted'), { name: 'AbortError' });
+    fetchMock.mockRejectedValue(abort);
+    await expect(apiFetch('/tasks')).rejects.toBe(abort);
+  });
+
+  it('calls onUnauthorized on a 401 for a signed-in request', async () => {
+    const onUnauthorized = jest.fn();
+    configureApiClient({
+      baseUrl: 'https://api.test',
+      getAccessToken,
+      notify: { error, success },
+      onUnauthorized,
+    });
+    const unauthorized = {
+      ok: false,
+      status: 401,
+      statusText: 'Unauthorized',
+      json: async () => ({ message: 'Unauthorized' }),
+    };
+    fetchMock.mockResolvedValue(unauthorized);
+    await expect(apiFetch('/me')).rejects.toBeInstanceOf(ApiError);
+    expect(onUnauthorized).toHaveBeenCalledTimes(1);
+
+    // Signed out already: nothing to expire.
+    getAccessToken.mockResolvedValue(null);
+    await expect(apiFetch('/me')).rejects.toBeInstanceOf(ApiError);
+    expect(onUnauthorized).toHaveBeenCalledTimes(1);
   });
 
   it('routes notifications to the injected notifier', () => {

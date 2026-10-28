@@ -2,11 +2,12 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { CreateStatusDto, UpdateStatusDto } from "@artist/shared";
-import { apiFetch, ApiError, notify } from "../client";
+import { apiFetch, notify } from "../client";
+import { toUserMessage } from "../messages";
 import type { TaskStatusDto } from "../auth/types";
 
 const showError = (error: unknown) =>
-  notify.error(error instanceof ApiError ? error.message : "Something went wrong");
+  notify.error(toUserMessage(error));
 
 export function useStatuses(boardId: string) {
   return useQuery({
