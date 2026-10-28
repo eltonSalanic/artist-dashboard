@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from './notifications.service';
+import { reportError } from '../common/error-reporter';
 
 /** How often the job looks for reminders that have come due. */
 const EVERY_5_MINUTES = 5 * 60_000;
@@ -40,6 +41,7 @@ export class ReminderDueJob {
       // Same rule as the dispatcher: a tick must never throw, or the next one
       // never happens.
       this.logger.error('Reminder job failed', error as Error);
+      reportError(error, { job: 'reminder-due' });
     }
   }
 

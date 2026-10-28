@@ -7,6 +7,7 @@ import { MAIL_TRANSPORT, type MailTransport } from './mail/mail-transport';
 import { PUSH_TRANSPORT, type PushTransport } from './push/push-transport';
 import { templates, type RenderedNotification } from './templates';
 import { signUnsubscribeToken } from './unsubscribe-token';
+import { reportError } from '../common/error-reporter';
 
 /**
  * First non-empty line of a plaintext body — the push fallback when a template
@@ -82,6 +83,7 @@ export class DispatcherService {
     } catch (error) {
       // A tick must never throw — the next one has to keep trying.
       this.logger.error('Dispatcher tick failed', error as Error);
+      reportError(error, { job: 'notification-dispatcher' });
     }
   }
 
@@ -275,6 +277,10 @@ export class DispatcherService {
 
     if (backoff === undefined) {
       this.logger.error(`Giving up on ${row.dedupeKey}: ${message}`);
+      reportError(new Error(`Notification gave up: ${message}`), {
+        job: 'notification-dispatcher',
+        dedupeKey: row.dedupeKey,
+      });
       await this.prisma.notificationDelivery.update({
         where: { id: row.id },
         data: { status: 'FAILED', lastError: message },

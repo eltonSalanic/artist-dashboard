@@ -1,3 +1,6 @@
+// Must stay first: error reporting hooks Node before the app loads.
+import './instrument';
+
 import { ConsoleLogger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { parseAppEnv } from '@artist/shared';
