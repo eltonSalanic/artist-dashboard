@@ -66,6 +66,7 @@ These are project rules the user has set. Follow them without re-litigating.
 - **API tests are Jest units only.** No supertest / e2e HTTP tests. Mock Prisma (see the `*.spec.ts` alongside services).
 - **No `Co-Authored-By` trailer on commits.** Leave it off entirely.
 - **Keep the docs current.** Any major change (a new feature, a changed behaviour or flow, a new env var, command or migration, a new route or module) updates the docs in the same branch: the root [README.md](README.md) feature list and setup, the matching file in [docs/](docs/README.md) and its status line in the docs index, [docs/test-checklist.md](docs/test-checklist.md), the plan's state in [docs/plans/](docs/plans/README.md), and the app README or `.env.example` it touches. Before calling work done, check that no doc still describes the old behaviour.
+- **Auth goes through `AuthClient`.** Web and mobile screens call `auth` from their `src/lib/auth.ts`, never `supabase.auth`. The interface lives in `packages/api-client/src/auth/auth-client.ts` and the Supabase version in `supabase-auth-client.ts` next to it; failures come back as `{ error }` for `authErrorMessage()`, and a 401 from the API still goes through `onUnauthorized`. A new auth need is a new `AuthClient` method, not a direct provider call.
 - **Permissions have one source of truth.** `packages/shared/src/permissions.ts` (`can()` map) is enforced server-side *and* mirrored in the UI. Never hardcode a role check — extend the shared map.
 
 ---

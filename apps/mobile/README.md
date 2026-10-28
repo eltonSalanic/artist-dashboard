@@ -107,6 +107,7 @@ Supabase stack runs on well-known default secrets. Stop it when you're done.
 | Config | [`src/lib/env.ts`](src/lib/env.ts) | `EXPO_PUBLIC_*`, inlined by Babel, validated in one place |
 | Session storage | [`src/lib/chunked-store.ts`](src/lib/chunked-store.ts) | SecureStore caps a value at 2048 bytes; a Supabase session is bigger |
 | Supabase client | [`src/lib/supabase.ts`](src/lib/supabase.ts) | keychain storage, `detectSessionInUrl: false` |
+| Auth client | [`src/lib/auth.ts`](src/lib/auth.ts) | the shared `AuthClient` over that Supabase client; screens only use `auth` |
 | API client | [`src/lib/api-client-setup.ts`](src/lib/api-client-setup.ts) | mirrors `apps/web/src/lib/api-client-setup.ts` |
 | Auth gate | [`src/app/_layout.tsx`](src/app/_layout.tsx) | `Stack.Protected`, splash held until the session is read |
 
@@ -115,10 +116,19 @@ Routes live in `src/app` and contain nothing but a screen; screen bodies live in
 
 ## Auth
 
-Email and password, the same as the web app. Not magic links: the one magic
-link the product sends is a Supabase *invite*, and the API hardcodes its
-redirect to `WEB_URL/auth/callback`. An invited bandmate accepts on the web,
-sets a password there, and signs in here with it.
+Email and password, the same as the web app. Not magic links: the one email
+the product sends for sign-in is a Supabase *invite*. Its link opens the web's
+`/auth/callback`, and it also carries a 6-digit code, which "Join with an
+invite code" on the sign-in screen accepts, so a bandmate can join from the
+phone too.
+
+Screens never call `supabase.auth` directly. They use `auth` from
+[`src/lib/auth.ts`](src/lib/auth.ts), an `AuthClient` from
+`@artist/api-client` (`signIn`, `signUp`, `signOut`, `setPassword`,
+`verifyInviteCode`, `getSession`, `onSessionChange`, and the background
+refresh switches). The Supabase version lives in
+`packages/api-client/src/auth/supabase-auth-client.ts`; changing provider
+means writing another `AuthClient`, not editing screens.
 
 ## Typed routes are off
 

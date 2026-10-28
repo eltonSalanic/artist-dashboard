@@ -25,6 +25,9 @@ and `NEXT_PUBLIC_SENTRY_DSN` are described in
 - **`src/features`** holds the screens and components, one folder per area
   (tasks, planning, finances, notes, links, dashboard, widgets, settings,
   shell and so on).
+- **`src/lib/auth.ts`** is the web's `AuthClient` (from `@artist/api-client`,
+  backed by Supabase Auth). Screens sign in, sign up, set passwords and sign
+  out through `auth`, never through `supabase.auth` directly.
 - **`src/lib/use-me.ts`** wraps the shared `useMe` so `board` and `membership`
   describe the band picked in the header's band picker.
 

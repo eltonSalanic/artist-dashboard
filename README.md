@@ -58,7 +58,7 @@ npm run dev        # concurrently runs api (3001) and web (3000)
 
 ### Logging in
 
-Sign in on `/login` with an email and password, or create an account there. Invites are the only magic links: they arrive in **Mailpit** at http://127.0.0.1:54324 (no real mail is sent), and the invited person sets a password on the web. First login calls `POST /me/bootstrap`, which creates the user, activates any email-matched invites, and provisions a board with default task statuses, show statuses and layout if you have none.
+Sign in on `/login` with an email and password, or create an account there. Invites are the only magic links: they arrive in **Mailpit** at http://127.0.0.1:54324 (no real mail is sent), and the invited person sets a password on the web, or enters the email's 6-digit code under "Join with an invite code" on the phone. Both apps sign in through the shared `AuthClient` (`packages/api-client/src/auth`), backed by Supabase Auth. First login calls `POST /me/bootstrap`, which creates the user, activates any email-matched invites, and provisions a board with default task statuses, show statuses and layout if you have none.
 
 ## Database changes
 
