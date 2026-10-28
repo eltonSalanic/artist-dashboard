@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { registerDevice, unregisterDevice } from '@artist/api-client';
+import { reportError } from '@/lib/report-error';
 
 /**
  * The phone's side of push: permission, the Expo token, and telling the API
@@ -127,7 +128,9 @@ export async function forgetThisDevice(): Promise<void> {
       unregisterDevice(token),
       new Promise((resolve) => setTimeout(resolve, UNREGISTER_TIMEOUT_MS)),
     ]);
-  } catch {
+  } catch (error) {
     // Offline, or the API is down: see above — the next sign-in cleans up.
+    // Reported (offline is filtered out) so a real bug here isn't invisible.
+    reportError(error, { where: 'forgetThisDevice' });
   }
 }

@@ -12,6 +12,7 @@ import {
 } from './push';
 import { pushDestination } from './push-route';
 import { onTokenChange, single } from './token-changes';
+import { reportError } from '@/lib/report-error';
 
 /**
  * Notification permission, as a query.
@@ -94,8 +95,8 @@ export function usePushNotifications() {
     const register = single(() =>
       registerThisDevice().catch((error: unknown) => {
         // Not alerted: the person did nothing to cause it, and the next
-        // launch tries again. Visible in Metro for whoever is debugging.
-        if (__DEV__) console.warn('Push registration failed', error);
+        // launch tries again. Reported (dev builds also log it to Metro).
+        reportError(error, { where: 'pushRegistration' });
       }),
     );
     const rotated = onTokenChange(() => void register());
