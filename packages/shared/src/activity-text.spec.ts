@@ -26,6 +26,13 @@ describe('activityText', () => {
         toStatus: 'Doing',
       })),
     ).toBe('moved “Book the van” from To Do to Doing');
+    expect(
+      activityText(row('SHOW_STATUS_CHANGED', {
+        eventTitle: 'Bottom of the Hill',
+        fromStatus: 'Hold',
+        toStatus: 'Confirmed',
+      })),
+    ).toBe('moved “Bottom of the Hill” from Hold to Confirmed');
   });
 
   it('distinguishes a task from a subtask', () => {

@@ -1,8 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { EventTypes, type EventType } from "@artist/shared";
-import { usePermissions } from "@artist/api-client";
+import { toast } from "sonner";
+import {
+  cancelledShowMoneyNotice,
+  EventTypes,
+  type EventType,
+} from "@artist/shared";
+import {
+  useBoard,
+  useChangeShowStatus,
+  usePermissions,
+} from "@artist/api-client";
 import { ArchivedBanner } from "@/features/archive/archived-banner";
 import { ItemActions } from "@/features/archive/item-actions";
 import { useTasks } from "@artist/api-client";
@@ -13,8 +22,10 @@ import {
   eventTypeLabel,
   formatDateTime,
   fromLocalInputValue,
+  ShowStatusPill,
   toLocalInputValue,
 } from "./planning-bits";
+import { StatusSelect } from "@/features/tasks/task-bits";
 import { LinkedTasks } from "./linked-tasks";
 import { TaskAttachments } from "@/features/comments/task-attachments";
 import type { EventDto } from "@artist/api-client";
@@ -111,6 +122,10 @@ function EventDetailBody({
   const { can } = usePermissions();
   const updateEvent = useUpdateEvent(boardId);
   const deleteEvent = useDeleteEvent(boardId);
+  const changeShowStatus = useChangeShowStatus(boardId);
+  const board = useBoard(boardId).data;
+  const showStatuses = board?.showStatuses ?? [];
+  const currency = board?.currency;
   // An archived event keeps its tasks — showing them is the whole point of
   // looking one up in the archive.
   const tasks = useTasks(boardId, {
@@ -151,8 +166,13 @@ function EventDetailBody({
         ) : (
           <DialogTitle>{data.title}</DialogTitle>
         )}
-        <DialogDescription>
+        <DialogDescription className="flex flex-wrap items-center gap-2">
           {eventTypeLabel[data.type]} · {formatDateTime(data.startsAt)}
+          <ShowStatusPill
+            status={data.showStatus}
+            startsAt={data.startsAt}
+            endsAt={data.endsAt}
+          />
         </DialogDescription>
       </DialogHeader>
 
@@ -191,6 +211,31 @@ function EventDetailBody({
             <EventTypeBadge type={data.type} />
           )}
         </Field>
+        {data.type === "SHOW" && data.showStatusId && (
+          <Field>
+            <FieldLabel htmlFor="event-status">Status</FieldLabel>
+            <StatusSelect
+              id="event-status"
+              value={data.showStatusId}
+              statuses={showStatuses}
+              disabled={!can("show.changeStatus") || data.archivedAt !== null}
+              onChange={(showStatusId) =>
+                changeShowStatus.mutate(
+                  { eventId: data.id, dto: { showStatusId } },
+                  {
+                    onSuccess: ({ expectedIncomeCents }) => {
+                      if (expectedIncomeCents > 0) {
+                        toast.message(
+                          cancelledShowMoneyNotice(expectedIncomeCents, currency),
+                        );
+                      }
+                    },
+                  },
+                )
+              }
+            />
+          </Field>
+        )}
         <Field>
           <FieldLabel htmlFor="event-location">Location</FieldLabel>
           {canManage ? (

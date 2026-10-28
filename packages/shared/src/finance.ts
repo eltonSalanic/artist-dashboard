@@ -88,6 +88,14 @@ export function formatMoney(cents: number, currency = 'USD'): string {
 }
 
 /**
+ * Shown after a show is cancelled while money is still logged as expected for
+ * it. Shared so web's toast and the phone's alert say the same thing.
+ */
+export function cancelledShowMoneyNotice(cents: number, currency = 'USD'): string {
+  return `This show still has ${formatMoney(cents, currency)} expected. If you won't receive payment, remove it in the show's Money section.`;
+}
+
+/**
  * What someone typed into an amount field, as cents. Accepts `12`, `12.5`,
  * `$1,234.56`; rejects anything with more than two decimals or no digits.
  */

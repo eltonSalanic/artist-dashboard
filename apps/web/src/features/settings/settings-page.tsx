@@ -8,6 +8,7 @@ import { useMe } from "@/lib/use-me";
 import { AppearanceCard } from "./appearance-card";
 import { DefaultLayoutCard } from "./default-layout-card";
 import { StatusesCard } from "./statuses-card";
+import { ShowStatusesCard } from "./show-statuses-card";
 import { NotificationsCard } from "./notifications-card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -52,6 +53,7 @@ export function SettingsPage() {
           <MembersCard boardId={boardId} />
           <InvitesCard boardId={boardId} />
           <StatusesCard boardId={boardId} />
+          <ShowStatusesCard boardId={boardId} />
           {can("board.appearance") && <AppearanceCard boardId={boardId} />}
           <DefaultLayoutCard boardId={boardId} />
         </>

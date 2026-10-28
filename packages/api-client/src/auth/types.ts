@@ -3,6 +3,7 @@ import type {
   BoardSummaryDto,
   BoardTheme,
   LayoutItem,
+  ShowStatusCategory,
 } from "@artist/shared";
 
 export interface TaskStatusDto {
@@ -11,6 +12,14 @@ export interface TaskStatusDto {
   color: string;
   sortOrder: number;
   isDone: boolean;
+}
+
+export interface ShowStatusDto {
+  id: string;
+  name: string;
+  color: string;
+  sortOrder: number;
+  category: ShowStatusCategory;
 }
 
 export interface MeResponse {
@@ -53,6 +62,7 @@ export interface BoardDetailDto {
   /** ISO 4217 code the band keeps its books in. */
   currency: string;
   statuses: TaskStatusDto[];
+  showStatuses: ShowStatusDto[];
   members: BoardMemberDto[];
 }
 

@@ -11,7 +11,6 @@ import {
 import { TextInput } from '@/components/text-input';
 import { Badge } from '@/components/badge';
 import { Icon } from '@/components/icon';
-import { PosterPill } from '@/components/poster-pill';
 import { PosterText } from '@/components/poster-text';
 import { Dot, Row } from '@/components/row';
 import { Section } from '@/components/section';
@@ -25,17 +24,16 @@ import {
 } from '@/features/board/detail-poster';
 import { dueDay, shortDate } from '@/features/board/format';
 import { useWidgetInk } from '@/features/board/spoke-header';
+import { StatusPill } from '@/features/board/status-pill';
 import { ItemLinksSection } from '@/features/item-links/item-links-section';
 import { ItemNotesSection } from '@/features/item-notes/item-notes-section';
 import { CommentsSection } from '@/features/comments/comments-section';
 import {
   posterInput,
   posterRadius,
-  radius,
   spacing,
   useThemeColors,
   useTokens,
-  type WidgetInk,
 } from '@/theme';
 
 /**
@@ -372,46 +370,3 @@ function ChecklistSection({
   );
 }
 
-/**
- * The status, as the control that changes it. A pill with a chevron rather
- * than a bare dot: it has to read as tappable, and it is the one write a
- * member does most. Without permission it is the same pill, minus the chevron
- * and the press — still saying what the status is.
- *
- * The status's own colour is a dot ringed in the block's ink, since a status
- * colour was never picked to sit on a palette block.
- */
-function StatusPill({
-  ink,
-  name,
-  color,
-  onPress,
-}: {
-  ink: WidgetInk;
-  name: string;
-  color: string;
-  onPress?: () => void;
-}) {
-  return (
-    <PosterPill
-      ink={ink}
-      label={name}
-      accessibilityLabel={`Status: ${name}`}
-      accessibilityHint={onPress ? 'Changes the status' : undefined}
-      chevron={onPress !== undefined}
-      onPress={onPress}
-      lead={
-        <View
-          style={{
-            width: 12,
-            height: 12,
-            borderRadius: radius.full,
-            borderWidth: 1.5,
-            borderColor: ink.ink,
-            backgroundColor: color,
-          }}
-        />
-      }
-    />
-  );
-}

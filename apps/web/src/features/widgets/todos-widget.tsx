@@ -19,7 +19,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, ListChecks } from "lucide-react";
 import { apiFetch } from "@artist/api-client";
-import { usePermissions } from "@artist/api-client";
+import { useCanChangeStatus, usePermissions } from "@artist/api-client";
 import type { BoardDetailDto, TaskStatusDto } from "@artist/api-client";
 import { TasksTable } from "@/features/tasks/tasks-table";
 import {
@@ -58,6 +58,8 @@ function useOpenTask() {
 
 export function TodosWidget({ boardId }: { boardId: string }) {
   const { can } = usePermissions();
+  // Members may only restatus tasks they're assigned to, as the API enforces.
+  const canChangeStatus = useCanChangeStatus();
   const board = useBoard(boardId);
   const tasks = useTasks(boardId, { sort: "order" });
   const { changeStatus, dialog } = useTaskStatusChange(boardId);
@@ -123,7 +125,7 @@ export function TodosWidget({ boardId }: { boardId: string }) {
                 task={task}
                 statuses={statuses}
                 draggable={canReorder}
-                statusDisabled={!can("task.changeStatus")}
+                statusDisabled={!canChangeStatus(task.assignees)}
                 onOpen={() => openTask(task.id)}
                 onStatusChange={(statusId) =>
                   changeStatus(task, statusId, statuses)

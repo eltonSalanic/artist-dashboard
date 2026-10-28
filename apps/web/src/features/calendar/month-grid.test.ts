@@ -1,4 +1,4 @@
-import { buildMonthGrid, calendarCategory, monthRange } from "./month-grid";
+import { buildMonthGrid, calendarCategory, isCancelledShow, monthRange } from "./month-grid";
 import type { CalendarItemDto } from "@artist/api-client";
 
 const item = (
@@ -108,10 +108,10 @@ describe("calendarCategory", () => {
 
   it("splits events by their type", () => {
     expect(
-      calendarCategory(item({ date: at, event: { type: "SHOW", endsAt: null, location: null } })),
+      calendarCategory(item({ date: at, event: { type: "SHOW", endsAt: null, location: null, showStatus: null } })),
     ).toBe("SHOW");
     expect(
-      calendarCategory(item({ date: at, event: { type: "REHEARSAL", endsAt: null, location: null } })),
+      calendarCategory(item({ date: at, event: { type: "REHEARSAL", endsAt: null, location: null, showStatus: null } })),
     ).toBe("REHEARSAL");
   });
 
@@ -121,5 +121,30 @@ describe("calendarCategory", () => {
       "REMINDER",
     );
     expect(calendarCategory(item({ kind: "GOAL", date: at }))).toBe("GOAL");
+  });
+});
+
+describe("isCancelledShow", () => {
+  const at = "2026-07-10T18:00:00.000Z";
+  const show = (category: "HOLD" | "BOOKED" | "CANCELLED") =>
+    item({
+      date: at,
+      event: {
+        type: "SHOW",
+        endsAt: null,
+        location: null,
+        showStatus: { name: "x", color: "#000000", category },
+      },
+    });
+
+  it("is true only for a cancelled show", () => {
+    expect(isCancelledShow(show("CANCELLED"))).toBe(true);
+    expect(isCancelledShow(show("HOLD"))).toBe(false);
+    expect(isCancelledShow(show("BOOKED"))).toBe(false);
+    expect(
+      isCancelledShow(
+        item({ date: at, event: { type: "MEETING", endsAt: null, location: null, showStatus: null } }),
+      ),
+    ).toBe(false);
   });
 });

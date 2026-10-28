@@ -57,6 +57,8 @@ export function activityText(item: ActivityRow): string {
       }${m.amount ? ` of ${str(m.amount)}` : ''}`;
     case 'SHOW_SETTLED':
       return `settled the money for “${str(m.eventTitle, 'a show')}”`;
+    case 'SHOW_STATUS_CHANGED':
+      return `moved “${str(m.eventTitle, 'a show')}” from ${str(m.fromStatus)} to ${str(m.toStatus)}`;
     case 'PAYOUT_RECORDED':
       return `recorded a payment ${
         m.toBand ? 'from' : 'to'

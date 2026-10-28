@@ -2,7 +2,8 @@ import { useMemo } from 'react';
 import { router } from 'expo-router';
 import { useEvents } from '@artist/api-client';
 import type { EventType } from '@artist/shared';
-import { Row } from '@/components/row';
+import { Dot, Row } from '@/components/row';
+import { showStatusLabel } from '../show-status';
 import { SpokeList } from '@/components/spoke-list';
 import { shortDate } from '../format';
 import { EVENT_WIDGET, SpokeHeader } from '../spoke-header';
@@ -48,7 +49,12 @@ export function makeEventsSpoke(type: EventType) {
             key={event.id}
             first={index === 0}
             title={event.title}
-            meta={event.location}
+            meta={
+              [showStatusLabel(event.showStatus, event.startsAt, event.endsAt)?.label, event.location]
+                .filter(Boolean)
+                .join(' · ') || null
+            }
+            lead={event.showStatus ? <Dot color={event.showStatus.color} size={10} /> : undefined}
             trailing={shortDate(event.startsAt)}
             // Everyone, not only admins: the event's files are for the band.
             onPress={() => router.push(`/board/${boardId}/event/${event.id}`)}

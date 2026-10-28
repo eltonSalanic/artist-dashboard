@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import type { CalendarQueryDto, EventType } from '@artist/shared';
+import type {
+  CalendarQueryDto,
+  EventType,
+  ShowStatusCategory,
+} from '@artist/shared';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface CalendarItemDto {
@@ -18,7 +22,20 @@ export interface CalendarItemDto {
   title: string;
   /** The instant the item appears at on the calendar. */
   date: Date;
-  event?: { type: EventType; endsAt: Date | null; location: string | null };
+  event?: {
+    type: EventType;
+    endsAt: Date | null;
+    location: string | null;
+    /**
+     * Shows only. Cancelled shows are still sent: the calendar strikes them
+     * through and hides them behind a filter rather than losing them.
+     */
+    showStatus: {
+      name: string;
+      color: string;
+      category: ShowStatusCategory;
+    } | null;
+  };
   task?: {
     statusColor: string;
     statusName: string;
@@ -66,6 +83,9 @@ export class CalendarService {
       }),
       this.prisma.event.findMany({
         where: { boardId: board, startsAt: window, archivedAt: null },
+        include: {
+          showStatus: { select: { name: true, color: true, category: true } },
+        },
         orderBy: { startsAt: 'asc' },
       }),
       this.prisma.task.findMany({
@@ -107,7 +127,12 @@ export class CalendarService {
         ...named(e.boardId),
         title: e.title,
         date: e.startsAt,
-        event: { type: e.type, endsAt: e.endsAt, location: e.location },
+        event: {
+          type: e.type,
+          endsAt: e.endsAt,
+          location: e.location,
+          showStatus: e.showStatus,
+        },
       })),
       ...tasks.map((t): CalendarItemDto => ({
         kind: 'TASK',

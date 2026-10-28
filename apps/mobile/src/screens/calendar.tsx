@@ -16,6 +16,7 @@ import {
   type CalendarCategory,
   type WidgetType,
 } from '@artist/shared';
+import { showStatusLabel } from '@/features/board/show-status';
 import { BoardFilter } from '@/components/board-filter';
 import { ChoiceChips } from '@/components/choice-chips';
 import { Icon, type IconName } from '@/components/icon';
@@ -706,11 +707,17 @@ function EventBlock({
     .filter((part): part is string => part != null && part !== '')
     .join(' · ');
   const kind = CALENDAR_CATEGORY_COPY[category].one;
+  // Cancelled shows stay on the phone's calendar, struck through, so the band
+  // can still find one; a hold gets a dashed edge to read as tentative.
+  const status = showStatusLabel(item.event?.showStatus, item.date, item.event?.endsAt);
+  const cancelled = status?.phase === 'CANCELLED';
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={[kind, item.title, time, meta].filter(Boolean).join(', ')}
+      accessibilityLabel={[kind, status?.label, item.title, time, meta]
+        .filter(Boolean)
+        .join(', ')}
       onPress={() => openItem(item)}
       style={({ pressed }) => ({
         backgroundColor: color.bg,
@@ -721,17 +728,26 @@ function EventBlock({
         minHeight: 44,
         boxShadow: color.plain ? shadows.card : shadows.edge,
         transform: [{ scale: pressed ? 0.98 : 1 }],
+        opacity: cancelled ? 0.55 : 1,
+        ...(status?.phase === 'HOLD'
+          ? { borderWidth: 1.5, borderStyle: 'dashed' as const, borderColor: color.ink }
+          : {}),
       })}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
         <PosterText variant="label" color={color.ink} style={{ flex: 1 }}>
-          {kind.toUpperCase()}
+          {status ? `${kind} · ${status.label}`.toUpperCase() : kind.toUpperCase()}
         </PosterText>
         <PosterText variant="meta" color={color.ink}>
           {ends ? `${time}–${ends}` : time}
         </PosterText>
       </View>
-      <PosterText variant="title" color={color.ink} numberOfLines={2}>
+      <PosterText
+        variant="title"
+        color={color.ink}
+        numberOfLines={2}
+        style={cancelled ? { textDecorationLine: 'line-through' } : undefined}
+      >
         {item.title}
       </PosterText>
       {meta !== '' && (

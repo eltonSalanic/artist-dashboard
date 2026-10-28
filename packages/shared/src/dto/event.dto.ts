@@ -9,6 +9,8 @@ export const createEventSchema = z
     location: z.string().trim().max(300).optional(),
     startsAt: z.iso.datetime(),
     endsAt: z.iso.datetime().nullish(),
+    /** Shows only; left out, a new show starts in the board's default. */
+    showStatusId: z.uuid().optional(),
   })
   .refine((e) => !e.endsAt || e.endsAt >= e.startsAt, {
     message: 'endsAt must be after startsAt',
@@ -24,6 +26,7 @@ export const updateEventSchema = z
     location: z.string().trim().max(300).nullable(),
     startsAt: z.iso.datetime(),
     endsAt: z.iso.datetime().nullable(),
+    showStatusId: z.uuid(),
   })
   .partial();
 export type UpdateEventDto = z.infer<typeof updateEventSchema>;
@@ -35,5 +38,14 @@ export const eventQuerySchema = z.object({
   /** Only events starting before this instant. */
   to: z.iso.datetime().optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
+  showStatusId: z.uuid().optional(),
+  /**
+   * Cancelled shows are left out of lists (widgets, upcoming counts) unless
+   * asked for. Query strings carry text, so only the literal "true" counts.
+   */
+  includeCancelled: z
+    .enum(['true', 'false'])
+    .transform((v) => v === 'true')
+    .optional(),
 });
 export type EventQueryDto = z.infer<typeof eventQuerySchema>;

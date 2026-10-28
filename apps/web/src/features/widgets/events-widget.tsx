@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { EventType } from "@artist/shared";
+import { defaultShowStatus, type EventType } from "@artist/shared";
 import { CalendarPlus, MapPin } from "lucide-react";
-import { usePermissions } from "@artist/api-client";
+import { useBoard, usePermissions } from "@artist/api-client";
 import { useCreateEvent, useEvents } from "@artist/api-client";
 import { useDetailParams } from "@/features/planning/use-detail-params";
 import {
@@ -11,7 +11,9 @@ import {
   eventTypeLabel,
   formatDateTime,
   fromLocalInputValue,
+  ShowStatusPill,
 } from "@/features/planning/planning-bits";
+import { StatusSelect } from "@/features/tasks/task-bits";
 import type { EventDto } from "@artist/api-client";
 import { Button } from "@/components/ui/button";
 import {
@@ -68,7 +70,16 @@ export function makeEventsWidget(type: EventType) {
               className="flex w-full flex-col gap-0.5 px-1.5 py-2 text-left hover:bg-accent/50"
               onClick={() => open("event", event.id)}
             >
-              <span className="truncate text-sm">{event.title}</span>
+              <span className="flex items-center gap-2">
+                <span className="min-w-0 flex-1 truncate text-sm">
+                  {event.title}
+                </span>
+                <ShowStatusPill
+                  status={event.showStatus}
+                  startsAt={event.startsAt}
+                  endsAt={event.endsAt}
+                />
+              </span>
               <span className="flex items-center gap-2 text-xs text-muted-foreground">
                 {formatDateTime(event.startsAt)}
                 {event.location && (
@@ -87,7 +98,9 @@ export function makeEventsWidget(type: EventType) {
 
   function Expanded({ boardId }: { boardId: string }) {
     const { can } = usePermissions();
-    const events = useEvents(boardId, { type });
+    // The full list keeps cancelled shows on record; the collapsed card is
+    // what is coming up, so it leaves them out.
+    const events = useEvents(boardId, { type, includeCancelled: true });
     const canManage = can("event.manage");
 
     return (
@@ -128,6 +141,11 @@ function EventRow({ event }: { event: EventDto }) {
       >
         {event.title}
       </button>
+      <ShowStatusPill
+        status={event.showStatus}
+        startsAt={event.startsAt}
+        endsAt={event.endsAt}
+      />
       {event.location && (
         <span className="hidden max-w-40 shrink-0 truncate text-xs text-muted-foreground sm:block">
           {event.location}
@@ -145,6 +163,9 @@ function EventRow({ event }: { event: EventDto }) {
 
 function EventForm({ boardId, type }: { boardId: string; type: EventType }) {
   const createEvent = useCreateEvent(boardId);
+  const showStatuses = useBoard(boardId).data?.showStatuses ?? [];
+  const startStatusId = defaultShowStatus(showStatuses)?.id ?? "";
+  const [showStatusId, setShowStatusId] = useState("");
   const [title, setTitle] = useState("");
   const [startsAt, setStartsAt] = useState("");
   const [location, setLocation] = useState("");
@@ -160,10 +181,12 @@ function EventForm({ boardId, type }: { boardId: string; type: EventType }) {
           title: title.trim(),
           startsAt: fromLocalInputValue(startsAt),
           location: location.trim() || undefined,
+          ...(type === "SHOW" && showStatusId ? { showStatusId } : {}),
         });
         setTitle("");
         setStartsAt("");
         setLocation("");
+        setShowStatusId("");
       }}
     >
       <Input
@@ -188,6 +211,14 @@ function EventForm({ boardId, type }: { boardId: string; type: EventType }) {
         value={location}
         onChange={(e) => setLocation(e.target.value)}
       />
+      {type === "SHOW" && startStatusId && (
+        <StatusSelect
+          className="w-44"
+          value={showStatusId || startStatusId}
+          statuses={showStatuses.filter((s) => s.category !== "CANCELLED")}
+          onChange={setShowStatusId}
+        />
+      )}
       <Button type="submit" disabled={!title.trim() || !startsAt}>
         <CalendarPlus data-icon="inline-start" />
         Add

@@ -3,9 +3,29 @@ import { PrismaService } from '../prisma/prisma.service';
 import { TasksService } from '../tasks/tasks.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { StorageService } from '../attachments/storage.service';
+import { ActivityService } from '../activity/activity.service';
 
 describe('EventsService notifications', () => {
   const startsAt = new Date('2026-09-04T20:00:00Z');
+
+  const hold = {
+    id: 's-hold',
+    name: 'Hold',
+    color: '#8b8fa3',
+    category: 'HOLD',
+  };
+  const confirmed = {
+    id: 's-confirmed',
+    name: 'Confirmed',
+    color: '#2fbf71',
+    category: 'BOOKED',
+  };
+  const cancelled = {
+    id: 's-cancelled',
+    name: 'Cancelled',
+    color: '#e5484d',
+    category: 'CANCELLED',
+  };
 
   const stored = {
     id: 'e1',
@@ -18,6 +38,8 @@ describe('EventsService notifications', () => {
     archivedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
+    showStatusId: confirmed.id,
+    showStatus: confirmed,
     _count: { tasks: 0 },
   };
 
@@ -30,6 +52,8 @@ describe('EventsService notifications', () => {
       delete: jest.fn(),
     },
     attachment: { findMany: jest.fn() },
+    showStatus: { findFirst: jest.fn(), findMany: jest.fn() },
+    financeEntry: { aggregate: jest.fn() },
     membership: { findMany: jest.fn() },
     notificationDelivery: { createMany: jest.fn() },
     $transaction: jest.fn(),
@@ -37,11 +61,13 @@ describe('EventsService notifications', () => {
   prisma.$transaction.mockImplementation((fn: (tx: unknown) => unknown) =>
     fn(prisma),
   );
+  const activity = { log: jest.fn() };
   const service = new EventsService(
     prisma as unknown as PrismaService,
     { removeMany: jest.fn() } as unknown as TasksService,
     new NotificationsService(prisma as unknown as PrismaService),
     storage as unknown as StorageService,
+    activity as unknown as ActivityService,
   );
 
   /** Rows the outbox was asked to write on the last call. */
@@ -76,6 +102,18 @@ describe('EventsService notifications', () => {
       { userId: 'u1' },
       { userId: 'u2' },
       { userId: 'u3' },
+    ]);
+    prisma.showStatus.findFirst.mockImplementation(
+      ({ where }: { where: { id: string; boardId: string } }) =>
+        where.boardId === 'b1' &&
+        [hold, confirmed, cancelled].some((s) => s.id === where.id)
+          ? { id: where.id }
+          : null,
+    );
+    prisma.showStatus.findMany.mockResolvedValue([
+      { id: cancelled.id, sortOrder: 0, category: 'CANCELLED' },
+      { id: confirmed.id, sortOrder: 2, category: 'BOOKED' },
+      { id: hold.id, sortOrder: 1, category: 'HOLD' },
     ]);
   });
 
@@ -181,6 +219,188 @@ describe('EventsService notifications', () => {
       });
       expect(prisma.event.delete).toHaveBeenCalledWith({ where: { id: 'e1' } });
       expect(storage.remove).toHaveBeenCalledWith(['b1/x/rider.pdf']);
+    });
+  });
+
+  describe('show statuses', () => {
+    const createData = () =>
+      (
+        prisma.event.create.mock.calls[0] as [
+          { data: { showStatusId: string | null } },
+        ]
+      )[0].data;
+    const updateData = () =>
+      (
+        prisma.event.update.mock.calls[0] as [
+          { data: { showStatusId: string | null } },
+        ]
+      )[0].data;
+
+    it('starts a new show in the first status that is not a cancellation', async () => {
+      prisma.event.create.mockResolvedValue(stored);
+      await service.create(
+        'b1',
+        { type: 'SHOW', title: 'X', startsAt: startsAt.toISOString() },
+        'u1',
+      );
+      expect(createData().showStatusId).toBe(hold.id);
+    });
+
+    it('takes a status picked at creation', async () => {
+      prisma.event.create.mockResolvedValue(stored);
+      await service.create(
+        'b1',
+        {
+          type: 'SHOW',
+          title: 'X',
+          startsAt: startsAt.toISOString(),
+          showStatusId: confirmed.id,
+        },
+        'u1',
+      );
+      expect(createData().showStatusId).toBe(confirmed.id);
+    });
+
+    it('gives a rehearsal no status, whatever it was sent', async () => {
+      prisma.event.create.mockResolvedValue({ ...stored, type: 'REHEARSAL' });
+      await service.create(
+        'b1',
+        {
+          type: 'REHEARSAL',
+          title: 'X',
+          startsAt: startsAt.toISOString(),
+          showStatusId: confirmed.id,
+        },
+        'u1',
+      );
+      expect(createData().showStatusId).toBeNull();
+    });
+
+    it("refuses another board's status", async () => {
+      await expect(
+        service.create(
+          'b1',
+          {
+            type: 'SHOW',
+            title: 'X',
+            startsAt: startsAt.toISOString(),
+            showStatusId: 'someone-elses',
+          },
+          'u1',
+        ),
+      ).rejects.toThrow('Unknown show status');
+    });
+
+    it('drops the status when a show becomes a meeting', async () => {
+      prisma.event.findFirst.mockResolvedValue(stored);
+      prisma.event.update.mockResolvedValue({
+        ...stored,
+        type: 'MEETING',
+        showStatusId: null,
+        showStatus: null,
+      });
+      await service.update('b1', 'e1', { type: 'MEETING' }, 'u1');
+      expect(updateData().showStatusId).toBeNull();
+      expect(activity.log).not.toHaveBeenCalled();
+    });
+
+    it('keeps the status through an unrelated edit', async () => {
+      prisma.event.findFirst.mockResolvedValue(stored);
+      prisma.event.update.mockResolvedValue(stored);
+      await service.update('b1', 'e1', { title: 'Renamed' }, 'u1');
+      expect(updateData().showStatusId).toBe(confirmed.id);
+    });
+
+    it('logs a move between statuses for the feed', async () => {
+      prisma.event.findFirst.mockResolvedValue({
+        ...stored,
+        showStatusId: hold.id,
+        showStatus: hold,
+      });
+      prisma.event.update.mockResolvedValue(stored);
+
+      await service.changeStatus(
+        'b1',
+        'e1',
+        { showStatusId: confirmed.id },
+        'u2',
+        'USER',
+      );
+
+      expect(activity.log).toHaveBeenCalledWith(
+        prisma,
+        expect.objectContaining({
+          type: 'SHOW_STATUS_CHANGED',
+          actorId: 'u2',
+          meta: expect.objectContaining({
+            eventTitle: stored.title,
+            fromStatus: 'Hold',
+            toStatus: 'Confirmed',
+          }),
+        }),
+      );
+    });
+
+    it('stays quiet when the status does not change', async () => {
+      prisma.event.findFirst.mockResolvedValue(stored);
+      prisma.event.update.mockResolvedValue(stored);
+      await service.changeStatus(
+        'b1',
+        'e1',
+        { showStatusId: confirmed.id },
+        'u2',
+        'USER',
+      );
+      expect(activity.log).not.toHaveBeenCalled();
+    });
+
+    it('totals expected income left on a cancelled show', async () => {
+      prisma.event.findFirst.mockResolvedValue(stored);
+      prisma.event.update.mockResolvedValue({
+        ...stored,
+        showStatusId: cancelled.id,
+        showStatus: cancelled,
+      });
+      prisma.financeEntry.aggregate.mockResolvedValue({
+        _sum: { amountCents: 40000 },
+      });
+
+      const result = await service.changeStatus(
+        'b1',
+        'e1',
+        { showStatusId: cancelled.id },
+        'u1',
+        'ADMIN',
+      );
+
+      expect(result.expectedIncomeCents).toBe(40000);
+      expect(prisma.financeEntry.aggregate).toHaveBeenCalledWith({
+        where: {
+          boardId: 'b1',
+          eventId: 'e1',
+          kind: 'INCOME',
+          state: 'EXPECTED',
+        },
+        _sum: { amountCents: true },
+      });
+    });
+
+    it('refuses a status on a rehearsal', async () => {
+      prisma.event.findFirst.mockResolvedValue({
+        ...stored,
+        type: 'REHEARSAL',
+        showStatusId: null,
+        showStatus: null,
+      });
+      await expect(
+        service.changeStatus(
+          'b1',
+          'e1',
+          { showStatusId: confirmed.id },
+          'u1',
+          'ADMIN',
+        ),
+      ).rejects.toThrow('Only shows have a status');
     });
   });
 });

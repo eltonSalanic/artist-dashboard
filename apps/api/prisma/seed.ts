@@ -29,6 +29,7 @@ import {
 } from '../generated/prisma/enums';
 import {
   DEFAULT_BOARD_LAYOUT,
+  DEFAULT_SHOW_STATUSES,
   DEFAULT_TASK_STATUSES,
   equalSplit,
   localDayISO,
@@ -187,6 +188,48 @@ async function main() {
     S = statusBuckets(created);
   }
 
+  // Show statuses: the defaults plus one custom step, so the demo shows a
+  // band's own status. Kept if already there (a real board may have renamed
+  // or added its own); only missing names are added.
+  const wantedShowStatuses = [
+    ...DEFAULT_SHOW_STATUSES.map((s) => ({
+      ...s,
+      sortOrder: s.sortOrder * 10,
+    })),
+    {
+      name: 'Advanced',
+      color: '#4f7cff',
+      sortOrder: 15,
+      category: 'BOOKED' as const,
+    },
+  ];
+  const haveShowStatuses = await prisma.showStatus.findMany({
+    where: { boardId },
+  });
+  for (const s of wantedShowStatuses) {
+    if (!haveShowStatuses.some((h) => h.name === s.name)) {
+      haveShowStatuses.push(
+        await prisma.showStatus.create({ data: { boardId, ...s } }),
+      );
+    }
+  }
+  // An existing board's defaults sit at 0..3; respace them so Advanced lands
+  // between Details pending and Confirmed.
+  for (const s of wantedShowStatuses) {
+    const row = haveShowStatuses.find((h) => h.name === s.name);
+    if (row && row.sortOrder !== s.sortOrder) {
+      await prisma.showStatus.update({
+        where: { id: row.id },
+        data: { sortOrder: s.sortOrder },
+      });
+    }
+  }
+  const showStatus = (name: string) => {
+    const row = haveShowStatuses.find((h) => h.name === name);
+    if (!row) throw new Error(`Seed: show status "${name}" missing`);
+    return row.id;
+  };
+
   // Focus pins.
   await prisma.focusPin.createMany({
     data: [
@@ -251,6 +294,7 @@ async function main() {
       location: 'The Fillmore',
       startsAt: days(10),
       endsAt: days(10),
+      showStatusId: showStatus('Details pending'),
     },
   });
   const rehearsal = await prisma.event.create({
@@ -294,7 +338,38 @@ async function main() {
       location: 'The Echo',
       startsAt: days(-20),
       endsAt: days(-20),
+      // Past, so it reads as Played.
+      showStatusId: showStatus('Confirmed'),
     },
+  });
+  // One show in each remaining status, so every pill has something to show.
+  await prisma.event.createMany({
+    data: [
+      {
+        boardId,
+        type: EventType.SHOW,
+        title: 'Coastfest',
+        location: 'Ocean Beach',
+        startsAt: days(24),
+        showStatusId: showStatus('Hold'),
+      },
+      {
+        boardId,
+        type: EventType.SHOW,
+        title: 'Harbor Days',
+        location: 'Pier 39',
+        startsAt: days(17),
+        showStatusId: showStatus('Cancelled'),
+      },
+      {
+        boardId,
+        type: EventType.SHOW,
+        title: 'Record Release Night',
+        location: 'Bottom of the Hill',
+        startsAt: days(31),
+        showStatusId: showStatus('Advanced'),
+      },
+    ],
   });
 
   // Reminders.
