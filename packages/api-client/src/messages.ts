@@ -37,6 +37,12 @@ function isNestDefault(message: string): boolean {
   );
 }
 
+function isZodDefault(message: string): boolean {
+  return /^(Invalid input|Invalid option|Invalid string|Too small|Too big)\b/.test(
+    message,
+  );
+}
+
 /** "items.0.amount" → "Amount". */
 function fieldLabel(path: string): string {
   const last =
@@ -58,7 +64,15 @@ export function toUserMessage(
   const [issue] = error.issues;
   if (issue) {
     const label = fieldLabel(issue.path);
-    return label ? `${label}: ${issue.message}` : issue.message;
+    // Zod's built-in wording ("Invalid input: expected string, received
+    // undefined") is for developers; schemas with their own message keep it.
+    const message = isZodDefault(issue.message)
+      ? "is missing or not valid."
+      : issue.message;
+    if (!label) return isZodDefault(issue.message) ? MESSAGES.generic : message;
+    return isZodDefault(issue.message)
+      ? `${label} ${message}`
+      : `${label}: ${message}`;
   }
   // A code the API chose itself carries a message written for users, even on
   // a 5xx (e.g. the invite email provider failing).
