@@ -2,14 +2,12 @@ import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { ActivityIndicator, View } from 'react-native';
 import {
   PermissionsProvider,
-  toUserMessage,
   useBoard,
   useInbox,
   useMe,
 } from '@artist/api-client';
-import { Button } from '@/components/button';
+import { LaunchError } from '@/components/launch-error';
 import { resolveBoardTheme } from '@artist/shared';
-import { ThemedText } from '@/components/themed-text';
 import {
   SelectedBoardProvider,
   useSelectedBoard,
@@ -39,24 +37,15 @@ export default function TabsLayout() {
   if (me.isPending) return <Centered><ActivityIndicator /></Centered>;
 
   if (me.isError) {
+    // The first request after launch; without a way out a bad connection or
+    // a broken account left the user stuck here.
     return (
-      <Centered>
-        <ThemedText variant="headline" tone="destructive">
-          Could not load your bands
-        </ThemedText>
-        <ThemedText variant="subhead" tone="muted" style={{ textAlign: 'center' }}>
-          {toUserMessage(me.error)}
-        </ThemedText>
-        {/* This is the first request after launch; without a way out a bad
-            connection or a broken account left the user stuck here. */}
-        <Button title="Try again" size="sm" onPress={() => void me.refetch()} />
-        <Button
-          title="Sign out"
-          variant="ghost"
-          size="sm"
-          onPress={() => void auth.signOut()}
-        />
-      </Centered>
+      <LaunchError
+        error={me.error}
+        retrying={me.isFetching}
+        onRetry={() => void me.refetch()}
+        onSignOut={() => void auth.signOut()}
+      />
     );
   }
 
