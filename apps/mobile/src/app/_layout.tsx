@@ -21,7 +21,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useSession } from '@artist/api-client';
 import { reportError } from '@/lib/report-error';
-import { supabase } from '@/lib/supabase';
+import { auth } from '@/lib/auth';
 import { POSTER_FONTS } from '@/theme/poster';
 
 void SplashScreen.preventAutoHideAsync();
@@ -59,7 +59,7 @@ export default function RootLayout() {
   const loading = sessionLoading || (!fontsLoaded && fontError === null);
 
   useEffect(() => {
-    // supabase-js refreshes the access token on a `setTimeout`, and the OS
+    // The auth client refreshes the access token on a timer, and the OS
     // suspends timers in the background. Without this, an app left alone for
     // an hour wakes up holding an expired token and every request 401s.
     //
@@ -68,14 +68,14 @@ export default function RootLayout() {
     // so changes made on web meanwhile show up without a pull-to-refresh.
     const subscription = AppState.addEventListener('change', (state) => {
       focusManager.setFocused(state === 'active');
-      if (state === 'active') void supabase.auth.startAutoRefresh();
-      else void supabase.auth.stopAutoRefresh();
+      if (state === 'active') auth.startAutoRefresh();
+      else auth.stopAutoRefresh();
     });
-    void supabase.auth.startAutoRefresh();
+    auth.startAutoRefresh();
 
     return () => {
       subscription.remove();
-      void supabase.auth.stopAutoRefresh();
+      auth.stopAutoRefresh();
     };
   }, []);
 

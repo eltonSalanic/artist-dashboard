@@ -2,11 +2,11 @@ import { Alert } from 'react-native';
 import {
   MESSAGES,
   configureApiClient,
-  configureSessionSource,
+  configureAuthClient,
 } from '@artist/api-client';
 import { env } from './env';
 import { notifier } from './notifier';
-import { supabase } from './supabase';
+import { auth } from './auth';
 
 /**
  * Mobile's half of the `@artist/api-client` contract — the mirror of
@@ -21,14 +21,9 @@ let signingOut = false;
 
 configureApiClient({
   baseUrl: env.apiUrl,
-  getAccessToken: async () => {
-    // `getSession()` refreshes an expired token before returning, so this is
-    // also what keeps a long-running app's requests authenticated.
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    return session?.access_token ?? null;
-  },
+  // `getSession()` refreshes an expired token before returning, so this is
+  // also what keeps a long-running app's requests authenticated.
+  getAccessToken: async () => (await auth.getSession())?.accessToken ?? null,
   notify: notifier,
   // The API rejected a token we still held: the session is gone server-side.
   // Signing out swaps the stack to sign-in (the root layout's guard); one
@@ -36,11 +31,11 @@ configureApiClient({
   onUnauthorized: () => {
     if (signingOut) return;
     signingOut = true;
-    void supabase.auth.signOut().finally(() => {
+    void auth.signOut().finally(() => {
       signingOut = false;
       Alert.alert(MESSAGES.sessionExpired);
     });
   },
 });
 
-configureSessionSource(supabase.auth);
+configureAuthClient(auth);

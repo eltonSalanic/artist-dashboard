@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/lib/supabase";
+import { auth } from "@/lib/auth";
 
 /**
  * The one "this didn't load" screen: says what failed in plain words and
@@ -23,7 +23,7 @@ export function ErrorState({
   className?: string;
 }) {
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await auth.signOut();
     window.location.assign("/login");
   };
 

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut, Plus, Users } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { auth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { CreateBandDialog } from "@/features/shell/create-band-dialog";
 
@@ -17,7 +17,7 @@ export function NoBand({ email }: { email: string }) {
   const [creating, setCreating] = useState(false);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await auth.signOut();
     router.replace("/login");
   };
 

@@ -12,7 +12,7 @@ import { ThemeProvider } from "next-themes";
 import { useEffect, useState } from "react";
 import { clearCacheOnUserChange } from "@/lib/clear-cache-on-user-change";
 import { reportError } from "@/lib/report-error";
-import { supabase } from "@/lib/supabase";
+import { auth } from "@/lib/auth";
 
 // Side-effect import: configures @artist/api-client before any hook requests.
 import "@/lib/api-client-setup";
@@ -59,7 +59,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(makeQueryClient);
 
   useEffect(
-    () => clearCacheOnUserChange(supabase.auth, queryClient),
+    () => clearCacheOnUserChange(auth, queryClient),
     [queryClient],
   );
 

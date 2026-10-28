@@ -15,7 +15,7 @@ import {
   Settings,
   Wallet,
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { auth } from "@/lib/auth";
 import {
   PermissionsProvider,
   toUserMessage,
@@ -98,7 +98,7 @@ function Header({ me }: { me: MeResponse }) {
   const initials = me.user.displayName.slice(0, 2).toUpperCase();
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await auth.signOut();
     router.replace("/login");
   };
 

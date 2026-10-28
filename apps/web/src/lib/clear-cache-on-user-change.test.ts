@@ -1,23 +1,26 @@
-import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
+import type { AuthSession } from "@artist/api-client";
 import { clearCacheOnUserChange } from "./clear-cache-on-user-change";
 
-type Listener = (event: AuthChangeEvent, session: Session | null) => void;
+type Listener = (session: AuthSession | null) => void;
+/** Kept only to label each step; the auth client doesn't pass it on. */
+type Event = "INITIAL_SESSION" | "SIGNED_IN" | "SIGNED_OUT" | "TOKEN_REFRESHED";
 
 function setup() {
   let listener: Listener = () => {};
   const unsubscribe = jest.fn();
   const auth = {
-    onAuthStateChange(callback: Listener) {
+    onSessionChange(callback: Listener) {
       listener = callback;
-      return { data: { subscription: { unsubscribe } } };
+      return unsubscribe;
     },
   };
   const cache = { clear: jest.fn() };
   const stop = clearCacheOnUserChange(auth, cache);
-  const emit = (event: AuthChangeEvent, userId: string | null) =>
+  const emit = (_event: Event, userId: string | null) =>
     listener(
-      event,
-      userId === null ? null : ({ user: { id: userId } } as Session),
+      userId === null
+        ? null
+        : { userId, email: null, accessToken: "token" },
     );
   return { cache, emit, stop, unsubscribe };
 }

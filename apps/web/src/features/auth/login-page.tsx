@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { authErrorMessage } from "@artist/api-client";
-import { supabase } from "@/lib/supabase";
+import { auth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -38,27 +38,21 @@ export function LoginPage() {
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setPending(true);
-    try {
-      const { error } =
-        mode === "signin"
-          ? await supabase.auth.signInWithPassword({ email, password })
-          : await supabase.auth.signUp({ email, password });
-      if (error) {
-        toast.error(
-          authErrorMessage(
-            error,
-            mode === "signin"
-              ? "Couldn't sign you in. Try again."
-              : "Couldn't create your account. Try again.",
-          ),
-        );
-        return;
-      }
-    } catch (error) {
-      toast.error(authErrorMessage({ message: String(error), status: 0 }));
+    const { error } =
+      mode === "signin"
+        ? await auth.signIn(email, password)
+        : await auth.signUp(email, password);
+    setPending(false);
+    if (error) {
+      toast.error(
+        authErrorMessage(
+          error,
+          mode === "signin"
+            ? "Couldn't sign you in. Try again."
+            : "Couldn't create your account. Try again.",
+        ),
+      );
       return;
-    } finally {
-      setPending(false);
     }
     router.replace("/dashboard");
   };

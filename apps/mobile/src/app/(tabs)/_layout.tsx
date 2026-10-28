@@ -15,7 +15,7 @@ import {
   useSelectedBoard,
 } from '@/features/board/selected-board';
 import { PushNotifications } from '@/features/push/use-push';
-import { supabase } from '@/lib/supabase';
+import { auth } from '@/lib/auth';
 import { BoardPaletteProvider, spacing, useThemeColors } from '@/theme';
 
 /**
@@ -54,7 +54,7 @@ export default function TabsLayout() {
           title="Sign out"
           variant="ghost"
           size="sm"
-          onPress={() => void supabase.auth.signOut()}
+          onPress={() => void auth.signOut()}
         />
       </Centered>
     );

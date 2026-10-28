@@ -1,12 +1,12 @@
 import { toast } from "sonner";
-import { configureApiClient, configureSessionSource } from "@artist/api-client";
+import { configureApiClient, configureAuthClient } from "@artist/api-client";
 import { env } from "./env";
-import { supabase } from "./supabase";
+import { auth } from "./auth";
 
 /**
  * Web's half of the `@artist/api-client` contract. The package deliberately
- * knows nothing about Next.js env vars, the browser Supabase client, or sonner
- * — mobile supplies an `expo-secure-store` client, an `expo-constants` URL and
+ * knows nothing about Next.js env vars, the browser auth client, or sonner —
+ * mobile supplies an `expo-secure-store` backed one, an `expo-constants` URL and
  * its own toast instead.
  *
  * Imported for its side effect by the app shell, so it runs before any hook
@@ -16,12 +16,7 @@ let signingOut = false;
 
 configureApiClient({
   baseUrl: env.apiUrl,
-  getAccessToken: async () => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    return session?.access_token ?? null;
-  },
+  getAccessToken: async () => (await auth.getSession())?.accessToken ?? null,
   notify: {
     error: (message) => toast.error(message),
     success: (message) => toast.success(message),
@@ -32,10 +27,10 @@ configureApiClient({
   onUnauthorized: () => {
     if (signingOut) return;
     signingOut = true;
-    void supabase.auth.signOut().finally(() => {
+    void auth.signOut().finally(() => {
       window.location.assign("/login?expired=1");
     });
   },
 });
 
-configureSessionSource(supabase.auth);
+configureAuthClient(auth);

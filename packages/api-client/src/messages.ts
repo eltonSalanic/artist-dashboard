@@ -119,8 +119,8 @@ export function isUnexpectedError(error: unknown): boolean {
 }
 
 /**
- * Supabase Auth errors, worded for people. Structural rather than importing
- * `AuthError`, so this works with whichever supabase-js the app bundles.
+ * Auth failures, worded for people. Every `AuthClient` reports failures in
+ * this shape; the codes below are Supabase Auth's, the provider in use.
  */
 export interface AuthErrorLike {
   name?: string;

@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/skeleton';
 import { useSelectedBoard } from '@/features/board/selected-board';
 import { PushSetting } from '@/features/push/push-prompt';
 import { forgetThisDevice } from '@/features/push/push';
-import { supabase } from '@/lib/supabase';
+import { auth } from '@/lib/auth';
 import {
   boardAccent,
   posterRadius,
@@ -153,7 +153,7 @@ export function YouScreen() {
           // token it is — otherwise the next person to sign in on this
           // phone would be buzzed for this account until they did.
           void forgetThisDevice()
-            .then(() => supabase.auth.signOut())
+            .then(() => auth.signOut())
             .finally(() => setSigningOut(false));
         }}
       />
