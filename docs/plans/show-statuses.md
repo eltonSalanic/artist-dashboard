@@ -1,6 +1,6 @@
 # Show statuses
 
-> **State:** In progress
+> **State:** Testing
 > **Updated:** 2026-10-27
 > **Task ID prefix:** `SHOW`
 > **Source:** New
@@ -212,16 +212,16 @@ it.
 
 | ID | Task | State | Trello card |
 |---|---|---|---|
-| SHOW-001 | Schema and migration: `ShowStatusCategory`, `ShowStatus`, `Event.showStatusId`, CHECK constraint, seed defaults and backfill existing shows, `SHOW_STATUS_CHANGED` | Planned | — |
-| SHOW-002 | Shared: `DEFAULT_SHOW_STATUSES`, show status DTOs, `showStatusId` on event DTOs and query, `show.changeStatus` permission, activity text | Planned | — |
-| SHOW-003 | API: `show-statuses` module with guards and specs; defaults on new boards; `showStatuses` on the board payload | Planned | — |
-| SHOW-004 | API: event status endpoint, default/clear rules, cancelled filtering in lists, calendar, widgets and day-of notification; expected-income check on cancel | Planned | — |
-| SHOW-005 | api-client: show status hooks and `useChangeShowStatus` | Planned | — |
-| SHOW-006 | Web: shared statuses card and "Show statuses" settings card | Planned | — |
-| SHOW-007 | Web: status in event dialog and detail, calendar styling and filter, nudges | Planned | — |
-| SHOW-008 | Phone: show statuses in board settings; shared status sheet on event detail; calendar styling and filter | Planned | — |
-| SHOW-009 | Demo seed: Neon Harbor shows across all four statuses, plus one custom "Advanced" status | Planned | — |
-| SHOW-010 | Feature test pass and Trello "Show statuses testing" card | Planned | — |
+| SHOW-001 | Schema and migration: `ShowStatusCategory`, `ShowStatus`, `Event.showStatusId`, CHECK constraint, seed defaults and backfill existing shows, `SHOW_STATUS_CHANGED` | Testing | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
+| SHOW-002 | Shared: `DEFAULT_SHOW_STATUSES`, show status DTOs, `showStatusId` on event DTOs and query, `show.changeStatus` permission, activity text | Testing | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
+| SHOW-003 | API: `show-statuses` module with guards and specs; defaults on new boards; `showStatuses` on the board payload | Testing | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
+| SHOW-004 | API: event status endpoint, default/clear rules, cancelled filtering in lists, calendar, widgets and day-of notification; expected-income check on cancel | Testing | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
+| SHOW-005 | api-client: show status hooks and `useChangeShowStatus` | Testing | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
+| SHOW-006 | Web: shared statuses card and "Show statuses" settings card | Testing | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
+| SHOW-007 | Web: status in event dialog and detail, calendar styling and filter, nudges | Testing | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
+| SHOW-008 | Phone: show statuses in board settings; shared status sheet on event detail; calendar styling and filter | Testing | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
+| SHOW-009 | Demo seed: Neon Harbor shows across all four statuses, plus one custom "Advanced" status | Testing | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
+| SHOW-010 | Feature test pass and Trello "Show statuses testing" card | Testing | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
 
 Order: 001 → 002 → 003/004 → 005, then web (006–007) and phone (008) side by
 side. 009 can land with 004.
@@ -269,3 +269,8 @@ side. 009 can land with 004.
   questions taken as planned: members may change a show's status, holds still
   get the day-of summary (marked on hold), and past shows read as Played
   automatically.
+- 2026-10-27: Built on `feat/show-statuses`. Two deliberate differences from
+  the draft: there is no day-of show summary job yet, so nothing to filter
+  there; the phone calendar shows cancelled shows struck through instead of
+  hiding them behind a filter. Feature test:
+  https://claude.ai/artifact/WBhSaZyvzWuf2aoretE3c8
