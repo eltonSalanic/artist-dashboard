@@ -27,14 +27,18 @@ const base = z
   .loose();
 
 export function validateEnv(raw: Record<string, unknown>) {
-  const result = base.safeParse(raw);
+  // `LOG_LEVEL=` in a .env file means "unset", not "the empty level".
+  const cleaned = Object.fromEntries(
+    Object.entries(raw).filter(([, value]) => value !== ''),
+  );
+  const result = base.safeParse(cleaned);
   const problems = result.success
     ? []
     : result.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`);
 
-  if (parseAppEnv(raw.APP_ENV as string | undefined) !== 'development') {
+  if (parseAppEnv(cleaned.APP_ENV as string | undefined) !== 'development') {
     for (const key of ['WEB_URL', 'API_URL'] as const) {
-      if (!raw[key]) problems.push(`${key}: required when APP_ENV is set`);
+      if (!cleaned[key]) problems.push(`${key}: required when APP_ENV is set`);
     }
   }
 

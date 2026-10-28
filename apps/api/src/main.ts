@@ -12,7 +12,7 @@ import { logLevelsFrom, type LogLevelSetting } from './config/env';
  */
 function createLogger(): ConsoleLogger {
   const deployed = parseAppEnv(process.env.APP_ENV) !== 'development';
-  const level = (process.env.LOG_LEVEL ??
+  const level = (process.env.LOG_LEVEL ||
     (deployed ? 'log' : 'debug')) as LogLevelSetting;
   return new ConsoleLogger({
     json: deployed,

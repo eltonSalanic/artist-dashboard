@@ -29,6 +29,10 @@ describe('validateEnv', () => {
     ).not.toThrow();
   });
 
+  it('treats an empty value as unset', () => {
+    expect(() => validateEnv({ ...minimal, LOG_LEVEL: '' })).not.toThrow();
+  });
+
   it('rejects an unknown log level', () => {
     expect(() => validateEnv({ ...minimal, LOG_LEVEL: 'loud' })).toThrow(
       /LOG_LEVEL/,
