@@ -1,6 +1,13 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { ActivityIndicator, View } from 'react-native';
-import { PermissionsProvider, useBoard, useInbox, useMe } from '@artist/api-client';
+import {
+  PermissionsProvider,
+  toUserMessage,
+  useBoard,
+  useInbox,
+  useMe,
+} from '@artist/api-client';
+import { Button } from '@/components/button';
 import { resolveBoardTheme } from '@artist/shared';
 import { ThemedText } from '@/components/themed-text';
 import {
@@ -8,6 +15,7 @@ import {
   useSelectedBoard,
 } from '@/features/board/selected-board';
 import { PushNotifications } from '@/features/push/use-push';
+import { supabase } from '@/lib/supabase';
 import { BoardPaletteProvider, spacing, useThemeColors } from '@/theme';
 
 /**
@@ -22,6 +30,9 @@ import { BoardPaletteProvider, spacing, useThemeColors } from '@/theme';
  * resolve the board once: which one is selected, what the caller may do on it,
  * and which palette it paints with.
  */
+// Keeps the crash inside the tabs, under the root's own boundary.
+export { CrashScreen as ErrorBoundary } from '@/components/crash-screen';
+
 export default function TabsLayout() {
   const me = useMe(true);
 
@@ -33,9 +44,18 @@ export default function TabsLayout() {
         <ThemedText variant="headline" tone="destructive">
           Could not load your bands
         </ThemedText>
-        <ThemedText variant="subhead" tone="muted">
-          {me.error.message}
+        <ThemedText variant="subhead" tone="muted" style={{ textAlign: 'center' }}>
+          {toUserMessage(me.error)}
         </ThemedText>
+        {/* This is the first request after launch; without a way out a bad
+            connection or a broken account left the user stuck here. */}
+        <Button title="Try again" size="sm" onPress={() => void me.refetch()} />
+        <Button
+          title="Sign out"
+          variant="ghost"
+          size="sm"
+          onPress={() => void supabase.auth.signOut()}
+        />
       </Centered>
     );
   }

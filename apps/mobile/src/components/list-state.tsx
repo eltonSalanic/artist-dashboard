@@ -4,6 +4,7 @@ import { Icon, type IconName } from './icon';
 import { PosterText } from './poster-text';
 import { Skeleton } from './skeleton';
 import { spacing, useTokens } from '@/theme';
+import { toUserMessage } from '@artist/api-client';
 
 /**
  * Loading, failed and empty, for a list that owns its own `FlatList`.
@@ -65,9 +66,9 @@ export function ListState({
       <PosterText variant="title" color={tokens.foreground}>
         {error ? 'Could not load this' : title}
       </PosterText>
-      {(error?.message ?? body) !== undefined && (
+      {(error ? toUserMessage(error) : body) !== undefined && (
         <PosterText variant="body" color={tokens.mutedForeground} style={{ textAlign: 'center' }}>
-          {error ? error.message : body}
+          {error ? toUserMessage(error) : body}
         </PosterText>
       )}
       {error && onRetry && <Button title="Try again" variant="ghost" size="sm" onPress={onRetry} />}

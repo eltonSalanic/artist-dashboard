@@ -5,6 +5,8 @@ import '@/lib/api-client-setup';
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
 import {
+  MutationCache,
+  QueryCache,
   QueryClient,
   QueryClientProvider,
   focusManager,
@@ -16,12 +18,25 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useSession } from '@artist/api-client';
+import { reportError } from '@/lib/report-error';
 import { supabase } from '@/lib/supabase';
 import { POSTER_FONTS } from '@/theme/poster';
 
 void SplashScreen.preventAutoHideAsync();
 
+// A render crash anywhere below shows this instead of a white screen.
+export { CrashScreen as ErrorBoundary } from '@/components/crash-screen';
+
 const queryClient = new QueryClient({
+  // Screens show their own load errors and hooks alert on failed saves; these
+  // only send the unexpected ones (bugs, 5xx) to the error reporter.
+  queryCache: new QueryCache({
+    onError: (error, query) => reportError(error, { queryKey: query.queryKey }),
+  }),
+  mutationCache: new MutationCache({
+    onError: (error, _vars, _ctx, mutation) =>
+      reportError(error, { mutationKey: mutation.options.mutationKey }),
+  }),
   defaultOptions: {
     queries: {
       // A phone switches networks mid-session far more often than a browser

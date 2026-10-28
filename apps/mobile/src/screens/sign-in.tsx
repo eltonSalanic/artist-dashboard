@@ -5,7 +5,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import { notify } from '@artist/api-client';
+import { authErrorMessage, notify } from '@artist/api-client';
 import { Button } from '@/components/button';
 import { PosterText } from '@/components/poster-text';
 import { TextField } from '@/components/text-field';
@@ -61,29 +61,43 @@ export function SignInScreen() {
     setError(null);
     setNotice(null);
 
-    if (mode === 'invite') {
-      await join();
-      return;
-    }
+    // try/finally: if supabase-js throws rather than returning an error (it
+    // can, offline), the button must not stay disabled forever.
+    try {
+      if (mode === 'invite') {
+        await join();
+        return;
+      }
 
-    const result =
-      mode === 'signin'
-        ? await supabase.auth.signInWithPassword({ email, password })
-        : await supabase.auth.signUp({ email, password });
+      const result =
+        mode === 'signin'
+          ? await supabase.auth.signInWithPassword({ email, password })
+          : await supabase.auth.signUp({ email, password });
 
-    setPending(false);
-    if (result.error) {
-      // The draft stays put so a typo in the password costs one field, not two.
-      setError(result.error.message);
-      return;
+      if (result.error) {
+        // The draft stays put so a typo in the password costs one field, not two.
+        setError(
+          authErrorMessage(
+            result.error,
+            mode === 'signin'
+              ? "Couldn't sign you in. Try again."
+              : "Couldn't create your account. Try again.",
+          ),
+        );
+        return;
+      }
+      // Sign-up returns no session when the project requires email confirmation.
+      // Local Supabase has it off, so this is the deployed-project path.
+      if (result.data.session === null) {
+        setNotice('Check your email to confirm your account, then sign in.');
+        setMode('signin');
+      }
+      // On success the root layout swaps the stack — no navigation needed here.
+    } catch (thrown) {
+      setError(authErrorMessage({ message: String(thrown), status: 0 }));
+    } finally {
+      setPending(false);
     }
-    // Sign-up returns no session when the project requires email confirmation.
-    // Local Supabase has it off, so this is the deployed-project path.
-    if (result.data.session === null) {
-      setNotice('Check your email to confirm your account, then sign in.');
-      setMode('signin');
-    }
-    // On success the root layout swaps the stack — no navigation needed here.
   };
 
   /**
@@ -99,18 +113,19 @@ export function SignInScreen() {
       type: 'invite',
     });
     if (verified.error) {
-      setPending(false);
       setError(
         verified.error.code === 'otp_expired'
           ? // Supabase answers a wrong code with the same error as a used one.
             "That code doesn't work: check it against the email. Codes expire after an hour and work once; your band admin can invite you again."
-          : verified.error.message,
+          : authErrorMessage(verified.error, "Couldn't accept the invite. Try again."),
       );
       return;
     }
     const saved = await supabase.auth.updateUser({ password });
     if (saved.error) {
-      notify.error(`You're in, but the password wasn't saved: ${saved.error.message}`);
+      notify.error(
+        `You're in, but the password wasn't saved. ${authErrorMessage(saved.error, 'Set it from the web app.')}`,
+      );
     }
   };
 

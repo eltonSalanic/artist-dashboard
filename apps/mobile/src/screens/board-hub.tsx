@@ -19,6 +19,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
 import {
+  toUserMessage,
   useBoard,
   usePermissions,
   useResetMobileLayout,
@@ -235,8 +236,14 @@ function BoardHub({ boardId, name }: { boardId: string; name: string }) {
           Could not load this board
         </ThemedText>
         <ThemedText variant="subhead" tone="muted" style={{ textAlign: 'center' }}>
-          {hub.error.message}
+          {toUserMessage(hub.error)}
         </ThemedText>
+        <Button
+          title="Try again"
+          variant="ghost"
+          size="sm"
+          onPress={() => void queryClient.refetchQueries({ type: 'active' })}
+        />
       </View>
     );
   }

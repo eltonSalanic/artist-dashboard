@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
-import { useMe } from '@artist/api-client';
+import { toUserMessage, useMe } from '@artist/api-client';
 import { Button } from '@/components/button';
 import { Icon } from '@/components/icon';
 import { PosterText } from '@/components/poster-text';
@@ -57,10 +57,10 @@ export function YouScreen() {
       ) : me.isError ? (
         <View style={{ gap: spacing.sm }}>
           <PosterText variant="title" color={canvas.ink}>
-            Could not reach the API
+            Could not load your account
           </PosterText>
           <PosterText variant="body" color={canvas.soft}>
-            {me.error.message}
+            {toUserMessage(me.error)}
           </PosterText>
           <Button
             title="Try again"

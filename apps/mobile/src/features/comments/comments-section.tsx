@@ -20,6 +20,7 @@ import {
   type CommentDto,
   type UploadSource,
 } from '@artist/api-client';
+import { reportError } from '@/lib/report-error';
 import { Icon } from '@/components/icon';
 import { Section } from '@/components/section';
 import { Skeleton } from '@/components/skeleton';
@@ -142,7 +143,10 @@ function CommentItem({
       const file = await pickUpload(from);
       if (file) setPicked(file);
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : 'Could not open the picker');
+      // The native text ("PHPhotosErrorDomain 3311") means nothing to a user;
+      // the reporter gets it, the user gets a sentence.
+      reportError(error);
+      notify.error('Could not open the picker. Try again.');
     }
   };
 

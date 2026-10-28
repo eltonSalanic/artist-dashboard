@@ -9,6 +9,7 @@ import {
   useUploadAttachment,
   type UploadSource,
 } from '@artist/api-client';
+import { reportError } from '@/lib/report-error';
 import { Button } from '@/components/button';
 import { Section } from '@/components/section';
 import { Skeleton } from '@/components/skeleton';
@@ -61,7 +62,10 @@ export function TaskAttachments({
       const picked = await pickUpload(from);
       if (picked) setPicked(picked);
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : 'Could not open the picker');
+      // The native text ("PHPhotosErrorDomain 3311") means nothing to a user;
+      // the reporter gets it, the user gets a sentence.
+      reportError(error);
+      notify.error('Could not open the picker. Try again.');
     }
   };
 
