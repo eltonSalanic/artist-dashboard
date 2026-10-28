@@ -31,7 +31,8 @@ export class ShowStatusesController {
   @BoardRoles('ADMIN')
   create(
     @Param('boardId') boardId: string,
-    @Body(new ZodValidationPipe(createShowStatusSchema)) dto: CreateShowStatusDto,
+    @Body(new ZodValidationPipe(createShowStatusSchema))
+    dto: CreateShowStatusDto,
   ) {
     return this.statuses.create(boardId, dto);
   }
@@ -41,7 +42,8 @@ export class ShowStatusesController {
   update(
     @Param('boardId') boardId: string,
     @Param('statusId') statusId: string,
-    @Body(new ZodValidationPipe(updateShowStatusSchema)) dto: UpdateShowStatusDto,
+    @Body(new ZodValidationPipe(updateShowStatusSchema))
+    dto: UpdateShowStatusDto,
   ) {
     return this.statuses.update(boardId, statusId, dto);
   }

@@ -8,7 +8,12 @@ import { ActivityService } from '../activity/activity.service';
 describe('EventsService notifications', () => {
   const startsAt = new Date('2026-09-04T20:00:00Z');
 
-  const hold = { id: 's-hold', name: 'Hold', color: '#8b8fa3', category: 'HOLD' };
+  const hold = {
+    id: 's-hold',
+    name: 'Hold',
+    color: '#8b8fa3',
+    category: 'HOLD',
+  };
   const confirmed = {
     id: 's-confirmed',
     name: 'Confirmed',
@@ -219,11 +224,17 @@ describe('EventsService notifications', () => {
 
   describe('show statuses', () => {
     const createData = () =>
-      (prisma.event.create.mock.calls[0] as [{ data: { showStatusId: string | null } }])[0]
-        .data;
+      (
+        prisma.event.create.mock.calls[0] as [
+          { data: { showStatusId: string | null } },
+        ]
+      )[0].data;
     const updateData = () =>
-      (prisma.event.update.mock.calls[0] as [{ data: { showStatusId: string | null } }])[0]
-        .data;
+      (
+        prisma.event.update.mock.calls[0] as [
+          { data: { showStatusId: string | null } },
+        ]
+      )[0].data;
 
     it('starts a new show in the first status that is not a cancellation', async () => {
       prisma.event.create.mockResolvedValue(stored);
@@ -362,7 +373,12 @@ describe('EventsService notifications', () => {
 
       expect(result.expectedIncomeCount).toBe(2);
       expect(prisma.financeEntry.count).toHaveBeenCalledWith({
-        where: { boardId: 'b1', eventId: 'e1', kind: 'INCOME', state: 'EXPECTED' },
+        where: {
+          boardId: 'b1',
+          eventId: 'e1',
+          kind: 'INCOME',
+          state: 'EXPECTED',
+        },
       });
     });
 

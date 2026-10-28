@@ -62,7 +62,9 @@ describe('ShowStatusesService', () => {
     prisma.event.count.mockResolvedValue(0);
     await service.remove('b1', 's4');
     expect(prisma.showStatus.count).not.toHaveBeenCalled();
-    expect(prisma.showStatus.delete).toHaveBeenCalledWith({ where: { id: 's4' } });
+    expect(prisma.showStatus.delete).toHaveBeenCalledWith({
+      where: { id: 's4' },
+    });
   });
 
   it('refuses to turn the last startable status into a cancellation', async () => {

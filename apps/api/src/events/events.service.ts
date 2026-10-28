@@ -59,7 +59,9 @@ export class EventsService {
         // only — everything else has no status, which `NOT` lets through.
         ...(query.includeCancelled
           ? {}
-          : { NOT: { showStatus: { is: { category: 'CANCELLED' as const } } } }),
+          : {
+              NOT: { showStatus: { is: { category: 'CANCELLED' as const } } },
+            }),
         ...(query.from || query.to
           ? {
               startsAt: {
@@ -160,7 +162,7 @@ export class EventsService {
     const { showStatusId: requested, ...fields } = dto;
     const showStatusId = await this.resolveShowStatusId(
       boardId,
-      dto.type ?? (before.type as EventType),
+      dto.type ?? before.type,
       requested ?? before.showStatusId ?? undefined,
     );
 

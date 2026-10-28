@@ -192,10 +192,20 @@ async function main() {
   // band's own status. Kept if already there (a real board may have renamed
   // or added its own); only missing names are added.
   const wantedShowStatuses = [
-    ...DEFAULT_SHOW_STATUSES.map((s) => ({ ...s, sortOrder: s.sortOrder * 10 })),
-    { name: 'Advanced', color: '#4f7cff', sortOrder: 15, category: 'BOOKED' as const },
+    ...DEFAULT_SHOW_STATUSES.map((s) => ({
+      ...s,
+      sortOrder: s.sortOrder * 10,
+    })),
+    {
+      name: 'Advanced',
+      color: '#4f7cff',
+      sortOrder: 15,
+      category: 'BOOKED' as const,
+    },
   ];
-  const haveShowStatuses = await prisma.showStatus.findMany({ where: { boardId } });
+  const haveShowStatuses = await prisma.showStatus.findMany({
+    where: { boardId },
+  });
   for (const s of wantedShowStatuses) {
     if (!haveShowStatuses.some((h) => h.name === s.name)) {
       haveShowStatuses.push(
