@@ -217,8 +217,8 @@ export class EventsService {
    * Move one show to another status. Separate from `update` because it is open
    * to members ('show.changeStatus'), while the rest of a show is admin-only.
    *
-   * Cancelling a show with money still expected for it reports how many such
-   * entries there are, so the client can point at them. Nothing is voided here:
+   * Cancelling a show with money still expected for it reports how much, so
+   * the client can point at it. Nothing is voided here:
    * the ledger only changes when someone changes it.
    */
   async changeStatus(
@@ -251,13 +251,17 @@ export class EventsService {
       return updated;
     });
 
-    const expectedIncomeCount =
+    const expected =
       event.showStatus?.category === 'CANCELLED'
-        ? await this.prisma.financeEntry.count({
+        ? await this.prisma.financeEntry.aggregate({
             where: { boardId, eventId, kind: 'INCOME', state: 'EXPECTED' },
+            _sum: { amountCents: true },
           })
-        : 0;
-    return { ...this.toDto(event), expectedIncomeCount };
+        : null;
+    return {
+      ...this.toDto(event),
+      expectedIncomeCents: expected?._sum.amountCents ?? 0,
+    };
   }
 
   /**

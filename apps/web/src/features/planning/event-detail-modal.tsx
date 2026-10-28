@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { EventTypes, type EventType } from "@artist/shared";
+import {
+  cancelledShowMoneyNotice,
+  EventTypes,
+  type EventType,
+} from "@artist/shared";
 import {
   useBoard,
   useChangeShowStatus,
@@ -119,7 +123,9 @@ function EventDetailBody({
   const updateEvent = useUpdateEvent(boardId);
   const deleteEvent = useDeleteEvent(boardId);
   const changeShowStatus = useChangeShowStatus(boardId);
-  const showStatuses = useBoard(boardId).data?.showStatuses ?? [];
+  const board = useBoard(boardId).data;
+  const showStatuses = board?.showStatuses ?? [];
+  const currency = board?.currency;
   // An archived event keeps its tasks — showing them is the whole point of
   // looking one up in the archive.
   const tasks = useTasks(boardId, {
@@ -217,14 +223,10 @@ function EventDetailBody({
                 changeShowStatus.mutate(
                   { eventId: data.id, dto: { showStatusId } },
                   {
-                    onSuccess: ({ expectedIncomeCount }) => {
-                      if (expectedIncomeCount > 0) {
+                    onSuccess: ({ expectedIncomeCents }) => {
+                      if (expectedIncomeCents > 0) {
                         toast.message(
-                          `${expectedIncomeCount} expected ${
-                            expectedIncomeCount === 1 ? "payment is" : "payments are"
-                          } still logged for this show. Void ${
-                            expectedIncomeCount === 1 ? "it" : "them"
-                          } under Money if the fee is off too`,
+                          cancelledShowMoneyNotice(expectedIncomeCents, currency),
                         );
                       }
                     },

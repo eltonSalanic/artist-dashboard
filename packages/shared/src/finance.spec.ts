@@ -1,5 +1,6 @@
 import {
   allocate,
+  cancelledShowMoneyNotice,
   computeBalances,
   equalSplit,
   financeCsv,
@@ -217,5 +218,13 @@ describe('finance DTOs', () => {
 
   it('needs something to settle', () => {
     expect(settleShowSchema.safeParse({ occurredOn: '2026-10-01' }).success).toBe(false);
+  });
+});
+
+describe('cancelledShowMoneyNotice', () => {
+  it('names the amount in the band currency', () => {
+    expect(cancelledShowMoneyNotice(40000, 'USD')).toBe(
+      "This show still has $400.00 expected. If you won't receive payment, remove it in the show's Money section.",
+    );
   });
 });

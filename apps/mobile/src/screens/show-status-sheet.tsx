@@ -9,6 +9,7 @@ import {
   useEvent,
   usePermissions,
 } from '@artist/api-client';
+import { cancelledShowMoneyNotice } from '@artist/shared';
 import { Icon } from '@/components/icon';
 import { PosterText } from '@/components/poster-text';
 import { Dot } from '@/components/row';
@@ -48,13 +49,12 @@ export function ShowStatusSheet({
     change.mutate(
       { eventId, dto: { showStatusId } },
       {
-        onSuccess: ({ expectedIncomeCount }) => {
+        onSuccess: ({ expectedIncomeCents }) => {
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          if (expectedIncomeCount > 0) {
-            const many = expectedIncomeCount !== 1;
+          if (expectedIncomeCents > 0) {
             Alert.alert(
               'Money still expected',
-              `${expectedIncomeCount} expected ${many ? 'payments are' : 'payment is'} still logged for this show. Void ${many ? 'them' : 'it'} under Money if the fee is off too.`,
+              cancelledShowMoneyNotice(expectedIncomeCents, board.data?.currency),
               [{ text: 'OK', onPress: () => router.back() }],
             );
             return;

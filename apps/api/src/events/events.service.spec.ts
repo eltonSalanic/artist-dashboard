@@ -53,7 +53,7 @@ describe('EventsService notifications', () => {
     },
     attachment: { findMany: jest.fn() },
     showStatus: { findFirst: jest.fn(), findMany: jest.fn() },
-    financeEntry: { count: jest.fn() },
+    financeEntry: { aggregate: jest.fn() },
     membership: { findMany: jest.fn() },
     notificationDelivery: { createMany: jest.fn() },
     $transaction: jest.fn(),
@@ -354,14 +354,16 @@ describe('EventsService notifications', () => {
       expect(activity.log).not.toHaveBeenCalled();
     });
 
-    it('counts expected income left on a cancelled show', async () => {
+    it('totals expected income left on a cancelled show', async () => {
       prisma.event.findFirst.mockResolvedValue(stored);
       prisma.event.update.mockResolvedValue({
         ...stored,
         showStatusId: cancelled.id,
         showStatus: cancelled,
       });
-      prisma.financeEntry.count.mockResolvedValue(2);
+      prisma.financeEntry.aggregate.mockResolvedValue({
+        _sum: { amountCents: 40000 },
+      });
 
       const result = await service.changeStatus(
         'b1',
@@ -371,14 +373,15 @@ describe('EventsService notifications', () => {
         'ADMIN',
       );
 
-      expect(result.expectedIncomeCount).toBe(2);
-      expect(prisma.financeEntry.count).toHaveBeenCalledWith({
+      expect(result.expectedIncomeCents).toBe(40000);
+      expect(prisma.financeEntry.aggregate).toHaveBeenCalledWith({
         where: {
           boardId: 'b1',
           eventId: 'e1',
           kind: 'INCOME',
           state: 'EXPECTED',
         },
+        _sum: { amountCents: true },
       });
     });
 

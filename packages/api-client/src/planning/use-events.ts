@@ -119,7 +119,7 @@ export function useDeleteEvent(boardId: string) {
 
 /**
  * Move a show to another status. Open to members, unlike `useUpdateEvent`.
- * The response carries `expectedIncomeCount` after a cancellation, so the
+ * The response carries `expectedIncomeCents` after a cancellation, so the
  * caller can point at money still expected for the show.
  */
 export function useChangeShowStatus(boardId: string) {
@@ -133,7 +133,7 @@ export function useChangeShowStatus(boardId: string) {
       eventId: string;
       dto: ChangeShowStatusDto;
     }) =>
-      apiFetch<EventDto & { expectedIncomeCount: number }>(
+      apiFetch<EventDto & { expectedIncomeCents: number }>(
         `/boards/${boardId}/events/${eventId}/status`,
         { method: "PATCH", body: dto },
       ),
