@@ -27,7 +27,7 @@ const mockQuery = {
 };
 
 jest.mock("@artist/api-client", () => ({
-  ApiError: class extends Error {},
+  toUserMessage: (_error: unknown, fallback: string) => fallback,
   useItemLinks: () => mockQuery,
   useMe: () => ({ data: { user: { id: "me" } } }),
   usePermissions: () => ({ can: (action: string) => action === "link.add" }),

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { GoalPeriods, type GoalPeriod } from "@artist/shared";
-import { usePermissions } from "@artist/api-client";
+import { isNotFound, toUserMessage, usePermissions } from "@artist/api-client";
 import { ArchivedBanner } from "@/features/archive/archived-banner";
 import { ItemActions } from "@/features/archive/item-actions";
 import { useTasks } from "@artist/api-client";
@@ -77,6 +78,23 @@ function GoalDetail({
         </DialogHeader>
         <Skeleton className="h-40" />
       </div>
+    );
+  }
+  // "Not found" only when it really is gone; a network blip or a 500
+  // gets a retry instead of claiming the goal was deleted.
+  if (goal.isError && !isNotFound(goal.error)) {
+    return (
+      <DialogHeader>
+        <DialogTitle>Couldn&apos;t load this goal</DialogTitle>
+        <DialogDescription>{toUserMessage(goal.error)}</DialogDescription>
+        <Button
+          size="sm"
+          className="self-start"
+          onClick={() => void goal.refetch()}
+        >
+          Try again
+        </Button>
+      </DialogHeader>
     );
   }
   if (goal.isError || !goal.data) {

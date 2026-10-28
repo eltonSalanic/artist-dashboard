@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   cancelledShowMoneyNotice,
@@ -14,7 +15,7 @@ import {
 } from "@artist/api-client";
 import { ArchivedBanner } from "@/features/archive/archived-banner";
 import { ItemActions } from "@/features/archive/item-actions";
-import { useTasks } from "@artist/api-client";
+import { isNotFound, toUserMessage, useTasks } from "@artist/api-client";
 import { useDeleteEvent, useEvent, useUpdateEvent } from "@artist/api-client";
 import { useDetailParams } from "./use-detail-params";
 import {
@@ -93,6 +94,23 @@ function EventDetail({
         </DialogHeader>
         <Skeleton className="h-40" />
       </div>
+    );
+  }
+  // "Not found" only when it really is gone; a network blip or a 500
+  // gets a retry instead of claiming the event was deleted.
+  if (event.isError && !isNotFound(event.error)) {
+    return (
+      <DialogHeader>
+        <DialogTitle>Couldn&apos;t load this event</DialogTitle>
+        <DialogDescription>{toUserMessage(event.error)}</DialogDescription>
+        <Button
+          size="sm"
+          className="self-start"
+          onClick={() => void event.refetch()}
+        >
+          Try again
+        </Button>
+      </DialogHeader>
     );
   }
   if (event.isError || !event.data) {
@@ -228,7 +246,10 @@ function EventDetailBody({
                     onSuccess: ({ expectedIncomeCents }) => {
                       if (expectedIncomeCents > 0) {
                         toast.message(
-                          cancelledShowMoneyNotice(expectedIncomeCents, currency),
+                          cancelledShowMoneyNotice(
+                            expectedIncomeCents,
+                            currency,
+                          ),
                         );
                       }
                     },

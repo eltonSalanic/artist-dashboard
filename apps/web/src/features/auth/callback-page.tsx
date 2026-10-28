@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useSession } from "@artist/api-client";
+import { authErrorMessage } from "@artist/api-client";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import {
@@ -63,7 +64,9 @@ export function CallbackPage() {
     const { error } = await supabase.auth.updateUser({ password });
     setPending(false);
     if (error) {
-      toast.error(error.message);
+      toast.error(
+        authErrorMessage(error, "Couldn't save your password. Try again."),
+      );
       return;
     }
     router.replace("/dashboard");

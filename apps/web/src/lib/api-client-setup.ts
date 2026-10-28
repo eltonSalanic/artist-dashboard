@@ -11,6 +11,8 @@ import { supabase } from "./supabase";
  * Imported for its side effect by the app shell, so it runs before any hook
  * fires a request.
  */
+let signingOut = false;
+
 configureApiClient({
   baseUrl: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001",
   getAccessToken: async () => {
@@ -22,6 +24,16 @@ configureApiClient({
   notify: {
     error: (message) => toast.error(message),
     success: (message) => toast.success(message),
+  },
+  // The API rejected a token we still had: the session is gone (expired,
+  // revoked, or the user was removed). Sign out once and say why, instead of
+  // leaving them on a page of "Your session expired" toasts.
+  onUnauthorized: () => {
+    if (signingOut) return;
+    signingOut = true;
+    void supabase.auth.signOut().finally(() => {
+      window.location.assign("/login?expired=1");
+    });
   },
 });
 

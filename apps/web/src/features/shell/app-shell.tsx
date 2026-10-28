@@ -18,9 +18,11 @@ import {
 import { supabase } from "@/lib/supabase";
 import {
   PermissionsProvider,
+  toUserMessage,
   usePermissions,
   useSession,
 } from "@artist/api-client";
+import { ErrorState } from "@/components/error-state";
 import { selectBoard, useMe } from "@/lib/use-me";
 import type { MeResponse } from "@artist/api-client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -66,8 +68,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (me.isError || !me.data?.membership || !me.data.board) {
     return (
-      <main className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground">
-        Something went wrong loading your board. Try reloading.
+      <main className="flex flex-1">
+        <ErrorState
+          title="Couldn't load your band"
+          message={
+            me.isError
+              ? toUserMessage(me.error)
+              : "Your band's board couldn't be found. Try again, or sign out and back in."
+          }
+          onRetry={() => void me.refetch()}
+          showSignOut
+        />
       </main>
     );
   }

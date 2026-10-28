@@ -20,6 +20,8 @@ export {
 
 export {
   MESSAGES,
+  authErrorMessage,
+  type AuthErrorLike,
   isNotFound,
   isUnexpectedError,
   toUserMessage,
