@@ -1,7 +1,7 @@
 # Show statuses
 
-> **State:** Testing
-> **Updated:** 2026-10-27
+> **State:** Complete
+> **Updated:** 2026-10-28
 > **Task ID prefix:** `SHOW`
 > **Source:** New
 
@@ -212,16 +212,16 @@ it.
 
 | ID | Task | State | Trello card |
 |---|---|---|---|
-| SHOW-001 | Schema and migration: `ShowStatusCategory`, `ShowStatus`, `Event.showStatusId`, CHECK constraint, seed defaults and backfill existing shows, `SHOW_STATUS_CHANGED` | Testing | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
-| SHOW-002 | Shared: `DEFAULT_SHOW_STATUSES`, show status DTOs, `showStatusId` on event DTOs and query, `show.changeStatus` permission, activity text | Testing | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
-| SHOW-003 | API: `show-statuses` module with guards and specs; defaults on new boards; `showStatuses` on the board payload | Testing | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
-| SHOW-004 | API: event status endpoint, default/clear rules, cancelled filtering in lists, calendar, widgets and day-of notification; expected-income check on cancel | Testing | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
-| SHOW-005 | api-client: show status hooks and `useChangeShowStatus` | Testing | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
-| SHOW-006 | Web: shared statuses card and "Show statuses" settings card | Testing | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
-| SHOW-007 | Web: status in event dialog and detail, calendar styling and filter, nudges | Testing | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
-| SHOW-008 | Phone: show statuses in board settings; shared status sheet on event detail; calendar styling and filter | Testing | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
-| SHOW-009 | Demo seed: Neon Harbor shows across all four statuses, plus one custom "Advanced" status | Testing | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
-| SHOW-010 | Feature test pass and Trello "Show statuses testing" card | Testing | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
+| SHOW-001 | Schema and migration: `ShowStatusCategory`, `ShowStatus`, `Event.showStatusId`, CHECK constraint, seed defaults and backfill existing shows, `SHOW_STATUS_CHANGED` | Complete | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
+| SHOW-002 | Shared: `DEFAULT_SHOW_STATUSES`, show status DTOs, `showStatusId` on event DTOs and query, `show.changeStatus` permission, activity text | Complete | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
+| SHOW-003 | API: `show-statuses` module with guards and specs; defaults on new boards; `showStatuses` on the board payload | Complete | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
+| SHOW-004 | API: event status endpoint, default/clear rules, cancelled filtering in lists, calendar, widgets and day-of notification; expected-income check on cancel | Complete | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
+| SHOW-005 | api-client: show status hooks and `useChangeShowStatus` | Complete | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
+| SHOW-006 | Web: shared statuses card and "Show statuses" settings card | Complete | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
+| SHOW-007 | Web: status in event dialog and detail, calendar styling and filter, nudges | Complete | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
+| SHOW-008 | Phone: show statuses in board settings; shared status sheet on event detail; calendar styling and filter | Complete | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
+| SHOW-009 | Demo seed: Neon Harbor shows across all four statuses, plus one custom "Advanced" status | Complete | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
+| SHOW-010 | Feature test pass and Trello "Show statuses testing" card | Complete | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
 
 Order: 001 → 002 → 003/004 → 005, then web (006–007) and phone (008) side by
 side. 009 can land with 004.
@@ -274,3 +274,7 @@ side. 009 can land with 004.
   there; the phone calendar shows cancelled shows struck through instead of
   hiding them behind a filter. Feature test:
   https://claude.ai/artifact/WBhSaZyvzWuf2aoretE3c8
+- 2026-10-28: Cancel warning names the amount (358cc2e). Web To-Do's card
+  fixed so members can only restatus tasks assigned to them (c7dd305; the API
+  already refused). Elton verified every check, approved the feature, and the
+  Trello checklists are ticked.
