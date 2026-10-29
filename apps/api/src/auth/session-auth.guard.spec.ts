@@ -54,9 +54,11 @@ describe('toHeaders', () => {
       'x-a': ['1', '2'],
       'x-b': '3',
       'x-c': undefined,
+      cookie: 'better-auth.session_token=x',
     });
     expect(headers.get('x-a')).toBe('1, 2');
     expect(headers.get('x-b')).toBe('3');
     expect(headers.has('x-c')).toBe(false);
+    expect(headers.has('cookie')).toBe(false);
   });
 });

@@ -85,6 +85,9 @@ export function createBetterAuthClient(
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(body),
+        // Bearer tokens only. Left to its default, iOS keeps and resends the
+        // session cookie Better Auth sets, which the server then refuses.
+        credentials: "omit",
       });
     } catch (thrown) {
       return { error: { message: String(thrown), status: 0 } };

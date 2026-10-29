@@ -42,11 +42,15 @@ export class SessionAuthGuard implements CanActivate {
   }
 }
 
-/** Node's header object → the Fetch `Headers` Better Auth expects. */
+/**
+ * Node's header object → the Fetch `Headers` Better Auth expects. Cookies are
+ * left out: sessions travel as bearer tokens only (see `dropCookies` in
+ * main.ts for why a stray one would get in the way).
+ */
 export function toHeaders(raw: IncomingHttpHeaders): Headers {
   const headers = new Headers();
   for (const [key, value] of Object.entries(raw)) {
-    if (value === undefined) continue;
+    if (value === undefined || key === 'cookie') continue;
     for (const one of Array.isArray(value) ? value : [value]) {
       headers.append(key, one);
     }

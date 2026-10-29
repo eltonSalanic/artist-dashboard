@@ -3,6 +3,7 @@ import './instrument';
 
 import { ConsoleLogger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import type { NextFunction, Request, Response } from 'express';
 import { toNodeHandler } from 'better-auth/node';
 import { parseAppEnv } from '@artist/shared';
 import { AppModule } from './app.module';
@@ -50,8 +51,22 @@ async function bootstrap() {
   // gets a session in the first place.
   app.use(
     `${AUTH_BASE_PATH}/*splat`,
+    dropCookies,
     toNodeHandler(app.get<Auth>(BETTER_AUTH)),
   );
   await app.listen(process.env.PORT ?? 3001);
 }
+/**
+ * The apps authenticate with a bearer token only. iOS's networking layer
+ * still keeps the session cookie Better Auth sets on a response and sends it
+ * back, and Better Auth treats any request carrying a cookie as a browser
+ * form that needs an Origin header (CSRF protection), which a phone has none
+ * of: sign-in then fails with MISSING_OR_NULL_ORIGIN. A cookie is never how
+ * we authenticate, so it never reaches Better Auth.
+ */
+function dropCookies(req: Request, _res: Response, next: NextFunction) {
+  delete req.headers.cookie;
+  next();
+}
+
 void bootstrap();
