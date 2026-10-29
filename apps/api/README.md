@@ -24,7 +24,10 @@ variable is missing, and outside development also requires `WEB_URL` and
   `archive`, `custom-widget`, `layouts`, `boards`, `invites`, `users`,
   `notifications`, `health`. Almost every route is board-scoped,
   `/boards/:boardId/<resource>`.
-- **`src/auth`** verifies the Supabase JWT. **`src/common`** holds the board
+- **`src/auth`** runs sign-in: Better Auth mounted at `/api/auth` (users and
+  sessions in the `Auth*` tables), and `SessionAuthGuard`, which checks the
+  bearer session token on every route not marked `@Public()`. Invites mail a
+  6-digit code through `src/invites/invite-code.mail.ts`. **`src/common`** holds the board
   role and user-boards guards, the Zod validation pipe, the global exception
   filter, the request-id middleware and log redaction (see
   [docs/error-handling.md](../../docs/error-handling.md)).

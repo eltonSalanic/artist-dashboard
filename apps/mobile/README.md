@@ -18,7 +18,7 @@ somewhere else; set, they win.
 
 ```bash
 cp apps/mobile/.env.example apps/mobile/.env
-npx supabase status             # the anon key goes in .env
+# Nothing to fill in for local dev: the URLs default to Metro's address.
 ```
 
 Then, with the stack up (`npx supabase start`, `npm run dev`):
@@ -74,11 +74,12 @@ already up, opens ngrok tunnels for the API (3001), Supabase (54321) and Metro
   `*.trycloudflare.com` URLs are new every run, so scan the fresh QR each time.
 - **Expo already running?** `METRO_PORT=8082 npm run mobile:tunnel` runs this
   Metro beside it instead of asking you to stop it.
-- **Supabase is tunnelled too**, because the phone signs in against Supabase
-  directly, not through the API.
+- **Supabase is tunnelled too**, because attachment previews and downloads
+  are signed Storage links the phone opens directly. Sign-in goes through the
+  API.
 - **`.env` is not edited.** The tunnel URLs are set on Expo's process, and Expo
-  never lets `.env` overwrite a variable that is already set — `.env` still
-  supplies the anon key. `EXPO_PACKAGER_PROXY_URL` points the manifest at the
+  never lets `.env` overwrite a variable that is already set.
+  `EXPO_PACKAGER_PROXY_URL` points the manifest at the
   Metro tunnel.
 - **Two QR codes, side by side:** the development build's
   (`artistdashboard://expo-development-client/?url=<Metro tunnel>`) and Expo
@@ -105,9 +106,8 @@ Supabase stack runs on well-known default secrets. Stop it when you're done.
 |---|---|---|
 | Monorepo resolution | [`metro.config.js`](metro.config.js) | `watchFolders` + `nodeModulesPaths`; read the comment before touching it |
 | Config | [`src/lib/env.ts`](src/lib/env.ts) | `EXPO_PUBLIC_*`, inlined by Babel, validated in one place |
-| Session storage | [`src/lib/chunked-store.ts`](src/lib/chunked-store.ts) | SecureStore caps a value at 2048 bytes; a Supabase session is bigger |
-| Supabase client | [`src/lib/supabase.ts`](src/lib/supabase.ts) | keychain storage, `detectSessionInUrl: false` |
-| Auth client | [`src/lib/auth.ts`](src/lib/auth.ts) | the shared `AuthClient` over that Supabase client; screens only use `auth` |
+| Session storage | [`src/lib/chunked-store.ts`](src/lib/chunked-store.ts) | keychain, `AFTER_FIRST_UNLOCK`; chunked because SecureStore caps a value at 2048 bytes |
+| Auth client | [`src/lib/auth.ts`](src/lib/auth.ts) | the shared Better Auth `AuthClient` over that store; screens only use `auth` |
 | API client | [`src/lib/api-client-setup.ts`](src/lib/api-client-setup.ts) | mirrors `apps/web/src/lib/api-client-setup.ts` |
 | Auth gate | [`src/app/_layout.tsx`](src/app/_layout.tsx) | `Stack.Protected`, splash held until the session is read |
 
@@ -116,19 +116,20 @@ Routes live in `src/app` and contain nothing but a screen; screen bodies live in
 
 ## Auth
 
-Email and password, the same as the web app. Not magic links: the one email
-the product sends for sign-in is a Supabase *invite*. Its link opens the web's
-`/auth/callback`, and it also carries a 6-digit code, which "Join with an
-invite code" on the sign-in screen accepts, so a bandmate can join from the
-phone too.
+Email and password, the same as the web app, against Better Auth in the API
+(`/api/auth`). The one email the product sends for sign-in is the invite: its
+link opens the web's `/auth/callback`, and it also carries a 6-digit code,
+which "Join with an invite code" on the sign-in screen accepts, so a bandmate
+can join from the phone too.
 
-Screens never call `supabase.auth` directly. They use `auth` from
+Screens never call the provider directly. They use `auth` from
 [`src/lib/auth.ts`](src/lib/auth.ts), an `AuthClient` from
 `@artist/api-client` (`signIn`, `signUp`, `signOut`, `setPassword`,
-`verifyInviteCode`, `getSession`, `onSessionChange`, and the background
-refresh switches). The Supabase version lives in
-`packages/api-client/src/auth/supabase-auth-client.ts`; changing provider
-means writing another `AuthClient`, not editing screens.
+`verifyInviteCode`, `getSession`, `onSessionChange`). The Better Auth version
+lives in `packages/api-client/src/auth/better-auth-client.ts`. The session is a
+token kept in the keychain and sent as a bearer token; it lasts 30 days and
+extends while used, so there is no refresh timer (the background refresh
+switches are no-ops).
 
 ## Typed routes are off
 

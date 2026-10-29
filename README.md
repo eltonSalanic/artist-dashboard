@@ -2,7 +2,7 @@
 
 A shared workspace for a band or artist to run the business side of making music: a customizable dashboard of tasks, goals, shows, rehearsals, reminders, and notes, scoped to a band (board) the whole group shares. One account can be in several bands.
 
-npm-workspaces monorepo: NestJS API + Next.js web app + Expo mobile app + shared TypeScript packages, backed by local Supabase (Postgres, Auth, Mailpit).
+npm-workspaces monorepo: NestJS API + Next.js web app + Expo mobile app + shared TypeScript packages, backed by local Supabase (Postgres, Storage, Mailpit). Sign-in is [Better Auth](https://www.better-auth.com), running inside the API.
 
 ```
 apps/api            NestJS 11 + Prisma 7
@@ -10,12 +10,12 @@ apps/web            Next.js 16 (client-only; Next is used for routing/SEO metada
 apps/mobile         Expo 57 / React Native (in progress — see docs/mobile-app.md)
 packages/shared     Zod DTOs, the permission map and layout logic, consumed as TS source
 packages/api-client apiFetch + the React Query hooks, shared by web and mobile
-supabase/           local stack config (config.toml, seed.sql, the invite email template)
+supabase/           local stack config (config.toml, seed.sql)
 ```
 
 ## What it does
 
-- **Boards & membership** — email and password sign-in, with invites arriving as Supabase magic links; each board has ADMIN and USER roles. Anyone in more than one band switches between them with the band picker in the web header or the band list on the phone, and every item's detail view shows which band it belongs to. Admins invite members (by email), manage the board, and remove members; a single shared `can()` map (`packages/shared/src/permissions.ts`) is the source of truth for every permission, enforced server-side and mirrored in the UI.
+- **Boards & membership** — email and password sign-in, with invites arriving as an email with a link for the web and a 6-digit code for the phone; each board has ADMIN and USER roles. Anyone in more than one band switches between them with the band picker in the web header or the band list on the phone, and every item's detail view shows which band it belongs to. Admins invite members (by email), manage the board, and remove members; a single shared `can()` map (`packages/shared/src/permissions.ts`) is the source of truth for every permission, enforced server-side and mirrored in the UI.
 - **Tasks** — statuses (customizable per board), priorities, due dates, assignees, nested subtasks, and per-task checklists. Members can only restatus tasks assigned to them; admins edit everything.
 - **Planning** — goals (yearly/monthly/daily), events (shows, rehearsals, meetings), reminders, and per-period focus pins, all surfaced on a combined month **calendar** with type filters. On the phone the calendar spans every band you're in.
 - **Show statuses** — each show has a status (Hold, Details pending, Confirmed, Cancelled by default), and admins add their own steps, the same way as task statuses. Cancelled shows are struck through and left out of counts, and a past booked show reads as Played. See [docs/plans/show-statuses.md](docs/plans/show-statuses.md).
@@ -38,7 +38,7 @@ supabase/           local stack config (config.toml, seed.sql, the invite email 
 npm install
 ```
 
-Ensure env variables are in place. See the example files — copy `apps/api/.env.example` to `apps/api/.env` and `apps/web/.env.example` to `apps/web/.env.local`, then fill in the values (`npx supabase status` prints the keys). For the phone app, copy `apps/mobile/.env.example` to `apps/mobile/.env`; see [apps/mobile/README.md](apps/mobile/README.md). `APP_ENV`, `LOG_LEVEL` and the Sentry DSNs are optional locally; [docs/error-handling.md](docs/error-handling.md) explains them.
+Ensure env variables are in place. See the example files — copy `apps/api/.env.example` to `apps/api/.env` and `apps/web/.env.example` to `apps/web/.env.local`, then fill in the values (`npx supabase status` prints the service role key; `BETTER_AUTH_SECRET` is any 32+ random characters, e.g. `openssl rand -base64 32`). For the phone app, copy `apps/mobile/.env.example` to `apps/mobile/.env`; see [apps/mobile/README.md](apps/mobile/README.md). `APP_ENV`, `LOG_LEVEL` and the Sentry DSNs are optional locally; [docs/error-handling.md](docs/error-handling.md) explains them.
 
 Then apply the schema:
 
@@ -58,7 +58,7 @@ npm run dev        # concurrently runs api (3001) and web (3000)
 
 ### Logging in
 
-Sign in on `/login` with an email and password, or create an account there. Invites are the only magic links: they arrive in **Mailpit** at http://127.0.0.1:54324 (no real mail is sent), and the invited person sets a password on the web, or enters the email's 6-digit code under "Join with an invite code" on the phone. Both apps sign in through the shared `AuthClient` (`packages/api-client/src/auth`), backed by Supabase Auth. First login calls `POST /me/bootstrap`, which creates the user, activates any email-matched invites, and provisions a board with default task statuses, show statuses and layout if you have none.
+Sign in on `/login` with an email and password, or create an account there. Invites arrive in **Mailpit** at http://127.0.0.1:54324 (no real mail is sent): the link signs the invited person in on the web and asks for a password, or they enter the email's 6-digit code under "Join with an invite code" on the phone. Codes last an hour and work once. Both apps sign in through the shared `AuthClient` (`packages/api-client/src/auth`), backed by Better Auth in the API at `/api/auth`; sessions last 30 days and extend while used. First login calls `POST /me/bootstrap`, which creates the user, and activates any email-matched invites. With no band yet you land on "You're not on any band's wall yet", where Create a band sets one up with default task statuses, show statuses and layout.
 
 ## Database changes
 
@@ -100,8 +100,8 @@ Lint with `npm run lint -w apps/api` / `-w apps/web` / `-w apps/mobile`. What a 
 
 ## Troubleshooting
 
-**Browser console floods with `ERR_CONNECTION_REFUSED` on `127.0.0.1:54321` and nothing renders.** Docker isn't running, so Supabase is down and the auth client can't refresh its token. Start Docker Desktop, then `supabase start`. If `supabase start` reports stopped services (`imgproxy`, `edge_runtime`, `pooler`), running it again brings them back.
+**Everything fails to load and the API logs Prisma connection errors.** Docker isn't running, so Supabase's Postgres is down. Start Docker Desktop, then `supabase start`. If `supabase start` reports stopped services (`imgproxy`, `edge_runtime`, `pooler`), running it again brings them back.
 
 **API returns 404 for a route you expect.** Almost all routes are board-scoped as `/boards/:boardId/<resource>` (tasks, events, goals, focus, reminders, calendar, finances, show-statuses, notes, links and so on). The root routes are `/health`, `/me` (and `/me/devices`), the cross-band `/calendar` and `/mentions`, `/unsubscribe` and `/webhooks/resend`. A guarded route hit without a token returns **401**, not 404 — so a 404 means the path is wrong, not that auth failed.
 
-**Magic link lands on `/` instead of `/auth/callback`.** The redirect URL must be in `additional_redirect_urls` in `supabase/config.toml` — both the `127.0.0.1` and `localhost` spellings, since GoTrue matches exactly and silently drops anything unlisted. Restart the stack after editing config.
+**Invite link says "Link expired" straight away.** The code in the link works once and lasts an hour; opening the same link twice (or after an hour) shows this. Invite the person again for a fresh code. If no invite email reaches Mailpit at all, check the API log for `Invite email failed`.
