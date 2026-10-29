@@ -27,8 +27,10 @@ Supabase stays for the database and file storage.
     the same email-code plugin.
   - Google and Apple sign-in.
   - Two-factor sign-in.
-  - Migrating users. Only local test users exist (confirmed 2026-10-29), so
-    local auth data is reset instead.
+  - Migrating passwords. Only local test users exist (confirmed 2026-10-29).
+    Instead, `POST /me/bootstrap` adopts a `User` row left from Supabase Auth
+    when someone signs up again with its email, so local bands and history
+    survive.
 - **Decisions:**
   - **Library, not service.** We use `better-auth` mounted in Express at
     `/api/auth/*`, ahead of Nest's body parser. We don't use the community

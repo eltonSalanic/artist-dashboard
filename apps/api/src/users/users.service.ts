@@ -13,9 +13,10 @@ export class UsersService {
   ) {}
 
   /**
-   * Idempotent first-call setup for an authenticated Supabase user:
-   * 1. Upsert the local User row.
-   * 2. Activate any pending invites matching the verified email.
+   * Idempotent first-call setup for a signed-in user:
+   * 1. Adopt an orphaned User row with the same email (see below), then
+   *    upsert the local User row.
+   * 2. Activate any pending invites matching the email.
    *
    * It never creates a band: someone who signs up with no invite lands on
    * "Join or create one" and starts a band themselves (POST /boards).
@@ -24,6 +25,28 @@ export class UsersService {
     const displayName = auth.email.split('@')[0];
 
     await this.prisma.$transaction(async (tx) => {
+      // Accounts made under Supabase Auth left User rows whose id matches no
+      // sign-in account. Signing up again with that email takes the row over
+      // (every foreign key to User cascades on update), so the bands and
+      // history come along. A row that still belongs to a live account is
+      // never touched: the upsert below then fails on the unique email.
+      const sameEmail = await tx.user.findUnique({
+        where: { email: auth.email },
+        select: { id: true },
+      });
+      if (sameEmail && sameEmail.id !== auth.userId) {
+        const owner = await tx.authUser.findUnique({
+          where: { id: sameEmail.id },
+          select: { id: true },
+        });
+        if (!owner) {
+          await tx.user.update({
+            where: { id: sameEmail.id },
+            data: { id: auth.userId },
+          });
+        }
+      }
+
       await tx.user.upsert({
         where: { id: auth.userId },
         update: { email: auth.email },

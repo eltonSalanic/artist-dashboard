@@ -833,7 +833,7 @@ Web and phone now sign in through a shared `AuthClient` instead of calling Supab
 
 ## Better Auth
 
-Sign-in moved from Supabase Auth to Better Auth inside the API (branch `feat/better-auth`, plan [plans/better-auth.md](plans/better-auth.md), cards AUTH-001 to AUTH-006). Local auth data starts empty: old Supabase test accounts don't carry over, so sign up again. Run `npx prisma migrate deploy` from `apps/api` and add `BETTER_AUTH_SECRET` to `apps/api/.env` first.
+Sign-in moved from Supabase Auth to Better Auth inside the API (branch `feat/better-auth`, plan [plans/better-auth.md](plans/better-auth.md), cards AUTH-001 to AUTH-006). Old Supabase accounts have no password here: sign up again with the same email and the account's bands and history come back (bootstrap adopts the old row). Run `npx prisma migrate deploy` from `apps/api` and add `BETTER_AUTH_SECRET` to `apps/api/.env` first.
 
 - [ ] 🔵 Web: create an account → signed in on the create-or-join screen; Create a band works
 - [ ] 🔵 Web: sign out, sign in with the same password → back on the band
@@ -846,4 +846,5 @@ Sign-in moved from Supabase Auth to Better Auth inside the API (branch `feat/bet
 - [ ] 🔵 Phone: sign in, close the app fully, reopen → still signed in
 - [ ] Phone: sign out from You → sign-in screen
 - [ ] Both: sign out on one device doesn't sign out the other; deleting the session row signs that device out on its next request with "session expired"
+- [ ] Sign up with the email of an account made before the switch → its bands are back
 - [ ] Invite an email that already has an account → "Invite saved", no email; they see the band on next sign-in
