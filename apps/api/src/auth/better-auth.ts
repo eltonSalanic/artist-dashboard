@@ -4,6 +4,7 @@ import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { bearer, emailOTP } from 'better-auth/plugins';
 import type { PrismaClient } from '../../generated/prisma/client';
 import { AUTH_BASE_PATH } from './auth.tokens';
+import { verifyAnyPassword } from './password';
 
 /** A session lasts this long and slides forward while it's used. */
 const SESSION_DAYS = 30;
@@ -50,6 +51,7 @@ export function createAuth(options: AuthOptions) {
       enabled: true,
       minPasswordLength: 8,
       autoSignIn: true,
+      password: { verify: verifyAnyPassword },
     },
     advanced: {
       // AuthUser.id doubles as User.id, which is a Postgres uuid.
