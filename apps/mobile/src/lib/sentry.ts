@@ -36,7 +36,14 @@ if (dsn) {
         maskAllImages: true,
         maskAllVectors: true,
       }),
-      Sentry.feedbackIntegration(),
+      // The report is already tied to the signed-in user's id, so the form
+      // doesn't ask for a name or email.
+      Sentry.feedbackIntegration({
+        showName: false,
+        showEmail: false,
+        formTitle: 'Report a problem',
+        submitButtonLabel: 'Send report',
+      }),
     ],
     // App starts, screen loads and API calls; small traffic fits the free plan.
     tracesSampleRate: 1.0,
