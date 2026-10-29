@@ -24,6 +24,7 @@ export {
   authErrorMessage,
   type AuthErrorLike,
   isNotFound,
+  isReportedByServer,
   isUnexpectedError,
   showsInlineError,
   toUserMessage,

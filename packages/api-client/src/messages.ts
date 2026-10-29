@@ -109,6 +109,15 @@ export function isNotFound(error: unknown): boolean {
 }
 
 /**
+ * A 5xx the API already reported (with its stack, user and request id). The
+ * apps skip these so one failure isn't counted twice against the quota; the
+ * shared trace still links the browser or phone to the API's report.
+ */
+export function isReportedByServer(error: unknown): boolean {
+  return error instanceof ApiError && error.status >= 500;
+}
+
+/**
  * Errors worth sending to an error reporter: bugs and server faults, not a
  * user being offline or failing validation.
  */
