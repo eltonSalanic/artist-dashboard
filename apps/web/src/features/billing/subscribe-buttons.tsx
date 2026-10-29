@@ -52,6 +52,7 @@ export function SubscribeButtons({
           {anyTrial ? "Start your free month" : `Subscribe to ${BAND_WALL_PLAN.name}`}
         </Button>
         {trialNote}
+        <PlanLinks />
       </div>
     );
   }
@@ -73,11 +74,28 @@ export function SubscribeButtons({
           >
             {trial[plan]
               ? `Start your free month · ${label}`
-              : `${label} · ${prices[plan]}`}
+              : `${label} · ${prices[plan]}${
+                  plan === "yearly" ? ` · ${BAND_WALL_PLAN.plans.yearly.savings}` : ""
+                }`}
           </Button>
         ))}
       </div>
       {trialNote}
+      <PlanLinks />
     </div>
+  );
+}
+
+/** Apple and Google want these beside anything that sells a subscription. */
+function PlanLinks() {
+  return (
+    <p className="flex gap-4 text-xs text-muted-foreground">
+      <a className="underline underline-offset-2" href={BAND_WALL_PLAN.links.terms} target="_blank" rel="noreferrer">
+        Terms
+      </a>
+      <a className="underline underline-offset-2" href={BAND_WALL_PLAN.links.privacy} target="_blank" rel="noreferrer">
+        Privacy
+      </a>
+    </p>
   );
 }

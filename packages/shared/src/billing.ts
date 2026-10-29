@@ -48,7 +48,17 @@ export const BAND_WALL_PLAN = {
       priceCents: 5999,
       currency: 'USD',
       interval: 'year',
+      /** $59.99 against 12 × $5.99 ($71.88): about two months free. */
+      savings: '2 months free',
     },
+  },
+  /**
+   * Apple and Google want Terms and Privacy links on every screen that sells
+   * a subscription. The pages don't exist yet; these are where they'll live.
+   */
+  links: {
+    terms: 'https://bandwall.app/terms',
+    privacy: 'https://bandwall.app/privacy',
   },
 } as const;
 

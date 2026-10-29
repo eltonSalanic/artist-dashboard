@@ -879,3 +879,4 @@ Automated checks: webhook mapping, idempotency and auth, the 402 guard and the c
 - [ ] Every other member of the band gets in without paying
 - [ ] A buyer who can still get the trial sees "Start your free month" with the price it rolls into; after buying, settings says "Free month, ends …"
 - [ ] Buying for a second band from the same Apple ID / Google account shows the plain prices (no second trial)
+- [ ] The yearly plan says "2 months free", and Terms and Privacy links sit under the plans on web and phone

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Alert, ScrollView, View } from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import type { PurchasesPackage } from 'react-native-purchases';
 import { useQuery } from '@tanstack/react-query';
 import { BAND_WALL_PLAN, type BoardSubscriptionDto } from '@artist/shared';
@@ -161,7 +162,11 @@ export function SubscriptionScreen({
                   title={
                     freeTrial
                       ? `Start your free month · ${pkg.product.title || pkg.identifier}`
-                      : `${pkg.product.title || pkg.identifier} · ${pkg.product.priceString}`
+                      : `${pkg.product.title || pkg.identifier} · ${pkg.product.priceString}${
+                          pkg.identifier === BAND_WALL_PLAN.plans.yearly.packageId
+                            ? ` · ${BAND_WALL_PLAN.plans.yearly.savings}`
+                            : ''
+                        }`
                   }
                   loading={busy === pkg.identifier}
                   disabled={busy !== null}
@@ -210,6 +215,27 @@ export function SubscriptionScreen({
               }
             />
           )}
+        </View>
+      )}
+      {!isPro && (
+        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.lg }}>
+          {(
+            [
+              ['Terms', BAND_WALL_PLAN.links.terms],
+              ['Privacy', BAND_WALL_PLAN.links.privacy],
+            ] as const
+          ).map(([label, url]) => (
+            <Pressable
+              key={label}
+              accessibilityRole="link"
+              hitSlop={8}
+              onPress={() => void WebBrowser.openBrowserAsync(url)}
+            >
+              <ThemedText variant="footnote" tone="muted" style={{ textDecorationLine: 'underline' }}>
+                {label}
+              </ThemedText>
+            </Pressable>
+          ))}
         </View>
       )}
       {footer}
