@@ -19,7 +19,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { useSession } from '@artist/api-client';
+import { isSubscriptionRequired, useSession } from '@artist/api-client';
 import { reportError } from '@/lib/report-error';
 import { auth } from '@/lib/auth';
 import { POSTER_FONTS } from '@/theme/poster';
@@ -42,8 +42,9 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       // A phone switches networks mid-session far more often than a browser
-      // reloads, so a failed request is more often transient than wrong.
-      retry: 2,
+      // reloads, so a failed request is more often transient than wrong. An
+      // unpaid band's 402 is neither: asking again won't pay for it.
+      retry: (failures, error) => !isSubscriptionRequired(error) && failures < 2,
       staleTime: 30_000,
     },
   },

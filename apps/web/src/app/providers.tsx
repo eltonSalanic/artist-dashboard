@@ -7,7 +7,11 @@ import {
   QueryClientProvider,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { showsInlineError, toUserMessage } from "@artist/api-client";
+import {
+  isSubscriptionRequired,
+  showsInlineError,
+  toUserMessage,
+} from "@artist/api-client";
 import { ThemeProvider } from "next-themes";
 import { useEffect, useState } from "react";
 import { clearCacheOnUserChange } from "@/lib/clear-cache-on-user-change";
@@ -31,6 +35,8 @@ function makeQueryClient(): QueryClient {
         // Screens with their own error state (detail modals, the dashboard,
         // the app shell) already say it; don't say it twice.
         if (showsInlineError(query.meta)) return;
+        // An unpaid band (402): the shell already shows its paywall.
+        if (isSubscriptionRequired(error)) return;
         toast.error(
           toUserMessage(error, "Couldn't load some of your band's data."),
           {
@@ -49,7 +55,12 @@ function makeQueryClient(): QueryClient {
         reportError(error, { mutationKey: mutation.options.mutationKey }),
     }),
     defaultOptions: {
-      queries: { staleTime: 30_000, retry: 1 },
+      queries: {
+        staleTime: 30_000,
+        // Asking again won't pay for the band.
+        retry: (failures, error) =>
+          !isSubscriptionRequired(error) && failures < 1,
+      },
     },
   });
   return client;
