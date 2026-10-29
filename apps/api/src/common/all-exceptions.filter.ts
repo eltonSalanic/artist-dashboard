@@ -74,6 +74,11 @@ export function toErrorBody(exception: unknown): ApiErrorBody {
     };
   }
 
+  // Better Auth's APIError from a server-side call (e.g. setting a password):
+  // its status and code are meant for the caller, not a 500.
+  const authError = betterAuthError(exception);
+  if (authError) return authError;
+
   const prismaCode = prismaErrorCode(exception);
   if (prismaCode === 'P2002') {
     return {
@@ -117,3 +122,28 @@ function describe(exception: unknown): string {
     return `${exception.name}: ${exception.message}`;
   return String(exception);
 }
+
+/** Duck-typed for the same reason as Prisma's: no runtime import of better-auth. */
+function betterAuthError(exception: unknown): ApiErrorBody | undefined {
+  if (!(exception instanceof Error) || exception.name !== 'APIError') {
+    return undefined;
+  }
+  const { statusCode, body } = exception as Error & {
+    statusCode?: number;
+    body?: { code?: string; message?: string };
+  };
+  if (typeof statusCode !== 'number' || statusCode >= 500) return undefined;
+  return {
+    statusCode,
+    code: 'AUTH_REJECTED',
+    message:
+      AUTH_REJECTIONS[body?.code ?? ''] ?? 'That didn’t work. Try again.',
+  };
+}
+
+/** Better Auth's codes for the account changes the API makes on a user's behalf. */
+const AUTH_REJECTIONS: Record<string, string> = {
+  PASSWORD_ALREADY_SET: 'You already have a password. Sign in with it.',
+  PASSWORD_TOO_SHORT: 'Choose a stronger password: at least 8 characters.',
+  PASSWORD_TOO_LONG: 'That password is too long. Use 128 characters or fewer.',
+};

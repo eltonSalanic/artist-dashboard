@@ -1,7 +1,7 @@
 import { ConflictException } from '@nestjs/common';
 import { InvitesService } from './invites.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { SupabaseAdminService } from './supabase-admin.service';
+import { InviteMailer } from './invite-mailer.service';
 
 describe('InvitesService', () => {
   const prisma = {
@@ -13,10 +13,10 @@ describe('InvitesService', () => {
       delete: jest.fn(),
     },
   };
-  const supabaseAdmin = { inviteByEmail: jest.fn() };
+  const mailer = { inviteByEmail: jest.fn() };
   const service = new InvitesService(
     prisma as unknown as PrismaService,
-    supabaseAdmin as unknown as SupabaseAdminService,
+    mailer as unknown as InviteMailer,
   );
 
   beforeEach(() => jest.clearAllMocks());
@@ -26,7 +26,7 @@ describe('InvitesService', () => {
     await expect(
       service.create('b1', 'admin1', { email: 'mike@band.com', role: 'USER' }),
     ).rejects.toBeInstanceOf(ConflictException);
-    expect(supabaseAdmin.inviteByEmail).not.toHaveBeenCalled();
+    expect(mailer.inviteByEmail).not.toHaveBeenCalled();
   });
 
   it('normalizes the email, upserts the invite, and sends the email', async () => {
@@ -35,7 +35,7 @@ describe('InvitesService', () => {
       id: 'i1',
       email: 'mike@band.com',
     });
-    supabaseAdmin.inviteByEmail.mockResolvedValue('sent');
+    mailer.inviteByEmail.mockResolvedValue('sent');
 
     const result = await service.create('b1', 'admin1', {
       email: 'Mike@Band.com',
@@ -53,7 +53,7 @@ describe('InvitesService', () => {
   it('re-inviting resets a previous invite to PENDING with the new role', async () => {
     prisma.membership.findFirst.mockResolvedValue(null);
     prisma.invite.upsert.mockResolvedValue({ id: 'i1' });
-    supabaseAdmin.inviteByEmail.mockResolvedValue('already_registered');
+    mailer.inviteByEmail.mockResolvedValue('already_registered');
 
     const result = await service.create('b1', 'admin1', {
       email: 'mike@band.com',

@@ -5,13 +5,13 @@ import {
 } from '@nestjs/common';
 import type { CreateInviteDto } from '@artist/shared';
 import { PrismaService } from '../prisma/prisma.service';
-import { SupabaseAdminService } from './supabase-admin.service';
+import { InviteMailer } from './invite-mailer.service';
 
 @Injectable()
 export class InvitesService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly supabaseAdmin: SupabaseAdminService,
+    private readonly mailer: InviteMailer,
   ) {}
 
   async create(boardId: string, invitedById: string, dto: CreateInviteDto) {
@@ -30,7 +30,7 @@ export class InvitesService {
       create: { boardId, email, role: dto.role, invitedById },
     });
 
-    const delivery = await this.supabaseAdmin.inviteByEmail(email);
+    const delivery = await this.mailer.inviteByEmail(email);
     return { ...invite, delivery };
   }
 

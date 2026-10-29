@@ -25,8 +25,7 @@ export class SmtpTransport implements MailTransport {
       secure: false,
       ignoreTLS: true,
     });
-    this.from =
-      config.get<string>('MAIL_FROM') ?? 'Band Wall <dev@localhost>';
+    this.from = config.get<string>('MAIL_FROM') ?? 'Band Wall <dev@localhost>';
   }
 
   async send(mail: OutgoingMail): Promise<void> {
@@ -36,9 +35,9 @@ export class SmtpTransport implements MailTransport {
       subject: mail.subject,
       html: mail.html,
       text: mail.text,
-      headers: {
-        'List-Unsubscribe': `<${mail.unsubscribePostUrl}>`,
-      },
+      headers: mail.unsubscribePostUrl
+        ? { 'List-Unsubscribe': `<${mail.unsubscribePostUrl}>` }
+        : undefined,
     });
   }
 }

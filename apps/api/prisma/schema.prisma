@@ -732,3 +732,68 @@ model ItemLink {
   @@index([reminderId])
   @@index([createdById])
 }
+
+// ── Sign-in (Better Auth) ─────────────────────────────────────────────────────
+// Owned by Better Auth's Prisma adapter (src/auth/better-auth.ts maps its
+// `user`/`session`/`account`/`verification` models onto these). Kept apart from
+// the app's `User`: AuthUser.id equals User.id, the same seam Supabase's
+// auth.users had, and POST /me/bootstrap provisions the app row from it.
+
+model AuthUser {
+  id            String        @id
+  name          String
+  email         String        @unique
+  emailVerified Boolean       @default(false)
+  image         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  sessions      AuthSession[]
+  accounts      AuthAccount[]
+}
+
+model AuthSession {
+  id        String   @id
+  expiresAt DateTime
+  /// The bearer token the apps send. Unique so each request is one lookup.
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// One row per way in: `credential` holds the password hash.
+model AuthAccount {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  AuthUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+/// Short-lived codes, e.g. the invite email's 6-digit code.
+model AuthVerification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
