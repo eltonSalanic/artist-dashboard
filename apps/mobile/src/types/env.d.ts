@@ -22,7 +22,7 @@ declare const process: {
     readonly EXPO_PUBLIC_APP_ENV?: string;
     /** Sentry DSN; unset means no error reporting. */
     readonly EXPO_PUBLIC_SENTRY_DSN?: string;
-    /** RevenueCat public SDK keys (docs/billing.md); unset hides Band Pro buying. */
+    /** RevenueCat public SDK keys (docs/billing.md); unset hides subscription buying. */
     readonly EXPO_PUBLIC_REVENUECAT_IOS_KEY?: string;
     readonly EXPO_PUBLIC_REVENUECAT_ANDROID_KEY?: string;
   };

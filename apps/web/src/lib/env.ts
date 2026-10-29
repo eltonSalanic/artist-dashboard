@@ -21,7 +21,7 @@ export const env = {
   appEnv: parseAppEnv(process.env.NEXT_PUBLIC_APP_ENV),
   /**
    * RevenueCat Web Billing public key (docs/billing.md). Unset hides the
-   * in-page Band Pro checkout; `test_` keys use RevenueCat's Test Store.
+   * in-page subscription checkout; `test_` keys use RevenueCat's Test Store.
    */
   revenueCatWebKey: process.env.NEXT_PUBLIC_REVENUECAT_WEB_KEY || null,
   /** Optional RevenueCat Web Purchase Link, used when there is no web key. */

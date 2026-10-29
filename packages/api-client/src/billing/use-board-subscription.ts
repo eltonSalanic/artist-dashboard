@@ -11,7 +11,7 @@ export const boardSubscriptionKey = (boardId: string | null | undefined) =>
 const AWAITING_PURCHASE_POLL_MS = 3_000;
 
 /**
- * The band's Band Pro status. Any member may read it, and it answers even on
+ * The band's subscription status. Any member may read it, and it answers even on
  * an unpaid board, so this is what decides whether to show the paywall.
  *
  * The store confirms a purchase to the app before RevenueCat's webhook
@@ -48,7 +48,7 @@ export function useRefreshBoardSubscription() {
     ]);
 }
 
-/** A board route refused because the band has no Band Pro (402). */
+/** A board route refused because the band has no subscription (402). */
 export function isSubscriptionRequired(error: unknown): boolean {
   return (
     error instanceof ApiError &&

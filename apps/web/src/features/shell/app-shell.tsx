@@ -43,7 +43,7 @@ import { MentionsIndicator } from "@/features/mentions/mentions-indicator";
 import { ThemeToggle } from "@/features/shell/theme-toggle";
 import { CreateBandDialog } from "@/features/shell/create-band-dialog";
 import { NoBand } from "@/features/shell/no-band";
-import { BandProPaywall } from "@/features/billing/band-pro-paywall";
+import { SubscriptionPaywall } from "@/features/billing/subscription-paywall";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -93,7 +93,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Header me={me.data} />
       <div className="flex flex-1 flex-col">
         {current?.subscriptionRequired ? (
-          <BandProPaywall
+          <SubscriptionPaywall
             boardId={current.id}
             boardName={current.name}
             email={me.data.user.email}
@@ -179,7 +179,11 @@ function Header({ me }: { me: MeResponse }) {
 
       <div className="flex items-center gap-4">
         <ThemeToggle />
-        {me.board && <MentionsIndicator boardId={me.board.id} />}
+        {/* An unpaid band's mentions answer 402; its paywall says why. */}
+        {me.board &&
+          !me.boards.find((b) => b.id === me.board?.id)?.subscriptionRequired && (
+            <MentionsIndicator boardId={me.board.id} />
+          )}
         {role === "ADMIN" && (
           <label className="flex items-center gap-2 text-xs text-muted-foreground">
             User view
@@ -271,7 +275,7 @@ function BandSwitcher({ me }: { me: MeResponse }) {
                 {board.name}
                 {board.subscriptionRequired && (
                   <Badge variant="outline" className="ml-auto">
-                    Needs Pro
+                    Needs a subscription
                   </Badge>
                 )}
               </DropdownMenuItem>

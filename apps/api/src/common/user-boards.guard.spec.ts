@@ -82,7 +82,7 @@ describe('UserBoardsGuard', () => {
     expect(findMany).not.toHaveBeenCalled();
   });
 
-  it('drops boards without Band Pro when billing is enforced', async () => {
+  it('drops boards without a subscription when billing is enforced', async () => {
     enforced = 'true';
     findMany.mockResolvedValue([{ boardId: 'b1' }, { boardId: 'b2' }]);
     subscriptions.mockResolvedValue([

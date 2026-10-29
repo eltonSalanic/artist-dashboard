@@ -799,7 +799,7 @@ model AuthVerification {
   @@index([identifier])
 }
 
-/// Band Pro is bought per board, not per person: whoever pays, the whole band
+/// The subscription is bought per board, not per person: whoever pays, the whole band
 /// gets it. RevenueCat is the source of truth; this row is our copy of its
 /// entitlement, written only by the RevenueCat webhook (src/billing).
 /// GRACE: a renewal failed and the store is retrying. Access stays on.
@@ -822,7 +822,7 @@ enum SubscriptionStore {
 model BoardSubscription {
   id                  String             @id @default(uuid()) @db.Uuid
   boardId             String             @unique @db.Uuid
-  /// RevenueCat entitlement identifier (`BAND_PRO.entitlement` in packages/shared).
+  /// RevenueCat entitlement identifier (`BAND_WALL_PLAN.entitlement` in packages/shared).
   entitlement         String             @default("band_wall")
   status              SubscriptionStatus
   store               SubscriptionStore

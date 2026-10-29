@@ -1,13 +1,13 @@
-import { BAND_PRO, type BoardSubscriptionDto } from "@artist/shared";
+import { BAND_WALL_PLAN, type BoardSubscriptionDto } from "@artist/shared";
 
 const price = (cents: number) =>
   new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: BAND_PRO.plans.monthly.currency,
+    currency: BAND_WALL_PLAN.plans.monthly.currency,
   }).format(cents / 100);
 
 /** "$5.99 a month or $59.99 a year". Display copy; the store charges its own. */
-export const BAND_PRO_PRICE_LINE = `${price(BAND_PRO.plans.monthly.priceCents)} a month or ${price(BAND_PRO.plans.yearly.priceCents)} a year`;
+export const PLAN_PRICE_LINE = `${price(BAND_WALL_PLAN.plans.monthly.priceCents)} a month or ${price(BAND_WALL_PLAN.plans.yearly.priceCents)} a year`;
 
 const STATUS_COPY: Record<NonNullable<BoardSubscriptionDto["status"]>, string> = {
   ACTIVE: "Active",

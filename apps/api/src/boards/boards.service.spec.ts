@@ -249,7 +249,7 @@ describe('BoardsService.findAllForUser', () => {
    * Listing twenty bands must not mean fetching twenty layouts. `theme` is on
    * the row either way, so the palette is free; `defaultLayout` is the field
    * that would make this expensive, and it stays out. The subscription is one
-   * row per board, read for the Band Pro badge.
+   * row per board, read for the subscription badge.
    */
   it('selects only what a switcher needs', async () => {
     membership.findMany.mockResolvedValue([]);

@@ -50,7 +50,7 @@ const USER_ACTIONS: ReadonlySet<Action> = new Set<Action>([
   // settling a show, anyone's entry) stays with admins.
   'finance.view',
   'finance.create',
-  // Everyone in the band can see whether it has Band Pro. Buying, restoring
+  // Everyone in the band can see whether it is subscribed. Buying, restoring
   // and managing the subscription ('billing.manage') stays with admins.
   'billing.view',
 ]);

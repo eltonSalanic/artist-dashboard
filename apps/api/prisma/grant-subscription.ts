@@ -1,5 +1,5 @@
 /**
- * Grants Band Pro to boards by hand, as a PROMOTIONAL subscription. For the
+ * Grants a subscription to boards by hand, as a PROMOTIONAL subscription. For the
  * bands that were on the wall before billing, and for comps.
  *
  *   npm run billing:grant -w apps/api -- <boardId> [<boardId>...]
@@ -15,7 +15,7 @@
  * store PROMOTIONAL and does the same thing (docs/billing.md).
  */
 import 'dotenv/config';
-import { BAND_PRO, isPro } from '@artist/shared';
+import { BAND_WALL_PLAN, isPro } from '@artist/shared';
 import { PrismaClient } from '../generated/prisma/client';
 import { createPgAdapter } from '../src/prisma/pg-adapter';
 
@@ -58,7 +58,7 @@ async function main() {
     if (all && isPro(sub)) continue;
 
     const fields = {
-      entitlement: BAND_PRO.entitlement,
+      entitlement: BAND_WALL_PLAN.entitlement,
       status: 'ACTIVE' as const,
       store: 'PROMOTIONAL' as const,
       productId: 'promotional',
@@ -76,7 +76,7 @@ async function main() {
       `grant ${board.name} (${board.id}) until ${until?.toISOString() ?? 'forever'}`,
     );
   }
-  console.log(`Granted Band Pro to ${granted} board(s).`);
+  console.log(`Granted a subscription to ${granted} board(s).`);
 }
 
 main()

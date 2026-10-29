@@ -4,15 +4,15 @@ import Purchases, {
   type PurchasesPackage,
 } from 'react-native-purchases';
 import RevenueCatUI from 'react-native-purchases-ui';
-import { BAND_PRO } from '@artist/shared';
+import { BAND_WALL_PLAN } from '@artist/shared';
 import { env } from '@/lib/env';
 
 /**
- * RevenueCat on the phone. Band Pro belongs to the board, so before anything
+ * RevenueCat on the phone. the subscription belongs to the board, so before anything
  * is bought or restored the SDK is logged in as the board's id, the same app
  * user id the web checkout and the API's webhook use.
  *
- * Configured lazily, on the Band Pro screen, so a build without a key (or a
+ * Configured lazily, on the subscription screen, so a build without a key (or a
  * person who never opens the screen) never starts the SDK.
  */
 let configured = false;
@@ -20,7 +20,7 @@ let configured = false;
 export const billingAvailable = () => !!env.revenueCatKey;
 
 async function ready(boardId: string) {
-  if (!env.revenueCatKey) throw new Error('Band Pro is not set up in this build.');
+  if (!env.revenueCatKey) throw new Error("Subscriptions aren't set up in this build.");
   if (!configured) {
     Purchases.configure({ apiKey: env.revenueCatKey, appUserID: boardId });
     configured = true;
@@ -30,13 +30,13 @@ async function ready(boardId: string) {
 }
 
 const hasPro = (info: { entitlements: { active: Record<string, unknown> } }) =>
-  BAND_PRO.entitlement in info.entitlements.active;
+  BAND_WALL_PLAN.entitlement in info.entitlements.active;
 
 /** The packages in the current offering, monthly first. */
-export async function bandProPackages(boardId: string): Promise<PurchasesPackage[]> {
+export async function planPackages(boardId: string): Promise<PurchasesPackage[]> {
   await ready(boardId);
   const offerings = await Purchases.getOfferings();
-  const order: string[] = [BAND_PRO.plans.monthly.packageId, BAND_PRO.plans.yearly.packageId];
+  const order: string[] = [BAND_WALL_PLAN.plans.monthly.packageId, BAND_WALL_PLAN.plans.yearly.packageId];
   return [...(offerings.current?.availablePackages ?? [])].sort(
     (a, b) => rank(order, a.identifier) - rank(order, b.identifier),
   );
@@ -50,7 +50,7 @@ const rank = (order: string[], id: string) => {
 export type PurchaseOutcome = 'purchased' | 'cancelled' | 'not_entitled';
 
 /** Buys one package for the board. Backing out of the store sheet is not an error. */
-export async function buyBandPro(
+export async function buySubscription(
   boardId: string,
   pkg: PurchasesPackage,
 ): Promise<PurchaseOutcome> {
@@ -67,13 +67,13 @@ export async function buyBandPro(
 }
 
 /** Restores this store account's purchases onto the board. */
-export async function restoreBandPro(boardId: string): Promise<boolean> {
+export async function restoreSubscription(boardId: string): Promise<boolean> {
   await ready(boardId);
   return hasPro(await Purchases.restorePurchases());
 }
 
 /** RevenueCat's Customer Center: cancel, change plan, request a refund. */
-export async function manageBandPro(boardId: string): Promise<void> {
+export async function manageSubscription(boardId: string): Promise<void> {
   await ready(boardId);
   await RevenueCatUI.presentCustomerCenter();
 }

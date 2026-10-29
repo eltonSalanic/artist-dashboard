@@ -4,7 +4,7 @@ import { BillingService } from './billing.service';
 import { SkipSubscription } from './skip-subscription.decorator';
 
 /**
- * Any member may see whether the band has Band Pro ('billing.view' in the
+ * Any member may see whether the band is subscribed ('billing.view' in the
  * shared map). Open on an unpaid board, since this is what tells the apps to
  * show the paywall.
  */

@@ -68,7 +68,7 @@ export const FinanceStates = ['EXPECTED', 'SETTLED', 'VOID'] as const;
 export type FinanceState = (typeof FinanceStates)[number];
 
 /**
- * Where a band's Band Pro subscription stands. GRACE (a renewal failed and the
+ * Where a band's Band Wall subscription stands. GRACE (a renewal failed and the
  * store is retrying) and CANCELLED (auto-renew off, period not over) both
  * still have access; only EXPIRED loses it.
  */

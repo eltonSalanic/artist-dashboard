@@ -1,7 +1,7 @@
 import type { SubscriptionStatus, SubscriptionStore } from './enums';
 
 /**
- * Band Pro: one subscription per board, shared by everyone on it. There is no
+ * The Band Wall subscription: one per board, shared by everyone on it. There is no
  * free tier: when the API runs with BILLING_ENFORCED=true, every board route
  * answers 402 `BOARD_SUBSCRIPTION_REQUIRED` until the board has Pro
  * (docs/billing.md lists the routes that stay open).
@@ -16,8 +16,8 @@ import type { SubscriptionStatus, SubscriptionStore } from './enums';
  * the web through the offering, so they aren't listed here. Prices here are for
  * display copy only; the store always charges what the store says.
  */
-export const BAND_PRO = {
-  name: 'Band Pro',
+export const BAND_WALL_PLAN = {
+  name: 'Band Wall',
   /** The RevenueCat entitlement identifier. */
   entitlement: 'band_wall',
   /**
@@ -52,7 +52,7 @@ export const BAND_PRO = {
   },
 } as const;
 
-export type BandProPlan = keyof typeof BAND_PRO.plans;
+export type SubscriptionPlan = keyof typeof BAND_WALL_PLAN.plans;
 
 /** What `GET /boards/:id/subscription` returns. `null` fields: no purchase yet. */
 export interface BoardSubscriptionDto {
@@ -74,7 +74,7 @@ export interface SubscriptionLike {
 }
 
 /**
- * Whether the band has Band Pro right now. Access lasts until the paid period
+ * Whether the band is subscribed right now. Access lasts until the paid period
  * ends: a cancelled or billing-retry subscription keeps it, and the webhook
  * only flips a row to EXPIRED when RevenueCat says so. The period check is a
  * backstop for a missed EXPIRATION webhook. A null period end is a lifetime

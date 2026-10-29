@@ -18,7 +18,7 @@ import { revenueCatWebhookSchema } from './revenuecat-event';
  * RevenueCat can't sign in, and doesn't sign its webhooks either: it sends
  * back whatever Authorization header value is set on the webhook in its
  * dashboard. That shared value (REVENUECAT_WEBHOOK_AUTH) is the only thing
- * stopping a stranger from granting a band Band Pro, so it is compared in
+ * stopping a stranger from subscribing a band for free, so it is compared in
  * constant time and an unset value refuses everything.
  */
 @Controller('billing/revenuecat/webhook')

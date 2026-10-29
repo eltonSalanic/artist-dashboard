@@ -1,8 +1,8 @@
-# Billing — Band Pro
+# Billing — Band Wall subscription
 
 **Status:** built on `feat/billing`; not live anywhere. No store products exist yet, and `BILLING_ENFORCED` is off everywhere until the account setup below is done. Locally, the RevenueCat **Test Store** key lets the web and phone checkouts run end to end.
 
-Band Pro is a subscription **per band (board)**, not per person: **$5.99/month or $59.99/year**. Whoever pays, the whole band gets it, and members of a paid band never pay themselves. There is no free tier: with billing enforced, a band without Pro can't open its wall.
+Band Wall is a subscription **per band (board)**, not per person: **$5.99/month or $59.99/year**. Whoever pays, the whole band gets it, and members of a paid band never pay themselves. There is no free tier: with billing enforced, a band without Pro can't open its wall.
 
 ## How it fits together
 
@@ -16,7 +16,7 @@ App Store / Play / Stripe ◄─────────────┘
 
 - **RevenueCat is the source of truth.** The API keeps a copy of each board's entitlement in `BoardSubscription`, written only by the webhook (and by the promotional grant script).
 - **The RevenueCat app user id is the board's id**, on every platform. The phone calls `Purchases.logIn(boardId)` before buying or restoring, the web SDK is configured with `appUserId: boardId`, and the Web Purchase Link gets the board id appended. So a purchase made anywhere lands on the same customer and the same board.
-- **Entitlement:** `band_wall`. **Offering:** the project's current offering (`default`), with RevenueCat's standard packages `$rc_monthly` and `$rc_annual`. These live in `BAND_PRO` in [packages/shared/src/billing.ts](../packages/shared/src/billing.ts), along with the display prices and the store product ids:
+- **Entitlement:** `band_wall`. **Offering:** the project's current offering (`default`), with RevenueCat's standard packages `$rc_monthly` and `$rc_annual`. These live in `BAND_WALL_PLAN` in [packages/shared/src/billing.ts](../packages/shared/src/billing.ts), along with the display prices and the store product ids:
 
 | Plan | Package | Test Store product | App Store product | Play subscription : base plan (as RevenueCat shows it) |
 |---|---|---|---|---|
@@ -48,7 +48,7 @@ With `BILLING_ENFORCED=true`, **every board route answers `402` with code `BOARD
 
 Everything else on a board, including `GET /boards/:id`, settings, removing members and notification preferences, is closed until the band pays.
 
-**The apps:** `/me`'s board list carries `subscriptionRequired` (enforced and not Pro). The web shell shows the Band Pro paywall in place of every page for such a board, and the band switcher marks it "Needs Pro". The phone shows the Band Pro screen in place of the board hub and every `/board/:boardId/…` route.
+**The apps:** `/me`'s board list carries `subscriptionRequired` (enforced and not Pro). The web shell shows the subscription paywall in place of every page for such a board, and the band switcher marks it "Needs a subscription". The phone shows the subscription screen in place of the board hub and every `/board/:boardId/…` route.
 
 **Not gated (known gap):** the background notification jobs (day-of show summary, tasks-due digest, reminder pushes) still send for unpaid boards. Gate them with `BillingService.isPro` when that matters.
 
@@ -125,7 +125,7 @@ Do these in order; each later step needs the earlier ones.
 
 1. **Agreements, Tax, and Banking:** sign the **Paid Apps** agreement and fill in banking and tax. Subscriptions can't be sold or tested in sandbox until it's active.
 2. **App Store Small Business Program:** enroll (15% commission instead of 30% under $1M a year).
-3. In the Band Wall app (`com.bandwall.app`): **Subscriptions** → create a **subscription group** (e.g. "Band Pro") with two auto-renewable subscriptions: `bandwall.pro.monthly` at $5.99 a month and `bandwall.pro.yearly` at $59.99 a year. Add the localized names and the review screenshot each one asks for.
+3. In the Band Wall app (`com.bandwall.app`): **Subscriptions** → create a **subscription group** (e.g. "Band Wall") with two auto-renewable subscriptions: `bandwall.pro.monthly` at $5.99 a month and `bandwall.pro.yearly` at $59.99 a year. Add the localized names and the review screenshot each one asks for.
 4. **Users and Access → Integrations → In-App Purchase:** create an **In-App Purchase key** (`.p8`) for RevenueCat, and note the issuer id. Also note the app-specific shared secret.
 5. Create a **sandbox tester** under Users and Access for testing on a phone.
 

@@ -10,18 +10,18 @@ import {
 } from "@artist/api-client";
 import {
   manageSubscriptionUrl,
-  startBandProCheckout,
+  startCheckout,
   webOffering,
-  type BandProPlan,
+  type SubscriptionPlan,
 } from "@/lib/revenuecat";
 
 /**
- * Buying Band Pro for one band. The store confirms the purchase before
+ * Buying the subscription for one band. The store confirms the purchase before
  * RevenueCat's webhook reaches the API, so after a purchase this polls the
  * board's subscription until the API agrees, then refreshes `/me` so the
  * shell lets the band back in.
  */
-export function useBandProCheckout(boardId: string, customerEmail?: string) {
+export function useSubscriptionCheckout(boardId: string, customerEmail?: string) {
   const [opening, setOpening] = useState(false);
   const [purchased, setPurchased] = useState(false);
   const announced = useRef(false);
@@ -35,7 +35,7 @@ export function useBandProCheckout(boardId: string, customerEmail?: string) {
   const awaitingPurchase = purchased && !isPro;
   // Whether to show RevenueCat's paywall or our own two plan buttons.
   const offering = useQuery({
-    queryKey: ["band-pro-web-offering", boardId],
+    queryKey: ["subscription-web-offering", boardId],
     queryFn: () => webOffering(boardId),
     enabled: !isPro,
     staleTime: 5 * 60_000,
@@ -44,14 +44,14 @@ export function useBandProCheckout(boardId: string, customerEmail?: string) {
   useEffect(() => {
     if (!purchased || !isPro || announced.current) return;
     announced.current = true;
-    toast.success("Band Pro is on. Welcome back to the wall.");
+    toast.success("You're subscribed. Welcome back to the wall.");
     void refresh(boardId);
   }, [purchased, isPro, boardId, refresh]);
 
-  const subscribe = async (plan: BandProPlan = "monthly") => {
+  const subscribe = async (plan: SubscriptionPlan = "monthly") => {
     setOpening(true);
     try {
-      const outcome = await startBandProCheckout(boardId, plan, customerEmail);
+      const outcome = await startCheckout(boardId, plan, customerEmail);
       // A hosted checkout in another tab also ends in the webhook.
       if (outcome !== "cancelled") {
         announced.current = false;

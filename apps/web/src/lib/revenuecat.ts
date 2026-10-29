@@ -1,9 +1,9 @@
-import { BAND_PRO, webPurchaseUrl } from "@artist/shared";
+import { BAND_WALL_PLAN, webPurchaseUrl } from "@artist/shared";
 import type { Purchases } from "@revenuecat/purchases-js";
 import { env } from "@/lib/env";
 
 /**
- * The RevenueCat Web SDK, set up for one band at a time. Band Pro belongs to
+ * The RevenueCat Web SDK, set up for one band at a time. the subscription belongs to
  * the board, so the board's id is the RevenueCat app user id here, on the
  * phone (`Purchases.logIn(boardId)`) and in the Web Purchase Link alike.
  *
@@ -25,19 +25,19 @@ async function purchasesFor(boardId: string): Promise<Purchases | null> {
   return purchases;
 }
 
-/** Whether this build can sell Band Pro on the web at all. */
+/** Whether this build can sell the subscription on the web at all. */
 export const webCheckoutAvailable = () =>
   !!env.revenueCatWebKey || !!env.revenueCatWebPurchaseUrl;
 
 export type PaywallOutcome = "purchased" | "cancelled" | "redirected";
-export type BandProPlan = "monthly" | "yearly";
+export type SubscriptionPlan = "monthly" | "yearly";
 
 /** What the web checkout can offer right now, read from the current offering. */
 export interface WebOffering {
   /** A RevenueCat paywall is designed for the offering; show it. */
   hasPaywall: boolean;
   /** Store prices, formatted. Null when the offering lacks that package. */
-  prices: Record<BandProPlan, string | null>;
+  prices: Record<SubscriptionPlan, string | null>;
 }
 
 /**
@@ -66,15 +66,15 @@ export async function webOffering(boardId: string): Promise<WebOffering | null> 
  *
  * Resolves "cancelled" when the person backs out; any other failure throws.
  */
-export async function startBandProCheckout(
+export async function startCheckout(
   boardId: string,
-  plan: BandProPlan,
+  plan: SubscriptionPlan,
   customerEmail?: string,
 ): Promise<PaywallOutcome> {
   const purchases = await purchasesFor(boardId);
   if (!purchases) {
     const url = webPurchaseUrl(env.revenueCatWebPurchaseUrl, boardId);
-    if (!url) throw new Error("Band Pro isn't available on the web yet.");
+    if (!url) throw new Error("Subscribing isn't available on the web yet.");
     window.open(url, "_blank", "noopener");
     return "redirected";
   }
@@ -84,7 +84,7 @@ export async function startBandProCheckout(
   );
   try {
     const offering = (await purchases.getOfferings()).current;
-    if (!offering) throw new Error("No Band Pro offering is set up.");
+    if (!offering) throw new Error("No subscription offering is set up.");
     let customerInfo;
     if (offering.hasPaywall) {
       ({ customerInfo } = await purchases.presentPaywall({
@@ -99,7 +99,7 @@ export async function startBandProCheckout(
       if (!rcPackage) throw new Error(`The offering has no ${plan} package.`);
       ({ customerInfo } = await purchases.purchase({ rcPackage, customerEmail }));
     }
-    return customerInfo.entitlements.active[BAND_PRO.entitlement]
+    return customerInfo.entitlements.active[BAND_WALL_PLAN.entitlement]
       ? "purchased"
       : "cancelled";
   } catch (error) {

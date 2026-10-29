@@ -43,7 +43,7 @@ import { useSelectedBoard } from '@/features/board/selected-board';
 import { useHubCards } from '@/features/board/use-hub-cards';
 import { HeaderText } from '@/features/forms/form-screen';
 import { useRefetchOnFocus } from '@/lib/refetch-on-focus';
-import { BandProScreen } from '@/screens/band-pro';
+import { SubscriptionScreen } from '@/screens/subscription';
 import { radius, spacing, usePosterCanvas, useThemeColors } from '@/theme';
 
 /**
@@ -63,18 +63,20 @@ export function BoardHubScreen() {
   const { board, boards, loading } = useSelectedBoard();
 
   // With billing enforced, an unpaid band's routes all answer 402: it lands on
-  // Band Pro instead of a wall of failed cards. Someone in several bands can
+  // the subscription screen instead of a wall of failed cards. Someone in several bands can
   // still switch to another.
   if (board?.subscriptionRequired) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.background }}>
-        <BandProScreen key={board.id} boardId={board.id} />
-        {boards.length > 1 && (
-          <View style={{ padding: spacing.md }}>
+      <SubscriptionScreen
+        key={board.id}
+        boardId={board.id}
+        // Inside the scroll view, so the floating tab bar never covers it.
+        footer={
+          boards.length > 1 ? (
             <Button title="Switch band" variant="secondary" onPress={() => router.push('/boards')} />
-          </View>
-        )}
-      </View>
+          ) : null
+        }
+      />
     );
   }
 

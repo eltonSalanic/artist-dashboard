@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 import type { PurchasesPackage } from 'react-native-purchases';
 import { useQuery } from '@tanstack/react-query';
-import { BAND_PRO, type BoardSubscriptionDto } from '@artist/shared';
+import { BAND_WALL_PLAN, type BoardSubscriptionDto } from '@artist/shared';
 import {
   useBoardSubscription,
   useMe,
@@ -15,11 +15,11 @@ import { Section } from '@/components/section';
 import { Skeleton } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
 import {
-  bandProPackages,
+  planPackages,
   billingAvailable,
-  buyBandPro,
-  manageBandPro,
-  restoreBandPro,
+  buySubscription,
+  manageSubscription,
+  restoreSubscription,
 } from '@/features/billing/purchases';
 import { reportError } from '@/lib/report-error';
 import { spacing, useThemeColors } from '@/theme';
@@ -32,7 +32,7 @@ const STATUS_COPY: Record<NonNullable<BoardSubscriptionDto['status']>, string> =
 };
 
 /**
- * Band Pro for one band: the paywall an unpaid band lands on when the API
+ * The subscription for one band: the paywall an unpaid band lands on when the API
  * enforces billing, and the screen settings links to. Buying, restoring and
  * managing are for admins ('billing.manage'); the subscription covers every
  * member.
@@ -41,7 +41,14 @@ const STATUS_COPY: Record<NonNullable<BoardSubscriptionDto['status']>, string> =
  * so after buying this polls the board's subscription until the API agrees,
  * then refreshes `/me`, which lets the band back onto its wall.
  */
-export function BandProScreen({ boardId }: { boardId: string }) {
+export function SubscriptionScreen({
+  boardId,
+  footer,
+}: {
+  boardId: string;
+  /** Extra controls at the end of the scrolling content (the hub's Switch band). */
+  footer?: ReactNode;
+}) {
   const colors = useThemeColors();
   const { can } = usePermissions();
   const me = useMe(true);
@@ -56,8 +63,8 @@ export function BandProScreen({ boardId }: { boardId: string }) {
   const canBuy = can('billing.manage') && billingAvailable();
 
   const packages = useQuery({
-    queryKey: ['band-pro-packages', boardId],
-    queryFn: () => bandProPackages(boardId),
+    queryKey: ['subscription-packages', boardId],
+    queryFn: () => planPackages(boardId),
     enabled: canBuy && !isPro,
     staleTime: Infinity,
   });
@@ -76,7 +83,7 @@ export function BandProScreen({ boardId }: { boardId: string }) {
         setPurchased(true);
       }
     } catch (error) {
-      reportError(error, { where: `bandPro.${key}` });
+      reportError(error, { where: `subscription.${key}` });
       Alert.alert("That didn't work", 'Try again in a moment.');
     } finally {
       setBusy(null);
@@ -85,15 +92,15 @@ export function BandProScreen({ boardId }: { boardId: string }) {
 
   const buy = (pkg: PurchasesPackage) =>
     run(pkg.identifier, async () => {
-      const outcome = await buyBandPro(boardId, pkg);
+      const outcome = await buySubscription(boardId, pkg);
       return outcome === 'purchased';
     });
 
   const restore = () =>
     run('restore', async () => {
-      const restored = await restoreBandPro(boardId);
+      const restored = await restoreSubscription(boardId);
       if (!restored) {
-        Alert.alert('Nothing to restore', 'This store account has no Band Pro for this band.');
+        Alert.alert('Nothing to restore', 'This store account has no Band Wall subscription for this band.');
       }
       return restored;
     });
@@ -108,10 +115,12 @@ export function BandProScreen({ boardId }: { boardId: string }) {
     >
       <View style={{ gap: spacing.sm }}>
         <ThemedText variant="title">
-          {isPro ? `${name} has ${BAND_PRO.name}` : `${name} needs ${BAND_PRO.name}`}
+          {isPro
+            ? `${name} has a ${BAND_WALL_PLAN.name} subscription`
+            : `${name} needs a ${BAND_WALL_PLAN.name} subscription`}
         </ThemedText>
         <ThemedText variant="subhead" tone="muted">
-          {BAND_PRO.name} opens the whole wall for everyone in the band. One subscription covers every
+          A {BAND_WALL_PLAN.name} subscription opens the whole wall for everyone in the band. One subscription covers every
           member.
         </ThemedText>
       </View>
@@ -182,14 +191,15 @@ export function BandProScreen({ boardId }: { boardId: string }) {
               title="Manage subscription"
               variant="secondary"
               onPress={() =>
-                void manageBandPro(boardId).catch((error: unknown) =>
-                  reportError(error, { where: 'bandPro.manage' }),
+                void manageSubscription(boardId).catch((error: unknown) =>
+                  reportError(error, { where: 'subscription.manage' }),
                 )
               }
             />
           )}
         </View>
       )}
+      {footer}
     </ScrollView>
   );
 }

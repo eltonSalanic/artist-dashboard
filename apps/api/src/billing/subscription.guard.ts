@@ -13,10 +13,10 @@ import { BillingService } from './billing.service';
 import { SKIP_SUBSCRIPTION_KEY } from './skip-subscription.decorator';
 
 export const SUBSCRIPTION_REQUIRED_MESSAGE =
-  'This band needs Band Pro. An admin can subscribe from the band’s settings.';
+  'This band needs a Band Wall subscription. An admin can subscribe from the band’s settings.';
 
 /**
- * Closes every board route until the board has Band Pro, when
+ * Closes every board route until the board is subscribed, when
  * BILLING_ENFORCED=true. A board route is one marked `@BoardRoles`, which is
  * also what makes `BoardRolesGuard` check membership; it runs first, so by
  * the time this answers 402 the caller is known to be on the board, and a

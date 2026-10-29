@@ -1,22 +1,22 @@
 "use client";
 
 import { Sparkles } from "lucide-react";
-import { BAND_PRO } from "@artist/shared";
+import { BAND_WALL_PLAN } from "@artist/shared";
 import { usePermissions } from "@artist/api-client";
 import { Spinner } from "@/components/ui/spinner";
 import { webCheckoutAvailable } from "@/lib/revenuecat";
-import { BAND_PRO_PRICE_LINE } from "./band-pro-copy";
+import { PLAN_PRICE_LINE } from "./subscription-copy";
 import { SubscribeButtons } from "./subscribe-buttons";
-import { useBandProCheckout } from "./use-band-pro-checkout";
+import { useSubscriptionCheckout } from "./use-subscription-checkout";
 
 /**
- * What a band without Band Pro sees in place of its wall, when the API
+ * What a band without a subscription sees in place of its wall, when the API
  * enforces billing. The header (and its band switcher) stays, so someone in
  * several bands can still reach the ones that are paid for.
  *
  * Buying is for admins ('billing.manage'); everyone else is told who can.
  */
-export function BandProPaywall({
+export function SubscriptionPaywall({
   boardId,
   boardName,
   email,
@@ -26,7 +26,7 @@ export function BandProPaywall({
   email: string;
 }) {
   const { can } = usePermissions();
-  const { subscribe, offering, opening, awaitingPurchase } = useBandProCheckout(
+  const { subscribe, offering, opening, awaitingPurchase } = useSubscriptionCheckout(
     boardId,
     email,
   );
@@ -41,11 +41,11 @@ export function BandProPaywall({
         </span>
         <div className="flex flex-col gap-2">
           <h1 className="font-heading text-2xl font-semibold tracking-tight text-balance">
-            {boardName} needs {BAND_PRO.name}
+            {boardName} needs a {BAND_WALL_PLAN.name} subscription
           </h1>
           <p className="text-sm text-muted-foreground">
-            {BAND_PRO.name} opens the whole wall for everyone in the band, for{" "}
-            {BAND_PRO_PRICE_LINE}. One subscription covers every member.
+            A {BAND_WALL_PLAN.name} subscription opens the whole wall for everyone in the band, for{" "}
+            {PLAN_PRICE_LINE}. One subscription covers every member.
           </p>
         </div>
 

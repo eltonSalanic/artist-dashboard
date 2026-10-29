@@ -13,7 +13,7 @@ import type { AuthedRequest } from './authed-request';
  * once, from `Membership` — never from anything the client sends — so no
  * handler can widen it and no handler has to remember to narrow it.
  *
- * With billing enforced, boards without Band Pro drop out of the list, the
+ * With billing enforced, boards without a subscription drop out of the list, the
  * same as their own routes answering 402.
  */
 @Injectable()

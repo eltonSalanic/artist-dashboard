@@ -1,14 +1,14 @@
 "use client";
 
-import { BAND_PRO } from "@artist/shared";
+import { BAND_WALL_PLAN } from "@artist/shared";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import type { BandProPlan, WebOffering } from "@/lib/revenuecat";
+import type { SubscriptionPlan, WebOffering } from "@/lib/revenuecat";
 
 const fallbackPrice = (cents: number) =>
   new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: BAND_PRO.plans.monthly.currency,
+    currency: BAND_WALL_PLAN.plans.monthly.currency,
   }).format(cents / 100);
 
 /**
@@ -23,7 +23,7 @@ export function SubscribeButtons({
   size,
 }: {
   offering: WebOffering | null;
-  onSubscribe: (plan: BandProPlan) => void;
+  onSubscribe: (plan: SubscriptionPlan) => void;
   busy: boolean;
   size?: "default" | "lg";
 }) {
@@ -31,21 +31,21 @@ export function SubscribeButtons({
     return (
       <Button size={size} onClick={() => onSubscribe("monthly")} disabled={busy}>
         {busy && <Spinner data-icon="inline-start" />}
-        Subscribe to {BAND_PRO.name}
+        Subscribe to {BAND_WALL_PLAN.name}
       </Button>
     );
   }
 
-  const plans: { plan: BandProPlan; label: string; price: string }[] = [
+  const plans: { plan: SubscriptionPlan; label: string; price: string }[] = [
     {
       plan: "monthly",
       label: "Monthly",
-      price: offering?.prices.monthly ?? fallbackPrice(BAND_PRO.plans.monthly.priceCents),
+      price: offering?.prices.monthly ?? fallbackPrice(BAND_WALL_PLAN.plans.monthly.priceCents),
     },
     {
       plan: "yearly",
       label: "Yearly",
-      price: offering?.prices.yearly ?? fallbackPrice(BAND_PRO.plans.yearly.priceCents),
+      price: offering?.prices.yearly ?? fallbackPrice(BAND_WALL_PLAN.plans.yearly.priceCents),
     },
   ];
   return (

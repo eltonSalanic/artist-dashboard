@@ -25,7 +25,7 @@ const base = z
     BETTER_AUTH_SECRET: z.string().min(32),
     WEB_URL: z.url().optional(),
     API_URL: z.url().optional(),
-    // Band Pro (docs/billing.md). Spelled out so a typo like `TRUE` or `1`
+    // Subscriptions (docs/billing.md). Spelled out so a typo like `TRUE` or `1`
     // fails at boot instead of quietly leaving billing off.
     BILLING_ENFORCED: z.enum(['true', 'false']).optional(),
     REVENUECAT_WEBHOOK_AUTH: z.string().min(16).optional(),

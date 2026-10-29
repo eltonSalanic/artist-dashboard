@@ -33,11 +33,11 @@ export interface BoardSummaryDto {
    * so an unset or unrecognised theme reads as the default rather than absent.
    */
   palette: BoardPalette;
-  /** Whether the band has Band Pro (see `isPro`). */
+  /** Whether the band is subscribed (see `isPro`). */
   isPro: boolean;
   /**
    * Billing is enforced and the band lacks Pro: its routes answer 402 and the
-   * apps send it to the Band Pro paywall instead of opening it.
+   * apps send it to the subscription paywall instead of opening it.
    */
   subscriptionRequired: boolean;
 }

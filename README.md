@@ -25,7 +25,7 @@ supabase/           local stack config (config.toml, seed.sql)
 - **Collaboration** — comments with @mentions (and a persistent mentions notification indicator), file attachments via signed URLs (private Storage bucket), and a boardwide activity feed logging every meaningful change.
 - **Notifications** — email (Resend, or Mailpit in dev) and push to the phone app, with per-category preferences and one-click unsubscribe. See [docs/notifications.md](docs/notifications.md).
 - **Archive** — archived items can be restored or deleted for good from the Archive page.
-- **Band Pro** — a subscription per band ($5.99/month or $59.99/year) through RevenueCat: in-app purchase on the phone, Stripe through RevenueCat Web Billing on the web. One purchase covers every member. With `BILLING_ENFORCED=true` there is no free tier: an unpaid band's routes answer 402 and both apps show the Band Pro paywall. Off by default locally. See [docs/billing.md](docs/billing.md).
+- **Subscriptions** — a Band Wall subscription per band ($5.99/month or $59.99/year) through RevenueCat: in-app purchase on the phone, Stripe through RevenueCat Web Billing on the web. One purchase covers every member. With `BILLING_ENFORCED=true` there is no free tier: an unpaid band's routes answer 402 and both apps show the subscription paywall. Off by default locally. See [docs/billing.md](docs/billing.md).
 
 ## Prerequisites
 
@@ -105,6 +105,6 @@ Lint with `npm run lint -w apps/api` / `-w apps/web` / `-w apps/mobile`. What a 
 
 **API returns 404 for a route you expect.** Almost all routes are board-scoped as `/boards/:boardId/<resource>` (tasks, events, goals, focus, reminders, calendar, finances, show-statuses, notes, links and so on). The root routes are `/health`, `/me` (and `/me/devices`), the cross-band `/calendar` and `/mentions`, `/unsubscribe`, `/webhooks/resend` and `/billing/revenuecat/webhook`. A guarded route hit without a token returns **401**, not 404 — so a 404 means the path is wrong, not that auth failed.
 
-**Every board shows the Band Pro paywall, or the API answers 402 `BOARD_SUBSCRIPTION_REQUIRED`.** `BILLING_ENFORCED=true` is set in `apps/api/.env` and the band has no subscription. Set it to `false` for everyday local work, or grant the band Pro with `npm run billing:grant -w apps/api -- <boardId>` ([docs/billing.md](docs/billing.md)).
+**Every board shows the subscription paywall, or the API answers 402 `BOARD_SUBSCRIPTION_REQUIRED`.** `BILLING_ENFORCED=true` is set in `apps/api/.env` and the band has no subscription. Set it to `false` for everyday local work, or grant the band Pro with `npm run billing:grant -w apps/api -- <boardId>` ([docs/billing.md](docs/billing.md)).
 
 **Invite link says "Link expired" straight away.** The code in the link works once and lasts an hour; opening the same link twice (or after an hour) shows this. Invite the person again for a fresh code. If no invite email reaches Mailpit at all, check the API log for `Invite email failed`.

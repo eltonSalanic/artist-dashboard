@@ -56,7 +56,7 @@ export const env = {
   appEnv: parseAppEnv(process.env.EXPO_PUBLIC_APP_ENV),
   /**
    * RevenueCat public SDK key for this platform (docs/billing.md). Unset hides
-   * Band Pro buying; a `test_` key uses RevenueCat's Test Store.
+   * subscription buying; a `test_` key uses RevenueCat's Test Store.
    */
   revenueCatKey:
     (process.env.EXPO_OS === 'ios'

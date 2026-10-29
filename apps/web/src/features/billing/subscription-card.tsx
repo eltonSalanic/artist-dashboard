@@ -1,6 +1,6 @@
 "use client";
 
-import { BAND_PRO } from "@artist/shared";
+import { BAND_WALL_PLAN } from "@artist/shared";
 import { usePermissions } from "@artist/api-client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,16 +15,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { env } from "@/lib/env";
 import { webCheckoutAvailable } from "@/lib/revenuecat";
-import { BAND_PRO_PRICE_LINE, describeSubscription } from "./band-pro-copy";
+import { PLAN_PRICE_LINE, describeSubscription } from "./subscription-copy";
 import { SubscribeButtons } from "./subscribe-buttons";
-import { useBandProCheckout } from "./use-band-pro-checkout";
+import { useSubscriptionCheckout } from "./use-subscription-checkout";
 
 /**
- * The band's Band Pro status in settings. Every member sees it; subscribing
+ * The band's subscription status in settings. Every member sees it; subscribing
  * and managing are for admins. Store purchases are managed in that store,
  * which is where RevenueCat's management link sends a phone purchase.
  */
-export function BandProCard({
+export function SubscriptionCard({
   boardId,
   email,
 }: {
@@ -33,7 +33,7 @@ export function BandProCard({
 }) {
   const { can } = usePermissions();
   const { subscription, offering, subscribe, manage, opening, awaitingPurchase } =
-    useBandProCheckout(boardId, email);
+    useSubscriptionCheckout(boardId, email);
   const sub = subscription.data;
   const canManage = can("billing.manage");
 
@@ -41,11 +41,11 @@ export function BandProCard({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          {BAND_PRO.name}
+          {BAND_WALL_PLAN.name} subscription
           {sub?.isPro && <Badge variant="secondary">On</Badge>}
         </CardTitle>
         <CardDescription>
-          One subscription for the whole band: {BAND_PRO_PRICE_LINE}.
+          One subscription for the whole band: {PLAN_PRICE_LINE}.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">

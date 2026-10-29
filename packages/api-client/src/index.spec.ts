@@ -32,7 +32,7 @@ describe('package barrel', () => {
       'useNotificationPreferences', 'useSaveNotificationPreference',
       // The phone's own arrangement (P12b).
       'useMobileLayout', 'useSaveMobileLayout', 'useResetMobileLayout',
-      // Band Pro.
+      // Subscriptions.
       'useBoardSubscription', 'useRefreshBoardSubscription',
       'isSubscriptionRequired',
     ];

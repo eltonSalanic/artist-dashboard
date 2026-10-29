@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
-  BAND_PRO,
+  BAND_WALL_PLAN,
   isPro,
   type BoardSubscriptionDto,
   type SubscriptionStatus,
@@ -51,14 +51,14 @@ export class BillingService {
   ) {}
 
   /**
-   * BILLING_ENFORCED=true turns the Band Pro requirement on. Off by default,
+   * BILLING_ENFORCED=true turns the subscription requirement on. Off by default,
    * so a dev database full of unpaid boards keeps working.
    */
   get enforced(): boolean {
     return this.config.get<string>('BILLING_ENFORCED') === 'true';
   }
 
-  /** Whether the board has Band Pro right now (see `isPro` in packages/shared). */
+  /** Whether the board is subscribed right now (see `isPro` in packages/shared). */
   async isPro(boardId: string): Promise<boolean> {
     const subscription = await this.prisma.boardSubscription.findUnique({
       where: { boardId },
@@ -67,7 +67,7 @@ export class BillingService {
     return isPro(subscription);
   }
 
-  /** True when the board's routes are closed until someone buys Band Pro. */
+  /** True when the board's routes are closed until someone subscribes. */
   async requiresSubscription(boardId: string): Promise<boolean> {
     if (!this.enforced) return false;
     return !(await this.isPro(boardId));
@@ -153,7 +153,7 @@ export class BillingService {
       };
       await tx.boardSubscription.upsert({
         where: { boardId },
-        create: { boardId, entitlement: BAND_PRO.entitlement, ...fields },
+        create: { boardId, entitlement: BAND_WALL_PLAN.entitlement, ...fields },
         update: fields,
       });
       return 'applied';
@@ -203,7 +203,7 @@ export class BillingService {
   /** Events with no entitlement list (older API versions) are taken as ours. */
   private isOurEntitlement(event: RevenueCatEvent): boolean {
     const ids = event.entitlement_ids;
-    return !ids || ids.includes(BAND_PRO.entitlement);
+    return !ids || ids.includes(BAND_WALL_PLAN.entitlement);
   }
 
   /**

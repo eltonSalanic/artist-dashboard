@@ -7,7 +7,7 @@ import { SkipSubscription } from '../billing/skip-subscription.decorator';
 import { InvitesService } from './invites.service';
 
 /**
- * Open on a board without Band Pro: a band can gather its members before
+ * Open on a board without a subscription: a band can gather its members before
  * anyone pays.
  */
 @Controller('boards/:boardId/invites')

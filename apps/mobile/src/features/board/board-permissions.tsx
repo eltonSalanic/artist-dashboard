@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { PermissionsProvider, useMe } from '@artist/api-client';
-import { BandProScreen } from '@/screens/band-pro';
+import { SubscriptionScreen } from '@/screens/subscription';
 
 /**
  * Permissions for the board a route names, not the board that is selected.
@@ -15,9 +15,9 @@ import { BandProScreen } from '@/screens/band-pro';
  * Not a member (removed since the link was made): least privilege. The screen
  * will show "not found" from the API's 404 anyway.
  *
- * A band without Band Pro, when the API enforces billing, gets the Band Pro
- * screen in place of the route: every board route would answer 402. The Band
- * Pro route itself passes `allowUnpaid`.
+ * A band without a subscription, when the API enforces billing, gets the subscription
+ * screen in place of the route: every board route would answer 402. The subscribe
+ * route itself passes `allowUnpaid`.
  */
 export function BoardPermissions({
   boardId,
@@ -35,7 +35,7 @@ export function BoardPermissions({
   return (
     <PermissionsProvider role={role}>
       {board?.subscriptionRequired && !allowUnpaid ? (
-        <BandProScreen boardId={boardId} />
+        <SubscriptionScreen boardId={boardId} />
       ) : (
         children
       )}

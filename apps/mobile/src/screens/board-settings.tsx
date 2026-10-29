@@ -75,7 +75,7 @@ export function BoardSettingsScreen({ boardId }: { boardId: string }) {
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={{ padding: spacing.md, gap: spacing.xl }}
     >
-      {billingAvailable() && <BandProSection boardId={boardId} />}
+      {billingAvailable() && <SubscriptionSection boardId={boardId} />}
       <NotificationsSection boardId={boardId} />
       {can('member.invite') && <MembersSection boardId={boardId} />}
       {can('member.invite') && <InviteSection boardId={boardId} />}
@@ -746,16 +746,16 @@ function PaletteSection({ boardId }: { boardId: string }) {
   );
 }
 
-/** The band's Band Pro status, one row through to the Band Pro screen. */
-function BandProSection({ boardId }: { boardId: string }) {
+/** The band's subscription status, one row through to the subscription screen. */
+function SubscriptionSection({ boardId }: { boardId: string }) {
   const subscription = useBoardSubscription(boardId);
   return (
-    <Section title="BAND PRO">
+    <Section title="SUBSCRIPTION">
       <Row
         first
-        title={subscription.data?.isPro ? 'Band Pro is on' : 'Get Band Pro'}
+        title={subscription.data?.isPro ? 'Subscribed to Band Wall' : 'Subscribe to Band Wall'}
         meta="One subscription for everyone in the band"
-        onPress={() => router.push(`/board/${boardId}/pro`)}
+        onPress={() => router.push(`/board/${boardId}/subscribe`)}
       />
     </Section>
   );

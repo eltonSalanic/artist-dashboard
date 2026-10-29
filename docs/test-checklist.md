@@ -850,7 +850,7 @@ Sign-in moved from Supabase Auth to Better Auth inside the API (branch `feat/bet
 - [ ] Invite an email that already has an account → "Invite saved", no email; they see the band on next sign-in
 
 
-## Band Pro
+## Subscriptions
 
 Per-band subscriptions through RevenueCat; the rules are in [billing.md](billing.md). No Trello card yet. Run `npx prisma migrate deploy` from `apps/api` first (new migration `20261029212835_billing`). The phone needs a **new development build** (`react-native-purchases` is native). For the purchase checks, use the RevenueCat Test Store key and a webhook tunnel as described in [Testing locally with the Test Store](billing.md#testing-locally-with-the-test-store).
 
@@ -858,11 +858,11 @@ Automated checks: webhook mapping, idempotency and auth, the 402 guard and the c
 
 ### Billing off — ↻ regression, do this first
 - [ ] 🔵 With `BILLING_ENFORCED` unset, open every band on web and phone → everything works as before; no paywall
-- [ ] Settings on web → a Band Pro card reading "Not subscribed."; on the phone a Band Pro row (when a RevenueCat key is set)
+- [ ] Settings on web → a subscription card reading "Not subscribed."; on the phone a subscription row (when a RevenueCat key is set)
 
 ### The gate — ★ new, `BILLING_ENFORCED=true`
-- [ ] 🔵 Web, unpaid band → the Band Pro paywall in place of every page (dashboard, calendar, finances, settings); the band switcher marks it "Needs Pro"
-- [ ] 🔵 Phone, unpaid band → the Band Pro screen in place of the hub; "Switch band" reaches a paid band
+- [ ] 🔵 Web, unpaid band → the subscription paywall in place of every page (dashboard, calendar, finances, settings); the band switcher marks it "Needs a subscription"
+- [ ] 🔵 Phone, unpaid band → the subscription screen in place of the hub; "Switch band" reaches a paid band
 - [ ] A paid band opens normally for a member who never paid
 - [ ] The phone's Calendar and Inbox tabs show only paid bands' items
 - [ ] An admin can still invite to an unpaid band; the invitee joins and lands on the paywall
@@ -872,7 +872,7 @@ Automated checks: webhook mapping, idempotency and auth, the 402 guard and the c
 ### Buying — ★ new, Test Store + webhook tunnel
 - [ ] 🔵 Web: Subscribe → RevenueCat paywall; closing it does nothing and shows no error
 - [ ] 🔵 Web: buy a plan → "Confirming your purchase…", then the wall opens
-- [ ] 🔵 Phone: Band Pro screen lists Monthly and Yearly with prices; buying one opens the wall
+- [ ] 🔵 Phone: subscription screen lists Monthly and Yearly with prices; buying one opens the wall
 - [ ] Phone: backing out of the store sheet shows no error
 - [ ] Phone: Restore purchases on a band that already paid → stays Pro; on a store account with nothing → "Nothing to restore"
 - [ ] Phone: Manage subscription opens the Customer Center
