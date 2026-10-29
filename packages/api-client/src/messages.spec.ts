@@ -77,23 +77,36 @@ describe("error classification", () => {
 });
 
 describe("authErrorMessage", () => {
-  it("maps known Supabase codes", () => {
+  it("maps known Better Auth codes", () => {
     expect(
       authErrorMessage({
-        code: "invalid_credentials",
-        message: "Invalid login credentials",
+        code: "INVALID_EMAIL_OR_PASSWORD",
+        status: 401,
+        message: "Invalid email or password",
       }),
     ).toBe("That email and password don't match. Try again.");
   });
 
-  it("treats a retryable fetch error as offline", () => {
+  it("explains a failed invite code", () => {
+    expect(
+      authErrorMessage({ code: "INVALID_OTP", status: 400, message: "Invalid OTP" }),
+    ).toMatch(/^That code doesn't work/);
+  });
+
+  it("passes on the API's own wording for a refused account change", () => {
     expect(
       authErrorMessage({
-        name: "AuthRetryableFetchError",
-        status: 0,
-        message: "fetch failed",
+        code: "AUTH_REJECTED",
+        status: 400,
+        message: "You already have a password. Sign in with it.",
       }),
-    ).toBe(MESSAGES.offline);
+    ).toBe("You already have a password. Sign in with it.");
+  });
+
+  it("treats an unreachable server as offline", () => {
+    expect(authErrorMessage({ status: 0, message: "fetch failed" })).toBe(
+      MESSAGES.offline,
+    );
   });
 
   it("never shows the raw text for an unknown error", () => {

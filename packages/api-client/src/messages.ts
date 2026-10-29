@@ -129,7 +129,7 @@ export function isUnexpectedError(error: unknown): boolean {
 
 /**
  * Auth failures, worded for people. Every `AuthClient` reports failures in
- * this shape; the codes below are Supabase Auth's, the provider in use.
+ * this shape; the codes below are Better Auth's, the provider in use.
  */
 export interface AuthErrorLike {
   name?: string;
@@ -138,20 +138,23 @@ export interface AuthErrorLike {
   message: string;
 }
 
+const ACCOUNT_EXISTS =
+  "An account with that email already exists. Sign in instead.";
+const CODE_FAILED =
+  "That code doesn't work: check it against the email. Codes expire after an hour and work once; your band admin can invite you again.";
+
 const AUTH_MESSAGES: Record<string, string> = {
-  invalid_credentials: "That email and password don't match. Try again.",
-  email_not_confirmed:
+  INVALID_EMAIL_OR_PASSWORD: "That email and password don't match. Try again.",
+  INVALID_EMAIL: "Enter a valid email address.",
+  EMAIL_NOT_VERIFIED:
     "Confirm your email first. Check your inbox for the link.",
-  user_already_exists:
-    "An account with that email already exists. Sign in instead.",
-  email_exists: "An account with that email already exists. Sign in instead.",
-  weak_password: "Choose a stronger password: at least 8 characters.",
-  same_password: "Your new password must be different from the old one.",
-  over_request_rate_limit: MESSAGES.rateLimited,
-  over_email_send_rate_limit:
-    "Too many emails sent. Wait a few minutes and try again.",
-  session_expired: MESSAGES.sessionExpired,
-  otp_expired: "That link has expired. Ask for a new one.",
+  USER_ALREADY_EXISTS: ACCOUNT_EXISTS,
+  USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL: ACCOUNT_EXISTS,
+  PASSWORD_TOO_SHORT: "Choose a stronger password: at least 8 characters.",
+  PASSWORD_TOO_LONG: "That password is too long. Use 128 characters or fewer.",
+  INVALID_OTP: CODE_FAILED,
+  OTP_EXPIRED: CODE_FAILED,
+  TOO_MANY_ATTEMPTS: CODE_FAILED,
 };
 
 export function authErrorMessage(
@@ -159,10 +162,10 @@ export function authErrorMessage(
   fallback: string = MESSAGES.generic,
 ): string {
   if (error.code && AUTH_MESSAGES[error.code]) return AUTH_MESSAGES[error.code];
-  // supabase-js reports a network failure as AuthRetryableFetchError, status 0.
-  if (error.name === "AuthRetryableFetchError" || error.status === 0) {
-    return MESSAGES.offline;
-  }
+  // The API words its own refusals (e.g. a password that's already set).
+  if (error.code === "AUTH_REJECTED") return error.message;
+  // Every AuthClient reports an unreachable server as status 0.
+  if (error.status === 0) return MESSAGES.offline;
   if (error.status === 429) return MESSAGES.rateLimited;
   return fallback;
 }

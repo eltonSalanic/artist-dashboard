@@ -39,7 +39,7 @@ export * from './archive/types';
 export * from './archive/use-archive';
 export * from './attachments/use-attachments';
 export * from './auth/auth-client';
-export * from './auth/supabase-auth-client';
+export * from './auth/better-auth-client';
 export * from './auth/types';
 export * from './auth/use-board';
 export * from './auth/use-me';
