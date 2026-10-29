@@ -80,7 +80,10 @@ describe('BillingService webhook mapping', () => {
       willRenew,
       revenueCatAppUserId: BOARD,
     });
-    expect(call.create).toMatchObject({ boardId: BOARD, entitlement: 'band_wall' });
+    expect(call.create).toMatchObject({
+      boardId: BOARD,
+      entitlement: 'band_wall',
+    });
   });
 
   it('keeps the paid period on a cancellation, so access lasts until EXPIRATION', async () => {
