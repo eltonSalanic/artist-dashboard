@@ -1,6 +1,6 @@
 # Better Auth
 
-> **State:** In progress
+> **State:** Testing
 > **Updated:** 2026-10-29
 > **Task ID prefix:** `AUTH`
 > **Source:** New
@@ -72,12 +72,12 @@ Supabase stays for the database and file storage.
 
 | ID | Task | State | Trello card |
 |---|---|---|---|
-| AUTH-001 | API: Better Auth with Prisma tables, bearer sessions, `/api/auth` mount, new auth guard | In progress | [AUTH-001](https://trello.com/c/T6d5pC9W) |
-| AUTH-002 | API: invite email with code through `MailTransport`; `POST /me/password` | Planned | [AUTH-002](https://trello.com/c/hwhON5yr) |
-| AUTH-003 | Web: Better Auth `AuthClient`, invite link signs in with the code | Planned | [AUTH-003](https://trello.com/c/UX65R3iR) |
-| AUTH-004 | Phone: Better Auth `AuthClient` with keychain token | Planned | [AUTH-004](https://trello.com/c/jogq4CPS) |
-| AUTH-005 | Remove Supabase Auth: deps, env, config, docs; reset local auth data | Planned | [AUTH-005](https://trello.com/c/nVsHucSY) |
-| AUTH-006 | Tests and feature test | Planned | [AUTH-006](https://trello.com/c/Gpj8Gmi4) |
+| AUTH-001 | API: Better Auth with Prisma tables, bearer sessions, `/api/auth` mount, new auth guard | Testing | [AUTH-001](https://trello.com/c/T6d5pC9W) |
+| AUTH-002 | API: invite email with code through `MailTransport`; `POST /me/password` | Testing | [AUTH-002](https://trello.com/c/hwhON5yr) |
+| AUTH-003 | Web: Better Auth `AuthClient`, invite link signs in with the code | Testing | [AUTH-003](https://trello.com/c/UX65R3iR) |
+| AUTH-004 | Phone: Better Auth `AuthClient` with keychain token | Testing | [AUTH-004](https://trello.com/c/jogq4CPS) |
+| AUTH-005 | Remove Supabase Auth: deps, env, config, docs; reset local auth data | Testing | [AUTH-005](https://trello.com/c/nVsHucSY) |
+| AUTH-006 | Tests and feature test | Testing | [AUTH-006](https://trello.com/c/Gpj8Gmi4) |
 
 ## Verification
 
@@ -93,3 +93,8 @@ Supabase stays for the database and file storage.
 
 - 2026-10-29: started after the `AuthClient` seam (`feat/auth-client`, merged in
   `7279ee3`). Elton confirmed only local test users exist, so no migration.
+- 2026-10-29: feature test on web and the iOS simulator, 16 checks (report:
+  https://claude.ai/artifact/F2XysRLHBaV6oejtS34dhk). One bug fixed in
+  `58e44f3`: iOS resent Better Auth's session cookie, and Better Auth refused a
+  cookie with no Origin header. Sessions are bearer-only, so the API drops
+  cookies before Better Auth.
