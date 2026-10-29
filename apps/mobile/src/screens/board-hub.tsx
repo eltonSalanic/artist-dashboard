@@ -43,6 +43,7 @@ import { useSelectedBoard } from '@/features/board/selected-board';
 import { useHubCards } from '@/features/board/use-hub-cards';
 import { HeaderText } from '@/features/forms/form-screen';
 import { useRefetchOnFocus } from '@/lib/refetch-on-focus';
+import { BandProScreen } from '@/screens/band-pro';
 import { radius, spacing, usePosterCanvas, useThemeColors } from '@/theme';
 
 /**
@@ -60,6 +61,22 @@ import { radius, spacing, usePosterCanvas, useThemeColors } from '@/theme';
 export function BoardHubScreen() {
   const colors = useThemeColors();
   const { board, boards, loading } = useSelectedBoard();
+
+  // With billing enforced, an unpaid band's routes all answer 402: it lands on
+  // Band Pro instead of a wall of failed cards. Someone in several bands can
+  // still switch to another.
+  if (board?.subscriptionRequired) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <BandProScreen key={board.id} boardId={board.id} />
+        {boards.length > 1 && (
+          <View style={{ padding: spacing.md }}>
+            <Button title="Switch band" variant="secondary" onPress={() => router.push('/boards')} />
+          </View>
+        )}
+      </View>
+    );
+  }
 
   // Keyed by board, so an edit in progress never carries over to another band.
   if (board !== null) return <BoardHub key={board.id} boardId={board.id} name={board.name} />;

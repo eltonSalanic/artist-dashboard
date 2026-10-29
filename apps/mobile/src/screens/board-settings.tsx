@@ -12,6 +12,7 @@ import {
 } from '@artist/shared';
 import {
   useBoard,
+  useBoardSubscription,
   useCreateShowStatus,
   useCreateStatus,
   useDeleteShowStatus,
@@ -32,7 +33,9 @@ import {
   type ShowStatusDto,
   type TaskStatusDto,
 } from '@artist/api-client';
+import { router } from 'expo-router';
 import { Badge } from '@/components/badge';
+import { billingAvailable } from '@/features/billing/purchases';
 import { Button } from '@/components/button';
 import { ChoiceChips } from '@/components/choice-chips';
 import { Icon } from '@/components/icon';
@@ -72,6 +75,7 @@ export function BoardSettingsScreen({ boardId }: { boardId: string }) {
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={{ padding: spacing.md, gap: spacing.xl }}
     >
+      {billingAvailable() && <BandProSection boardId={boardId} />}
       <NotificationsSection boardId={boardId} />
       {can('member.invite') && <MembersSection boardId={boardId} />}
       {can('member.invite') && <InviteSection boardId={boardId} />}
@@ -738,6 +742,21 @@ function PaletteSection({ boardId }: { boardId: string }) {
             }
           />
         ))}
+    </Section>
+  );
+}
+
+/** The band's Band Pro status, one row through to the Band Pro screen. */
+function BandProSection({ boardId }: { boardId: string }) {
+  const subscription = useBoardSubscription(boardId);
+  return (
+    <Section title="BAND PRO">
+      <Row
+        first
+        title={subscription.data?.isPro ? 'Band Pro is on' : 'Get Band Pro'}
+        meta="One subscription for everyone in the band"
+        onPress={() => router.push(`/board/${boardId}/pro`)}
+      />
     </Section>
   );
 }

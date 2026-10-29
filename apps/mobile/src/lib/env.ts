@@ -54,4 +54,12 @@ export const env = {
    * Tags error reports so a staging build's crashes never mix with prod's.
    */
   appEnv: parseAppEnv(process.env.EXPO_PUBLIC_APP_ENV),
+  /**
+   * RevenueCat public SDK key for this platform (docs/billing.md). Unset hides
+   * Band Pro buying; a `test_` key uses RevenueCat's Test Store.
+   */
+  revenueCatKey:
+    (process.env.EXPO_OS === 'ios'
+      ? process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY
+      : process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY) || null,
 } as const;
