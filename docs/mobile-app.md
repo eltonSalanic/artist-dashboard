@@ -1558,6 +1558,9 @@ track. `eas-update` gives OTA JS updates without a store review — a genuine
 advantage over the current web deploy story. `eas-workflows` when builds should
 run in CI.
 
+The release flow this phase sets up, and what's missing today, is in
+[release-workflow.md](release-workflow.md).
+
 **Hosting prerequisite, inherited from email notifications:** the dispatcher
 and reminder job are in-process `@Interval`s and will never fire on a
 serverless host that sleeps. The API must be on a long-running host

@@ -27,6 +27,7 @@ for build conventions and skills read [CLAUDE.md](../CLAUDE.md). Those describe
 | [Plans](plans/README.md) — implementation plans, kept in the repo and openable in Obsidian, with Trello links | Live — show statuses complete, tours in draft |
 | [Notifications](notifications.md) — every trigger, recipient, channel, and suppression rule | Email and push shipped; no push-only preferences yet |
 | [Mobile app](mobile-app.md) — the Expo/React Native app: phase tracker, navigation design, locked decisions | In progress — P0–P13 and P17 done; P14 and P18 not started |
+| [Release workflow](release-workflow.md) — dev → staging → prod, EAS builds and updates, TestFlight and Play beta, migrations | Guide; staging/prod hosting, EAS Update and store submission not set up yet |
 | [Error handling and logging](error-handling.md) — error shape, user-facing copy, dev vs staging/prod logs, Sentry | Built; Sentry off until DSNs are set |
 | [Feature test checklist](test-checklist.md) — what a person must click and see work, per phase and feature | Live — P1–P17, finances, links, show statuses, band name tag |
 | Permissions — the `can()` map, role matrix, and where each action is enforced | Not yet written |
