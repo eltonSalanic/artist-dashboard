@@ -27,10 +27,6 @@ Supabase stays for the database and file storage.
     the same email-code plugin.
   - Google and Apple sign-in.
   - Two-factor sign-in.
-  - Migrating passwords. Only local test users exist (confirmed 2026-10-29).
-    Instead, `POST /me/bootstrap` adopts a `User` row left from Supabase Auth
-    when someone signs up again with its email, so local bands and history
-    survive.
 - **Decisions:**
   - **Library, not service.** We use `better-auth` mounted in Express at
     `/api/auth/*`, ahead of Nest's body parser. We don't use the community
@@ -90,6 +86,14 @@ Supabase stays for the database and file storage.
 - [ ] No `supabase.auth`, `SUPABASE_JWT_SECRET` or `SUPABASE_ANON_KEY` left in code or env examples
 
 ## Notes and decisions
+
+- 2026-10-29: Supabase accounts are imported, passwords included (Elton's
+  request after the merge). Migration `import_supabase_users` copies
+  `auth.users` into `AuthUser`/`AuthAccount` with the same ids and the bcrypt
+  hashes, and `src/auth/password.ts` verifies `$2…` hashes with bcrypt and
+  everything else with Better Auth's scrypt. It only runs where `auth.users`
+  exists, and skips accounts already in Better Auth. Bootstrap's adoption of
+  orphaned `User` rows stays as a fallback for any account the import missed.
 
 - 2026-10-29: started after the `AuthClient` seam (`feat/auth-client`, merged in
   `7279ee3`). Elton confirmed only local test users exist, so no migration.

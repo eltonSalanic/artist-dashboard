@@ -94,7 +94,7 @@ One Postgres database, multiple schemas with different owners. **They never over
 | `storage` (objects, buckets) | **Supabase** | [supabase/seed.sql](supabase/seed.sql) creates the `attachments` bucket |
 
 - **Prisma owns your app schema.** `prisma migrate dev` locally (needs a shadow DB); **`prisma migrate deploy`** in prod/CI (idempotent, no shadow DB, never resets).
-- The seam between sign-in and the app: `User.id` **equals** `AuthUser.id` (a UUID, by convention — no FK). Better Auth owns the `Auth*` tables through its Prisma adapter; `POST /me/bootstrap` provisions the matching `User` row. Don't edit `Auth*` rows by hand except to reset local test data.
+- The seam between sign-in and the app: `User.id` **equals** `AuthUser.id` (a UUID, by convention — no FK). Better Auth owns the `Auth*` tables through its Prisma adapter; `POST /me/bootstrap` provisions the matching `User` row. Accounts from the Supabase days were imported with the same ids and their bcrypt hashes (migration `import_supabase_users`; `src/auth/password.ts` checks both hash kinds). Don't edit `Auth*` rows by hand except to reset local test data.
 - **`apps/api/prisma/seed.ts` is DEMO data** (board "Neon Harbor" + synthetic bandmates) and is **destructive to that board's content** on every run. Never run it in prod. It is *not* wired into `prisma migrate` — it's a manual `npm run db:seed`.
 - Seeding does **not** create attachments or auth users; the one `FILE_UPLOADED` feed entry is display text only.
 
