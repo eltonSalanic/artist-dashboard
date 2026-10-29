@@ -13,6 +13,7 @@ export * from './note-markdown';
 export * from './file-name';
 export * from './statuses';
 export * from './finance';
+export * from './billing';
 export * from './errors';
 export * from './dto/invite.dto';
 export * from './dto/account.dto';

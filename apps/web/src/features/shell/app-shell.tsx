@@ -43,6 +43,7 @@ import { MentionsIndicator } from "@/features/mentions/mentions-indicator";
 import { ThemeToggle } from "@/features/shell/theme-toggle";
 import { CreateBandDialog } from "@/features/shell/create-band-dialog";
 import { NoBand } from "@/features/shell/no-band";
+import { SubscriptionPaywall } from "@/features/billing/subscription-paywall";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -83,10 +84,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // With billing enforced, an unpaid band's routes all answer 402, so the
+  // paywall stands in for every page rather than each page failing on its own.
+  const current = me.data.boards.find((b) => b.id === me.data?.board?.id);
+
   return (
     <PermissionsProvider role={me.data.membership.role}>
       <Header me={me.data} />
-      <div className="flex flex-1 flex-col">{children}</div>
+      <div className="flex flex-1 flex-col">
+        {current?.subscriptionRequired ? (
+          <SubscriptionPaywall
+            boardId={current.id}
+            boardName={current.name}
+            email={me.data.user.email}
+          />
+        ) : (
+          children
+        )}
+      </div>
     </PermissionsProvider>
   );
 }
@@ -164,7 +179,11 @@ function Header({ me }: { me: MeResponse }) {
 
       <div className="flex items-center gap-4">
         <ThemeToggle />
-        {me.board && <MentionsIndicator boardId={me.board.id} />}
+        {/* An unpaid band's mentions answer 402; its paywall says why. */}
+        {me.board &&
+          !me.boards.find((b) => b.id === me.board?.id)?.subscriptionRequired && (
+            <MentionsIndicator boardId={me.board.id} />
+          )}
         {role === "ADMIN" && (
           <label className="flex items-center gap-2 text-xs text-muted-foreground">
             User view
@@ -235,7 +254,7 @@ function BandSwitcher({ me }: { me: MeResponse }) {
           </span>
           <ChevronsUpDown className="size-3.5 text-muted-foreground" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="min-w-52">
+        <DropdownMenuContent align="start" className="min-w-72">
           <DropdownMenuGroup>
             <DropdownMenuLabel>Your bands</DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -253,7 +272,12 @@ function BandSwitcher({ me }: { me: MeResponse }) {
                 ) : (
                   <span className="size-4" aria-hidden />
                 )}
-                {board.name}
+                <span className="min-w-0 truncate">{board.name}</span>
+                {board.subscriptionRequired && (
+                  <Badge variant="outline" className="ml-auto shrink-0">
+                    Needs a subscription
+                  </Badge>
+                )}
               </DropdownMenuItem>
             ))}
           </DropdownMenuGroup>

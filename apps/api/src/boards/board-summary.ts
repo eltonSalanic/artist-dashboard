@@ -1,8 +1,15 @@
 import {
+  isPro,
   resolveBoardTheme,
   type BoardRole,
   type BoardSummaryDto,
+  type SubscriptionLike,
 } from '@artist/shared';
+
+/** The subscription columns a board list selects, for `toBoardSummary`. */
+export const SUMMARY_SUBSCRIPTION_SELECT = {
+  select: { status: true, currentPeriodEnd: true },
+} as const;
 
 /**
  * One membership row as the board lists want it.
@@ -14,11 +21,20 @@ import {
  * none, with nothing failing to say so. One mapper means the next field cannot
  * land in only half the places.
  */
-export function toBoardSummary(membership: {
-  id: string;
-  role: BoardRole;
-  board: { id: string; name: string; theme: unknown };
-}): BoardSummaryDto {
+export function toBoardSummary(
+  membership: {
+    id: string;
+    role: BoardRole;
+    board: {
+      id: string;
+      name: string;
+      theme: unknown;
+      subscription?: SubscriptionLike | null;
+    };
+  },
+  billingEnforced: boolean,
+): BoardSummaryDto {
+  const pro = isPro(membership.board.subscription);
   return {
     id: membership.board.id,
     name: membership.board.name,
@@ -28,5 +44,8 @@ export function toBoardSummary(membership: {
     // hold a palette written by a newer build, and a list should colour a board
     // the same way opening it does.
     palette: resolveBoardTheme(membership.board.theme).palette,
+    // Listed even when unpaid, so the apps can show which bands need Pro.
+    isPro: pro,
+    subscriptionRequired: billingEnforced && !pro,
   };
 }

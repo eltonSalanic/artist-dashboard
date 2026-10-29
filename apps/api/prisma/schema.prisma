@@ -87,6 +87,7 @@ model Board {
   splitShares    SplitShare[]
   payouts        Payout[]
   links          ItemLink[]
+  subscription   BoardSubscription?
 }
 
 model Membership {
@@ -796,4 +797,57 @@ model AuthVerification {
   updatedAt  DateTime @updatedAt
 
   @@index([identifier])
+}
+
+/// The subscription is bought per board, not per person: whoever pays, the whole band
+/// gets it. RevenueCat is the source of truth; this row is our copy of its
+/// entitlement, written only by the RevenueCat webhook (src/billing).
+/// GRACE: a renewal failed and the store is retrying. Access stays on.
+/// CANCELLED: auto-renew is off, but the paid period has not ended. Access
+/// stays on until EXPIRED.
+enum SubscriptionStatus {
+  ACTIVE
+  GRACE
+  EXPIRED
+  CANCELLED
+}
+
+enum SubscriptionStore {
+  APP_STORE
+  PLAY_STORE
+  STRIPE
+  PROMOTIONAL
+}
+
+model BoardSubscription {
+  id                  String             @id @default(uuid()) @db.Uuid
+  boardId             String             @unique @db.Uuid
+  /// RevenueCat entitlement identifier (`BAND_WALL_PLAN.entitlement` in packages/shared).
+  entitlement         String             @default("band_wall")
+  status              SubscriptionStatus
+  store               SubscriptionStore
+  productId           String
+  /// Null for a lifetime promotional grant.
+  currentPeriodEnd    DateTime?
+  willRenew           Boolean            @default(true)
+  /// In a free trial (RevenueCat `period_type` TRIAL). The trial ends at
+  /// `currentPeriodEnd`; a trial counts as subscribed, the same as a paid
+  /// period.
+  isTrial             Boolean            @default(false)
+  /// Always the board's id (we `logIn` RevenueCat with it); kept to make the
+  /// webhook payload easy to match up when debugging.
+  revenueCatAppUserId String
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  board               Board              @relation(fields: [boardId], references: [id], onDelete: Cascade)
+}
+
+/// RevenueCat retries a webhook until it gets a 200 and can send one event
+/// more than once. Each processed event id lands here so a repeat is skipped.
+model BillingWebhookEvent {
+  /// RevenueCat's `event.id`.
+  id         String   @id
+  type       String
+  boardId    String?  @db.Uuid
+  receivedAt DateTime @default(now())
 }

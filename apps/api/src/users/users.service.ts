@@ -2,7 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { resolveBoardTheme } from '@artist/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
-import { toBoardSummary } from '../boards/board-summary';
+import {
+  SUMMARY_SUBSCRIPTION_SELECT,
+  toBoardSummary,
+} from '../boards/board-summary';
+import { BillingService } from '../billing/billing.service';
 import type { AuthUser } from '../auth/current-user.decorator';
 
 @Injectable()
@@ -10,6 +14,7 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly activity: ActivityService,
+    private readonly billing: BillingService,
   ) {}
 
   /**
@@ -104,7 +109,9 @@ export class UsersService {
       include: {
         memberships: {
           orderBy: { createdAt: 'asc' },
-          include: { board: true },
+          include: {
+            board: { include: { subscription: SUMMARY_SUBSCRIPTION_SELECT } },
+          },
         },
       },
     });
@@ -124,7 +131,9 @@ export class UsersService {
        * oldest-first, so `boards[0]` is always the board the two legacy fields
        * below describe.
        */
-      boards: user.memberships.map(toBoardSummary),
+      boards: user.memberships.map((m) =>
+        toBoardSummary(m, this.billing.enforced),
+      ),
       /**
        * `membership` and `board` are the pre-multi-board shape, kept populated
        * with the first membership.

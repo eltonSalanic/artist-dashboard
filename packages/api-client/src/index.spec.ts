@@ -32,6 +32,9 @@ describe('package barrel', () => {
       'useNotificationPreferences', 'useSaveNotificationPreference',
       // The phone's own arrangement (P12b).
       'useMobileLayout', 'useSaveMobileLayout', 'useResetMobileLayout',
+      // Subscriptions.
+      'useBoardSubscription', 'useRefreshBoardSubscription',
+      'isSubscriptionRequired',
     ];
     for (const name of hooks) {
       expect(typeof (api as Record<string, unknown>)[name]).toBe('function');
