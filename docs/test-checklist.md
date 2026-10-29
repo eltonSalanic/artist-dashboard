@@ -829,3 +829,22 @@ Web and phone now sign in through a shared `AuthClient` instead of calling Supab
 - [ ] ↻ Phone: "Join with an invite code" with the code from Mailpit plus a password → signed in, and that password works on web
 - [ ] ↻ Phone: sign out from the You tab and from the tab bar → back to sign-in
 - [ ] ↻ Both: revoke a session (delete the user's session in Supabase Studio) and make a request → one "session expired" message, back to sign-in
+
+
+## Better Auth
+
+Sign-in moved from Supabase Auth to Better Auth inside the API (branch `feat/better-auth`, plan [plans/better-auth.md](plans/better-auth.md), cards AUTH-001 to AUTH-006). Old Supabase accounts have no password here: sign up again with the same email and the account's bands and history come back (bootstrap adopts the old row). Run `npx prisma migrate deploy` from `apps/api` and add `BETTER_AUTH_SECRET` to `apps/api/.env` first.
+
+- [ ] 🔵 Web: create an account → signed in on the create-or-join screen; Create a band works
+- [ ] 🔵 Web: sign out, sign in with the same password → back on the band
+- [ ] Web: wrong password → "That email and password don't match", email kept
+- [ ] 🔵 Web: invite a new email → Mailpit shows "<you> invited you to <band> on Band Wall" with a link and a 6-digit code
+- [ ] 🔵 Web: open the invite link in a private window → "You're in", set a password → on the band; that password then signs in
+- [ ] Web: open the same invite link again → "Link expired" with "That code doesn't work…"
+- [ ] 🔵 Phone: "Join with your code" with the email's code and a password → on the band
+- [ ] Phone: a wrong code → "That code doesn't work…" under the field
+- [ ] 🔵 Phone: sign in, close the app fully, reopen → still signed in
+- [ ] Phone: sign out from You → sign-in screen
+- [ ] Both: sign out on one device doesn't sign out the other; deleting the session row signs that device out on its next request with "session expired"
+- [ ] Sign up with the email of an account made before the switch → its bands are back
+- [ ] Invite an email that already has an account → "Invite saved", no email; they see the band on next sign-in

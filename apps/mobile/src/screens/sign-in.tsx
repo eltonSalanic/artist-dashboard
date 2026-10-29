@@ -109,12 +109,8 @@ export function SignInScreen() {
   const join = async () => {
     const verified = await auth.verifyInviteCode(email.trim(), code.trim());
     if (verified.error) {
-      setError(
-        verified.error.code === 'otp_expired'
-          ? // Supabase answers a wrong code with the same error as a used one.
-            "That code doesn't work: check it against the email. Codes expire after an hour and work once; your band admin can invite you again."
-          : authErrorMessage(verified.error, "Couldn't accept the invite. Try again."),
-      );
+      // A wrong, used or expired code all read as "that code doesn't work".
+      setError(authErrorMessage(verified.error, "Couldn't accept the invite. Try again."));
       return;
     }
     const saved = await auth.setPassword(password);

@@ -10,7 +10,7 @@ apps/web            Next.js 16 (CLIENT-ONLY — routing/SEO only, no RSC/server 
 apps/mobile         Expo 57 / React Native (P14 store builds and P18 join links still open — see docs/mobile-app.md)
 packages/shared     Zod DTOs + permission map + layout logic, consumed as TS source
 packages/api-client apiFetch + React Query hooks — platform-agnostic, shared by web + mobile
-supabase/           local stack (config.toml, seed.sql) — Postgres, Auth, Storage, Mailpit
+supabase/           local stack (config.toml, seed.sql) — Postgres, Storage, Mailpit
 ```
 
 Scoped instructions also live in [apps/web/CLAUDE.md](apps/web/CLAUDE.md) → [apps/web/AGENTS.md](apps/web/AGENTS.md). Read those when touching the web app.
@@ -32,7 +32,7 @@ Prisma skills are installed under `apps/api/.claude/skills/` and are **scoped to
 - **`nestjs-best-practices`** — modules, DI, guards, validation. Use when adding or refactoring API modules.
 
 ### Database / platform — Supabase & Postgres
-- **`supabase`** — anything touching Supabase: Auth (magic-link/JWT/RLS), Storage (the private `attachments` bucket), the CLI/local stack, or a schema change on the Supabase side.
+- **`supabase`** — anything touching Supabase: Storage (the private `attachments` bucket), RLS, the CLI/local stack, or a schema change on the Supabase side. Sign-in is **not** Supabase any more: it is Better Auth inside the API (see the Auth convention below).
 - **`supabase-postgres-best-practices`** — indexing/query/schema review on the Postgres layer.
 
 ### Frontend — `apps/web` (Next.js 16, client-only)
@@ -66,7 +66,7 @@ These are project rules the user has set. Follow them without re-litigating.
 - **API tests are Jest units only.** No supertest / e2e HTTP tests. Mock Prisma (see the `*.spec.ts` alongside services).
 - **No `Co-Authored-By` trailer on commits.** Leave it off entirely.
 - **Keep the docs current.** Any major change (a new feature, a changed behaviour or flow, a new env var, command or migration, a new route or module) updates the docs in the same branch: the root [README.md](README.md) feature list and setup, the matching file in [docs/](docs/README.md) and its status line in the docs index, [docs/test-checklist.md](docs/test-checklist.md), the plan's state in [docs/plans/](docs/plans/README.md), and the app README or `.env.example` it touches. Before calling work done, check that no doc still describes the old behaviour.
-- **Auth goes through `AuthClient`.** Web and mobile screens call `auth` from their `src/lib/auth.ts`, never `supabase.auth`. The interface lives in `packages/api-client/src/auth/auth-client.ts` and the Supabase version in `supabase-auth-client.ts` next to it; failures come back as `{ error }` for `authErrorMessage()`, and a 401 from the API still goes through `onUnauthorized`. A new auth need is a new `AuthClient` method, not a direct provider call.
+- **Auth goes through `AuthClient`.** Web and mobile screens call `auth` from their `src/lib/auth.ts`, never a provider directly. The interface lives in `packages/api-client/src/auth/auth-client.ts` and the Better Auth version in `better-auth-client.ts` next to it; the server side is Better Auth mounted at `/api/auth` in the API ([apps/api/src/auth/better-auth.ts](apps/api/src/auth/better-auth.ts)), and every API request is checked by `SessionAuthGuard`; failures come back as `{ error }` for `authErrorMessage()`, and a 401 from the API still goes through `onUnauthorized`. A new auth need is a new `AuthClient` method, not a direct provider call.
 - **Permissions have one source of truth.** `packages/shared/src/permissions.ts` (`can()` map) is enforced server-side *and* mirrored in the UI. Never hardcode a role check — extend the shared map.
 
 ---
@@ -89,12 +89,12 @@ One Postgres database, multiple schemas with different owners. **They never over
 
 | Schema | Owned by | Managed with |
 |---|---|---|
-| `public` (app tables + `_prisma_migrations`) | **Prisma** | `prisma migrate` — [apps/api/prisma/migrations/](apps/api/prisma/migrations/) |
-| `auth` (users, sessions) | **Supabase** | Supabase itself — never via Prisma |
+| `public` (app tables, the `Auth*` sign-in tables, `_prisma_migrations`) | **Prisma** | `prisma migrate` — [apps/api/prisma/migrations/](apps/api/prisma/migrations/) |
+| `auth` | **Supabase** (unused) | Supabase still creates it; nothing in the app reads it since the move to Better Auth |
 | `storage` (objects, buckets) | **Supabase** | [supabase/seed.sql](supabase/seed.sql) creates the `attachments` bucket |
 
 - **Prisma owns your app schema.** `prisma migrate dev` locally (needs a shadow DB); **`prisma migrate deploy`** in prod/CI (idempotent, no shadow DB, never resets).
-- The seam between systems: `public.User.id` **equals** the Supabase `auth.users.id` (UUID, by convention — no cross-schema FK). Auth mints the identity; the API provisions the matching `User` row.
+- The seam between sign-in and the app: `User.id` **equals** `AuthUser.id` (a UUID, by convention — no FK). Better Auth owns the `Auth*` tables through its Prisma adapter; `POST /me/bootstrap` provisions the matching `User` row. Don't edit `Auth*` rows by hand except to reset local test data.
 - **`apps/api/prisma/seed.ts` is DEMO data** (board "Neon Harbor" + synthetic bandmates) and is **destructive to that board's content** on every run. Never run it in prod. It is *not* wired into `prisma migrate` — it's a manual `npm run db:seed`.
 - Seeding does **not** create attachments or auth users; the one `FILE_UPLOADED` feed entry is display text only.
 
@@ -104,7 +104,7 @@ Currently a single `DATABASE_URL` serves both runtime and migrations (fine for l
 - `DATABASE_URL` → **pooled** (Supavisor, port 6543) for the running API (the driver adapter).
 - `DIRECT_URL` → **direct** (port 5432) for `prisma migrate deploy` (advisory lock + DDL need a real session). Point [apps/api/prisma.config.ts](apps/api/prisma.config.ts) at `DIRECT_URL`.
 
-Neither Prisma nor Supabase deploys the NestJS/Next.js *code* — those need their own hosts (e.g. Railway/Render for the API, Vercel for web) pointed at Supabase's connection strings + keys. Server-only secrets: `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`. The web app only ever gets the `anon` key + `NEXT_PUBLIC_API_URL`.
+Neither Prisma nor Supabase deploys the NestJS/Next.js *code* — those need their own hosts (e.g. Railway/Render for the API, Vercel for web) pointed at Supabase's connection strings + keys. Server-only secrets: `SUPABASE_SERVICE_ROLE_KEY` (Storage) and `BETTER_AUTH_SECRET` (sessions and invite codes; rotating it signs everyone out). The web and phone apps only get the API's URL; they hold no Supabase key.
 
 ---
 

@@ -75,9 +75,6 @@ case "$TUNNEL_PROVIDER" in
   *) die "TUNNEL_PROVIDER must be ngrok or cloudflare, not '$TUNNEL_PROVIDER'." ;;
 esac
 
-grep -q '^EXPO_PUBLIC_SUPABASE_ANON_KEY=..*' "$ROOT/apps/mobile/.env" 2>/dev/null ||
-  die "apps/mobile/.env needs EXPO_PUBLIC_SUPABASE_ANON_KEY (see apps/mobile/README.md)."
-
 # Metro bakes EXPO_PUBLIC_* into the bundle, so a server already running has
 # the old URLs. It has to be this script's Metro.
 listening "$METRO_PORT" && die "Something is already on port $METRO_PORT — stop your running Expo server (npm run mobile) first,\n  or run this one beside it: METRO_PORT=8082 npm run mobile:tunnel"

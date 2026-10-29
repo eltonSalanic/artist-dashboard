@@ -13,9 +13,8 @@
 > **stays running** — the dispatcher and the reminder job are in-process
 > `@Interval`s and will never fire on a serverless host that sleeps.
 
-Transactional email is sent through **[Resend](https://resend.com)**. Board
-invites are the exception: they are still sent by Supabase GoTrue, which owns
-the magic-link token (see [Invites](#invites-are-not-ours) below).
+Transactional email is sent through **[Resend](https://resend.com)** (Mailpit
+in development), board invites included (see [Invites](#invites) below).
 
 ## Design rules
 
@@ -321,11 +320,18 @@ The demo seed (`npm run db:seed -w apps/api`) must never send email: its
 synthetic bandmates use `@demo.band` addresses that cannot receive mail, and
 seeding writes no notification rows.
 
-## Invites are not ours
+## Invites
 
-`SupabaseAdminService.inviteByEmail` calls GoTrue's `inviteUserByEmail`, and
-**GoTrue** renders and sends that message — not Resend. The template lives in
-Supabase, and the magic-link token is minted by Auth. Moving invites to Resend
-would mean switching to `generateLink` and sending the mail ourselves, which
-puts the auth flow's blast radius on the line for a cosmetic gain. Left alone
-deliberately.
+`InviteMailer` asks Better Auth for a 6-digit `sign-in` code, and Better Auth
+hands it to `InviteCodeMail` (`apps/api/src/invites/invite-code.mail.ts`),
+which renders the invite and sends it through the same `MailTransport` as
+every other email: Mailpit in development, Resend in production. It carries a
+link to the web's `/auth/callback?email=…&code=…` and the same code for the
+phone. Codes last an hour, allow three wrong tries and work once.
+
+Invites skip the notification machinery on purpose: no preference check, no
+unsubscribe link, no digest. An invite is an account email, not a
+notification. The code route is public (the phone needs it), so
+`InviteCodeMail` only mails addresses with a pending invite; a request for
+anyone else sends nothing. Someone who already has an account gets no email:
+their pending invite is matched by email the next time they sign in.

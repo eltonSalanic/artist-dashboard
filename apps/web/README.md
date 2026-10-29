@@ -9,7 +9,7 @@ Prisma → Postgres. Next 16 differs from what you may know; read
 ## Running it
 
 ```bash
-cp .env.example .env.local   # anon key from `npx supabase status`
+cp .env.example .env.local   # only NEXT_PUBLIC_API_URL is needed locally
 npm run dev                  # port 3000, or `npm run dev` from the repo root for api + web
 ```
 
@@ -26,8 +26,9 @@ and `NEXT_PUBLIC_SENTRY_DSN` are described in
   (tasks, planning, finances, notes, links, dashboard, widgets, settings,
   shell and so on).
 - **`src/lib/auth.ts`** is the web's `AuthClient` (from `@artist/api-client`,
-  backed by Supabase Auth). Screens sign in, sign up, set passwords and sign
-  out through `auth`, never through `supabase.auth` directly.
+  backed by Better Auth in the API). The session token lives in
+  `localStorage`. Screens sign in, sign up, set passwords and sign out through
+  `auth`, never through the provider directly.
 - **`src/lib/use-me.ts`** wraps the shared `useMe` so `board` and `membership`
   describe the band picked in the header's band picker.
 

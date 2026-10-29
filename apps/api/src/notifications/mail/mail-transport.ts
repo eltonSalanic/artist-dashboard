@@ -11,14 +11,18 @@ export interface OutgoingMail {
    * a successful send and recording it.
    */
   idempotencyKey: string;
-  /** The human link in the footer — a web page that explains and confirms. */
-  unsubscribeUrl: string;
+  /**
+   * The human link in the footer — a web page that explains and confirms.
+   * Absent on account mail (an invite code), which nobody unsubscribes from.
+   */
+  unsubscribeUrl?: string;
   /**
    * The List-Unsubscribe header target, which Gmail surfaces as a UI button
    * and then POSTs to directly (RFC 8058). It has to be an endpoint that
    * accepts POST with no session, so it points at the API, not the web app.
+   * Absent on account mail, like `unsubscribeUrl`.
    */
-  unsubscribePostUrl: string;
+  unsubscribePostUrl?: string;
 }
 
 /**

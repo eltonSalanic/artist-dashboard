@@ -9,7 +9,7 @@ import { validateEnv } from './config/env';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthController } from './health/health.controller';
 import { AuthModule } from './auth/auth.module';
-import { SupabaseAuthGuard } from './auth/supabase-auth.guard';
+import { SessionAuthGuard } from './auth/session-auth.guard';
 import { BoardRolesGuard } from './common/board-roles.guard';
 import { UsersModule } from './users/users.module';
 import { BoardsModule } from './boards/boards.module';
@@ -74,7 +74,7 @@ import { FinancesModule } from './finances/finances.module';
   providers: [
     // Order matters: authentication must populate request.user before the
     // board-role guard reads it.
-    { provide: APP_GUARD, useClass: SupabaseAuthGuard },
+    { provide: APP_GUARD, useClass: SessionAuthGuard },
     { provide: APP_GUARD, useClass: BoardRolesGuard },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
   ],

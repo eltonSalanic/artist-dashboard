@@ -16,6 +16,8 @@ export type ApiErrorCode =
   | 'CONFLICT'
   | 'NOT_FOUND'
   | 'INVITE_EMAIL_FAILED'
+  /** Better Auth refused a server-side account change; the message says why. */
+  | 'AUTH_REJECTED'
   | 'INTERNAL';
 
 export interface ApiErrorBody {

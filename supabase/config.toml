@@ -243,14 +243,6 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
-# The invite carries the 6-digit code as well as the link, so a bandmate can
-# accept in the phone app (sign-in → "Join with your code"). A hosted project
-# needs the same template pasted into Auth → Email Templates → Invite user,
-# and custom SMTP: Supabase's default sender no longer allows custom templates.
-[auth.email.template.invite]
-subject = "You're invited to Band Wall"
-content_path = "./supabase/templates/invite.html"
-
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
 # enabled = true

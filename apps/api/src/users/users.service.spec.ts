@@ -4,7 +4,8 @@ import { ActivityService } from '../activity/activity.service';
 
 describe('UsersService.bootstrap', () => {
   const tx = {
-    user: { upsert: jest.fn() },
+    user: { upsert: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
+    authUser: { findUnique: jest.fn() },
     invite: { findMany: jest.fn(), update: jest.fn() },
     membership: {
       upsert: jest.fn(),
@@ -64,6 +65,40 @@ describe('UsersService.bootstrap', () => {
       data: { status: 'ACCEPTED' },
     });
     expect(tx.board.create).not.toHaveBeenCalled();
+  });
+
+  describe('adopting a User row left from Supabase Auth', () => {
+    beforeEach(() => tx.invite.findMany.mockResolvedValue([]));
+
+    it('moves an orphaned row with the same email onto the new account', async () => {
+      tx.user.findUnique.mockResolvedValue({ id: 'old' });
+      tx.authUser.findUnique.mockResolvedValue(null);
+
+      await service.bootstrap(auth);
+
+      expect(tx.user.update).toHaveBeenCalledWith({
+        where: { id: 'old' },
+        data: { id: 'u1' },
+      });
+    });
+
+    it('never takes over a row that belongs to a live account', async () => {
+      tx.user.findUnique.mockResolvedValue({ id: 'other' });
+      tx.authUser.findUnique.mockResolvedValue({ id: 'other' });
+
+      await service.bootstrap(auth);
+
+      expect(tx.user.update).not.toHaveBeenCalled();
+    });
+
+    it('does nothing when the row is already this account', async () => {
+      tx.user.findUnique.mockResolvedValue({ id: 'u1' });
+
+      await service.bootstrap(auth);
+
+      expect(tx.authUser.findUnique).not.toHaveBeenCalled();
+      expect(tx.user.update).not.toHaveBeenCalled();
+    });
   });
 });
 

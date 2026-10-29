@@ -27,10 +27,12 @@ export class ResendTransport implements MailTransport {
         subject: mail.subject,
         html: mail.html,
         text: mail.text,
-        headers: {
-          'List-Unsubscribe': `<${mail.unsubscribePostUrl}>`,
-          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-        },
+        headers: mail.unsubscribePostUrl
+          ? {
+              'List-Unsubscribe': `<${mail.unsubscribePostUrl}>`,
+              'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+            }
+          : undefined,
       },
       { idempotencyKey: mail.idempotencyKey },
     );

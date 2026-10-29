@@ -21,6 +21,8 @@ const base = z
     DATABASE_URL: z.string().min(1),
     SUPABASE_URL: z.url(),
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+    // Signs Better Auth's session tokens and codes. Rotating it signs everyone out.
+    BETTER_AUTH_SECRET: z.string().min(32),
     WEB_URL: z.url().optional(),
     API_URL: z.url().optional(),
   })

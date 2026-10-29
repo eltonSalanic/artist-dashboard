@@ -475,6 +475,8 @@ chronological order while both sides have equal precision.
 but working auth on physical hardware.** This is the de-risking phase; resist
 adding screens.
 
+> **History (2026-10-29):** sign-in has since moved from Supabase Auth to Better Auth in the API, with a keychain-stored bearer token and invite codes mailed by the API. The P5 notes below describe the Supabase-era setup; see [plans/better-auth.md](plans/better-auth.md) for the current design.
+
 **Magic links are the sharp edge.** `apps/web/src/features/auth/callback-page.tsx`
 assumes a browser redirect to `/auth/callback`. Mobile needs:
 

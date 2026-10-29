@@ -24,7 +24,7 @@ All copy comes from `toUserMessage(error, fallback)` in `packages/api-client/src
 | 403 / 404 with only Nest's default text | "You don't have permission…" / "That item no longer exists…" |
 | 5xx | "Something went wrong on our end. Try again in a moment." |
 | A specific API message ("That person is already a board member") | That message |
-| Supabase Auth errors | `authErrorMessage()`, mapped by Supabase error code |
+| Sign-in errors | `authErrorMessage()`, mapped by Better Auth error code (`INVALID_EMAIL_OR_PASSWORD`, `INVALID_OTP`…); `AUTH_REJECTED` from the API carries its own wording |
 
 Safety nets:
 

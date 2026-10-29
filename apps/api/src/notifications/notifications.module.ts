@@ -59,6 +59,6 @@ import { ReminderDueJob } from './reminder-due.job';
       useFactory: pushTransportFor,
     },
   ],
-  exports: [NotificationsService, DevicesService],
+  exports: [NotificationsService, DevicesService, MAIL_TRANSPORT],
 })
 export class NotificationsModule {}
