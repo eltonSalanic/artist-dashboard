@@ -4,6 +4,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from './notifications.service';
 import { reportError } from '../common/error-reporter';
 import * as Sentry from '@sentry/nestjs';
+import { parseAppEnv } from '@artist/shared';
+
+// Only deployed APIs check in: a laptop that's switched off would otherwise
+// raise "missed check-in" alerts all night.
+const MONITORED = parseAppEnv(process.env.APP_ENV) !== 'development';
 
 const REMINDER_MONITOR = {
   schedule: { type: 'interval', value: 5, unit: 'minute' },
@@ -50,7 +55,13 @@ export class ReminderDueJob {
       // the monitor tells Sentry the job ran, so a job that silently stops
       // (or keeps failing) raises an alert, not just one that throws.
       await Sentry.withIsolationScope(() =>
-        Sentry.withMonitor('reminder-due', () => this.run(), REMINDER_MONITOR),
+        MONITORED
+          ? Sentry.withMonitor(
+              'reminder-due',
+              () => this.run(),
+              REMINDER_MONITOR,
+            )
+          : this.run(),
       );
     } catch (error) {
       // Same rule as the dispatcher: a tick must never throw, or the next one
