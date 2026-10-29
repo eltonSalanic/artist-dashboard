@@ -2,7 +2,7 @@
 // the session source that every hook below reaches for.
 import '@/lib/api-client-setup';
 // Next, so a crash during the first render is reported.
-import '@/lib/sentry';
+import { withSentry } from '@/lib/sentry';
 
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
@@ -49,7 +49,7 @@ const queryClient = new QueryClient({
   },
 });
 
-export default function RootLayout() {
+function RootLayout() {
   const { session, loading: sessionLoading } = useSession();
   // The hub and calendar set their numbers in Figtree. Held behind the splash
   // like the session, so the first frame is not system type swapping to
@@ -118,3 +118,7 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
+
+// Touch breadcrumbs, app-start timing and the feedback form; a no-op when
+// Sentry is off.
+export default withSentry(RootLayout);

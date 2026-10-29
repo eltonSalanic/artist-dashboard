@@ -11,6 +11,7 @@ import { useSelectedBoard } from '@/features/board/selected-board';
 import { PushSetting } from '@/features/push/push-prompt';
 import { forgetThisDevice } from '@/features/push/push';
 import { auth } from '@/lib/auth';
+import { feedbackAvailable, showFeedback } from '@/lib/sentry';
 import {
   boardAccent,
   posterRadius,
@@ -142,6 +143,12 @@ export function YouScreen() {
       <Section title="THIS PHONE">
         <PushSetting />
       </Section>
+
+      {/* Sentry's feedback form, linked to the errors just before it. Only
+          shown when reporting is on, so there's always somewhere it goes. */}
+      {feedbackAvailable && (
+        <Button title="Report a problem" variant="secondary" onPress={showFeedback} />
+      )}
 
       <Button
         title="Sign out"
