@@ -16,7 +16,14 @@ App Store / Play / Stripe ◄─────────────┘
 
 - **RevenueCat is the source of truth.** The API keeps a copy of each board's entitlement in `BoardSubscription`, written only by the webhook (and by the promotional grant script).
 - **The RevenueCat app user id is the board's id**, on every platform. The phone calls `Purchases.logIn(boardId)` before buying or restoring, the web SDK is configured with `appUserId: boardId`, and the Web Purchase Link gets the board id appended. So a purchase made anywhere lands on the same customer and the same board.
-- **Entitlement:** `band_wall`. **Offering:** the project's current offering, with packages `monthly` and `yearly`. These live in `BAND_PRO` in [packages/shared/src/billing.ts](../packages/shared/src/billing.ts), along with the display prices and placeholder store product ids (`band_pro_monthly`, `band_pro_yearly`). Change the product ids there once the real products exist; the paywalls themselves read the offering, not the product ids.
+- **Entitlement:** `band_wall`. **Offering:** the project's current offering, with packages `monthly` and `yearly`. These live in `BAND_PRO` in [packages/shared/src/billing.ts](../packages/shared/src/billing.ts), along with the display prices and the store product ids:
+
+| Plan | App Store product | Play subscription : base plan (as RevenueCat shows it) |
+|---|---|---|
+| Monthly, $5.99 | `bandwall.pro.monthly` | `bandwall_pro:monthly` |
+| Yearly, $59.99 | `bandwall.pro.yearly` | `bandwall_pro:yearly` |
+
+The paywalls read the offering, not these ids, so a mismatch shows up as a package missing from the offering rather than a code error.
 - **Who can buy:** admins (`billing.manage` in the shared `can()` map). Every member can see the status (`billing.view`). Members are told to ask an admin.
 
 ## The enforcement rule
@@ -117,7 +124,7 @@ Do these in order; each later step needs the earlier ones.
 
 1. **Agreements, Tax, and Banking:** sign the **Paid Apps** agreement and fill in banking and tax. Subscriptions can't be sold or tested in sandbox until it's active.
 2. **App Store Small Business Program:** enroll (15% commission instead of 30% under $1M a year).
-3. In the Band Wall app (`com.bandwall.app`): **Subscriptions** → create a **subscription group** (e.g. "Band Pro") with two auto-renewable subscriptions: monthly at $5.99 and yearly at $59.99. Use the product ids in `BAND_PRO` (or update `BAND_PRO` to match). Add the localized names and the review screenshot each one asks for.
+3. In the Band Wall app (`com.bandwall.app`): **Subscriptions** → create a **subscription group** (e.g. "Band Pro") with two auto-renewable subscriptions: `bandwall.pro.monthly` at $5.99 a month and `bandwall.pro.yearly` at $59.99 a year. Add the localized names and the review screenshot each one asks for.
 4. **Users and Access → Integrations → In-App Purchase:** create an **In-App Purchase key** (`.p8`) for RevenueCat, and note the issuer id. Also note the app-specific shared secret.
 5. Create a **sandbox tester** under Users and Access for testing on a phone.
 
@@ -125,7 +132,7 @@ Do these in order; each later step needs the earlier ones.
 
 1. **Payments profile:** set up a merchant account (Settings → Payments profile).
 2. Upload a build with the billing permission (any build made after this branch) to an internal testing track; Play won't let you create subscriptions before that.
-3. **Monetize → Subscriptions:** create the monthly and yearly subscriptions (product ids as above), each with a base plan at $5.99/month and $59.99/year.
+3. **Monetize → Subscriptions:** create one subscription, `bandwall_pro`, with two auto-renewing base plans: `monthly` at $5.99 and `yearly` at $59.99. RevenueCat imports them as `bandwall_pro:monthly` and `bandwall_pro:yearly`.
 4. Subscriptions already pay Google's **15% service fee**; nothing to enroll in.
 5. Create a **Google Cloud service account** with access to the Play Developer API, invite it in Play Console with financial and order permissions, and download its JSON key for RevenueCat. Add **license testers** for test purchases.
 

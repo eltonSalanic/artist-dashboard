@@ -141,7 +141,9 @@ export class BillingService {
         // Anything else (RevenueCat's test store, a store we don't sell
         // on) reads as a grant rather than failing the event.
         store: STORES[event.store ?? ''] ?? 'PROMOTIONAL',
-        productId: event.product_id ?? BAND_PRO.plans.monthly.productId,
+        // Every purchase event names its product; this only keeps the
+        // column filled if one ever doesn't.
+        productId: event.product_id ?? 'unknown',
         currentPeriodEnd:
           event.expiration_at_ms == null
             ? null

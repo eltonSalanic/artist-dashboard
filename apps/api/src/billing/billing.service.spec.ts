@@ -13,7 +13,7 @@ const event = (overrides: Partial<RevenueCatEvent> = {}): RevenueCatEvent => ({
   app_user_id: BOARD,
   original_app_user_id: BOARD,
   aliases: [BOARD],
-  product_id: 'band_pro_monthly',
+  product_id: 'bandwall.pro.monthly',
   entitlement_ids: ['band_wall'],
   store: 'APP_STORE',
   environment: 'SANDBOX',
@@ -75,7 +75,7 @@ describe('BillingService webhook mapping', () => {
     expect(call.update).toEqual({
       status,
       store: 'APP_STORE',
-      productId: 'band_pro_monthly',
+      productId: 'bandwall.pro.monthly',
       currentPeriodEnd: new Date(EXPIRES),
       willRenew,
       revenueCatAppUserId: BOARD,
@@ -160,7 +160,7 @@ describe('BillingService webhook mapping', () => {
       entitlement: 'band_wall',
       status: 'ACTIVE',
       store: 'APP_STORE',
-      productId: 'band_pro_yearly',
+      productId: 'bandwall.pro.yearly',
       currentPeriodEnd: new Date(EXPIRES),
       willRenew: true,
     });
@@ -181,7 +181,7 @@ describe('BillingService webhook mapping', () => {
     expect(upserted(prisma).where).toEqual({ boardId: OTHER_BOARD });
     expect(upserted(prisma).update).toMatchObject({
       status: 'ACTIVE',
-      productId: 'band_pro_yearly',
+      productId: 'bandwall.pro.yearly',
       revenueCatAppUserId: OTHER_BOARD,
     });
     expect(prisma.boardSubscription.updateMany).toHaveBeenCalledWith({

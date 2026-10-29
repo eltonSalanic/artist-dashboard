@@ -11,8 +11,9 @@ import type { SubscriptionStatus, SubscriptionStore } from './enums';
  * purchase link carries it), so a purchase made on any store lands on the
  * same customer and the same board.
  *
- * Store product ids are placeholders until the App Store Connect, Play Console
- * and Web Billing products exist; they must match those (docs/billing.md). Prices here are for
+ * Store product ids must match App Store Connect and Play Console
+ * (docs/billing.md). Web Billing products are named in RevenueCat and reach
+ * the web through the offering, so they aren't listed here. Prices here are for
  * display copy only; the store always charges what the store says.
  */
 export const BAND_PRO = {
@@ -26,14 +27,22 @@ export const BAND_PRO = {
   plans: {
     monthly: {
       packageId: 'monthly',
-      productId: 'band_pro_monthly',
+      storeProductIds: {
+        appStore: 'bandwall.pro.monthly',
+        // Play subscription `bandwall_pro`, base plan `monthly`, as
+        // RevenueCat names it.
+        playStore: 'bandwall_pro:monthly',
+      },
       priceCents: 599,
       currency: 'USD',
       interval: 'month',
     },
     yearly: {
       packageId: 'yearly',
-      productId: 'band_pro_yearly',
+      storeProductIds: {
+        appStore: 'bandwall.pro.yearly',
+        playStore: 'bandwall_pro:yearly',
+      },
       priceCents: 5999,
       currency: 'USD',
       interval: 'year',
