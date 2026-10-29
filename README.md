@@ -25,6 +25,7 @@ supabase/           local stack config (config.toml, seed.sql)
 - **Collaboration** — comments with @mentions (and a persistent mentions notification indicator), file attachments via signed URLs (private Storage bucket), and a boardwide activity feed logging every meaningful change.
 - **Notifications** — email (Resend, or Mailpit in dev) and push to the phone app, with per-category preferences and one-click unsubscribe. See [docs/notifications.md](docs/notifications.md).
 - **Archive** — archived items can be restored or deleted for good from the Archive page.
+- **Band Pro** — a subscription per band ($5.99/month or $59.99/year) through RevenueCat: in-app purchase on the phone, Stripe through RevenueCat Web Billing on the web. One purchase covers every member. With `BILLING_ENFORCED=true` there is no free tier: an unpaid band's routes answer 402 and both apps show the Band Pro paywall. Off by default locally. See [docs/billing.md](docs/billing.md).
 
 ## Prerequisites
 
@@ -38,7 +39,7 @@ supabase/           local stack config (config.toml, seed.sql)
 npm install
 ```
 
-Ensure env variables are in place. See the example files — copy `apps/api/.env.example` to `apps/api/.env` and `apps/web/.env.example` to `apps/web/.env.local`, then fill in the values (`npx supabase status` prints the service role key; `BETTER_AUTH_SECRET` is any 32+ random characters, e.g. `openssl rand -base64 32`). For the phone app, copy `apps/mobile/.env.example` to `apps/mobile/.env`; see [apps/mobile/README.md](apps/mobile/README.md). `APP_ENV`, `LOG_LEVEL` and the Sentry DSNs are optional locally; [docs/error-handling.md](docs/error-handling.md) explains them.
+Ensure env variables are in place. See the example files — copy `apps/api/.env.example` to `apps/api/.env` and `apps/web/.env.example` to `apps/web/.env.local`, then fill in the values (`npx supabase status` prints the service role key; `BETTER_AUTH_SECRET` is any 32+ random characters, e.g. `openssl rand -base64 32`). For the phone app, copy `apps/mobile/.env.example` to `apps/mobile/.env`; see [apps/mobile/README.md](apps/mobile/README.md). `APP_ENV`, `LOG_LEVEL` and the Sentry DSNs are optional locally; [docs/error-handling.md](docs/error-handling.md) explains them. The billing variables (`BILLING_ENFORCED`, `REVENUECAT_WEBHOOK_AUTH` and the RevenueCat SDK keys) are optional too; [docs/billing.md](docs/billing.md) lists them per environment.
 
 Then apply the schema:
 
@@ -102,6 +103,8 @@ Lint with `npm run lint -w apps/api` / `-w apps/web` / `-w apps/mobile`. What a 
 
 **Everything fails to load and the API logs Prisma connection errors.** Docker isn't running, so Supabase's Postgres is down. Start Docker Desktop, then `supabase start`. If `supabase start` reports stopped services (`imgproxy`, `edge_runtime`, `pooler`), running it again brings them back.
 
-**API returns 404 for a route you expect.** Almost all routes are board-scoped as `/boards/:boardId/<resource>` (tasks, events, goals, focus, reminders, calendar, finances, show-statuses, notes, links and so on). The root routes are `/health`, `/me` (and `/me/devices`), the cross-band `/calendar` and `/mentions`, `/unsubscribe` and `/webhooks/resend`. A guarded route hit without a token returns **401**, not 404 — so a 404 means the path is wrong, not that auth failed.
+**API returns 404 for a route you expect.** Almost all routes are board-scoped as `/boards/:boardId/<resource>` (tasks, events, goals, focus, reminders, calendar, finances, show-statuses, notes, links and so on). The root routes are `/health`, `/me` (and `/me/devices`), the cross-band `/calendar` and `/mentions`, `/unsubscribe`, `/webhooks/resend` and `/billing/revenuecat/webhook`. A guarded route hit without a token returns **401**, not 404 — so a 404 means the path is wrong, not that auth failed.
+
+**Every board shows the Band Pro paywall, or the API answers 402 `BOARD_SUBSCRIPTION_REQUIRED`.** `BILLING_ENFORCED=true` is set in `apps/api/.env` and the band has no subscription. Set it to `false` for everyday local work, or grant the band Pro with `npm run billing:grant -w apps/api -- <boardId>` ([docs/billing.md](docs/billing.md)).
 
 **Invite link says "Link expired" straight away.** The code in the link works once and lasts an hour; opening the same link twice (or after an hour) shows this. Invite the person again for a fresh code. If no invite email reaches Mailpit at all, check the API log for `Invite email failed`.
