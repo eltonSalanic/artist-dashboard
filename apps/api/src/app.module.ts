@@ -1,5 +1,6 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { SentryModule } from '@sentry/nestjs/setup';
 import { ScheduleModule } from '@nestjs/schedule';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { AllExceptionsFilter } from './common/all-exceptions.filter';
@@ -35,6 +36,10 @@ import { FinancesModule } from './finances/finances.module';
 
 @Module({
   imports: [
+    // First, so every request runs in its own Sentry scope with breadcrumbs.
+    // Reporting itself stays in AllExceptionsFilter (via reportError), which
+    // decides what counts as unexpected.
+    SentryModule.forRoot(),
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     // Drives the notification dispatcher and the wall-clock email jobs.
     ScheduleModule.forRoot(),

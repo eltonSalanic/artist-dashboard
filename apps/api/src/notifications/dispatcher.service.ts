@@ -8,6 +8,7 @@ import { PUSH_TRANSPORT, type PushTransport } from './push/push-transport';
 import { templates, type RenderedNotification } from './templates';
 import { signUnsubscribeToken } from './unsubscribe-token';
 import { reportError } from '../common/error-reporter';
+import * as Sentry from '@sentry/nestjs';
 
 /**
  * First non-empty line of a plaintext body — the push fallback when a template
@@ -79,7 +80,9 @@ export class DispatcherService {
   @Interval(10_000)
   async tick(): Promise<void> {
     try {
-      await this.drain();
+      // Own scope, so a tick's breadcrumbs never leak into an HTTP error.
+      // No cron monitor: every 10 s is past Sentry's check-in rate limit.
+      await Sentry.withIsolationScope(() => this.drain());
     } catch (error) {
       // A tick must never throw — the next one has to keep trying.
       this.logger.error('Dispatcher tick failed', error as Error);

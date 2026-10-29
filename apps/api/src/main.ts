@@ -34,6 +34,9 @@ async function bootstrap() {
     rawBody: true,
     logger: createLogger(),
   });
+  // Flushes queued Sentry events (and closes Prisma) on SIGTERM, so the error
+  // that preceded a redeploy isn't lost with the process.
+  app.enableShutdownHooks();
   app.enableCors({
     origin: process.env.WEB_URL ?? 'http://localhost:3000',
     // Lets the web app read the id to show or report alongside an error.
