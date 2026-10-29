@@ -1,4 +1,4 @@
-import { isPro, webPurchaseUrl } from './billing';
+import { BAND_PRO, isPro, webPurchaseUrl } from './billing';
 
 const NOW = new Date('2026-10-29T12:00:00Z');
 const LATER = '2026-11-29T12:00:00Z';
@@ -44,5 +44,15 @@ describe('webPurchaseUrl', () => {
   it('is null when not configured', () => {
     expect(webPurchaseUrl(undefined, 'board-1')).toBeNull();
     expect(webPurchaseUrl('', 'board-1')).toBeNull();
+  });
+});
+
+describe('BAND_PRO', () => {
+  // Must match Elton's RevenueCat project: its offering uses RevenueCat's
+  // standard package identifiers, and access is the band_wall entitlement.
+  it('matches the RevenueCat project', () => {
+    expect(BAND_PRO.entitlement).toBe('band_wall');
+    expect(BAND_PRO.plans.monthly.packageId).toBe('$rc_monthly');
+    expect(BAND_PRO.plans.yearly.packageId).toBe('$rc_annual');
   });
 });

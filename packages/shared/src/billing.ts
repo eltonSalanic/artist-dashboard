@@ -21,12 +21,14 @@ export const BAND_PRO = {
   /** The RevenueCat entitlement identifier. */
   entitlement: 'band_wall',
   /**
-   * Package identifiers in the RevenueCat offering. The paywalls show the
-   * project's current offering, so this is for code that picks a package.
+   * Package identifiers in the RevenueCat offering: RevenueCat's standard
+   * ones, which the SDKs also expose as `offering.monthly` and
+   * `offering.annual`. The paywalls show the current offering, so this is
+   * only for code that picks or orders a package.
    */
   plans: {
     monthly: {
-      packageId: 'monthly',
+      packageId: '$rc_monthly',
       storeProductIds: {
         appStore: 'bandwall.pro.monthly',
         // Play subscription `bandwall_pro`, base plan `monthly`, as
@@ -38,7 +40,7 @@ export const BAND_PRO = {
       interval: 'month',
     },
     yearly: {
-      packageId: 'yearly',
+      packageId: '$rc_annual',
       storeProductIds: {
         appStore: 'bandwall.pro.yearly',
         playStore: 'bandwall_pro:yearly',
