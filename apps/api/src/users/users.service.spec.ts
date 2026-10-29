@@ -1,6 +1,10 @@
 import { UsersService } from './users.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
+import type { BillingService } from '../billing/billing.service';
+
+/** Billing not enforced, as in dev: every board summary reads as open. */
+const billingOff = { enforced: false } as unknown as BillingService;
 
 describe('UsersService.bootstrap', () => {
   const tx = {
@@ -22,6 +26,7 @@ describe('UsersService.bootstrap', () => {
   const service = new UsersService(
     prisma as unknown as PrismaService,
     new ActivityService(prisma as unknown as PrismaService),
+    billingOff,
   );
   const auth = { userId: 'u1', email: 'sam@band.com' };
 
@@ -107,6 +112,7 @@ describe('UsersService.me — multi-board', () => {
   const service = new UsersService(
     prisma as unknown as PrismaService,
     new ActivityService(prisma as unknown as PrismaService),
+    billingOff,
   );
 
   const auth = { userId: 'u1', email: 'drums@band.test' };
@@ -141,6 +147,8 @@ describe('UsersService.me — multi-board', () => {
         membershipId: 'm1',
         role: 'ADMIN',
         palette: 'playful',
+        isPro: false,
+        subscriptionRequired: false,
       },
       {
         id: 'b2',
@@ -148,6 +156,8 @@ describe('UsersService.me — multi-board', () => {
         membershipId: 'm2',
         role: 'USER',
         palette: 'playful',
+        isPro: false,
+        subscriptionRequired: false,
       },
     ]);
   });

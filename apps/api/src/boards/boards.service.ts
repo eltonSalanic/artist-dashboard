@@ -13,7 +13,8 @@ import {
   type UpdateBoardDto,
 } from '@artist/shared';
 import { PrismaService } from '../prisma/prisma.service';
-import { toBoardSummary } from './board-summary';
+import { SUMMARY_SUBSCRIPTION_SELECT, toBoardSummary } from './board-summary';
+import { BillingService } from '../billing/billing.service';
 import { newBoardData } from './new-board';
 import { ActivityService } from '../activity/activity.service';
 
@@ -22,6 +23,7 @@ export class BoardsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly activity: ActivityService,
+    private readonly billing: BillingService,
   ) {}
 
   /**
@@ -45,11 +47,19 @@ export class BoardsService {
         // `theme` is a column on the row this join already reads, so the
         // palette costs nothing extra; the rest of the theme stays behind
         // `GET /boards/:id`.
-        board: { select: { id: true, name: true, theme: true } },
+        board: {
+          select: {
+            id: true,
+            name: true,
+            theme: true,
+            subscription: SUMMARY_SUBSCRIPTION_SELECT,
+          },
+        },
       },
     });
 
-    return memberships.map(toBoardSummary);
+    const enforced = this.billing.enforced;
+    return memberships.map((m) => toBoardSummary(m, enforced));
   }
 
   /** A new band with the caller as its only admin, as a board summary. */
@@ -64,11 +74,15 @@ export class BoardsService {
       },
     });
     const [membership] = board.memberships;
-    return toBoardSummary({
-      id: membership.id,
-      role: membership.role,
-      board: { id: board.id, name: board.name, theme: board.theme },
-    });
+    // A new band has no subscription yet.
+    return toBoardSummary(
+      {
+        id: membership.id,
+        role: membership.role,
+        board: { id: board.id, name: board.name, theme: board.theme },
+      },
+      this.billing.enforced,
+    );
   }
 
   async findOne(boardId: string) {

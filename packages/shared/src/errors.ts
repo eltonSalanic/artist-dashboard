@@ -18,6 +18,8 @@ export type ApiErrorCode =
   | 'INVITE_EMAIL_FAILED'
   /** Better Auth refused a server-side account change; the message says why. */
   | 'AUTH_REJECTED'
+  /** 402: the board needs Band Pro before this route will answer. */
+  | 'BOARD_SUBSCRIPTION_REQUIRED'
   | 'INTERNAL';
 
 export interface ApiErrorBody {

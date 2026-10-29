@@ -3,6 +3,10 @@ import { DEFAULT_BOARD_THEME, type BoardThemeDto } from '@artist/shared';
 import { BoardsService } from './boards.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
+import type { BillingService } from '../billing/billing.service';
+
+/** Billing not enforced, as in dev: every board summary reads as open. */
+const billingOff = { enforced: false } as unknown as BillingService;
 
 describe('BoardsService.removeMember', () => {
   const prisma = {
@@ -20,6 +24,7 @@ describe('BoardsService.removeMember', () => {
   const service = new BoardsService(
     prisma as unknown as PrismaService,
     new ActivityService(prisma as unknown as PrismaService),
+    billingOff,
   );
 
   beforeEach(() => jest.clearAllMocks());
@@ -88,6 +93,7 @@ describe('BoardsService board theme', () => {
   const service = new BoardsService(
     prisma as unknown as PrismaService,
     new ActivityService(prisma as unknown as PrismaService),
+    billingOff,
   );
 
   beforeEach(() => jest.clearAllMocks());
@@ -160,6 +166,7 @@ describe('BoardsService.findAllForUser', () => {
   const service = new BoardsService(
     prisma as unknown as PrismaService,
     new ActivityService(prisma as unknown as PrismaService),
+    billingOff,
   );
 
   beforeEach(() => jest.clearAllMocks());
@@ -203,6 +210,8 @@ describe('BoardsService.findAllForUser', () => {
         membershipId: 'm1',
         role: 'ADMIN',
         palette: 'ocean',
+        isPro: false,
+        subscriptionRequired: false,
       },
       {
         id: 'b2',
@@ -210,6 +219,8 @@ describe('BoardsService.findAllForUser', () => {
         membershipId: 'm2',
         role: 'USER',
         palette: 'playful',
+        isPro: false,
+        subscriptionRequired: false,
       },
     ]);
   });
@@ -237,7 +248,8 @@ describe('BoardsService.findAllForUser', () => {
   /**
    * Listing twenty bands must not mean fetching twenty layouts. `theme` is on
    * the row either way, so the palette is free; `defaultLayout` is the field
-   * that would make this expensive, and it stays out.
+   * that would make this expensive, and it stays out. The subscription is one
+   * row per board, read for the Band Pro badge.
    */
   it('selects only what a switcher needs', async () => {
     membership.findMany.mockResolvedValue([]);
@@ -245,12 +257,13 @@ describe('BoardsService.findAllForUser', () => {
     await service.findAllForUser('u1');
 
     const [args] = membership.findMany.mock.calls[0] as [
-      { select: { board: { select: Record<string, boolean> } } },
+      { select: { board: { select: Record<string, unknown> } } },
     ];
     expect(args.select.board.select).toEqual({
       id: true,
       name: true,
       theme: true,
+      subscription: { select: { status: true, currentPeriodEnd: true } },
     });
   });
 
@@ -275,6 +288,7 @@ describe('BoardsService.create', () => {
   const service = new BoardsService(
     prisma as unknown as PrismaService,
     new ActivityService(prisma as unknown as PrismaService),
+    billingOff,
   );
 
   it('makes the caller the only admin, with default statuses and layout', async () => {

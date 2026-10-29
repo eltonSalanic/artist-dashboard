@@ -3,10 +3,16 @@ import { createInviteSchema, type CreateInviteDto } from '@artist/shared';
 import { CurrentUser, type AuthUser } from '../auth/current-user.decorator';
 import { BoardRoles } from '../common/board-roles.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
+import { SkipSubscription } from '../billing/skip-subscription.decorator';
 import { InvitesService } from './invites.service';
 
+/**
+ * Open on a board without Band Pro: a band can gather its members before
+ * anyone pays.
+ */
 @Controller('boards/:boardId/invites')
 @BoardRoles('ADMIN')
+@SkipSubscription()
 export class InvitesController {
   constructor(private readonly invites: InvitesService) {}
 

@@ -1,6 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { BillingService } from '../billing/billing.service';
 import type { AuthedRequest } from './authed-request';
 
 /**
@@ -11,10 +12,16 @@ import type { AuthedRequest } from './authed-request';
  * On those routes this list is the entire authorisation. It is resolved here,
  * once, from `Membership` — never from anything the client sends — so no
  * handler can widen it and no handler has to remember to narrow it.
+ *
+ * With billing enforced, boards without Band Pro drop out of the list, the
+ * same as their own routes answering 402.
  */
 @Injectable()
 export class UserBoardsGuard implements CanActivate {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly billing: BillingService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthedRequest>();
@@ -26,7 +33,9 @@ export class UserBoardsGuard implements CanActivate {
       where: { userId: request.user.userId },
       select: { boardId: true },
     });
-    request.userBoardIds = memberships.map((m) => m.boardId);
+    request.userBoardIds = await this.billing.accessibleBoards(
+      memberships.map((m) => m.boardId),
+    );
     return true;
   }
 }

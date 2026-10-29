@@ -1,19 +1,36 @@
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { UserBoardsGuard } from './user-boards.guard';
 import { PrismaService } from '../prisma/prisma.service';
+import { BillingService } from '../billing/billing.service';
 import type { AuthedRequest } from './authed-request';
 
 describe('UserBoardsGuard', () => {
   const findMany = jest.fn();
-  const prisma = { membership: { findMany } };
-  const guard = new UserBoardsGuard(prisma as unknown as PrismaService);
+  const subscriptions = jest.fn();
+  const prisma = {
+    membership: { findMany },
+    boardSubscription: { findMany: subscriptions },
+  };
+  let enforced = 'false';
+  const billing = new BillingService(
+    prisma as unknown as PrismaService,
+    { get: () => enforced } as unknown as ConfigService,
+  );
+  const guard = new UserBoardsGuard(
+    prisma as unknown as PrismaService,
+    billing,
+  );
 
   const contextFor = (request: Partial<AuthedRequest>): ExecutionContext =>
     ({
       switchToHttp: () => ({ getRequest: () => request }),
     }) as unknown as ExecutionContext;
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    enforced = 'false';
+  });
 
   it('attaches every board the caller belongs to', async () => {
     findMany.mockResolvedValue([{ boardId: 'b1' }, { boardId: 'b2' }]);
@@ -63,5 +80,28 @@ describe('UserBoardsGuard', () => {
       UnauthorizedException,
     );
     expect(findMany).not.toHaveBeenCalled();
+  });
+
+  it('drops boards without Band Pro when billing is enforced', async () => {
+    enforced = 'true';
+    findMany.mockResolvedValue([{ boardId: 'b1' }, { boardId: 'b2' }]);
+    subscriptions.mockResolvedValue([
+      { boardId: 'b2', status: 'ACTIVE', currentPeriodEnd: null },
+    ]);
+    const request: Partial<AuthedRequest> = { user: { userId: 'u1' } as never };
+
+    await guard.canActivate(contextFor(request));
+
+    expect(request.userBoardIds).toEqual(['b2']);
+  });
+
+  it('keeps every board when billing is not enforced', async () => {
+    findMany.mockResolvedValue([{ boardId: 'b1' }]);
+    const request: Partial<AuthedRequest> = { user: { userId: 'u1' } as never };
+
+    await guard.canActivate(contextFor(request));
+
+    expect(request.userBoardIds).toEqual(['b1']);
+    expect(subscriptions).not.toHaveBeenCalled();
   });
 });

@@ -33,6 +33,8 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { NotesModule } from './notes/notes.module';
 import { LinksModule } from './links/links.module';
 import { FinancesModule } from './finances/finances.module';
+import { BillingModule } from './billing/billing.module';
+import { SubscriptionGuard } from './billing/subscription.guard';
 
 @Module({
   imports: [
@@ -48,6 +50,8 @@ import { FinancesModule } from './finances/finances.module';
     ActivityModule,
     // Global for the same reason — domain services queue mail inline.
     NotificationsModule,
+    // Global: every board route's subscription check reads it.
+    BillingModule,
     AuthModule,
     UsersModule,
     BoardsModule,
@@ -73,9 +77,12 @@ import { FinancesModule } from './finances/finances.module';
   controllers: [HealthController],
   providers: [
     // Order matters: authentication must populate request.user before the
-    // board-role guard reads it.
+    // board-role guard reads it, and membership is checked before the
+    // subscription, so a stranger gets a 404 rather than learning the board
+    // is unpaid.
     { provide: APP_GUARD, useClass: SessionAuthGuard },
     { provide: APP_GUARD, useClass: BoardRolesGuard },
+    { provide: APP_GUARD, useClass: SubscriptionGuard },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
   ],
 })
