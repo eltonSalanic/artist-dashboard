@@ -254,7 +254,7 @@ function BandSwitcher({ me }: { me: MeResponse }) {
           </span>
           <ChevronsUpDown className="size-3.5 text-muted-foreground" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="min-w-52">
+        <DropdownMenuContent align="start" className="min-w-72">
           <DropdownMenuGroup>
             <DropdownMenuLabel>Your bands</DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -272,9 +272,9 @@ function BandSwitcher({ me }: { me: MeResponse }) {
                 ) : (
                   <span className="size-4" aria-hidden />
                 )}
-                {board.name}
+                <span className="min-w-0 truncate">{board.name}</span>
                 {board.subscriptionRequired && (
-                  <Badge variant="outline" className="ml-auto">
+                  <Badge variant="outline" className="ml-auto shrink-0">
                     Needs a subscription
                   </Badge>
                 )}
