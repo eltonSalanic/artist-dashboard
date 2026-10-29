@@ -2,7 +2,7 @@
 
 **Status:** built on `feat/billing`; not live anywhere. No store products exist yet, and `BILLING_ENFORCED` is off everywhere until the account setup below is done. Locally, the RevenueCat **Test Store** key lets the web and phone checkouts run end to end.
 
-Band Wall is a subscription **per band (board)**, not per person: **$5.99/month or $59.99/year**. Whoever pays, the whole band gets it, and members of a paid band never pay themselves. There is no free tier: with billing enforced, a band without Pro can't open its wall.
+Band Wall is a subscription **per band (board)**, not per person: **$5.99/month or $59.99/year**. Whoever pays, the whole band gets it, and members of a paid band never pay themselves. There is no free tier: with billing enforced, a band without a subscription can't open its wall. Both plans start with a **one-month free trial** for new subscribers.
 
 ## How it fits together
 
@@ -20,10 +20,12 @@ App Store / Play / Stripe ◄─────────────┘
 
 | Plan | Package | Test Store product | App Store product | Play subscription : base plan (as RevenueCat shows it) |
 |---|---|---|---|---|
-| Monthly, $5.99 | `$rc_monthly` | `band_wall_monthly` | `bandwall.pro.monthly` | `bandwall_pro:monthly` |
-| Yearly, $59.99 | `$rc_annual` | `band_wall_yearly` | `bandwall.pro.yearly` | `bandwall_pro:yearly` |
+| Monthly, $5.99 | `$rc_monthly` | `band_wall_monthly` | `bandwall.monthly` | `bandwall_subscription:monthly` |
+| Yearly, $59.99 | `$rc_annual` | `band_wall_yearly` | `bandwall.yearly` | `bandwall_subscription:yearly` |
 
 The paywalls read the offering, not these ids, so a mismatch shows up as a package missing from the offering rather than a code error.
+- **Free trial:** one month on both plans, set on the store products (App Store introductory offer, Play free-trial offer, Web Billing trial), not in our code. A trial counts as subscribed: RevenueCat sends `INITIAL_PURCHASE` with `period_type` `TRIAL`, the band's row is `ACTIVE` with `isTrial` true, and the trial ends at `currentPeriodEnd`. The first paid `RENEWAL` clears `isTrial`; a trial cancelled before it ends ends in `EXPIRATION` like any other subscription. Settings shows "Free month, ends …".
+- **Who gets a trial:** eligibility belongs to the **Apple ID or Google account, per subscription group**, not to the band (on the web, to the RevenueCat customer, which is the band). So an admin who already had a free month on one band won't get another one buying for a second band from the same Apple ID or Google account. The apps only say "Start your free month" when the store says the buyer is eligible: Play and Web Billing only offer the trial to eligible buyers, and on iOS the app asks RevenueCat (`checkTrialOrIntroductoryPriceEligibility`); an "unknown" answer still shows the trial, and Apple's own purchase sheet states the real terms. Otherwise the buttons show the plain price.
 - **Who can buy:** admins (`billing.manage` in the shared `can()` map). Every member can see the status (`billing.view`). Members are told to ask an admin.
 
 ## The enforcement rule
@@ -125,7 +127,7 @@ Do these in order; each later step needs the earlier ones.
 
 1. **Agreements, Tax, and Banking:** sign the **Paid Apps** agreement and fill in banking and tax. Subscriptions can't be sold or tested in sandbox until it's active.
 2. **App Store Small Business Program:** enroll (15% commission instead of 30% under $1M a year).
-3. In the Band Wall app (`com.bandwall.app`): **Subscriptions** → create a **subscription group** (e.g. "Band Wall") with two auto-renewable subscriptions: `bandwall.pro.monthly` at $5.99 a month and `bandwall.pro.yearly` at $59.99 a year. Add the localized names and the review screenshot each one asks for.
+3. In the Band Wall app (`com.bandwall.app`): **Subscriptions** → create a **subscription group** (e.g. "Band Wall") with two auto-renewable subscriptions: `bandwall.monthly` at $5.99 a month and `bandwall.yearly` at $59.99 a year. On each, add an **introductory offer: free trial, 1 month, new subscribers**. Add the localized names and the review screenshot each one asks for.
 4. **Users and Access → Integrations → In-App Purchase:** create an **In-App Purchase key** (`.p8`) for RevenueCat, and note the issuer id. Also note the app-specific shared secret.
 5. Create a **sandbox tester** under Users and Access for testing on a phone.
 
@@ -133,7 +135,7 @@ Do these in order; each later step needs the earlier ones.
 
 1. **Payments profile:** set up a merchant account (Settings → Payments profile).
 2. Upload a build with the billing permission (any build made after this branch) to an internal testing track; Play won't let you create subscriptions before that.
-3. **Monetize → Subscriptions:** create one subscription, `bandwall_pro`, with two auto-renewing base plans: `monthly` at $5.99 and `yearly` at $59.99. RevenueCat imports them as `bandwall_pro:monthly` and `bandwall_pro:yearly`.
+3. **Monetize → Subscriptions:** create one subscription, `bandwall_subscription`, with two auto-renewing base plans: `monthly` at $5.99 and `yearly` at $59.99. On each base plan, add an **offer: free trial, 1 month, eligibility "New customer acquisition"** (never had this subscription). RevenueCat imports them as `bandwall_subscription:monthly` and `bandwall_subscription:yearly`.
 4. Subscriptions already pay Google's **15% service fee**; nothing to enroll in.
 5. Create a **Google Cloud service account** with access to the Play Developer API, invite it in Play Console with financial and order permissions, and download its JSON key for RevenueCat. Add **license testers** for test purchases.
 
@@ -146,7 +148,7 @@ Do these in order; each later step needs the earlier ones.
 
 1. **Project:** created. Keep dev on the **Test Store** app (key `test_…`) until the stores are connected.
 2. **Apps:** add the **App Store** app (bundle id `com.bandwall.app`, the In-App Purchase key and issuer id, the shared secret), the **Play Store** app (package `com.bandwall.app`, the service account JSON), and a **Web Billing** app connected to Stripe (the sandbox for staging, the live account for production). Each gives its own public SDK key for the table above.
-3. **Products:** import the App Store and Play products, and create the two Web Billing products (monthly $5.99, yearly $59.99).
+3. **Products:** import the App Store and Play products, and create the two Web Billing products (monthly $5.99, yearly $59.99), each with a **1-month free trial**. The Test Store products `band_wall_monthly` and `band_wall_yearly` carry the same trial for local testing.
 4. **Entitlement `band_wall`:** attach all the monthly and yearly products from every store.
 5. **Offering:** `default` is the current offering, with RevenueCat's standard packages `$rc_monthly` and `$rc_annual`, each holding that period's product from every store (today, the Test Store's `band_wall_monthly` at $5.99 and `band_wall_yearly` at $59.99, matching the copy in the apps). Design the **paywall** for it (the web uses `presentPaywall`).
 6. **Customer Center:** turn it on (the phone's "Manage subscription" opens it).

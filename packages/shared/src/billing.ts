@@ -30,10 +30,10 @@ export const BAND_WALL_PLAN = {
     monthly: {
       packageId: '$rc_monthly',
       storeProductIds: {
-        appStore: 'bandwall.pro.monthly',
-        // Play subscription `bandwall_pro`, base plan `monthly`, as
+        appStore: 'bandwall.monthly',
+        // Play subscription `bandwall_subscription`, base plan `monthly`, as
         // RevenueCat names it.
-        playStore: 'bandwall_pro:monthly',
+        playStore: 'bandwall_subscription:monthly',
       },
       priceCents: 599,
       currency: 'USD',
@@ -42,8 +42,8 @@ export const BAND_WALL_PLAN = {
     yearly: {
       packageId: '$rc_annual',
       storeProductIds: {
-        appStore: 'bandwall.pro.yearly',
-        playStore: 'bandwall_pro:yearly',
+        appStore: 'bandwall.yearly',
+        playStore: 'bandwall_subscription:yearly',
       },
       priceCents: 5999,
       currency: 'USD',
@@ -65,6 +65,8 @@ export interface BoardSubscriptionDto {
   productId: string | null;
   currentPeriodEnd: string | null;
   willRenew: boolean;
+  /** In a free trial that ends at `currentPeriodEnd`. Counts as subscribed. */
+  isTrial: boolean;
 }
 
 /** The fields `isPro` needs, so it works on a DB row and the DTO alike. */

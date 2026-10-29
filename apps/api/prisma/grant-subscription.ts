@@ -64,6 +64,7 @@ async function main() {
       productId: 'promotional',
       currentPeriodEnd: until,
       willRenew: false,
+      isTrial: false,
       revenueCatAppUserId: board.id,
     };
     await prisma.boardSubscription.upsert({

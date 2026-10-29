@@ -38,6 +38,11 @@ export interface WebOffering {
   hasPaywall: boolean;
   /** Store prices, formatted. Null when the offering lacks that package. */
   prices: Record<SubscriptionPlan, string | null>;
+  /**
+   * The plan comes with a free trial this buyer can still get. Web Billing
+   * only offers a trial phase to someone eligible for it.
+   */
+  trial: Record<SubscriptionPlan, boolean>;
 }
 
 /**
@@ -54,6 +59,10 @@ export async function webOffering(boardId: string): Promise<WebOffering | null> 
     prices: {
       monthly: offering?.monthly?.webBillingProduct.price.formattedPrice ?? null,
       yearly: offering?.annual?.webBillingProduct.price.formattedPrice ?? null,
+    },
+    trial: {
+      monthly: !!offering?.monthly?.webBillingProduct.freeTrialPhase,
+      yearly: !!offering?.annual?.webBillingProduct.freeTrialPhase,
     },
   };
 }

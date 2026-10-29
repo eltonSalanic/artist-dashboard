@@ -13,7 +13,7 @@ const event = (overrides: Partial<RevenueCatEvent> = {}): RevenueCatEvent => ({
   app_user_id: BOARD,
   original_app_user_id: BOARD,
   aliases: [BOARD],
-  product_id: 'bandwall.pro.monthly',
+  product_id: 'bandwall.monthly',
   entitlement_ids: ['band_wall'],
   store: 'APP_STORE',
   environment: 'SANDBOX',
@@ -75,14 +75,40 @@ describe('BillingService webhook mapping', () => {
     expect(call.update).toEqual({
       status,
       store: 'APP_STORE',
-      productId: 'bandwall.pro.monthly',
+      productId: 'bandwall.monthly',
       currentPeriodEnd: new Date(EXPIRES),
       willRenew,
+      isTrial: false,
       revenueCatAppUserId: BOARD,
     });
     expect(call.create).toMatchObject({
       boardId: BOARD,
       entitlement: 'band_wall',
+    });
+  });
+
+  it('counts a free trial as subscribed and marks it as a trial', async () => {
+    const { service, prisma } = setup();
+
+    await service.handleEvent(event({ period_type: 'TRIAL' }));
+
+    expect(upserted(prisma).update).toMatchObject({
+      status: 'ACTIVE',
+      isTrial: true,
+      currentPeriodEnd: new Date(EXPIRES),
+    });
+  });
+
+  it('clears the trial flag when the first paid period renews', async () => {
+    const { service, prisma } = setup();
+
+    await service.handleEvent(
+      event({ type: 'RENEWAL', period_type: 'NORMAL' }),
+    );
+
+    expect(upserted(prisma).update).toMatchObject({
+      status: 'ACTIVE',
+      isTrial: false,
     });
   });
 
@@ -160,9 +186,10 @@ describe('BillingService webhook mapping', () => {
       entitlement: 'band_wall',
       status: 'ACTIVE',
       store: 'APP_STORE',
-      productId: 'bandwall.pro.yearly',
+      productId: 'bandwall.yearly',
       currentPeriodEnd: new Date(EXPIRES),
       willRenew: true,
+      isTrial: true,
     });
 
     await expect(
@@ -181,7 +208,8 @@ describe('BillingService webhook mapping', () => {
     expect(upserted(prisma).where).toEqual({ boardId: OTHER_BOARD });
     expect(upserted(prisma).update).toMatchObject({
       status: 'ACTIVE',
-      productId: 'bandwall.pro.yearly',
+      productId: 'bandwall.yearly',
+      isTrial: true,
       revenueCatAppUserId: OTHER_BOARD,
     });
     expect(prisma.boardSubscription.updateMany).toHaveBeenCalledWith({
@@ -251,6 +279,7 @@ describe('BillingService access', () => {
       productId: null,
       currentPeriodEnd: null,
       willRenew: false,
+      isTrial: false,
     });
   });
 });

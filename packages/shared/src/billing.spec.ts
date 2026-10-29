@@ -54,5 +54,13 @@ describe('BAND_WALL_PLAN', () => {
     expect(BAND_WALL_PLAN.entitlement).toBe('band_wall');
     expect(BAND_WALL_PLAN.plans.monthly.packageId).toBe('$rc_monthly');
     expect(BAND_WALL_PLAN.plans.yearly.packageId).toBe('$rc_annual');
+    expect(BAND_WALL_PLAN.plans.monthly.storeProductIds).toEqual({
+      appStore: 'bandwall.monthly',
+      playStore: 'bandwall_subscription:monthly',
+    });
+    expect(BAND_WALL_PLAN.plans.yearly.storeProductIds).toEqual({
+      appStore: 'bandwall.yearly',
+      playStore: 'bandwall_subscription:yearly',
+    });
   });
 });

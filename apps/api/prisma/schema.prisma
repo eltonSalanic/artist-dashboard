@@ -830,6 +830,10 @@ model BoardSubscription {
   /// Null for a lifetime promotional grant.
   currentPeriodEnd    DateTime?
   willRenew           Boolean            @default(true)
+  /// In a free trial (RevenueCat `period_type` TRIAL). The trial ends at
+  /// `currentPeriodEnd`; a trial counts as subscribed, the same as a paid
+  /// period.
+  isTrial             Boolean            @default(false)
   /// Always the board's id (we `logIn` RevenueCat with it); kept to make the
   /// webhook payload easy to match up when debugging.
   revenueCatAppUserId String

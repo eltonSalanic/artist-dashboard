@@ -98,6 +98,7 @@ export class BillingService {
       productId: row?.productId ?? null,
       currentPeriodEnd: row?.currentPeriodEnd?.toISOString() ?? null,
       willRenew: row?.willRenew ?? false,
+      isTrial: row?.isTrial ?? false,
     };
   }
 
@@ -149,6 +150,9 @@ export class BillingService {
             ? null
             : new Date(event.expiration_at_ms),
         willRenew: status === 'ACTIVE' || status === 'GRACE',
+        // A free trial is subscribed like a paid period; this only lets the
+        // apps say when the free month ends.
+        isTrial: event.period_type === 'TRIAL',
         revenueCatAppUserId: boardId,
       };
       await tx.boardSubscription.upsert({
@@ -183,6 +187,7 @@ export class BillingService {
         productId: source.productId,
         currentPeriodEnd: source.currentPeriodEnd,
         willRenew: source.willRenew,
+        isTrial: source.isTrial,
         revenueCatAppUserId: to[0],
       };
       await tx.boardSubscription.upsert({

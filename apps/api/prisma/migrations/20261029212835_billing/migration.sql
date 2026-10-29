@@ -14,6 +14,7 @@ CREATE TABLE "BoardSubscription" (
     "productId" TEXT NOT NULL,
     "currentPeriodEnd" TIMESTAMP(3),
     "willRenew" BOOLEAN NOT NULL DEFAULT true,
+    "isTrial" BOOLEAN NOT NULL DEFAULT false,
     "revenueCatAppUserId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,

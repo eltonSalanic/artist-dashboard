@@ -1,4 +1,5 @@
 import Purchases, {
+  INTRO_ELIGIBILITY_STATUS,
   PURCHASES_ERROR_CODE,
   type PurchasesError,
   type PurchasesPackage,
@@ -32,14 +33,46 @@ async function ready(boardId: string) {
 const hasPro = (info: { entitlements: { active: Record<string, unknown> } }) =>
   BAND_WALL_PLAN.entitlement in info.entitlements.active;
 
-/** The packages in the current offering, monthly first. */
-export async function planPackages(boardId: string): Promise<PurchasesPackage[]> {
+export interface PlanOption {
+  pkg: PurchasesPackage;
+  /** The plan has a free trial this store account can still get. */
+  freeTrial: boolean;
+}
+
+/**
+ * The packages in the current offering, monthly first, each with whether its
+ * free trial is on the table. Trial eligibility belongs to the Apple ID or
+ * Google account (per subscription group), not to the band: an admin who
+ * already had a free month on one band won't get another on a second.
+ *
+ * Android only lists a free phase to an eligible account. iOS lists the
+ * intro offer to everyone and answers eligibility separately; "unknown"
+ * (Apple couldn't tell) still shows the trial, and the store's own sheet
+ * states the real terms before anyone pays.
+ */
+export async function planPackages(boardId: string): Promise<PlanOption[]> {
   await ready(boardId);
   const offerings = await Purchases.getOfferings();
   const order: string[] = [BAND_WALL_PLAN.plans.monthly.packageId, BAND_WALL_PLAN.plans.yearly.packageId];
-  return [...(offerings.current?.availablePackages ?? [])].sort(
+  const packages = [...(offerings.current?.availablePackages ?? [])].sort(
     (a, b) => rank(order, a.identifier) - rank(order, b.identifier),
   );
+
+  const eligibility =
+    process.env.EXPO_OS === 'ios'
+      ? await Purchases.checkTrialOrIntroductoryPriceEligibility(
+          packages.map((p) => p.product.identifier),
+        )
+      : {};
+  return packages.map((pkg) => {
+    const { product } = pkg;
+    const hasTrial = product.introPrice?.price === 0 || !!product.defaultOption?.freePhase;
+    const status = eligibility[product.identifier]?.status;
+    return {
+      pkg,
+      freeTrial: hasTrial && status !== INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_INELIGIBLE,
+    };
+  });
 }
 
 const rank = (order: string[], id: string) => {

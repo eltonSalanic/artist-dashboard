@@ -17,6 +17,8 @@ const eventSchema = z
     new_product_id: z.string().nullish(),
     entitlement_ids: z.array(z.string()).nullish(),
     store: z.string().nullish(),
+    // NORMAL | TRIAL | INTRO | PREPAID. TRIAL is a free trial.
+    period_type: z.string().nullish(),
     environment: z.string().nullish(),
     expiration_at_ms: z.number().nullish(),
     event_timestamp_ms: z.number().nullish(),

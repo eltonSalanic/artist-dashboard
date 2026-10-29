@@ -26,6 +26,14 @@ const STORE_COPY: Record<NonNullable<BoardSubscriptionDto["store"]>, string> = {
 /** One line describing the band's subscription, for settings. */
 export function describeSubscription(sub: BoardSubscriptionDto): string {
   if (!sub.status) return "Not subscribed.";
+  if (sub.isTrial && sub.status !== "EXPIRED" && sub.currentPeriodEnd) {
+    const ends = new Date(sub.currentPeriodEnd).toLocaleDateString(undefined, {
+      dateStyle: "medium",
+    });
+    return sub.willRenew
+      ? `Free month, ends ${ends}. It rolls into the paid plan after that.`
+      : `Free month, ends ${ends}. It's cancelled, so nothing gets charged.`;
+  }
   const parts = [STATUS_COPY[sub.status]];
   if (sub.store) parts.push(`via ${STORE_COPY[sub.store]}`);
   if (sub.currentPeriodEnd && sub.status !== "EXPIRED") {

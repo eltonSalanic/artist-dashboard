@@ -129,10 +129,10 @@ export function SubscriptionScreen({
         <Section title="STATUS">
           <Row
             first
-            title={STATUS_COPY[sub.status]}
+            title={sub.isTrial && sub.status !== 'EXPIRED' ? 'Free month' : STATUS_COPY[sub.status]}
             meta={
               sub.currentPeriodEnd && sub.status !== 'EXPIRED'
-                ? `${sub.willRenew ? 'Renews' : 'Ends'} ${new Date(sub.currentPeriodEnd).toLocaleDateString()}`
+                ? `${sub.willRenew ? (sub.isTrial ? 'Paid plan kicks in' : 'Renews') : 'Ends'} ${new Date(sub.currentPeriodEnd).toLocaleDateString()}`
                 : null
             }
           />
@@ -154,15 +154,28 @@ export function SubscriptionScreen({
               {"Plans couldn't be loaded. Check your connection and try again."}
             </ThemedText>
           ) : (
-            packages.data.map((pkg) => (
-              <Button
-                key={pkg.identifier}
-                title={`${pkg.product.title || pkg.identifier} · ${pkg.product.priceString}`}
-                loading={busy === pkg.identifier}
-                disabled={busy !== null}
-                onPress={() => void buy(pkg)}
-              />
-            ))
+            <>
+              {packages.data.map(({ pkg, freeTrial }) => (
+                <Button
+                  key={pkg.identifier}
+                  title={
+                    freeTrial
+                      ? `Start your free month · ${pkg.product.title || pkg.identifier}`
+                      : `${pkg.product.title || pkg.identifier} · ${pkg.product.priceString}`
+                  }
+                  loading={busy === pkg.identifier}
+                  disabled={busy !== null}
+                  onPress={() => void buy(pkg)}
+                />
+              ))}
+              {packages.data.some((p) => p.freeTrial) && (
+                <ThemedText variant="footnote" tone="muted">
+                  {`First month's on us. After that it's ${packages.data
+                    .map(({ pkg }) => `${pkg.product.priceString} ${pkg.packageType === 'ANNUAL' ? 'a year' : 'a month'}`)
+                    .join(' or ')}. Cancel before it's up and you won't pay a thing.`}
+                </ThemedText>
+              )}
+            </>
           )}
         </Section>
       )}

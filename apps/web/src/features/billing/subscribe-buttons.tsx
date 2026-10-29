@@ -27,40 +27,57 @@ export function SubscribeButtons({
   busy: boolean;
   size?: "default" | "lg";
 }) {
+  const prices: Record<SubscriptionPlan, string> = {
+    monthly:
+      offering?.prices.monthly ?? fallbackPrice(BAND_WALL_PLAN.plans.monthly.priceCents),
+    yearly:
+      offering?.prices.yearly ?? fallbackPrice(BAND_WALL_PLAN.plans.yearly.priceCents),
+  };
+  const trial = offering?.trial ?? { monthly: false, yearly: false };
+  const anyTrial = trial.monthly || trial.yearly;
+  // Casual on purpose: it's a band talking to bands.
+  const trialNote = anyTrial ? (
+    <p className="text-sm text-muted-foreground">
+      First month&apos;s on us. After that it&apos;s {prices.monthly} a month
+      or {prices.yearly} a year. Cancel before it&apos;s up and you won&apos;t
+      pay a thing.
+    </p>
+  ) : null;
+
   if (offering?.hasPaywall) {
     return (
-      <Button size={size} onClick={() => onSubscribe("monthly")} disabled={busy}>
-        {busy && <Spinner data-icon="inline-start" />}
-        Subscribe to {BAND_WALL_PLAN.name}
-      </Button>
+      <div className="flex flex-col items-center gap-2">
+        <Button size={size} onClick={() => onSubscribe("monthly")} disabled={busy}>
+          {busy && <Spinner data-icon="inline-start" />}
+          {anyTrial ? "Start your free month" : `Subscribe to ${BAND_WALL_PLAN.name}`}
+        </Button>
+        {trialNote}
+      </div>
     );
   }
 
-  const plans: { plan: SubscriptionPlan; label: string; price: string }[] = [
-    {
-      plan: "monthly",
-      label: "Monthly",
-      price: offering?.prices.monthly ?? fallbackPrice(BAND_WALL_PLAN.plans.monthly.priceCents),
-    },
-    {
-      plan: "yearly",
-      label: "Yearly",
-      price: offering?.prices.yearly ?? fallbackPrice(BAND_WALL_PLAN.plans.yearly.priceCents),
-    },
+  const plans: { plan: SubscriptionPlan; label: string }[] = [
+    { plan: "monthly", label: "Monthly" },
+    { plan: "yearly", label: "Yearly" },
   ];
   return (
-    <div className="flex flex-wrap justify-center gap-2">
-      {plans.map(({ plan, label, price }) => (
-        <Button
-          key={plan}
-          size={size}
-          variant={plan === "yearly" ? "default" : "outline"}
-          onClick={() => onSubscribe(plan)}
-          disabled={busy}
-        >
-          {label} · {price}
-        </Button>
-      ))}
+    <div className="flex flex-col items-center gap-2">
+      <div className="flex flex-wrap justify-center gap-2">
+        {plans.map(({ plan, label }) => (
+          <Button
+            key={plan}
+            size={size}
+            variant={plan === "yearly" ? "default" : "outline"}
+            onClick={() => onSubscribe(plan)}
+            disabled={busy}
+          >
+            {trial[plan]
+              ? `Start your free month · ${label}`
+              : `${label} · ${prices[plan]}`}
+          </Button>
+        ))}
+      </div>
+      {trialNote}
     </div>
   );
 }
