@@ -20,8 +20,8 @@ App Store / Play / Stripe ◄─────────────┘
 
 | Plan | Package | Test Store product | App Store product | Play subscription : base plan (as RevenueCat shows it) |
 |---|---|---|---|---|
-| Monthly, $5.99 | `$rc_monthly` | `band_pro_monthly` | `bandwall.pro.monthly` | `bandwall_pro:monthly` |
-| Yearly, $59.99 | `$rc_annual` | `band_pro_yearly` | `bandwall.pro.yearly` | `bandwall_pro:yearly` |
+| Monthly, $5.99 | `$rc_monthly` | `band_wall_monthly` | `bandwall.pro.monthly` | `bandwall_pro:monthly` |
+| Yearly, $59.99 | `$rc_annual` | `band_wall_yearly` | `bandwall.pro.yearly` | `bandwall_pro:yearly` |
 
 The paywalls read the offering, not these ids, so a mismatch shows up as a package missing from the offering rather than a code error.
 - **Who can buy:** admins (`billing.manage` in the shared `can()` map). Every member can see the status (`billing.view`). Members are told to ask an admin.
@@ -148,7 +148,7 @@ Do these in order; each later step needs the earlier ones.
 2. **Apps:** add the **App Store** app (bundle id `com.bandwall.app`, the In-App Purchase key and issuer id, the shared secret), the **Play Store** app (package `com.bandwall.app`, the service account JSON), and a **Web Billing** app connected to Stripe (the sandbox for staging, the live account for production). Each gives its own public SDK key for the table above.
 3. **Products:** import the App Store and Play products, and create the two Web Billing products (monthly $5.99, yearly $59.99).
 4. **Entitlement `band_wall`:** attach all the monthly and yearly products from every store.
-5. **Offering:** `default` is the current offering, with RevenueCat's standard packages `$rc_monthly` and `$rc_annual`, each holding that period's product from every store (today, the Test Store's `band_pro_monthly` at $5.99 and `band_pro_yearly` at $59.99, matching the copy in the apps). Design the **paywall** for it (the web uses `presentPaywall`).
+5. **Offering:** `default` is the current offering, with RevenueCat's standard packages `$rc_monthly` and `$rc_annual`, each holding that period's product from every store (today, the Test Store's `band_wall_monthly` at $5.99 and `band_wall_yearly` at $59.99, matching the copy in the apps). Design the **paywall** for it (the web uses `presentPaywall`).
 6. **Customer Center:** turn it on (the phone's "Manage subscription" opens it).
 7. **Restore behavior** (Project settings): choose **keep with original App User ID**, not "transfer". With the board as the app user id, "transfer" lets an admin restoring on another band move the subscription off the first band. If it is left on transfer, the webhook handles the resulting `TRANSFER` event, but the first band loses Pro.
 8. **Webhooks**, one per environment, each with its own Authorization value (= that API's `REVENUECAT_WEBHOOK_AUTH`):
