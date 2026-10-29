@@ -184,5 +184,9 @@ so logs and error reports know where they came from (see
 | `preview` | Internal-distribution build for testing against staging | `staging` |
 | `production` | Store build, build number auto-incremented | `production` |
 
+How these builds reach testers, and what still needs setting up before the
+first staging or beta build, is in
+[docs/release-workflow.md](../../docs/release-workflow.md).
+
 `EXPO_PUBLIC_SENTRY_DSN` turns on error reporting, but only in a build made
 after the `@sentry/react-native` plugin was added (October 2026).
