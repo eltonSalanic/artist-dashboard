@@ -20,8 +20,8 @@ App Store / Play / Stripe ◄─────────────┘
 
 | Plan | Package | Test Store product | App Store product | Play subscription : base plan (as RevenueCat shows it) |
 |---|---|---|---|---|
-| Monthly, $5.99 | `$rc_monthly` | `monthly` | `bandwall.pro.monthly` | `bandwall_pro:monthly` |
-| Yearly, $59.99 | `$rc_annual` | `yearly` | `bandwall.pro.yearly` | `bandwall_pro:yearly` |
+| Monthly, $5.99 | `$rc_monthly` | `band_pro_monthly` | `bandwall.pro.monthly` | `bandwall_pro:monthly` |
+| Yearly, $59.99 | `$rc_annual` | `band_pro_yearly` | `bandwall.pro.yearly` | `bandwall_pro:yearly` |
 
 The paywalls read the offering, not these ids, so a mismatch shows up as a package missing from the offering rather than a code error.
 - **Who can buy:** admins (`billing.manage` in the shared `can()` map). Every member can see the status (`billing.view`). Members are told to ask an admin.
@@ -114,6 +114,7 @@ It writes the database `DATABASE_URL` points at, and RevenueCat doesn't know abo
 - Missing web or mobile keys hide the buying controls. With billing enforced and no key, the paywall says to subscribe from the other platform.
 - `NEXT_PUBLIC_REVENUECAT_WEB_PURCHASE_URL` is a fallback for a build with no web key: the button opens RevenueCat's hosted checkout (the link from the dashboard, with the board id appended as the app user id) in a new tab.
 - On EAS, set the mobile keys per build profile in `eas.json` or as EAS environment variables. Changing them needs a new build or update, since `EXPO_PUBLIC_*` values are inlined.
+- **Pinned, temporarily:** `react-native-purchases` and `react-native-purchases-ui` are pinned to exactly **10.16.0**, an exception to the latest-versions rule that Elton approved on 2026-10-29. 11.0.0 needs the iOS pod `PurchasesHybridCommon` 20.1.0, which wasn't on CocoaPods yet, so `pod install` failed. **TODO:** once `pod trunk info PurchasesHybridCommon` lists 20.1.0 (or later), upgrade both with `npx expo install react-native-purchases@latest react-native-purchases-ui@latest`, rebuild, and remove this note.
 - `react-native-purchases` is a native module: phones need a **new development build** made after this branch, and it doesn't run in Expo Go except in RevenueCat's preview mode.
 
 ## Account setup (Elton)
@@ -147,7 +148,7 @@ Do these in order; each later step needs the earlier ones.
 2. **Apps:** add the **App Store** app (bundle id `com.bandwall.app`, the In-App Purchase key and issuer id, the shared secret), the **Play Store** app (package `com.bandwall.app`, the service account JSON), and a **Web Billing** app connected to Stripe (the sandbox for staging, the live account for production). Each gives its own public SDK key for the table above.
 3. **Products:** import the App Store and Play products, and create the two Web Billing products (monthly $5.99, yearly $59.99).
 4. **Entitlement `band_wall`:** attach all the monthly and yearly products from every store.
-5. **Offering:** `default` is the current offering, with RevenueCat's standard packages `$rc_monthly` and `$rc_annual`, each holding that period's product from every store (today, the Test Store's `monthly` and `yearly`). Their Test Store prices must be $5.99 and $59.99 to match the copy in the apps. Design the **paywall** for it (the web uses `presentPaywall`).
+5. **Offering:** `default` is the current offering, with RevenueCat's standard packages `$rc_monthly` and `$rc_annual`, each holding that period's product from every store (today, the Test Store's `band_pro_monthly` at $5.99 and `band_pro_yearly` at $59.99, matching the copy in the apps). Design the **paywall** for it (the web uses `presentPaywall`).
 6. **Customer Center:** turn it on (the phone's "Manage subscription" opens it).
 7. **Restore behavior** (Project settings): choose **keep with original App User ID**, not "transfer". With the board as the app user id, "transfer" lets an admin restoring on another band move the subscription off the first band. If it is left on transfer, the webhook handles the resulting `TRANSFER` event, but the first band loses Pro.
 8. **Webhooks**, one per environment, each with its own Authorization value (= that API's `REVENUECAT_WEBHOOK_AUTH`):

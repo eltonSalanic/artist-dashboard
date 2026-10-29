@@ -147,7 +147,7 @@ with an `overrides` entry was tried and did not move `expo-router`; a fix needs
 either Expo to resolve this through the project root or the dependency conflict
 to go away.
 
-## Three deliberate deviations from the Expo defaults
+## Deliberate deviations from the Expo defaults and latest versions
 
 Each would otherwise read as an oversight:
 
@@ -160,7 +160,12 @@ Each would otherwise read as an oversight:
 - **`jest` is 30**, not the `~29.7.0` the SDK expects, matching the other three
   workspaces. These tests are plain `ts-jest` units in a Node environment, not
   `jest-expo`, so the preset's version requirement does not apply.
-- Both are listed in `expo.install.exclude` so `expo install --check` and
+- **`react-native-purchases` and `react-native-purchases-ui` are pinned to
+  exactly `10.16.0`**, not the latest 11.x (approved 2026-10-29). 11.0.0 needs
+  the iOS pod `PurchasesHybridCommon` 20.1.0, which wasn't published to
+  CocoaPods, so `pod install` failed. TODO: upgrade once it is; see
+  [docs/billing.md](../../docs/billing.md).
+- `react` and `jest` are listed in `expo.install.exclude` so `expo install --check` and
   `expo-doctor` stay green and a real mismatch is still visible.
 
 ## Tests
