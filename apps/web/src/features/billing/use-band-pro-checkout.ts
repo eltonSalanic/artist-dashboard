@@ -1,13 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   toUserMessage,
   useBoardSubscription,
   useRefreshBoardSubscription,
 } from "@artist/api-client";
-import { manageSubscriptionUrl, presentBandProPaywall } from "@/lib/revenuecat";
+import {
+  manageSubscriptionUrl,
+  startBandProCheckout,
+  webOffering,
+  type BandProPlan,
+} from "@/lib/revenuecat";
 
 /**
  * Buying Band Pro for one band. The store confirms the purchase before
@@ -27,6 +33,13 @@ export function useBandProCheckout(boardId: string, customerEmail?: string) {
   const isPro = subscription.data?.isPro ?? false;
   // Derived, not stored: the wait is over as soon as the API says Pro.
   const awaitingPurchase = purchased && !isPro;
+  // Whether to show RevenueCat's paywall or our own two plan buttons.
+  const offering = useQuery({
+    queryKey: ["band-pro-web-offering", boardId],
+    queryFn: () => webOffering(boardId),
+    enabled: !isPro,
+    staleTime: 5 * 60_000,
+  });
 
   useEffect(() => {
     if (!purchased || !isPro || announced.current) return;
@@ -35,10 +48,10 @@ export function useBandProCheckout(boardId: string, customerEmail?: string) {
     void refresh(boardId);
   }, [purchased, isPro, boardId, refresh]);
 
-  const subscribe = async () => {
+  const subscribe = async (plan: BandProPlan = "monthly") => {
     setOpening(true);
     try {
-      const outcome = await presentBandProPaywall(boardId, customerEmail);
+      const outcome = await startBandProCheckout(boardId, plan, customerEmail);
       // A hosted checkout in another tab also ends in the webhook.
       if (outcome !== "cancelled") {
         announced.current = false;
@@ -61,5 +74,12 @@ export function useBandProCheckout(boardId: string, customerEmail?: string) {
     }
   };
 
-  return { subscription, subscribe, manage, opening, awaitingPurchase };
+  return {
+    subscription,
+    offering: offering.data ?? null,
+    subscribe,
+    manage,
+    opening,
+    awaitingPurchase,
+  };
 }

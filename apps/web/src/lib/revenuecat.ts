@@ -30,16 +30,45 @@ export const webCheckoutAvailable = () =>
   !!env.revenueCatWebKey || !!env.revenueCatWebPurchaseUrl;
 
 export type PaywallOutcome = "purchased" | "cancelled" | "redirected";
+export type BandProPlan = "monthly" | "yearly";
+
+/** What the web checkout can offer right now, read from the current offering. */
+export interface WebOffering {
+  /** A RevenueCat paywall is designed for the offering; show it. */
+  hasPaywall: boolean;
+  /** Store prices, formatted. Null when the offering lacks that package. */
+  prices: Record<BandProPlan, string | null>;
+}
 
 /**
- * Shows RevenueCat's paywall for the current offering as a full-screen
- * overlay. Without a web key it falls back to the Web Purchase Link, which
- * opens RevenueCat's hosted checkout in a new tab.
+ * The current offering, for deciding what the Subscribe control looks like.
+ * Null when there is no web key (the Web Purchase Link fallback, if any, has
+ * no offering to read).
+ */
+export async function webOffering(boardId: string): Promise<WebOffering | null> {
+  const purchases = await purchasesFor(boardId);
+  if (!purchases) return null;
+  const offering = (await purchases.getOfferings()).current;
+  return {
+    hasPaywall: offering?.hasPaywall ?? false,
+    prices: {
+      monthly: offering?.monthly?.webBillingProduct.price.formattedPrice ?? null,
+      yearly: offering?.annual?.webBillingProduct.price.formattedPrice ?? null,
+    },
+  };
+}
+
+/**
+ * Starts checkout. With a RevenueCat paywall designed for the current
+ * offering, shows it as a full-screen overlay and the person picks a plan
+ * there. Without one, goes straight to RevenueCat's checkout for `plan`.
+ * Without a web key at all, opens the Web Purchase Link in a new tab.
  *
  * Resolves "cancelled" when the person backs out; any other failure throws.
  */
-export async function presentBandProPaywall(
+export async function startBandProCheckout(
   boardId: string,
+  plan: BandProPlan,
   customerEmail?: string,
 ): Promise<PaywallOutcome> {
   const purchases = await purchasesFor(boardId);
@@ -54,13 +83,23 @@ export async function presentBandProPaywall(
     "@revenuecat/purchases-js"
   );
   try {
-    const result = await purchases.presentPaywall({
-      customerEmail,
-      // From the paywall's "manage" link: same place as the settings button.
-      onVisitCustomerCenter: () => void openManageSubscription(boardId),
-      onBack: (close) => close(),
-    });
-    return result.customerInfo.entitlements.active[BAND_PRO.entitlement]
+    const offering = (await purchases.getOfferings()).current;
+    if (!offering) throw new Error("No Band Pro offering is set up.");
+    let customerInfo;
+    if (offering.hasPaywall) {
+      ({ customerInfo } = await purchases.presentPaywall({
+        offering,
+        customerEmail,
+        // From the paywall's "manage" link: same place as the settings button.
+        onVisitCustomerCenter: () => void openManageSubscription(boardId),
+        onBack: (close) => close(),
+      }));
+    } else {
+      const rcPackage = plan === "yearly" ? offering.annual : offering.monthly;
+      if (!rcPackage) throw new Error(`The offering has no ${plan} package.`);
+      ({ customerInfo } = await purchases.purchase({ rcPackage, customerEmail }));
+    }
+    return customerInfo.entitlements.active[BAND_PRO.entitlement]
       ? "purchased"
       : "cancelled";
   } catch (error) {

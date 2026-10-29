@@ -16,6 +16,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { env } from "@/lib/env";
 import { webCheckoutAvailable } from "@/lib/revenuecat";
 import { BAND_PRO_PRICE_LINE, describeSubscription } from "./band-pro-copy";
+import { SubscribeButtons } from "./subscribe-buttons";
 import { useBandProCheckout } from "./use-band-pro-checkout";
 
 /**
@@ -31,7 +32,7 @@ export function BandProCard({
   email: string;
 }) {
   const { can } = usePermissions();
-  const { subscription, subscribe, manage, opening, awaitingPurchase } =
+  const { subscription, offering, subscribe, manage, opening, awaitingPurchase } =
     useBandProCheckout(boardId, email);
   const sub = subscription.data;
   const canManage = can("billing.manage");
@@ -58,10 +59,11 @@ export function BandProCard({
         {canManage && sub && (
           <div className="flex flex-wrap gap-2">
             {!sub.isPro && webCheckoutAvailable() && (
-              <Button onClick={subscribe} disabled={opening || awaitingPurchase}>
-                {opening && <Spinner data-icon="inline-start" />}
-                Subscribe
-              </Button>
+              <SubscribeButtons
+                offering={offering}
+                onSubscribe={(plan) => void subscribe(plan)}
+                busy={opening || awaitingPurchase}
+              />
             )}
             {sub.isPro && sub.store !== "PROMOTIONAL" && env.revenueCatWebKey && (
               <Button variant="outline" onClick={manage}>

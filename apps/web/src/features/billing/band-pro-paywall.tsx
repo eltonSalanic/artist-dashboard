@@ -3,10 +3,10 @@
 import { Sparkles } from "lucide-react";
 import { BAND_PRO } from "@artist/shared";
 import { usePermissions } from "@artist/api-client";
-import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { webCheckoutAvailable } from "@/lib/revenuecat";
 import { BAND_PRO_PRICE_LINE } from "./band-pro-copy";
+import { SubscribeButtons } from "./subscribe-buttons";
 import { useBandProCheckout } from "./use-band-pro-checkout";
 
 /**
@@ -26,7 +26,7 @@ export function BandProPaywall({
   email: string;
 }) {
   const { can } = usePermissions();
-  const { subscribe, opening, awaitingPurchase } = useBandProCheckout(
+  const { subscribe, offering, opening, awaitingPurchase } = useBandProCheckout(
     boardId,
     email,
   );
@@ -54,10 +54,12 @@ export function BandProPaywall({
             <Spinner /> Confirming your purchase…
           </p>
         ) : canBuy && available ? (
-          <Button size="lg" onClick={subscribe} disabled={opening}>
-            {opening && <Spinner data-icon="inline-start" />}
-            Subscribe to {BAND_PRO.name}
-          </Button>
+          <SubscribeButtons
+            size="lg"
+            offering={offering}
+            onSubscribe={(plan) => void subscribe(plan)}
+            busy={opening}
+          />
         ) : canBuy ? (
           <p className="text-sm text-muted-foreground">
             Subscribe from the Band Wall app on your phone.
