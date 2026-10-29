@@ -18,7 +18,6 @@ declare const process: {
     readonly EXPO_OS?: 'ios' | 'android' | 'web';
     readonly EXPO_PUBLIC_API_URL?: string;
     readonly EXPO_PUBLIC_SUPABASE_URL?: string;
-    readonly EXPO_PUBLIC_SUPABASE_ANON_KEY?: string;
     /** development | staging | production, set per EAS build profile. */
     readonly EXPO_PUBLIC_APP_ENV?: string;
     /** Sentry DSN; unset means no error reporting. */

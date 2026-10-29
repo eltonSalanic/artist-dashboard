@@ -5,9 +5,9 @@
  * one has to be referenced by its literal name — `process.env[name]` reads
  * nothing. That is why this file repeats itself rather than looping.
  *
- * All three are public by nature (they ship inside the bundle): the API URL,
- * the Supabase project URL, and the Supabase *anon* key, which is the same key
- * the web app embeds. Server-only secrets never appear here.
+ * Both are public by nature (they ship inside the bundle): the API URL, and the
+ * Supabase project URL, which only rewrites signed file links so a phone can
+ * reach local Storage. Server-only secrets never appear here.
  */
 
 import Constants from 'expo-constants';
@@ -48,10 +48,6 @@ export const env = {
   supabaseUrl: origin(
     'EXPO_PUBLIC_SUPABASE_URL',
     process.env.EXPO_PUBLIC_SUPABASE_URL || urlOnDevHost(metroHost, SUPABASE_PORT),
-  ),
-  supabaseAnonKey: required(
-    'EXPO_PUBLIC_SUPABASE_ANON_KEY',
-    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
   ),
   /**
    * development | staging | production, set per build profile in eas.json.
