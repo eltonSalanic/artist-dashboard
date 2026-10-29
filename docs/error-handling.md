@@ -45,9 +45,17 @@ Every API request gets an `x-request-id` (kept from a proxy, or minted). It is r
 
 ## Error reporting (Sentry)
 
-Off until a DSN is set: `SENTRY_DSN` (API), `NEXT_PUBLIC_SENTRY_DSN` (web), `EXPO_PUBLIC_SENTRY_DSN` (mobile). Every event is tagged with the environment.
+Org `elton-salanic`, one project per app: `band-wall-api`, `band-wall-web`, `band-wall-mobile`. Off until a DSN is set: `SENTRY_DSN` (API), `NEXT_PUBLIC_SENTRY_DSN` (web), `EXPO_PUBLIC_SENTRY_DSN` (mobile). Every event is tagged with the environment.
 
-- Reported: API 500s, background job failures, render crashes, and unexpected client errors (bugs and 5xx) via each app's `reportError`.
-- Not reported: offline users, validation and other expected 4xx.
-- Mobile needs a new native build (the `@sentry/react-native` config plugin) before setting the DSN. The SDK loads lazily, so older dev builds keep working without it.
-- One Sentry project can serve all three apps on the free plan (5,000 errors a month, shared between staging and prod).
+- **Reported:** API 500s and background-job failures (by the API), render crashes and unexpected client bugs (by web and mobile `reportError`). Web and mobile skip 5xx responses, because the API already reported them (`isReportedByServer`).
+- **Not reported:** offline users, validation and other expected 4xx.
+- **Who and which release:** events carry the user id only (no email or name). The API's release is the Railway commit, the web's the Vercel commit, and mobile's the app version + build.
+- **Privacy:** the API sends no request bodies, cookies or auto-collected user info (`dataCollection` in `instrument.ts`). Replays mask all text and media.
+- **Tracing:** on in all three apps at full sampling (fine for the free plan's 5M spans at current traffic). A web page load and its API calls share one trace. `/health` is excluded.
+- **Replays:** web and mobile record only sessions that hit an error (free plan: 50 a month).
+- **Cron monitor:** the 5-minute reminder job checks in as `reminder-due` from staging and production only, so a missed or failing run raises an issue. The 10-second dispatcher isn't monitored (too frequent).
+- **Feedback:** the phone's You tab has "Report a problem", which opens Sentry's form linked to recent errors.
+- **Alerts:** each project has Sentry's default "high priority issues" email alert.
+- **Mobile** needs a native build made after the `@sentry/react-native` plugin was added. The SDK loads lazily, so older dev builds keep working without it. The SDK is 7.11 (pinned by Expo SDK 57); 8.x features come with the next Expo SDK.
+- **Free plan:** 1 user, 5,000 errors a month, shared between staging and prod.
+- **Not done yet:** source maps and DSNs for staging and production (Trello: "Sentry in staging & prod: keys and readable stack traces").
