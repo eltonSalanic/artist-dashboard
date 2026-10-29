@@ -49,7 +49,7 @@ export function SubscribeButtons({
       <div className="flex flex-col items-center gap-2">
         <Button size={size} onClick={() => onSubscribe("monthly")} disabled={busy}>
           {busy && <Spinner data-icon="inline-start" />}
-          {anyTrial ? "Start your free month" : `Subscribe to ${BAND_WALL_PLAN.name}`}
+          {anyTrial ? "Start free trial" : `Subscribe to ${BAND_WALL_PLAN.name}`}
         </Button>
         {trialNote}
         <PlanLinks />
@@ -73,7 +73,7 @@ export function SubscribeButtons({
             disabled={busy}
           >
             {trial[plan]
-              ? `Start your free month · ${label}`
+              ? `Start free trial · ${label}`
               : `${label} · ${prices[plan]}${
                   plan === "yearly" ? ` · ${BAND_WALL_PLAN.plans.yearly.savings}` : ""
                 }`}

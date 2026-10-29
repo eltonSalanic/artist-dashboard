@@ -161,7 +161,7 @@ export function SubscriptionScreen({
                   key={pkg.identifier}
                   title={
                     freeTrial
-                      ? `Start your free month · ${pkg.product.title || pkg.identifier}`
+                      ? `Start free trial · ${pkg.identifier === BAND_WALL_PLAN.plans.yearly.packageId ? 'Yearly' : 'Monthly'}`
                       : `${pkg.product.title || pkg.identifier} · ${pkg.product.priceString}${
                           pkg.identifier === BAND_WALL_PLAN.plans.yearly.packageId
                             ? ` · ${BAND_WALL_PLAN.plans.yearly.savings}`

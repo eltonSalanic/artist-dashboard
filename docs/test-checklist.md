@@ -877,6 +877,6 @@ Automated checks: webhook mapping, idempotency and auth, the 402 guard and the c
 - [ ] Phone: Restore purchases on a band that already paid → stays Pro; on a store account with nothing → "Nothing to restore"
 - [ ] Phone: Manage subscription opens the Customer Center
 - [ ] Every other member of the band gets in without paying
-- [ ] A buyer who can still get the trial sees "Start your free month" with the price it rolls into; after buying, settings says "Free month, ends …"
+- [ ] A buyer who can still get the trial sees "Start free trial" with the price it rolls into; after buying, settings says "Free month, ends …"
 - [ ] Buying for a second band from the same Apple ID / Google account shows the plain prices (no second trial)
 - [ ] The yearly plan says "2 months free", and Terms and Privacy links sit under the plans on web and phone

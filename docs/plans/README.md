@@ -9,6 +9,8 @@ Obsidian can open this folder as a vault without keeping a separate copy.
 | Plan | State | Trello |
 |---|---|---|
 | [Plan template](TEMPLATE.md) | Ready to copy | — |
+| [Tours](tours.md) | Draft | — |
+| [Show statuses](show-statuses.md) | Complete | [Show statuses testing](https://trello.com/c/YyHbu8qz) |
 
 Add one row per plan. Keep the plan in this repo and link to the corresponding
 Band Board cards from the plan; put the plan path and task ID in each card so
