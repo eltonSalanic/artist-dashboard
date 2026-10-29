@@ -852,7 +852,7 @@ Sign-in moved from Supabase Auth to Better Auth inside the API (branch `feat/bet
 
 ## Subscriptions
 
-Per-band subscriptions through RevenueCat; the rules are in [billing.md](billing.md). No Trello card yet. Run `npx prisma migrate deploy` from `apps/api` first (new migration `20261029212835_billing`). The phone needs a **new development build** (`react-native-purchases` is native). For the purchase checks, use the RevenueCat Test Store key and a webhook tunnel as described in [Testing locally with the Test Store](billing.md#testing-locally-with-the-test-store).
+Per-band subscriptions through RevenueCat; the rules are in [billing.md](billing.md). Checks live on [Band Wall subscriptions testing](https://trello.com/c/w9acE6hT). Feature test 2026-10-29 (report linked on the card): 16 checks, none failed; four need a real store or a real webhook. Run `npx prisma migrate deploy` from `apps/api` first (new migration `20261029212835_billing`). The phone needs a **new development build** (`react-native-purchases` is native). For the purchase checks, use the RevenueCat Test Store key and a webhook tunnel as described in [Testing locally with the Test Store](billing.md#testing-locally-with-the-test-store).
 
 Automated checks: webhook mapping, idempotency and auth, the 402 guard and the cross-board narrowing are unit tested in `apps/api/src/billing` and `user-boards.guard.spec.ts`.
 
