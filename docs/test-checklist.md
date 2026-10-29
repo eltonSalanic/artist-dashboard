@@ -819,7 +819,7 @@ Web and phone now sign in through a shared `AuthClient` instead of calling Supab
 
 - [ ] ↻ Web: sign in with email and password → lands on the dashboard
 - [ ] ↻ Web: wrong password → "That email and password don't match" toast, form keeps the email
-- [ ] ↻ Web: create an account → lands on the dashboard (bootstrap makes a board)
+- [ ] ↻ Web: create an account → signed in on the "You're not on any band's wall yet" screen, with Create a band
 - [ ] ↻ Web: sign out from the header, and from the "no band" screen → back to `/login`
 - [ ] ↻ Web: invite someone, open the Mailpit link → `/auth/callback` asks for a password, saving it lands on the dashboard
 - [ ] ↻ Web: sign out, then sign in as a different user in the same tab → no data from the first user shows
