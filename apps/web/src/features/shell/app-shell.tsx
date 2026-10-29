@@ -43,6 +43,7 @@ import { MentionsIndicator } from "@/features/mentions/mentions-indicator";
 import { ThemeToggle } from "@/features/shell/theme-toggle";
 import { CreateBandDialog } from "@/features/shell/create-band-dialog";
 import { NoBand } from "@/features/shell/no-band";
+import { BandProPaywall } from "@/features/billing/band-pro-paywall";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -83,10 +84,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // With billing enforced, an unpaid band's routes all answer 402, so the
+  // paywall stands in for every page rather than each page failing on its own.
+  const current = me.data.boards.find((b) => b.id === me.data?.board?.id);
+
   return (
     <PermissionsProvider role={me.data.membership.role}>
       <Header me={me.data} />
-      <div className="flex flex-1 flex-col">{children}</div>
+      <div className="flex flex-1 flex-col">
+        {current?.subscriptionRequired ? (
+          <BandProPaywall
+            boardId={current.id}
+            boardName={current.name}
+            email={me.data.user.email}
+          />
+        ) : (
+          children
+        )}
+      </div>
     </PermissionsProvider>
   );
 }
@@ -254,6 +269,11 @@ function BandSwitcher({ me }: { me: MeResponse }) {
                   <span className="size-4" aria-hidden />
                 )}
                 {board.name}
+                {board.subscriptionRequired && (
+                  <Badge variant="outline" className="ml-auto">
+                    Needs Pro
+                  </Badge>
+                )}
               </DropdownMenuItem>
             ))}
           </DropdownMenuGroup>

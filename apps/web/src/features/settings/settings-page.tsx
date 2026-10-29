@@ -10,6 +10,7 @@ import { DefaultLayoutCard } from "./default-layout-card";
 import { StatusesCard } from "./statuses-card";
 import { ShowStatusesCard } from "./show-statuses-card";
 import { NotificationsCard } from "./notifications-card";
+import { BandProCard } from "@/features/billing/band-pro-card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,7 @@ export function SettingsPage() {
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6">
       <h1 className="text-lg font-semibold tracking-tight">Settings</h1>
+      <BandProCard boardId={boardId} email={me.data?.user.email ?? ""} />
       <NotificationsCard boardId={boardId} />
       {isAdmin && (
         <>

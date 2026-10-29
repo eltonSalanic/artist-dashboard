@@ -19,4 +19,12 @@ export const env = {
   apiUrl: (apiUrl ?? "http://localhost:3001").replace(/\/+$/, ""),
   /** development | staging | production — tags logs and error reports. */
   appEnv: parseAppEnv(process.env.NEXT_PUBLIC_APP_ENV),
+  /**
+   * RevenueCat Web Billing public key (docs/billing.md). Unset hides the
+   * in-page Band Pro checkout; `test_` keys use RevenueCat's Test Store.
+   */
+  revenueCatWebKey: process.env.NEXT_PUBLIC_REVENUECAT_WEB_KEY || null,
+  /** Optional RevenueCat Web Purchase Link, used when there is no web key. */
+  revenueCatWebPurchaseUrl:
+    process.env.NEXT_PUBLIC_REVENUECAT_WEB_PURCHASE_URL || null,
 } as const;
