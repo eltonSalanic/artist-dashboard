@@ -77,10 +77,8 @@ function AttachmentIcon({
   mimeType: string;
   className?: string;
 }) {
-  if (mimeType.startsWith("audio/"))
-    return <FileAudio className={className} />;
-  if (mimeType === "application/pdf")
-    return <FileText className={className} />;
+  if (mimeType.startsWith("audio/")) return <FileAudio className={className} />;
+  if (mimeType === "application/pdf") return <FileText className={className} />;
   return <Paperclip className={className} />;
 }
 
@@ -175,7 +173,12 @@ export function AttachmentRow({
           confirmLabel="Rename"
           pending={renaming}
           onConfirm={(fileName) =>
-            void onRename(fileName).then(() => setNaming(false))
+            // The hook already toasts a failed rename; keep the dialog open
+            // so the user can retry, and don't leave the rejection unhandled.
+            void onRename(fileName).then(
+              () => setNaming(false),
+              () => {},
+            )
           }
         />
       )}

@@ -2,6 +2,22 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from './notifications.service';
+import { reportError } from '../common/error-reporter';
+import * as Sentry from '@sentry/nestjs';
+import { parseAppEnv } from '@artist/shared';
+
+// Only deployed APIs check in: a laptop that's switched off would otherwise
+// raise "missed check-in" alerts all night.
+const MONITORED = parseAppEnv(process.env.APP_ENV) !== 'development';
+
+const REMINDER_MONITOR = {
+  schedule: { type: 'interval', value: 5, unit: 'minute' },
+  checkinMargin: 2,
+  maxRuntime: 4,
+  // One bad tick is noise; two in a row is a problem.
+  failureIssueThreshold: 2,
+  recoveryThreshold: 1,
+} as const;
 
 /** How often the job looks for reminders that have come due. */
 const EVERY_5_MINUTES = 5 * 60_000;
@@ -35,11 +51,23 @@ export class ReminderDueJob {
   @Interval(EVERY_5_MINUTES)
   async tick(): Promise<void> {
     try {
-      await this.run();
+      // Own scope, so this job's breadcrumbs never leak into an HTTP error;
+      // the monitor tells Sentry the job ran, so a job that silently stops
+      // (or keeps failing) raises an alert, not just one that throws.
+      await Sentry.withIsolationScope(() =>
+        MONITORED
+          ? Sentry.withMonitor(
+              'reminder-due',
+              () => this.run(),
+              REMINDER_MONITOR,
+            )
+          : this.run(),
+      );
     } catch (error) {
       // Same rule as the dispatcher: a tick must never throw, or the next one
       // never happens.
       this.logger.error('Reminder job failed', error as Error);
+      reportError(error, { job: 'reminder-due' });
     }
   }
 

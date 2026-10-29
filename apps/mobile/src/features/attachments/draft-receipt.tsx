@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Image } from 'expo-image';
 import { MAX_ATTACHMENT_BYTES } from '@artist/shared';
 import { notify } from '@artist/api-client';
+import { reportError } from '@/lib/report-error';
 import { Button } from '@/components/button';
 import { Section } from '@/components/section';
 import { PosterText } from '@/components/poster-text';
@@ -36,7 +37,10 @@ export function DraftReceipt({
       }
       setPicked(next);
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : 'Could not open the picker');
+      // The native text ("PHPhotosErrorDomain 3311") means nothing to a user;
+      // the reporter gets it, the user gets a sentence.
+      reportError(error);
+      notify.error('Could not open the picker. Try again.');
     } finally {
       setPicking(false);
     }

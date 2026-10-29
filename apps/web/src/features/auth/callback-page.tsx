@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useSession } from "@artist/api-client";
-import { supabase } from "@/lib/supabase";
+import { authErrorMessage } from "@artist/api-client";
+import { auth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,8 +19,8 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 
 /**
- * Landing page for Supabase email links (invites, magic links). supabase-js
- * picks the session out of the URL automatically; invited users get a chance
+ * Landing page for email links (invites). The auth client picks the session
+ * out of the URL automatically; invited users get a chance
  * to set a password so they can sign in normally next time.
  */
 export function CallbackPage() {
@@ -60,10 +61,12 @@ export function CallbackPage() {
   const setPasswordAndContinue = async (event: React.FormEvent) => {
     event.preventDefault();
     setPending(true);
-    const { error } = await supabase.auth.updateUser({ password });
+    const { error } = await auth.setPassword(password);
     setPending(false);
     if (error) {
-      toast.error(error.message);
+      toast.error(
+        authErrorMessage(error, "Couldn't save your password. Try again."),
+      );
       return;
     }
     router.replace("/dashboard");

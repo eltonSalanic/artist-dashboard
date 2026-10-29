@@ -1,10 +1,14 @@
 // Side-effect import, and it must stay first: it configures the API client and
 // the session source that every hook below reaches for.
 import '@/lib/api-client-setup';
+// Next, so a crash during the first render is reported.
+import { withSentry } from '@/lib/sentry';
 
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
 import {
+  MutationCache,
+  QueryCache,
   QueryClient,
   QueryClientProvider,
   focusManager,
@@ -16,12 +20,25 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useSession } from '@artist/api-client';
-import { supabase } from '@/lib/supabase';
+import { reportError } from '@/lib/report-error';
+import { auth } from '@/lib/auth';
 import { POSTER_FONTS } from '@/theme/poster';
 
 void SplashScreen.preventAutoHideAsync();
 
+// A render crash anywhere below shows this instead of a white screen.
+export { CrashScreen as ErrorBoundary } from '@/components/crash-screen';
+
 const queryClient = new QueryClient({
+  // Screens show their own load errors and hooks alert on failed saves; these
+  // only send the unexpected ones (bugs, 5xx) to the error reporter.
+  queryCache: new QueryCache({
+    onError: (error, query) => reportError(error, { queryKey: query.queryKey }),
+  }),
+  mutationCache: new MutationCache({
+    onError: (error, _vars, _ctx, mutation) =>
+      reportError(error, { mutationKey: mutation.options.mutationKey }),
+  }),
   defaultOptions: {
     queries: {
       // A phone switches networks mid-session far more often than a browser
@@ -32,7 +49,7 @@ const queryClient = new QueryClient({
   },
 });
 
-export default function RootLayout() {
+function RootLayout() {
   const { session, loading: sessionLoading } = useSession();
   // The hub and calendar set their numbers in Figtree. Held behind the splash
   // like the session, so the first frame is not system type swapping to
@@ -42,7 +59,7 @@ export default function RootLayout() {
   const loading = sessionLoading || (!fontsLoaded && fontError === null);
 
   useEffect(() => {
-    // supabase-js refreshes the access token on a `setTimeout`, and the OS
+    // The auth client refreshes the access token on a timer, and the OS
     // suspends timers in the background. Without this, an app left alone for
     // an hour wakes up holding an expired token and every request 401s.
     //
@@ -51,14 +68,14 @@ export default function RootLayout() {
     // so changes made on web meanwhile show up without a pull-to-refresh.
     const subscription = AppState.addEventListener('change', (state) => {
       focusManager.setFocused(state === 'active');
-      if (state === 'active') void supabase.auth.startAutoRefresh();
-      else void supabase.auth.stopAutoRefresh();
+      if (state === 'active') auth.startAutoRefresh();
+      else auth.stopAutoRefresh();
     });
-    void supabase.auth.startAutoRefresh();
+    auth.startAutoRefresh();
 
     return () => {
       subscription.remove();
-      void supabase.auth.stopAutoRefresh();
+      auth.stopAutoRefresh();
     };
   }, []);
 
@@ -101,3 +118,7 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
+
+// Touch breadcrumbs, app-start timing and the feedback form; a no-op when
+// Sentry is off.
+export default withSentry(RootLayout);

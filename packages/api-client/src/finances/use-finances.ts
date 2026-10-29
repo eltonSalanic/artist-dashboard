@@ -16,10 +16,11 @@ import type {
   UpdateFinanceSettingsDto,
   UpdateSplitDto,
 } from "@artist/shared";
-import { apiFetch, ApiError, notify } from "../client";
+import { apiFetch, notify } from "../client";
+import { toUserMessage } from "../messages";
 
 const showError = (error: unknown) =>
-  notify.error(error instanceof ApiError ? error.message : "Something went wrong");
+  notify.error(toUserMessage(error));
 
 const base = (boardId: string) => `/boards/${boardId}/finances`;
 

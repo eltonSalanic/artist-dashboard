@@ -1,11 +1,15 @@
 "use client";
 
 import { toast } from "sonner";
-import { ApiError, fetchAttachmentUrl } from "@artist/api-client";
+import {
+  ApiError,
+  fetchAttachmentUrl,
+  toUserMessage,
+} from "@artist/api-client";
 import type { UploadSource } from "@artist/api-client";
 
 const showError = (error: unknown) =>
-  toast.error(error instanceof ApiError ? error.message : "Upload failed");
+  toast.error(toUserMessage(error, "Upload failed. Try again."));
 
 /**
  * The browser's half of an upload: a `File` is already a fetch body. The rest
@@ -22,7 +26,8 @@ export function fromFile(file: File): UploadSource {
         headers: { "Content-Type": contentType },
         body: file,
       });
-      if (!put.ok) throw new ApiError(put.status, "Storage rejected the upload");
+      if (!put.ok)
+        throw new ApiError(put.status, "Storage rejected the upload");
     },
   };
 }

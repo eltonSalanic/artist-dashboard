@@ -2,6 +2,7 @@ import { createContext, use, useCallback, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { BoardRole, BoardSummaryDto } from '@artist/shared';
+import { reportError } from '@/lib/report-error';
 
 /**
  * Which board the app is currently showing.
@@ -50,9 +51,11 @@ export function SelectedBoardProvider({
           setLoading(false);
         }
       })
-      .catch(() => {
-        // A failed read is a missing preference, not an error worth surfacing:
-        // falling back to the first board is exactly the first-run behaviour.
+      .catch((error: unknown) => {
+        // A failed read is a missing preference, not an error worth surfacing
+        // to the user: falling back to the first board is exactly the
+        // first-run behaviour. It still goes to the reporter.
+        reportError(error, { where: 'selectedBoard' });
         if (mounted) setLoading(false);
       });
     return () => {

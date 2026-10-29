@@ -2,7 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { BoardSummaryDto } from "@artist/shared";
-import { apiFetch, ApiError, notify } from "../client";
+import { apiFetch, notify } from "../client";
+import { INLINE_ERROR, toUserMessage } from "../messages";
 import type { MeResponse } from "./types";
 
 /**
@@ -11,6 +12,7 @@ import type { MeResponse } from "./types";
  */
 export function useMe(enabled: boolean) {
   return useQuery({
+    meta: INLINE_ERROR,
     queryKey: ["me"],
     queryFn: () => apiFetch<MeResponse>("/me/bootstrap", { method: "POST" }),
     enabled,
@@ -30,6 +32,6 @@ export function useCreateBoard() {
       apiFetch<BoardSummaryDto>("/boards", { method: "POST", body: { name } }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["me"] }),
     onError: (error) =>
-      notify.error(error instanceof ApiError ? error.message : "Couldn't create the band"),
+      notify.error(toUserMessage(error, "Couldn't create the band")),
   });
 }

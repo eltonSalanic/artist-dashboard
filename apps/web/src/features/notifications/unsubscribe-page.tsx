@@ -9,7 +9,7 @@ import {
   NOTIFICATION_CATEGORY_COPY,
   type UnsubscribeResultDto,
 } from "@artist/shared";
-import { apiFetch, ApiError } from "@artist/api-client";
+import { apiFetch, toUserMessage } from "@artist/api-client";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -57,8 +57,8 @@ export function UnsubscribePage() {
                 {NOTIFICATION_CATEGORY_COPY[
                   result.category
                 ].label.toLowerCase()}{" "}
-                emails from {result.boardName}. Other kinds still reach you,
-                and you can change any of it in board settings.
+                emails from {result.boardName}. Other kinds still reach you, and
+                you can change any of it in board settings.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -87,9 +87,10 @@ export function UnsubscribePage() {
               </Button>
               {unsubscribe.isError && (
                 <p className="text-sm text-destructive">
-                  {unsubscribe.error instanceof ApiError
-                    ? unsubscribe.error.message
-                    : "Couldn't unsubscribe. Try the link from the email again."}
+                  {toUserMessage(
+                    unsubscribe.error,
+                    "Couldn't unsubscribe. Try the link from the email again.",
+                  )}
                 </p>
               )}
             </CardContent>

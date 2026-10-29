@@ -6,7 +6,8 @@ import type {
   ItemLinkInputDto,
   LinkParentKind,
 } from "@artist/shared";
-import { apiFetch, ApiError, notify } from "../client";
+import { apiFetch, notify } from "../client";
+import { toUserMessage } from "../messages";
 
 export function useItemLinks(
   boardId: string,
@@ -38,7 +39,7 @@ export function useItemLinks(
     onSuccess: refetch,
     onError: (error: unknown) =>
       notify.error(
-        error instanceof ApiError ? error.message : "Could not remove the link",
+        toUserMessage(error, "Could not remove the link"),
       ),
   });
   return { ...query, add, remove };

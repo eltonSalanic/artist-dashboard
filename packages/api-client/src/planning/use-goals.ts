@@ -7,11 +7,12 @@ import type {
   GoalPeriod,
   UpdateGoalDto,
 } from "@artist/shared";
-import { apiFetch, ApiError } from "../client";
+import { apiFetch } from "../client";
+import { INLINE_ERROR, toUserMessage } from "../messages";
 import type { GoalDto } from "./types";
 
 const showError = (error: unknown) =>
-  notify.error(error instanceof ApiError ? error.message : "Something went wrong");
+  notify.error(toUserMessage(error));
 
 export interface GoalFilters {
   period?: GoalPeriod;
@@ -32,6 +33,7 @@ export function useGoals(boardId: string, filters: GoalFilters = {}) {
 
 export function useGoal(boardId: string, goalId: string | null) {
   return useQuery({
+    meta: INLINE_ERROR,
     queryKey: ["goal", boardId, goalId],
     queryFn: () => apiFetch<GoalDto>(`/boards/${boardId}/goals/${goalId}`),
     enabled: !!goalId,

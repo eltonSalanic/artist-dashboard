@@ -11,6 +11,7 @@ import {
 import * as WebBrowser from 'expo-web-browser';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fetchAttachmentUrl, notify, type AttachmentDto } from '@artist/api-client';
+import { reportError } from '@/lib/report-error';
 import { Icon, type IconName } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { env } from '@/lib/env';
@@ -76,7 +77,10 @@ export function AttachmentGallery({
         const { url } = await fetchAttachmentUrl(boardId, current.id, 'view');
         await WebBrowser.openBrowserAsync(reachableStorageUrl(url, env.supabaseUrl));
       } catch (error) {
-        notify.error(error instanceof Error ? error.message : 'Could not open the file');
+        // The native text ("PHPhotosErrorDomain 3311") means nothing to a user;
+        // the reporter gets it, the user gets a sentence.
+        reportError(error);
+        notify.error('Could not open the file. Try again.');
       }
     });
 

@@ -1,7 +1,11 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { SentryModule } from '@sentry/nestjs/setup';
 import { ScheduleModule } from '@nestjs/schedule';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { AllExceptionsFilter } from './common/all-exceptions.filter';
+import { RequestContextMiddleware } from './common/request-context.middleware';
+import { validateEnv } from './config/env';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthController } from './health/health.controller';
 import { AuthModule } from './auth/auth.module';
@@ -32,7 +36,11 @@ import { FinancesModule } from './finances/finances.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    // First, so every request runs in its own Sentry scope with breadcrumbs.
+    // Reporting itself stays in AllExceptionsFilter (via reportError), which
+    // decides what counts as unexpected.
+    SentryModule.forRoot(),
+    ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     // Drives the notification dispatcher and the wall-clock email jobs.
     ScheduleModule.forRoot(),
     PrismaModule,
@@ -68,6 +76,11 @@ import { FinancesModule } from './finances/finances.module';
     // board-role guard reads it.
     { provide: APP_GUARD, useClass: SupabaseAuthGuard },
     { provide: APP_GUARD, useClass: BoardRolesGuard },
+    { provide: APP_FILTER, useClass: AllExceptionsFilter },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(RequestContextMiddleware).forRoutes('{*splat}');
+  }
+}

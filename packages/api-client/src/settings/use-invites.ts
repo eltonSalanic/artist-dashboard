@@ -2,14 +2,15 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { CreateInviteDto } from "@artist/shared";
-import { apiFetch, ApiError, notify } from "../client";
+import { apiFetch, notify } from "../client";
+import { toUserMessage } from "../messages";
 import type { InviteDto } from "../auth/types";
 
 /** What `POST /invites` adds: whether an email went out or they will just join. */
 export type SentInviteDto = InviteDto & { delivery: string };
 
 const showError = (fallback: string) => (error: unknown) =>
-  notify.error(error instanceof ApiError ? error.message : fallback);
+  notify.error(toUserMessage(error, fallback));
 
 export function useInvites(boardId: string) {
   return useQuery({

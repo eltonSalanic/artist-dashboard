@@ -2,6 +2,7 @@ import { Directory, File, Paths } from 'expo-file-system';
 import { Asset, requestPermissionsAsync } from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { fetchAttachmentUrl, notify, type AttachmentDto } from '@artist/api-client';
+import { reportError } from '@/lib/report-error';
 import { env } from '@/lib/env';
 import { reachableStorageUrl } from '@/lib/storage-url';
 import { savesToPhotos } from './attachment-kind';
@@ -45,6 +46,9 @@ export async function saveToDevice(boardId: string, attachment: AttachmentDto) {
       dialogTitle: attachment.fileName,
     });
   } catch (error) {
-    notify.error(error instanceof Error ? error.message : 'Could not save the file');
+    // The native text ("PHPhotosErrorDomain 3311") means nothing to a user;
+    // the reporter gets it, the user gets a sentence.
+    reportError(error);
+    notify.error('Could not save the file. Try again.');
   }
 }

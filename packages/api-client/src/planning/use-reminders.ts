@@ -3,11 +3,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { notify } from "../client";
 import type { CreateReminderDto, UpdateReminderDto } from "@artist/shared";
-import { apiFetch, ApiError } from "../client";
+import { apiFetch } from "../client";
+import { INLINE_ERROR, toUserMessage } from "../messages";
 import type { ReminderDto } from "./types";
 
 const showError = (error: unknown) =>
-  notify.error(error instanceof ApiError ? error.message : "Something went wrong");
+  notify.error(toUserMessage(error));
 
 export function useReminders(boardId: string) {
   return useQuery({
@@ -18,6 +19,7 @@ export function useReminders(boardId: string) {
 
 export function useReminder(boardId: string, reminderId: string | null) {
   return useQuery({
+    meta: INLINE_ERROR,
     queryKey: ["reminder", boardId, reminderId],
     queryFn: () =>
       apiFetch<ReminderDto>(`/boards/${boardId}/reminders/${reminderId}`),

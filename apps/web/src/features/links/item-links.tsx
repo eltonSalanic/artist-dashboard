@@ -4,7 +4,7 @@ import { useId, useRef, useState } from "react";
 import { ExternalLink, Link2, Trash2 } from "lucide-react";
 import { itemLinkInputSchema, type LinkParentKind } from "@artist/shared";
 import {
-  ApiError,
+  toUserMessage,
   useItemLinks,
   useMe,
   usePermissions,
@@ -54,11 +54,7 @@ export function ItemLinks({
       setTitle("");
       setUrl("");
     } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : "Could not save the link. Try again.",
-      );
+      setError(toUserMessage(err, "Could not save the link. Try again."));
     }
   };
 

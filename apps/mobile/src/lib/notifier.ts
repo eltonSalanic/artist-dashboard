@@ -11,7 +11,10 @@ import type { Notifier } from '@artist/api-client';
  * loud and correct, where a half-built toast would be quiet and wrong.
  */
 export const notifier: Notifier = {
-  error: (message) => Alert.alert('Something went wrong', message),
+  // The message is already a full sentence from `toUserMessage`, so it is the
+  // alert's title; a generic "Something went wrong" header above it only
+  // repeated it.
+  error: (message) => Alert.alert(message),
   success: () => {
     // Success is already visible in the UI that caused it; a modal alert for
     // "Saved" would be worse than silence.

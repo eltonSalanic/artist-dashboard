@@ -8,6 +8,7 @@
 
 export {
   ApiError,
+  NetworkError,
   apiFetch,
   configureApiClient,
   notify,
@@ -17,6 +18,18 @@ export {
   type Notifier,
 } from './client';
 
+export {
+  INLINE_ERROR,
+  MESSAGES,
+  authErrorMessage,
+  type AuthErrorLike,
+  isNotFound,
+  isReportedByServer,
+  isUnexpectedError,
+  showsInlineError,
+  toUserMessage,
+} from './messages';
+
 export { PermissionsProvider, usePermissions } from './auth/permissions';
 
 export * from './activity/types';
@@ -25,6 +38,8 @@ export * from './appearance/use-board-theme';
 export * from './archive/types';
 export * from './archive/use-archive';
 export * from './attachments/use-attachments';
+export * from './auth/auth-client';
+export * from './auth/supabase-auth-client';
 export * from './auth/types';
 export * from './auth/use-board';
 export * from './auth/use-me';

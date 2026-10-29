@@ -1,13 +1,19 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { ActivityIndicator, View } from 'react-native';
-import { PermissionsProvider, useBoard, useInbox, useMe } from '@artist/api-client';
+import {
+  PermissionsProvider,
+  useBoard,
+  useInbox,
+  useMe,
+} from '@artist/api-client';
+import { LaunchError } from '@/components/launch-error';
 import { resolveBoardTheme } from '@artist/shared';
-import { ThemedText } from '@/components/themed-text';
 import {
   SelectedBoardProvider,
   useSelectedBoard,
 } from '@/features/board/selected-board';
 import { PushNotifications } from '@/features/push/use-push';
+import { auth } from '@/lib/auth';
 import { BoardPaletteProvider, spacing, useThemeColors } from '@/theme';
 
 /**
@@ -22,21 +28,24 @@ import { BoardPaletteProvider, spacing, useThemeColors } from '@/theme';
  * resolve the board once: which one is selected, what the caller may do on it,
  * and which palette it paints with.
  */
+// Keeps the crash inside the tabs, under the root's own boundary.
+export { CrashScreen as ErrorBoundary } from '@/components/crash-screen';
+
 export default function TabsLayout() {
   const me = useMe(true);
 
   if (me.isPending) return <Centered><ActivityIndicator /></Centered>;
 
   if (me.isError) {
+    // The first request after launch; without a way out a bad connection or
+    // a broken account left the user stuck here.
     return (
-      <Centered>
-        <ThemedText variant="headline" tone="destructive">
-          Could not load your bands
-        </ThemedText>
-        <ThemedText variant="subhead" tone="muted">
-          {me.error.message}
-        </ThemedText>
-      </Centered>
+      <LaunchError
+        error={me.error}
+        retrying={me.isFetching}
+        onRetry={() => void me.refetch()}
+        onSignOut={() => void auth.signOut()}
+      />
     );
   }
 

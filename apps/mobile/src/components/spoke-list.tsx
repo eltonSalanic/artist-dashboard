@@ -5,6 +5,7 @@ import { Button } from './button';
 import { PosterText } from './poster-text';
 import { Skeleton } from './skeleton';
 import { spacing, useTokens } from '@/theme';
+import { toUserMessage } from '@artist/api-client';
 
 /**
  * The four states every list has, in one place: loading, error, empty, content.
@@ -63,7 +64,7 @@ export function SpokeList({
             Could not load this
           </PosterText>
           <PosterText variant="body" color={tokens.mutedForeground} style={{ textAlign: 'center' }}>
-            {error.message}
+            {toUserMessage(error)}
           </PosterText>
           {onRetry && <Button title="Try again" variant="ghost" size="sm" onPress={onRetry} />}
         </Centered>

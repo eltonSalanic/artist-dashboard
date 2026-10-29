@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { usePermissions } from "@artist/api-client";
+import { Button } from "@/components/ui/button";
+import { isNotFound, toUserMessage, usePermissions } from "@artist/api-client";
 import { ArchivedBanner } from "@/features/archive/archived-banner";
 import { ItemActions } from "@/features/archive/item-actions";
 import {
@@ -75,6 +76,23 @@ function ReminderDetail({
         </DialogHeader>
         <Skeleton className="h-40" />
       </div>
+    );
+  }
+  // "Not found" only when it really is gone; a network blip or a 500
+  // gets a retry instead of claiming the reminder was deleted.
+  if (reminder.isError && !isNotFound(reminder.error)) {
+    return (
+      <DialogHeader>
+        <DialogTitle>Couldn&apos;t load this reminder</DialogTitle>
+        <DialogDescription>{toUserMessage(reminder.error)}</DialogDescription>
+        <Button
+          size="sm"
+          className="self-start"
+          onClick={() => void reminder.refetch()}
+        >
+          Try again
+        </Button>
+      </DialogHeader>
     );
   }
   if (reminder.isError || !reminder.data) {

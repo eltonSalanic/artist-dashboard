@@ -107,6 +107,7 @@ Supabase stack runs on well-known default secrets. Stop it when you're done.
 | Config | [`src/lib/env.ts`](src/lib/env.ts) | `EXPO_PUBLIC_*`, inlined by Babel, validated in one place |
 | Session storage | [`src/lib/chunked-store.ts`](src/lib/chunked-store.ts) | SecureStore caps a value at 2048 bytes; a Supabase session is bigger |
 | Supabase client | [`src/lib/supabase.ts`](src/lib/supabase.ts) | keychain storage, `detectSessionInUrl: false` |
+| Auth client | [`src/lib/auth.ts`](src/lib/auth.ts) | the shared `AuthClient` over that Supabase client; screens only use `auth` |
 | API client | [`src/lib/api-client-setup.ts`](src/lib/api-client-setup.ts) | mirrors `apps/web/src/lib/api-client-setup.ts` |
 | Auth gate | [`src/app/_layout.tsx`](src/app/_layout.tsx) | `Stack.Protected`, splash held until the session is read |
 
@@ -115,10 +116,19 @@ Routes live in `src/app` and contain nothing but a screen; screen bodies live in
 
 ## Auth
 
-Email and password, the same as the web app. Not magic links: the one magic
-link the product sends is a Supabase *invite*, and the API hardcodes its
-redirect to `WEB_URL/auth/callback`. An invited bandmate accepts on the web,
-sets a password there, and signs in here with it.
+Email and password, the same as the web app. Not magic links: the one email
+the product sends for sign-in is a Supabase *invite*. Its link opens the web's
+`/auth/callback`, and it also carries a 6-digit code, which "Join with an
+invite code" on the sign-in screen accepts, so a bandmate can join from the
+phone too.
+
+Screens never call `supabase.auth` directly. They use `auth` from
+[`src/lib/auth.ts`](src/lib/auth.ts), an `AuthClient` from
+`@artist/api-client` (`signIn`, `signUp`, `signOut`, `setPassword`,
+`verifyInviteCode`, `getSession`, `onSessionChange`, and the background
+refresh switches). The Supabase version lives in
+`packages/api-client/src/auth/supabase-auth-client.ts`; changing provider
+means writing another `AuthClient`, not editing screens.
 
 ## Typed routes are off
 
@@ -155,5 +165,23 @@ Each would otherwise read as an oversight:
 ## Tests
 
 `npm test -w apps/mobile` typechecks (`tsc --noEmit`) and then runs units.
-Nothing here renders a component yet: the one thing worth testing in this phase
-is the chunking store, which is pure logic because its backend is injected.
+They are plain `ts-jest` tests of logic pulled out of the screens (the chunking
+store, dev-host detection, push routing and token changes, reorder, note
+editing, finance drafts and so on). Nothing here renders a component, so how a
+screen looks and behaves is checked on a phone, per
+[docs/test-checklist.md](../../docs/test-checklist.md).
+
+## EAS build profiles
+
+[`eas.json`](eas.json) has three profiles, and each sets `EXPO_PUBLIC_APP_ENV`
+so logs and error reports know where they came from (see
+[docs/error-handling.md](../../docs/error-handling.md)):
+
+| Profile | Use | `EXPO_PUBLIC_APP_ENV` |
+|---|---|---|
+| `development` | The dev client you install once with `npm run mobile:ios` | `development` |
+| `preview` | Internal-distribution build for testing against staging | `staging` |
+| `production` | Store build, build number auto-incremented | `production` |
+
+`EXPO_PUBLIC_SENTRY_DSN` turns on error reporting, but only in a build made
+after the `@sentry/react-native` plugin was added (October 2026).

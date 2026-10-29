@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Trash2, UserRound } from "lucide-react";
 import { apiFetch } from "@artist/api-client";
-import { usePermissions } from "@artist/api-client";
+import { isNotFound, toUserMessage, usePermissions } from "@artist/api-client";
 import { useMe } from "@/lib/use-me";
 import type {
   BoardDetailDto,
@@ -126,6 +126,23 @@ function TaskDetail({
         </DialogHeader>
         <Skeleton className="h-40" />
       </div>
+    );
+  }
+  // "Not found" only when it really is gone; a network blip or a 500
+  // gets a retry instead of claiming the task was deleted.
+  if (task.isError && !isNotFound(task.error)) {
+    return (
+      <DialogHeader>
+        <DialogTitle>Couldn&apos;t load this task</DialogTitle>
+        <DialogDescription>{toUserMessage(task.error)}</DialogDescription>
+        <Button
+          size="sm"
+          className="self-start"
+          onClick={() => void task.refetch()}
+        >
+          Try again
+        </Button>
+      </DialogHeader>
     );
   }
   if (task.isError || !task.data) {

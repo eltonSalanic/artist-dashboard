@@ -10,11 +10,12 @@ import type {
   CreateTaskDto,
   UpdateTaskDto,
 } from "@artist/shared";
-import { apiFetch, ApiError } from "../client";
+import { apiFetch } from "../client";
+import { INLINE_ERROR, toUserMessage } from "../messages";
 import type { TaskDetailDto, TaskDto, TaskFilters } from "./types";
 
 const showError = (error: unknown) =>
-  notify.error(error instanceof ApiError ? error.message : "Something went wrong");
+  notify.error(toUserMessage(error));
 
 export function useTasks(boardId: string, filters: TaskFilters = {}) {
   const params = new URLSearchParams();
@@ -33,6 +34,7 @@ export function useTasks(boardId: string, filters: TaskFilters = {}) {
 
 export function useTask(boardId: string, taskId: string | null) {
   return useQuery({
+    meta: INLINE_ERROR,
     queryKey: ["task", boardId, taskId],
     queryFn: () =>
       apiFetch<TaskDetailDto>(`/boards/${boardId}/tasks/${taskId}`),

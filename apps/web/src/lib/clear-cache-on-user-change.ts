@@ -1,10 +1,4 @@
-import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
-
-interface AuthEvents {
-  onAuthStateChange(
-    callback: (event: AuthChangeEvent, session: Session | null) => void,
-  ): { data: { subscription: { unsubscribe: () => void } } };
-}
+import type { AuthClient } from "@artist/api-client";
 
 /**
  * Empties the query cache whenever the signed-in user changes: sign-out, or
@@ -16,17 +10,14 @@ interface AuthEvents {
  * Token refreshes keep the same user and leave the cache alone.
  */
 export function clearCacheOnUserChange(
-  auth: AuthEvents,
+  auth: Pick<AuthClient, "onSessionChange">,
   cache: { clear(): void },
 ): () => void {
   // `undefined` until the first event says who is signed in at page load.
   let userId: string | null | undefined;
-  const {
-    data: { subscription },
-  } = auth.onAuthStateChange((_event, session) => {
-    const next = session?.user.id ?? null;
+  return auth.onSessionChange((session) => {
+    const next = session?.userId ?? null;
     if (userId !== undefined && next !== userId) cache.clear();
     userId = next;
   });
-  return () => subscription.unsubscribe();
 }

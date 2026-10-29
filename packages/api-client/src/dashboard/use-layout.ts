@@ -3,7 +3,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { notify } from "../client";
 import type { LayoutItem } from "@artist/shared";
-import { apiFetch, ApiError } from "../client";
+import { apiFetch } from "../client";
+import { INLINE_ERROR, toUserMessage } from "../messages";
 import { mobileLayoutKey } from "./use-mobile-layout";
 
 interface LayoutResponse {
@@ -12,11 +13,12 @@ interface LayoutResponse {
 
 const showError = (error: unknown) =>
   notify.error(
-    error instanceof ApiError ? error.message : "Couldn't save layout",
+    toUserMessage(error, "Couldn't save layout"),
   );
 
 export function useLayout(boardId: string) {
   return useQuery({
+    meta: INLINE_ERROR,
     queryKey: ["layout", boardId],
     queryFn: () => apiFetch<LayoutResponse>(`/boards/${boardId}/layout`),
   });

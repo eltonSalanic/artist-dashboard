@@ -12,11 +12,9 @@ import {
   type WidgetType,
 } from "@artist/shared";
 import { useMe } from "@/lib/use-me";
-import { usePermissions } from "@artist/api-client";
-import {
-  useBoardTheme,
-  useSaveBoardTheme,
-} from "@artist/api-client";
+import { toUserMessage, usePermissions } from "@artist/api-client";
+import { ErrorState } from "@/components/error-state";
+import { useBoardTheme, useSaveBoardTheme } from "@artist/api-client";
 import { WidgetColorMenu } from "@/features/appearance/widget-color-menu";
 import { useEvents } from "@artist/api-client";
 import { widgetRegistry } from "@/features/widgets/registry";
@@ -108,6 +106,18 @@ export function DashboardPage({ boardId }: { boardId: string }) {
     params.delete("w");
     router.push(params.size ? `?${params.toString()}` : "?", { scroll: false });
   };
+
+  // Checked before the skeleton: a failed layout load used to leave the
+  // skeleton up forever.
+  if (layoutQuery.isError) {
+    return (
+      <ErrorState
+        title="Couldn't load your dashboard"
+        message={toUserMessage(layoutQuery.error)}
+        onRetry={() => void layoutQuery.refetch()}
+      />
+    );
+  }
 
   if (layoutQuery.isPending || !layoutQuery.data) {
     return <Skeleton className="m-4 h-64" />;
@@ -267,4 +277,3 @@ function Greeting({ boardId }: { boardId: string }) {
     </div>
   );
 }
-

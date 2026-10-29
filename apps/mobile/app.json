@@ -45,7 +45,15 @@
       "@react-native-community/datetimepicker",
       "expo-image",
       "expo-sharing",
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "@sentry/react-native",
+        {
+          "organization": "elton-salanic",
+          "project": "band-wall-mobile",
+          "url": "https://sentry.io/"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false,

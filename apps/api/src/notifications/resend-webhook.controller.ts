@@ -72,7 +72,12 @@ export class ResendWebhookController {
     try {
       new Webhook(secret).verify(body, svixHeaders(request.headers));
       event = JSON.parse(body) as ResendEvent;
-    } catch {
+    } catch (error) {
+      // Logged so a wrong RESEND_WEBHOOK_SECRET is distinguishable from a
+      // forged request. The name only: the body can hold email addresses.
+      this.logger.warn(
+        `Rejected Resend webhook: ${error instanceof Error ? error.name : 'unknown error'}`,
+      );
       throw new BadRequestException('Invalid signature');
     }
 

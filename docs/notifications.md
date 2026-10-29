@@ -1,10 +1,10 @@
 # Notifications
 
-> **Status:** email shipped; push plumbed but not yet reachable. All six
-> triggers below are live on both channels, as are preferences, unsubscribe,
-> and bounce/complaint suppression. Nothing can arrive on a phone until the
-> mobile app registers a device — see [docs/mobile-app.md](mobile-app.md). Two further triggers were
-> specified and deliberately dropped (see [Considered and
+> **Status:** email and push shipped. All six triggers below are live on both
+> channels, as are preferences, unsubscribe, and bounce/complaint suppression.
+> Push reaches any phone that signed in to the Band Wall development build and
+> allowed notifications (P13 in [docs/mobile-app.md](mobile-app.md)). Two
+> further triggers were specified and deliberately dropped (see [Considered and
 > dropped](#considered-and-dropped)).
 >
 > Still outstanding: no editor for `Board.timezone`, so every board renders
@@ -153,7 +153,10 @@ single-column unique index would have deduped one of them away.
 
 Push is a **no-op outside `NODE_ENV=production`**, for the same reason mail goes
 to Mailpit: a dev run must not be able to buzz a real phone, and the destructive
-demo seed has to stay safe to re-run.
+demo seed has to stay safe to re-run. `PUSH_IN_DEV=true` in `apps/api/.env` is
+the one way round that, for testing the phone app against a local API: Expo only
+delivers to tokens a signed-in phone registered, and the seeded bandmates have
+none. It is never honoured under `NODE_ENV=test`.
 
 ### Device tokens
 
@@ -215,9 +218,6 @@ sentinel were all read off `expo-server-sdk@7.2.0` rather than recalled.
 
 ### What push does not have yet
 
-- **No per-template push copy.** Every template falls back to its subject line
-  and first body line. Readable, but not written for a lock screen. Deferred
-  until there is a device to see it on.
 - **No push preference UI.** `NotificationPreference` carries the channel, and
   the existing `GET/PUT /boards/:id/notification-preferences` is scoped to
   `EMAIL` explicitly, so its DTO is unchanged and `apps/web` needed no edit.

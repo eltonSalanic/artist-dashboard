@@ -8,11 +8,12 @@ import type {
   EventType,
   UpdateEventDto,
 } from "@artist/shared";
-import { apiFetch, ApiError } from "../client";
+import { apiFetch } from "../client";
+import { INLINE_ERROR, toUserMessage } from "../messages";
 import type { EventDto } from "./types";
 
 const showError = (error: unknown) =>
-  notify.error(error instanceof ApiError ? error.message : "Something went wrong");
+  notify.error(toUserMessage(error));
 
 export interface EventFilters {
   type?: EventType;
@@ -44,6 +45,7 @@ export function useEvents(boardId: string, filters: EventFilters = {}) {
 
 export function useEvent(boardId: string, eventId: string | null) {
   return useQuery({
+    meta: INLINE_ERROR,
     queryKey: ["event", boardId, eventId],
     queryFn: () => apiFetch<EventDto>(`/boards/${boardId}/events/${eventId}`),
     enabled: !!eventId,

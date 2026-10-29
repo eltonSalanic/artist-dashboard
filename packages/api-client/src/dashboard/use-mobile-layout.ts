@@ -2,7 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { MobileLayoutItem, MobileLayoutResponse } from "@artist/shared";
-import { apiFetch, ApiError, notify } from "../client";
+import { apiFetch, notify } from "../client";
+import { toUserMessage } from "../messages";
 
 /**
  * The phone's own arrangement of a board (P12b). Until it is saved on a phone
@@ -12,7 +13,7 @@ export const mobileLayoutKey = (boardId: string) => ["mobile-layout", boardId];
 
 const showError = (error: unknown) =>
   notify.error(
-    error instanceof ApiError ? error.message : "Couldn't save the arrangement",
+    toUserMessage(error, "Couldn't save the arrangement"),
   );
 
 export function useMobileLayout(boardId: string) {

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { itemLinkInputSchema, type LinkParentKind } from '@artist/shared';
-import { ApiError, useItemLinks, usePermissions } from '@artist/api-client';
+import { toUserMessage, useItemLinks, usePermissions } from '@artist/api-client';
 import { TextInput } from '@/components/text-input';
 import { PosterText } from '@/components/poster-text';
 import { TextField } from '@/components/text-field';
@@ -38,11 +38,7 @@ export function ItemLinkForm({
     try {
       await links.add.mutateAsync(parsed.data);
     } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : 'Could not save the link. Try again.',
-      );
+      setError(toUserMessage(err, 'Could not save the link. Try again.'));
       throw err;
     }
   };

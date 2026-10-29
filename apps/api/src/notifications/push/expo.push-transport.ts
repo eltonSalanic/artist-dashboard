@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { Logger } from '@nestjs/common';
 import type { OutgoingPush, PushResult, PushTransport } from './push-transport';
+import { maskToken } from '../../common/redact';
 
 /**
  * Expo's push endpoint, spoken to directly over fetch.
@@ -141,7 +142,7 @@ export class ExpoPushTransport implements PushTransport {
           return;
         }
         this.logger.warn(
-          `Expo push ticket error for ${token ?? 'unknown token'}: ${
+          `Expo push ticket error for ${token ? maskToken(token) : 'unknown token'}: ${
             ticket.details?.error ?? ticket.message
           }`,
         );

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
-import { useMe } from '@artist/api-client';
+import { toUserMessage, useMe } from '@artist/api-client';
 import { Button } from '@/components/button';
 import { Icon } from '@/components/icon';
 import { PosterText } from '@/components/poster-text';
@@ -10,7 +10,8 @@ import { Skeleton } from '@/components/skeleton';
 import { useSelectedBoard } from '@/features/board/selected-board';
 import { PushSetting } from '@/features/push/push-prompt';
 import { forgetThisDevice } from '@/features/push/push';
-import { supabase } from '@/lib/supabase';
+import { auth } from '@/lib/auth';
+import { feedbackAvailable, showFeedback } from '@/lib/sentry';
 import {
   boardAccent,
   posterRadius,
@@ -57,10 +58,10 @@ export function YouScreen() {
       ) : me.isError ? (
         <View style={{ gap: spacing.sm }}>
           <PosterText variant="title" color={canvas.ink}>
-            Could not reach the API
+            Could not load your account
           </PosterText>
           <PosterText variant="body" color={canvas.soft}>
-            {me.error.message}
+            {toUserMessage(me.error)}
           </PosterText>
           <Button
             title="Try again"
@@ -143,6 +144,12 @@ export function YouScreen() {
         <PushSetting />
       </Section>
 
+      {/* Sentry's feedback form, linked to the errors just before it. Only
+          shown when reporting is on, so there's always somewhere it goes. */}
+      {feedbackAvailable && (
+        <Button title="Report a problem" variant="secondary" onPress={showFeedback} />
+      )}
+
       <Button
         title="Sign out"
         variant="destructive"
@@ -153,7 +160,7 @@ export function YouScreen() {
           // token it is — otherwise the next person to sign in on this
           // phone would be buzzed for this account until they did.
           void forgetThisDevice()
-            .then(() => supabase.auth.signOut())
+            .then(() => auth.signOut())
             .finally(() => setSigningOut(false));
         }}
       />

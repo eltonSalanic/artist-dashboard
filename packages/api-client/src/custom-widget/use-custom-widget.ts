@@ -3,7 +3,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { notify } from "../client";
 import type { UpdateCustomWidgetDto } from "@artist/shared";
-import { apiFetch, ApiError } from "../client";
+import { apiFetch } from "../client";
+import { toUserMessage } from "../messages";
 
 export interface CustomWidgetDto {
   title: string;
@@ -32,7 +33,7 @@ export function useSaveCustomWidget(boardId: string) {
       queryClient.setQueryData(["custom-widget", boardId], data),
     onError: (error) =>
       notify.error(
-        error instanceof ApiError ? error.message : "Could not save the note",
+        toUserMessage(error, "Could not save the note"),
       ),
   });
 }
