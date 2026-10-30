@@ -1,8 +1,27 @@
 # Billing — Band Wall subscription
 
-**Status:** built on `feat/billing`; not live anywhere. No store products exist yet, and `BILLING_ENFORCED` is off everywhere until the account setup below is done. Locally, the RevenueCat **Test Store** key lets the web and phone checkouts run end to end.
+**Status:** in `main` since 2026-10-29 ([PR #4](https://github.com/eltonSalanic/artist-dashboard/pull/4)), not live anywhere. Nothing is hosted yet, the App Store and Play products don't exist yet, and `BILLING_ENFORCED` is off everywhere until the account setup below is done. Locally, the RevenueCat **Test Store** key lets the web and phone checkouts run end to end. [Where it stands](#where-it-stands) lists what's tested and what's left.
 
 Band Wall is a subscription **per band (board)**, not per person: **$5.99/month or $59.99/year**. Whoever pays, the whole band gets it, and members of a paid band never pay themselves. There is no free tier: with billing enforced, a band without a subscription can't open its wall. Both plans start with a **one-month free trial** for new subscribers.
+
+## Decisions
+
+Elton made these on 2026-10-29. Change them here and in `BAND_WALL_PLAN` together.
+
+- **Per band, not per person.** One subscription unlocks a board for everyone on it.
+- **No free tier.** Everything is behind the subscription once `BILLING_ENFORCED=true`.
+- **$5.99 a month or $59.99 a year.** The yearly plan is billed as "2 months free" (12 × $5.99 = $71.88).
+- **One-month free trial** on both plans, for new subscribers.
+- **Only admins buy**, restore or manage. Members see the status.
+- **Names:** customers see "Band Wall subscription" (it was "Band Pro" during development; the code was renamed too). Entitlement `band_wall`; packages `$rc_monthly` / `$rc_annual`; product ids in the table below.
+- **Copy is casual**, a musician talking to bands ("First month's on us…").
+
+## Store fees
+
+- **Apple:** enroll in the App Store Small Business Program for **15%** (instead of 30%) on the first $1M a year.
+- **Google:** subscriptions are 15% already. **Android stays on Play Billing**: Play's external-offer programs still take a cut and add reporting work, so linking out costs more than it saves at this size.
+- **Web:** Stripe through RevenueCat Web Billing, no store fee. Bands that start on the web never pay Apple or Google.
+- **Later, maybe:** in the US, iOS apps may now link out to a web checkout. Band Wall could add a "Subscribe on the web" link on iOS to skip Apple's fee. Not built; weigh it once there's real volume.
 
 ## How it fits together
 
@@ -28,6 +47,8 @@ The paywalls read the offering, not these ids, so a mismatch shows up as a packa
 - **Who gets a trial:** eligibility belongs to the **Apple ID or Google account, per subscription group**, not to the band (on the web, to the RevenueCat customer, which is the band). So an admin who already had a free month on one band won't get another one buying for a second band from the same Apple ID or Google account. The apps only say "Start free trial" when the store says the buyer is eligible: Play and Web Billing only offer the trial to eligible buyers, and on iOS the app asks RevenueCat (`checkTrialOrIntroductoryPriceEligibility`); an "unknown" answer still shows the trial, and Apple's own purchase sheet states the real terms. Otherwise the buttons show the plain price.
 - **Terms and Privacy:** both subscription screens link to `https://bandwall.app/terms` and `https://bandwall.app/privacy` (`BAND_WALL_PLAN.links`), which Apple and Google require. Those pages don't exist yet; publish them before submitting the app. The RevenueCat paywall needs the same two links set in its editor.
 - **Who can buy:** admins (`billing.manage` in the shared `can()` map). Every member can see the status (`billing.view`). Members are told to ask an admin.
+- **The web checkout:** `@revenuecat/purchases-js`, configured with the board's id. When the current offering has a RevenueCat paywall, "Start free trial" (or "Subscribe to Band Wall") presents it. Without one, the web shows one button per plan, priced from the offering, and goes straight to RevenueCat's checkout for that package. The web SDK has no Customer Center, so "Manage subscription" opens RevenueCat's `managementURL`.
+- **The phone:** a native screen (`/board/:boardId/subscribe`) listing the offering's packages, with restore purchases and RevenueCat's Customer Center for managing. It does not use RevenueCat's paywall UI.
 
 ## The enforcement rule
 
@@ -147,7 +168,7 @@ Do these in order; each later step needs the earlier ones.
 
 ### 4. RevenueCat
 
-1. **Project:** created. Keep dev on the **Test Store** app (key `test_…`) until the stores are connected.
+1. **Project:** "Band Wall" (`projfba9b48a`), created 2026-10-29. It has a **Test Store** app (key `test_…`, in the local env files) for dev until the stores are connected, the `band_wall` entitlement, the `default` offering, and a **published paywall** styled like the phone app (Figtree from Google Fonts, cream and near-black, no cards, bullet list, "Start free trial"). The paywall's Terms and Privacy links point at `bandwall.app/terms` and `bandwall.app/privacy`.
 2. **Apps:** add the **App Store** app (bundle id `com.bandwall.app`, the In-App Purchase key and issuer id, the shared secret), the **Play Store** app (package `com.bandwall.app`, the service account JSON), and a **Web Billing** app connected to Stripe (the sandbox for staging, the live account for production). Each gives its own public SDK key for the table above.
 3. **Products:** import the App Store and Play products, and create the two Web Billing products (monthly $5.99, yearly $59.99), each with a **1-month free trial**. The Test Store products `band_wall_monthly` and `band_wall_yearly` carry the same trial for local testing.
 4. **Entitlement `band_wall`:** attach all the monthly and yearly products from every store.
@@ -159,6 +180,28 @@ Do these in order; each later step needs the earlier ones.
    - production: `https://<production API host>/billing/revenuecat/webhook`, sending **both sandbox and production** events. App Review buys with sandbox accounts against the production build, and the reviewer has to get past the paywall.
    - dev (optional): through a tunnel (`npm run mobile:tunnel`) to `http://…/billing/revenuecat/webhook`.
    If one RevenueCat project serves both staging and production, filter the staging webhook to sandbox events. Board ids differ per database, so a staging event that reaches production only lands as `unknown_board`.
+
+## Deploying it
+
+Nothing is hosted yet ([release-workflow.md](release-workflow.md)). When the API and web go up, per environment:
+
+1. Deploy the API and run `npx prisma migrate deploy`. That applies `20261029212835_billing` (the `BoardSubscription` and `BillingWebhookEvent` tables, RLS on).
+2. Set the env vars from the table above. Leave `BILLING_ENFORCED` unset (off).
+3. Add that environment's webhook in RevenueCat and check one event lands (the API logs `RevenueCat <TYPE> <id>: applied`).
+4. Run `npm run billing:grant -w apps/api -- --all` against that database, so every band that exists today keeps working.
+5. Then set `BILLING_ENFORCED=true` and redeploy the API. New bands now need a subscription.
+
+## Where it stands
+
+- **Tested:** the feature test of 2026-10-29 ([report](https://claude.ai/artifact/BqLFMPYe2K2uLmb5nka4b8)) passed 16 checks, none failed. It covered the API gate and its exemptions, the webhook lifecycle, the grant script, the web paywall for admins and members, the web Test Store checkout, and a Test Store purchase on the iPhone simulator that unlocked the band. Added after that run and unit-tested only: the trial copy and status, the final store ids, "2 months free", and the Terms/Privacy links.
+- **Left for Elton:** the Trello card [Band Wall subscriptions: manual testing to do](https://trello.com/c/JYkdHryG) (real iPhone, restore, Customer Center, a real webhook, the trial end to end, Android).
+- **Known limitation:** a Test Store purchase arrives as store `TEST_STORE`, which is stored as `PROMOTIONAL`, so settings calls it a promotional grant and hides Manage subscription. Real App Store, Play and web purchases are stored correctly.
+- **Follow-ups:**
+  - Upgrade `react-native-purchases` to 11.x when its iOS pod ships (the pin above).
+  - Publish `bandwall.app/terms` and `bandwall.app/privacy` before store submission.
+  - Gate the notification jobs for unpaid bands (see *Not gated* above).
+  - Skip out-of-order webhook events (see *Not handled yet* above).
+  - The phone's band switcher doesn't mark unpaid bands the way the web's does.
 
 ## Testing locally with the Test Store
 
