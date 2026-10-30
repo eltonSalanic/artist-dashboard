@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useHeaderHeight } from 'expo-router/react-navigation';
-import { ActivityIndicator, Pressable, View } from 'react-native';
-import { useCreateBoard } from '@artist/api-client';
+import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
+import { useCreateBoard, useMySubscription } from '@artist/api-client';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TextInput } from '@/components/text-input';
 import { Icon } from '@/components/icon';
@@ -133,8 +133,26 @@ function CreateBand({
 }) {
   const tokens = useTokens();
   const create = useCreateBoard();
-  const [open, setOpen] = useState(startOpen);
+  const mine = useMySubscription();
+  const createBlock = mine.data?.createBlock ?? null;
+  const [wantsOpen, setOpen] = useState(startOpen);
+  const open = wantsOpen && !createBlock;
   const [name, setName] = useState('');
+
+  // Owning a band takes a subscription, and one covers one band.
+  const begin = () => {
+    if (createBlock === 'NO_SUBSCRIPTION') {
+      router.dismiss();
+      router.push('/subscribe');
+    } else if (createBlock === 'ALREADY_OWNS_BAND') {
+      Alert.alert(
+        "You've already got a band",
+        'A subscription covers one band. Delete yours in its settings and you can start a new one. You can still join as many as you like.',
+      );
+    } else {
+      setOpen(true);
+    }
+  };
 
   const submit = () => {
     const trimmed = name.trim();
@@ -156,7 +174,7 @@ function CreateBand({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Create a band"
-        onPress={() => setOpen(true)}
+        onPress={begin}
         style={({ pressed }) => ({
           ...block,
           flexDirection: 'row',
@@ -177,7 +195,7 @@ function CreateBand({
   return (
     <View style={{ ...block, padding: spacing.md - 2, gap: spacing.sm }}>
       <PosterText variant="label" color={tokens.mutedForeground}>
-        NEW BAND · YOU&apos;LL BE ITS ADMIN
+        NEW BAND · YOU&apos;LL OWN IT
       </PosterText>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
         <TextInput

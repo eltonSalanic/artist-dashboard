@@ -9,9 +9,9 @@ import { BAND_WALL_PLAN } from '@artist/shared';
 import { env } from '@/lib/env';
 
 /**
- * RevenueCat on the phone. the subscription belongs to the board, so before anything
- * is bought or restored the SDK is logged in as the board's id, the same app
- * user id the web checkout and the API's webhook use.
+ * RevenueCat on the phone. The subscription belongs to the person, so before
+ * anything is bought or restored the SDK is logged in as the user's id, the
+ * same app user id the web checkout and the API's webhook use.
  *
  * Configured lazily, on the subscription screen, so a build without a key (or a
  * person who never opens the screen) never starts the SDK.
@@ -20,13 +20,13 @@ let configured = false;
 
 export const billingAvailable = () => !!env.revenueCatKey;
 
-async function ready(boardId: string) {
+async function ready(userId: string) {
   if (!env.revenueCatKey) throw new Error("Subscriptions aren't set up in this build.");
   if (!configured) {
-    Purchases.configure({ apiKey: env.revenueCatKey, appUserID: boardId });
+    Purchases.configure({ apiKey: env.revenueCatKey, appUserID: userId });
     configured = true;
-  } else if ((await Purchases.getAppUserID()) !== boardId) {
-    await Purchases.logIn(boardId);
+  } else if ((await Purchases.getAppUserID()) !== userId) {
+    await Purchases.logIn(userId);
   }
 }
 
@@ -42,16 +42,16 @@ export interface PlanOption {
 /**
  * The packages in the current offering, monthly first, each with whether its
  * free trial is on the table. Trial eligibility belongs to the Apple ID or
- * Google account (per subscription group), not to the band: an admin who
- * already had a free month on one band won't get another on a second.
+ * Google account (per subscription group), so one person gets one free
+ * month, across every band they ever own.
  *
  * Android only lists a free phase to an eligible account. iOS lists the
  * intro offer to everyone and answers eligibility separately; "unknown"
  * (Apple couldn't tell) still shows the trial, and the store's own sheet
  * states the real terms before anyone pays.
  */
-export async function planPackages(boardId: string): Promise<PlanOption[]> {
-  await ready(boardId);
+export async function planPackages(userId: string): Promise<PlanOption[]> {
+  await ready(userId);
   const offerings = await Purchases.getOfferings();
   const order: string[] = [BAND_WALL_PLAN.plans.monthly.packageId, BAND_WALL_PLAN.plans.yearly.packageId];
   const packages = [...(offerings.current?.availablePackages ?? [])].sort(
@@ -82,12 +82,12 @@ const rank = (order: string[], id: string) => {
 
 export type PurchaseOutcome = 'purchased' | 'cancelled' | 'not_entitled';
 
-/** Buys one package for the board. Backing out of the store sheet is not an error. */
+/** Buys one package. Backing out of the store sheet is not an error. */
 export async function buySubscription(
-  boardId: string,
+  userId: string,
   pkg: PurchasesPackage,
 ): Promise<PurchaseOutcome> {
-  await ready(boardId);
+  await ready(userId);
   try {
     const { customerInfo } = await Purchases.purchasePackage(pkg);
     return hasPro(customerInfo) ? 'purchased' : 'not_entitled';
@@ -99,14 +99,14 @@ export async function buySubscription(
   }
 }
 
-/** Restores this store account's purchases onto the board. */
-export async function restoreSubscription(boardId: string): Promise<boolean> {
-  await ready(boardId);
+/** Restores this store account's purchases onto this person. */
+export async function restoreSubscription(userId: string): Promise<boolean> {
+  await ready(userId);
   return hasPro(await Purchases.restorePurchases());
 }
 
 /** RevenueCat's Customer Center: cancel, change plan, request a refund. */
-export async function manageSubscription(boardId: string): Promise<void> {
-  await ready(boardId);
+export async function manageSubscription(userId: string): Promise<void> {
+  await ready(userId);
   await RevenueCatUI.presentCustomerCenter();
 }
