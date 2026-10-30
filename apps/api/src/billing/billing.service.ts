@@ -4,10 +4,14 @@ import {
   BAND_WALL_PLAN,
   isPro,
   type BoardSubscriptionDto,
+  type MySubscriptionDto,
+  type OwnershipBlock,
+  type SubscriptionDto,
   type SubscriptionStatus,
   type SubscriptionStore,
 } from '@artist/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { activeEntitlement } from './revenuecat-customer';
 import type { RevenueCatEvent } from './revenuecat-event';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -38,8 +42,11 @@ const STATUS_FOR: Record<string, SubscriptionStatus> = {
   EXPIRATION: 'EXPIRED',
 };
 
+const REVENUECAT_API = 'https://api.revenuecat.com/v1';
+const REVENUECAT_TIMEOUT_MS = 5_000;
+
 export type WebhookOutcome =
-  'applied' | 'duplicate' | 'ignored' | 'unknown_board';
+  'applied' | 'duplicate' | 'ignored' | 'unknown_user';
 
 @Injectable()
 export class BillingService {
@@ -58,16 +65,31 @@ export class BillingService {
     return this.config.get<string>('BILLING_ENFORCED') === 'true';
   }
 
-  /** Whether the board is subscribed right now (see `isPro` in packages/shared). */
-  async isPro(boardId: string): Promise<boolean> {
-    const subscription = await this.prisma.boardSubscription.findUnique({
-      where: { boardId },
+  /** Whether this person is subscribed right now (a trial counts). */
+  async isSubscribed(userId: string): Promise<boolean> {
+    const subscription = await this.prisma.userSubscription.findUnique({
+      where: { userId },
       select: { status: true, currentPeriodEnd: true },
     });
     return isPro(subscription);
   }
 
-  /** True when the board's routes are closed until someone subscribes. */
+  /** Whether the band is open: its owner is subscribed. No owner, no access. */
+  async isPro(boardId: string): Promise<boolean> {
+    const board = await this.prisma.board.findUnique({
+      where: { id: boardId },
+      select: {
+        owner: {
+          select: {
+            subscription: { select: { status: true, currentPeriodEnd: true } },
+          },
+        },
+      },
+    });
+    return isPro(board?.owner?.subscription);
+  }
+
+  /** True when the board's routes are closed until its owner subscribes. */
   async requiresSubscription(boardId: string): Promise<boolean> {
     if (!this.enforced) return false;
     return !(await this.isPro(boardId));
@@ -76,30 +98,149 @@ export class BillingService {
   /** Of these boards, the ones whose content may be served. */
   async accessibleBoards(boardIds: string[]): Promise<string[]> {
     if (!this.enforced || boardIds.length === 0) return boardIds;
-    const rows = await this.prisma.boardSubscription.findMany({
-      where: { boardId: { in: boardIds } },
-      select: { boardId: true, status: true, currentPeriodEnd: true },
+    const boards = await this.prisma.board.findMany({
+      where: { id: { in: boardIds } },
+      select: {
+        id: true,
+        owner: {
+          select: {
+            subscription: { select: { status: true, currentPeriodEnd: true } },
+          },
+        },
+      },
     });
-    const paid = new Set(rows.filter((r) => isPro(r)).map((r) => r.boardId));
-    return boardIds.filter((id) => paid.has(id));
+    const open = new Set(
+      boards.filter((b) => isPro(b.owner?.subscription)).map((b) => b.id),
+    );
+    return boardIds.filter((id) => open.has(id));
   }
 
-  async getForBoard(boardId: string): Promise<BoardSubscriptionDto> {
-    const row = await this.prisma.boardSubscription.findUnique({
-      where: { boardId },
+  /**
+   * What stops this person owning a band, if anything. A subscription covers
+   * one band; with billing off, nothing stops anyone.
+   */
+  async ownershipBlock(userId: string): Promise<OwnershipBlock | null> {
+    if (!this.enforced) return null;
+    if (!(await this.isSubscribed(userId))) return 'NO_SUBSCRIPTION';
+    const owned = await this.prisma.board.findFirst({
+      where: { ownerId: userId },
+      select: { id: true },
     });
+    return owned ? 'ALREADY_OWNS_BAND' : null;
+  }
+
+  /** The row itself, for a board summary made right after creating a band. */
+  subscriptionOf(userId: string) {
+    return this.prisma.userSubscription.findUnique({
+      where: { userId },
+      select: { status: true, currentPeriodEnd: true },
+    });
+  }
+
+  async getForBoard(
+    boardId: string,
+    viewerId: string,
+  ): Promise<BoardSubscriptionDto> {
+    const board = await this.prisma.board.findUnique({
+      where: { id: boardId },
+      select: {
+        ownerId: true,
+        owner: { select: { displayName: true, subscription: true } },
+      },
+    });
+    const row = board?.owner?.subscription ?? null;
     const pro = isPro(row);
+    const isOwner = !!board?.ownerId && board.ownerId === viewerId;
     return {
+      ...toDto(row, pro),
+      // Dates and the store are the owner's business; a member only needs to
+      // know whether the band is open.
+      ...(isOwner
+        ? {}
+        : {
+            store: null,
+            productId: null,
+            currentPeriodEnd: null,
+            willRenew: false,
+            isTrial: false,
+          }),
       boardId,
-      isPro: pro,
       required: this.enforced && !pro,
-      status: row?.status ?? null,
-      store: row?.store ?? null,
-      productId: row?.productId ?? null,
-      currentPeriodEnd: row?.currentPeriodEnd?.toISOString() ?? null,
-      willRenew: row?.willRenew ?? false,
-      isTrial: row?.isTrial ?? false,
+      isOwner,
+      ownerId: board?.ownerId ?? null,
+      ownerName: board?.owner?.displayName ?? null,
     };
+  }
+
+  async getMine(userId: string): Promise<MySubscriptionDto> {
+    const [row, owned, createBlock] = await Promise.all([
+      this.prisma.userSubscription.findUnique({ where: { userId } }),
+      this.prisma.board.findFirst({
+        where: { ownerId: userId },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true },
+      }),
+      this.ownershipBlock(userId),
+    ]);
+    return {
+      ...toDto(row, isPro(row)),
+      enforced: this.enforced,
+      ownedBoardId: owned?.id ?? null,
+      createBlock,
+    };
+  }
+
+  /**
+   * Asks RevenueCat directly, for when the app knows about a purchase before
+   * the webhook has arrived, or a webhook can't arrive at all. The webhook
+   * stays the main path: this only ever adds an active entitlement, so it
+   * can't undo a grant or a newer event, and if it can't reach RevenueCat (or
+   * has no key) you just get the subscription as it stood.
+   */
+  async syncFromRevenueCat(userId: string): Promise<MySubscriptionDto> {
+    const key = this.config.get<string>('REVENUECAT_SECRET_API_KEY');
+    if (key) {
+      try {
+        await this.applyRevenueCatCustomer(userId, key);
+      } catch (error) {
+        this.logger.warn(`RevenueCat sync failed: ${String(error)}`);
+      }
+    }
+    return this.getMine(userId);
+  }
+
+  private async applyRevenueCatCustomer(userId: string, key: string) {
+    const response = await fetch(
+      `${REVENUECAT_API}/subscribers/${encodeURIComponent(userId)}`,
+      {
+        headers: { Authorization: `Bearer ${key}` },
+        signal: AbortSignal.timeout(REVENUECAT_TIMEOUT_MS),
+      },
+    );
+    if (!response.ok) {
+      throw new Error(`RevenueCat answered ${response.status}`);
+    }
+    const active = activeEntitlement(await response.json(), new Date());
+    if (!active) return;
+
+    const fields = {
+      status: active.billingIssue
+        ? ('GRACE' as const)
+        : active.cancelled
+          ? ('CANCELLED' as const)
+          : ('ACTIVE' as const),
+      store: STORES[active.store ?? ''] ?? 'PROMOTIONAL',
+      productId: active.productId,
+      currentPeriodEnd: active.expiresAt,
+      willRenew: !active.cancelled,
+      isTrial: active.isTrial,
+      revenueCatAppUserId: userId,
+    };
+    await this.prisma.userSubscription.upsert({
+      where: { userId },
+      create: { userId, entitlement: BAND_WALL_PLAN.entitlement, ...fields },
+      update: fields,
+    });
   }
 
   /**
@@ -119,9 +260,9 @@ export class BillingService {
     if (seen) return 'duplicate';
 
     return this.prisma.$transaction(async (tx) => {
-      const boardIds = await this.boardsFor(event, tx);
+      const userIds = await this.usersFor(event, tx);
       await tx.billingWebhookEvent.create({
-        data: { id: event.id, type: event.type, boardId: boardIds[0] },
+        data: { id: event.id, type: event.type, userId: userIds[0] },
       });
 
       if (event.type === 'TRANSFER') {
@@ -129,12 +270,12 @@ export class BillingService {
       }
       const status = STATUS_FOR[event.type];
       if (!status || !this.isOurEntitlement(event)) return 'ignored';
-      const [boardId] = boardIds;
-      if (!boardId) {
+      const [userId] = userIds;
+      if (!userId) {
         this.logger.warn(
-          `RevenueCat ${event.type} ${event.id} names no board we know`,
+          `RevenueCat ${event.type} ${event.id} names no user we know`,
         );
-        return 'unknown_board';
+        return 'unknown_user';
       }
 
       const fields = {
@@ -153,11 +294,11 @@ export class BillingService {
         // A free trial is subscribed like a paid period; this only lets the
         // apps say when the free month ends.
         isTrial: event.period_type === 'TRIAL',
-        revenueCatAppUserId: boardId,
+        revenueCatAppUserId: userId,
       };
-      await tx.boardSubscription.upsert({
-        where: { boardId },
-        create: { boardId, entitlement: BAND_WALL_PLAN.entitlement, ...fields },
+      await tx.userSubscription.upsert({
+        where: { userId },
+        create: { userId, entitlement: BAND_WALL_PLAN.entitlement, ...fields },
         update: fields,
       });
       return 'applied';
@@ -165,18 +306,18 @@ export class BillingService {
   }
 
   /**
-   * A restore on another board (or another app user) moved the purchase. The
-   * event carries no product or period, so the receiving board takes over the
-   * sending board's row as it stood, and the sender loses access.
+   * A restore under another account moved the purchase. The event carries no
+   * product or period, so the receiving person takes over the sender's row as
+   * it stood, and the sender loses access (and any band they own locks).
    */
   private async transfer(
     event: RevenueCatEvent,
     tx: Tx,
   ): Promise<WebhookOutcome> {
-    const from = await this.knownBoards(event.transferred_from ?? [], tx);
-    const to = await this.knownBoards(event.transferred_to ?? [], tx);
+    const from = await this.knownUsers(event.transferred_from ?? [], tx);
+    const to = await this.knownUsers(event.transferred_to ?? [], tx);
     const source = from.length
-      ? await tx.boardSubscription.findUnique({ where: { boardId: from[0] } })
+      ? await tx.userSubscription.findUnique({ where: { userId: from[0] } })
       : null;
 
     if (source && to[0]) {
@@ -190,19 +331,19 @@ export class BillingService {
         isTrial: source.isTrial,
         revenueCatAppUserId: to[0],
       };
-      await tx.boardSubscription.upsert({
-        where: { boardId: to[0] },
-        create: { boardId: to[0], ...fields },
+      await tx.userSubscription.upsert({
+        where: { userId: to[0] },
+        create: { userId: to[0], ...fields },
         update: fields,
       });
     }
     if (from.length) {
-      await tx.boardSubscription.updateMany({
-        where: { boardId: { in: from } },
+      await tx.userSubscription.updateMany({
+        where: { userId: { in: from } },
         data: { status: 'EXPIRED', willRenew: false },
       });
     }
-    return from.length || to.length ? 'applied' : 'unknown_board';
+    return from.length || to.length ? 'applied' : 'unknown_user';
   }
 
   /** Events with no entitlement list (older API versions) are taken as ours. */
@@ -212,30 +353,52 @@ export class BillingService {
   }
 
   /**
-   * The board this event is about. The app user id is the board's id, but a
+   * The person this event is about. The app user id is the user's id, but a
    * purchase made before `logIn` lands on an anonymous id that later gets the
-   * board id as an alias, so every id the event names is tried.
+   * user's id as an alias, so every id the event names is tried.
    */
-  private async boardsFor(event: RevenueCatEvent, tx: Tx): Promise<string[]> {
+  private async usersFor(event: RevenueCatEvent, tx: Tx): Promise<string[]> {
     const ids = [
       event.app_user_id,
       event.original_app_user_id,
       ...(event.aliases ?? []),
     ].filter((id): id is string => !!id);
-    return this.knownBoards(ids, tx);
+    return this.knownUsers(ids, tx);
   }
 
-  private async knownBoards(ids: string[], tx: Tx): Promise<string[]> {
-    // Not a uuid is not a board, and would make Postgres reject the query.
+  private async knownUsers(ids: string[], tx: Tx): Promise<string[]> {
+    // Not a uuid is not a user, and would make Postgres reject the query.
     const candidates = [...new Set(ids.filter((id) => UUID.test(id)))];
     if (candidates.length === 0) return [];
-    const boards = await tx.board.findMany({
+    const users = await tx.user.findMany({
       where: { id: { in: candidates } },
       select: { id: true },
     });
-    const known = new Set(boards.map((b) => b.id));
+    const known = new Set(users.map((u) => u.id));
     return candidates.filter((id) => known.has(id));
   }
+}
+
+function toDto(
+  row: {
+    status: SubscriptionStatus;
+    store: SubscriptionStore;
+    productId: string;
+    currentPeriodEnd: Date | null;
+    willRenew: boolean;
+    isTrial: boolean;
+  } | null,
+  pro: boolean,
+): SubscriptionDto {
+  return {
+    isPro: pro,
+    status: row?.status ?? null,
+    store: row?.store ?? null,
+    productId: row?.productId ?? null,
+    currentPeriodEnd: row?.currentPeriodEnd?.toISOString() ?? null,
+    willRenew: row?.willRenew ?? false,
+    isTrial: row?.isTrial ?? false,
+  };
 }
 
 type Tx = Parameters<Parameters<PrismaService['$transaction']>[0]>[0];

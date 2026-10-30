@@ -67,7 +67,7 @@ These are project rules the user has set. Follow them without re-litigating.
 - **No `Co-Authored-By` trailer on commits.** Leave it off entirely.
 - **Keep the docs current.** Any major change (a new feature, a changed behaviour or flow, a new env var, command or migration, a new route or module) updates the docs in the same branch: the root [README.md](README.md) feature list and setup, the matching file in [docs/](docs/README.md) and its status line in the docs index, [docs/test-checklist.md](docs/test-checklist.md), the plan's state in [docs/plans/](docs/plans/README.md), and the app README or `.env.example` it touches. Before calling work done, check that no doc still describes the old behaviour.
 - **Auth goes through `AuthClient`.** Web and mobile screens call `auth` from their `src/lib/auth.ts`, never a provider directly. The interface lives in `packages/api-client/src/auth/auth-client.ts` and the Better Auth version in `better-auth-client.ts` next to it; the server side is Better Auth mounted at `/api/auth` in the API ([apps/api/src/auth/better-auth.ts](apps/api/src/auth/better-auth.ts)), and every API request is checked by `SessionAuthGuard`; failures come back as `{ error }` for `authErrorMessage()`, and a 401 from the API still goes through `onUnauthorized`. A new auth need is a new `AuthClient` method, not a direct provider call.
-- **Board routes are behind the subscription.** With `BILLING_ENFORCED=true` every `@BoardRoles` route answers 402 until the band is subscribed (`SubscriptionGuard`), so a new board route is gated automatically. Use `@SkipSubscription()` only for what a band needs before paying (invites, the status itself). Rules, env vars and setup: [docs/billing.md](docs/billing.md).
+- **Board routes are behind the owner's subscription.** A subscription belongs to a person and lets them own one band; joining is free. With `BILLING_ENFORCED=true` every `@BoardRoles` route answers 402 while the band's owner isn't subscribed (`SubscriptionGuard`), so a new board route is gated automatically. Use `@SkipSubscription()` only for what has to work on a locked band (invites, the status itself). The owner (`Board.ownerId`) isn't a role, so owner-only actions check it directly rather than `can()`. Rules, env vars and setup: [docs/billing.md](docs/billing.md).
 - **Permissions have one source of truth.** `packages/shared/src/permissions.ts` (`can()` map) is enforced server-side *and* mirrored in the UI. Never hardcode a role check — extend the shared map.
 
 ---
@@ -115,7 +115,7 @@ Neither Prisma nor Supabase deploys the NestJS/Next.js *code* — those need the
 npm run dev                 # both apps (concurrently) — from repo root
 npm run test                # shared, api-client, api, web and mobile test suites
 npm run db:seed -w apps/api # (re)seed the demo board — DESTRUCTIVE, dev only
-npm run billing:grant -w apps/api -- --all  # free subscriptions for existing bands (docs/billing.md)
+npm run billing:grant -w apps/api -- --all  # free subscriptions for existing band owners (docs/billing.md)
 npx prisma migrate dev      # from apps/api — new migration in dev
 npx prisma migrate deploy   # from apps/api — apply migrations in prod/CI
 npx supabase start|stop     # local Supabase stack

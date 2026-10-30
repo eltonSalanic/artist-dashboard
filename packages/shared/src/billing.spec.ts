@@ -35,15 +35,15 @@ describe('isPro', () => {
 });
 
 describe('webPurchaseUrl', () => {
-  it('appends the board id as the app user id', () => {
-    expect(webPurchaseUrl('https://pay.rev.cat/abc/', 'board-1')).toBe(
-      'https://pay.rev.cat/abc/board-1',
+  it('appends the user id as the app user id', () => {
+    expect(webPurchaseUrl('https://pay.rev.cat/abc/', 'user-1')).toBe(
+      'https://pay.rev.cat/abc/user-1',
     );
   });
 
   it('is null when not configured', () => {
-    expect(webPurchaseUrl(undefined, 'board-1')).toBeNull();
-    expect(webPurchaseUrl('', 'board-1')).toBeNull();
+    expect(webPurchaseUrl(undefined, 'user-1')).toBeNull();
+    expect(webPurchaseUrl('', 'user-1')).toBeNull();
   });
 });
 

@@ -96,6 +96,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <SubscriptionPaywall
             boardId={current.id}
             boardName={current.name}
+            isOwner={current.isOwner}
+            userId={me.data.user.id}
             email={me.data.user.email}
           />
         ) : (
@@ -275,7 +277,7 @@ function BandSwitcher({ me }: { me: MeResponse }) {
                 <span className="min-w-0 truncate">{board.name}</span>
                 {board.subscriptionRequired && (
                   <Badge variant="outline" className="ml-auto shrink-0">
-                    Needs a subscription
+                    {board.isOwner ? "Needs renewing" : "Locked"}
                   </Badge>
                 )}
               </DropdownMenuItem>

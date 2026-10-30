@@ -1,5 +1,8 @@
 import { Global, Module } from '@nestjs/common';
-import { BillingController } from './billing.controller';
+import {
+  BillingController,
+  MySubscriptionController,
+} from './billing.controller';
 import { BillingService } from './billing.service';
 import { RevenueCatWebhookController } from './revenuecat-webhook.controller';
 
@@ -9,7 +12,11 @@ import { RevenueCatWebhookController } from './revenuecat-webhook.controller';
  */
 @Global()
 @Module({
-  controllers: [BillingController, RevenueCatWebhookController],
+  controllers: [
+    BillingController,
+    MySubscriptionController,
+    RevenueCatWebhookController,
+  ],
   providers: [BillingService],
   exports: [BillingService],
 })

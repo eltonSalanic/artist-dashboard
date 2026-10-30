@@ -25,7 +25,7 @@ supabase/           local stack config (config.toml, seed.sql)
 - **Collaboration** — comments with @mentions (and a persistent mentions notification indicator), file attachments via signed URLs (private Storage bucket), and a boardwide activity feed logging every meaningful change.
 - **Notifications** — email (Resend, or Mailpit in dev) and push to the phone app, with per-category preferences and one-click unsubscribe. See [docs/notifications.md](docs/notifications.md).
 - **Archive** — archived items can be restored or deleted for good from the Archive page.
-- **Subscriptions** — a Band Wall subscription per band ($5.99/month or $59.99/year) through RevenueCat: in-app purchase on the phone, Stripe through RevenueCat Web Billing on the web. One purchase covers every member. With `BILLING_ENFORCED=true` there is no free tier: an unpaid band's routes answer 402 and both apps show the subscription paywall. Off by default locally. See [docs/billing.md](docs/billing.md).
+- **Subscriptions** — a Band Wall subscription ($5.99/month or $59.99/year, first month free) belongs to a person and lets them own one band, through RevenueCat: in-app purchase on the phone, Stripe through RevenueCat Web Billing on the web. Joining a band is free. With `BILLING_ENFORCED=true` there is no free tier: creating a band takes a subscription, and a band locks for everyone if its owner lapses. Owners can hand a band over or delete it. Off by default locally. See [docs/billing.md](docs/billing.md).
 
 ## Prerequisites
 
@@ -59,7 +59,7 @@ npm run dev        # concurrently runs api (3001) and web (3000)
 
 ### Logging in
 
-Sign in on `/login` with an email and password, or create an account there. Invites arrive in **Mailpit** at http://127.0.0.1:54324 (no real mail is sent): the link signs the invited person in on the web and asks for a password, or they enter the email's 6-digit code under "Join with an invite code" on the phone. Codes last an hour and work once. Accounts made before the switch to Better Auth keep their passwords (they were imported). Both apps sign in through the shared `AuthClient` (`packages/api-client/src/auth`), backed by Better Auth in the API at `/api/auth`; sessions last 30 days and extend while used. First login calls `POST /me/bootstrap`, which creates the user, and activates any email-matched invites. With no band yet you land on "You're not on any band's wall yet", where Create a band sets one up with default task statuses, show statuses and layout.
+Sign in on `/login` with an email and password, or create an account there. Invites arrive in **Mailpit** at http://127.0.0.1:54324 (no real mail is sent): the link signs the invited person in on the web and asks for a password, or they enter the email's 6-digit code under "Join with an invite code" on the phone. Codes last an hour and work once. Accounts made before the switch to Better Auth keep their passwords (they were imported). Both apps sign in through the shared `AuthClient` (`packages/api-client/src/auth`), backed by Better Auth in the API at `/api/auth`; sessions last 30 days and extend while used. First login calls `POST /me/bootstrap`, which creates the user, and activates any email-matched invites. With no band yet you land on "You haven't joined any bands yet", where Create A Band sets one up with default task statuses, show statuses and layout.
 
 ## Database changes
 
@@ -105,6 +105,6 @@ Lint with `npm run lint -w apps/api` / `-w apps/web` / `-w apps/mobile`. What a 
 
 **API returns 404 for a route you expect.** Almost all routes are board-scoped as `/boards/:boardId/<resource>` (tasks, events, goals, focus, reminders, calendar, finances, show-statuses, notes, links and so on). The root routes are `/health`, `/me` (and `/me/devices`), the cross-band `/calendar` and `/mentions`, `/unsubscribe`, `/webhooks/resend` and `/billing/revenuecat/webhook`. A guarded route hit without a token returns **401**, not 404 — so a 404 means the path is wrong, not that auth failed.
 
-**Every board shows the subscription paywall, or the API answers 402 `BOARD_SUBSCRIPTION_REQUIRED`.** `BILLING_ENFORCED=true` is set in `apps/api/.env` and the band has no subscription. Set it to `false` for everyday local work, or grant the band Pro with `npm run billing:grant -w apps/api -- <boardId>` ([docs/billing.md](docs/billing.md)).
+**Every band is locked, or the API answers 402 `BOARD_SUBSCRIPTION_REQUIRED`.** `BILLING_ENFORCED=true` is set in `apps/api/.env` and the band's owner isn't subscribed. Set it to `false` for everyday local work, or grant the owner a subscription with `npm run billing:grant -w apps/api -- <email>` ([docs/billing.md](docs/billing.md)).
 
 **Invite link says "Link expired" straight away.** The code in the link works once and lasts an hour; opening the same link twice (or after an hour) shows this. Invite the person again for a fresh code. If no invite email reaches Mailpit at all, check the API log for `Invite email failed`.

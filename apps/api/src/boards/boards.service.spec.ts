@@ -1,12 +1,24 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { DEFAULT_BOARD_THEME, type BoardThemeDto } from '@artist/shared';
 import { BoardsService } from './boards.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
 import type { BillingService } from '../billing/billing.service';
+import type { StorageService } from '../attachments/storage.service';
 
 /** Billing not enforced, as in dev: every board summary reads as open. */
-const billingOff = { enforced: false } as unknown as BillingService;
+const storageStub = {
+  remove: jest.fn(),
+} as unknown as StorageService;
+const billingOff = {
+  enforced: false,
+  ownershipBlock: () => Promise.resolve(null),
+  subscriptionOf: () => Promise.resolve(null),
+} as unknown as BillingService;
 
 describe('BoardsService.removeMember', () => {
   const prisma = {
@@ -25,6 +37,7 @@ describe('BoardsService.removeMember', () => {
     prisma as unknown as PrismaService,
     new ActivityService(prisma as unknown as PrismaService),
     billingOff,
+    storageStub,
   );
 
   beforeEach(() => jest.clearAllMocks());
@@ -94,6 +107,7 @@ describe('BoardsService board theme', () => {
     prisma as unknown as PrismaService,
     new ActivityService(prisma as unknown as PrismaService),
     billingOff,
+    storageStub,
   );
 
   beforeEach(() => jest.clearAllMocks());
@@ -167,6 +181,7 @@ describe('BoardsService.findAllForUser', () => {
     prisma as unknown as PrismaService,
     new ActivityService(prisma as unknown as PrismaService),
     billingOff,
+    storageStub,
   );
 
   beforeEach(() => jest.clearAllMocks());
@@ -211,6 +226,7 @@ describe('BoardsService.findAllForUser', () => {
         role: 'ADMIN',
         palette: 'ocean',
         isPro: false,
+        isOwner: false,
         subscriptionRequired: false,
       },
       {
@@ -220,6 +236,7 @@ describe('BoardsService.findAllForUser', () => {
         role: 'USER',
         palette: 'playful',
         isPro: false,
+        isOwner: false,
         subscriptionRequired: false,
       },
     ]);
@@ -263,7 +280,12 @@ describe('BoardsService.findAllForUser', () => {
       id: true,
       name: true,
       theme: true,
-      subscription: { select: { status: true, currentPeriodEnd: true } },
+      ownerId: true,
+      owner: {
+        select: {
+          subscription: { select: { status: true, currentPeriodEnd: true } },
+        },
+      },
     });
   });
 
@@ -289,6 +311,7 @@ describe('BoardsService.create', () => {
     prisma as unknown as PrismaService,
     new ActivityService(prisma as unknown as PrismaService),
     billingOff,
+    storageStub,
   );
 
   it('makes the caller the only admin, with default statuses and layout', async () => {
@@ -333,5 +356,146 @@ describe('BoardsService.create', () => {
         role: 'ADMIN',
       }),
     );
+  });
+});
+
+describe('BoardsService ownership', () => {
+  const BOARD = 'b1';
+  const OWNER = 'owner';
+  const OTHER = 'other';
+
+  function setup(block: string | null = null) {
+    const prisma = {
+      board: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue({ name: 'Neon Harbor', ownerId: OWNER }),
+        update: jest.fn(),
+        delete: jest.fn(),
+        create: jest.fn(),
+      },
+      event: { deleteMany: jest.fn() },
+      attachment: { findMany: jest.fn().mockResolvedValue([]) },
+      membership: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'm1' }),
+        update: jest.fn(),
+      },
+      $transaction: jest.fn(),
+    };
+    prisma.$transaction.mockImplementation((fn: (tx: unknown) => unknown) =>
+      fn(prisma),
+    );
+    const storage = { remove: jest.fn() };
+    const service = new BoardsService(
+      prisma as unknown as PrismaService,
+      new ActivityService(prisma as unknown as PrismaService),
+      {
+        enforced: true,
+        ownershipBlock: () => Promise.resolve(block),
+        subscriptionOf: () => Promise.resolve(null),
+      } as unknown as BillingService,
+      storage as unknown as StorageService,
+    );
+    return { service, prisma, storage };
+  }
+
+  it('refuses to create a band without a subscription (402)', async () => {
+    const { service, prisma } = setup('NO_SUBSCRIPTION');
+
+    await expect(
+      service.create(OWNER, { name: 'New band' }),
+    ).rejects.toMatchObject({
+      status: 402,
+      response: expect.objectContaining({ code: 'SUBSCRIPTION_REQUIRED' }),
+    });
+    expect(prisma.board.create).not.toHaveBeenCalled();
+  });
+
+  it('refuses a second band on one subscription (409)', async () => {
+    const { service } = setup('ALREADY_OWNS_BAND');
+
+    await expect(
+      service.create(OWNER, { name: 'New band' }),
+    ).rejects.toMatchObject({
+      status: 409,
+      response: expect.objectContaining({ code: 'BAND_LIMIT_REACHED' }),
+    });
+  });
+
+  it('lets only the owner delete the band', async () => {
+    const { service, prisma } = setup();
+
+    await expect(
+      service.remove(BOARD, OTHER, 'Neon Harbor'),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.board.delete).not.toHaveBeenCalled();
+  });
+
+  it('wants the band name typed exactly to delete it', async () => {
+    const { service, prisma } = setup();
+
+    await expect(
+      service.remove(BOARD, OWNER, 'Neon Harbour'),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.board.delete).not.toHaveBeenCalled();
+  });
+
+  it('deletes the band and then its stored files', async () => {
+    const { service, prisma, storage } = setup();
+    prisma.attachment.findMany.mockResolvedValue([{ storagePath: 'b1/a.wav' }]);
+
+    await expect(service.remove(BOARD, OWNER, 'Neon Harbor')).resolves.toEqual({
+      deleted: true,
+    });
+
+    expect(prisma.event.deleteMany).toHaveBeenCalledWith({
+      where: { boardId: BOARD },
+    });
+    expect(prisma.board.delete).toHaveBeenCalledWith({ where: { id: BOARD } });
+    expect(storage.remove).toHaveBeenCalledWith(['b1/a.wav']);
+  });
+
+  it('still reports the band deleted if the files fail to go', async () => {
+    const { service, prisma, storage } = setup();
+    prisma.attachment.findMany.mockResolvedValue([{ storagePath: 'b1/a.wav' }]);
+    storage.remove.mockRejectedValue(new Error('storage down'));
+
+    await expect(service.remove(BOARD, OWNER, 'Neon Harbor')).resolves.toEqual({
+      deleted: true,
+    });
+  });
+
+  it('hands the band to a subscribed member and makes them an admin', async () => {
+    const { service, prisma } = setup();
+
+    await expect(service.transfer(BOARD, OWNER, OTHER)).resolves.toEqual({
+      ownerId: OTHER,
+    });
+    expect(prisma.board.update).toHaveBeenCalledWith({
+      where: { id: BOARD },
+      data: { ownerId: OTHER },
+    });
+    expect(prisma.membership.update).toHaveBeenCalledWith({
+      where: { id: 'm1' },
+      data: { role: 'ADMIN' },
+    });
+  });
+
+  it('only hands a band to someone who can own it', async () => {
+    await expect(
+      setup('NO_SUBSCRIPTION').service.transfer(BOARD, OWNER, OTHER),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(
+      setup('ALREADY_OWNS_BAND').service.transfer(BOARD, OWNER, OTHER),
+    ).rejects.toMatchObject({ status: 409 });
+  });
+
+  it('lets only the owner hand the band over', async () => {
+    const { service, prisma } = setup();
+
+    await expect(
+      service.transfer(BOARD, OTHER, 'third'),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.board.update).not.toHaveBeenCalled();
   });
 });

@@ -347,7 +347,7 @@ number is the failure mode here, and only you can spot it.
 - [ ] ★ Tap `⋯` → A sheet listing Manage widgets, Archive and Board settings, each marked with its phase
 - [ ] ★ Sign in as a **member**, not an admin, and tap `⋯` → Board settings is absent; Archive is present
 - [ ] ★ Switch to Calendar, back to Board → The board tab is where you left it
-- [ ] ★ An account in no bands at all → "No band yet", not a crash or an endless spinner
+- [ ] ★ An account in no bands at all → "You haven't joined any bands yet", not a crash or an endless spinner
 
 ### Deliberately not in this phase
 
@@ -819,7 +819,7 @@ Web and phone now sign in through a shared `AuthClient` instead of calling Supab
 
 - [ ] ↻ Web: sign in with email and password → lands on the dashboard
 - [ ] ↻ Web: wrong password → "That email and password don't match" toast, form keeps the email
-- [ ] ↻ Web: create an account → signed in on the "You're not on any band's wall yet" screen, with Create a band
+- [ ] ↻ Web: create an account → signed in on the "You haven't joined any bands yet" screen, with Create A Band
 - [ ] ↻ Web: sign out from the header, and from the "no band" screen → back to `/login`
 - [ ] ↻ Web: invite someone, open the Mailpit link → `/auth/callback` asks for a password, saving it lands on the dashboard
 - [ ] ↻ Web: sign out, then sign in as a different user in the same tab → no data from the first user shows
@@ -852,31 +852,37 @@ Sign-in moved from Supabase Auth to Better Auth inside the API (branch `feat/bet
 
 ## Subscriptions
 
-Per-band subscriptions through RevenueCat; the rules are in [billing.md](billing.md). Checks live on [Band Wall subscriptions testing](https://trello.com/c/w9acE6hT). Feature test 2026-10-29 (report linked on the card): 16 checks, none failed; four need a real store or a real webhook. Run `npx prisma migrate deploy` from `apps/api` first (new migration `20261029212835_billing`). The phone needs a **new development build** (`react-native-purchases` is native). For the purchase checks, use the RevenueCat Test Store key and a webhook tunnel as described in [Testing locally with the Test Store](billing.md#testing-locally-with-the-test-store).
+A subscription belongs to a person and lets them own one band; the rules are in [billing.md](billing.md). Checks live on [Band Wall subscriptions testing](https://trello.com/c/w9acE6hT), and what still needs a real phone or store is on [Band Wall subscriptions: manual testing to do](https://trello.com/c/JYkdHryG). Run `npx prisma migrate deploy` from `apps/api` first. The phone needs a development build with `react-native-purchases` in it. For the purchase checks, use the RevenueCat Test Store key and a webhook tunnel as described in [Testing locally with the Test Store](billing.md#testing-locally-with-the-test-store).
 
-Automated checks: webhook mapping, idempotency and auth, the 402 guard and the cross-board narrowing are unit tested in `apps/api/src/billing` and `user-boards.guard.spec.ts`.
+Automated checks: webhook mapping, idempotency and auth, the 402 guard, the ownership rules, delete and hand-over are unit tested in `apps/api/src/billing`, `boards.service.spec.ts` and `user-boards.guard.spec.ts`.
 
 ### Billing off — ↻ regression, do this first
-- [ ] 🔵 With `BILLING_ENFORCED` unset, open every band on web and phone → everything works as before; no paywall
-- [ ] Settings on web → a subscription card reading "Not subscribed."; on the phone a subscription row (when a RevenueCat key is set)
+- [ ] 🔵 With `BILLING_ENFORCED` unset, open every band on web and phone → everything works as before, and you can create bands freely
 
-### The gate — ★ new, `BILLING_ENFORCED=true`
-- [ ] 🔵 Web, unpaid band → the subscription paywall in place of every page (dashboard, calendar, finances, settings); the band switcher marks it "Needs a subscription"
-- [ ] 🔵 Phone, unpaid band → the subscription screen in place of the hub; "Switch band" reaches a paid band
-- [ ] A paid band opens normally for a member who never paid
-- [ ] The phone's Calendar and Inbox tabs show only paid bands' items
-- [ ] An admin can still invite to an unpaid band; the invitee joins and lands on the paywall
-- [ ] A member (not admin) of an unpaid band sees "Ask one of the band's admins to subscribe", no buy button
-- [ ] `npm run billing:grant -w apps/api -- <boardId>` → that band opens after a refresh
+### Locked bands — ★ new, `BILLING_ENFORCED=true`
+- [ ] 🔵 Owner of a lapsed band → the plans in place of every page; on the phone in place of the hub
+- [ ] 🔵 Member of a lapsed band → "This band's owner needs to renew", no plans; the web's switcher says "Locked"
+- [ ] An open band opens for a member who never paid
+- [ ] The phone's Calendar and Inbox tabs show only open bands' items
+- [ ] An admin can still invite to a locked band; the invitee joins and sees the locked screen
+
+### Owning a band — ★ new
+- [ ] 🔵 No subscription → Create A Band shows the paywall, and joining a band still works
+- [ ] 🔵 With a subscription → Create a band works once; a second try says you've already got one
+- [ ] Settings → Band owner: delete needs the exact name, wipes the band for everyone, and you can then create a new one
+- [ ] Settings → Band owner: hand-over refuses someone without a subscription; with one, they own it and you stay an admin
+- [ ] A member doesn't see Band owner in settings
 
 ### Buying — ★ new, Test Store + webhook tunnel
-- [ ] 🔵 Web: Subscribe → RevenueCat paywall; closing it does nothing and shows no error
-- [ ] 🔵 Web: buy a plan → "Confirming your purchase…", then the wall opens
-- [ ] 🔵 Phone: subscription screen lists Monthly and Yearly with prices; buying one opens the wall
-- [ ] Phone: backing out of the store sheet shows no error
-- [ ] Phone: Restore purchases on a band that already paid → stays Pro; on a store account with nothing → "Nothing to restore"
+- [ ] 🔵 Web: buying opens RevenueCat's paywall or checkout; closing it does nothing and shows no error
+- [ ] 🔵 Web: buying a plan → "Confirming your purchase…", then the form or the wall
+- [ ] 🔵 Phone: no subscription → Create A Band opens RevenueCat's paywall; buying goes straight to naming the band
+- [ ] 🔵 Phone and web: with `REVENUECAT_SECRET_API_KEY` set and no webhook, buying still unlocks
+- [ ] With neither the key nor a webhook: after 20 seconds "We can't confirm your purchase yet" and Try again, and trying again opens no second purchase
+- [ ] 🔵 Phone: a lapsed owner's locked band → the button opens the paywall; buying unlocks
+- [ ] Phone: closing the paywall or backing out of the store sheet shows no error, and Restore purchases is still there
+- [ ] Phone: Restore purchases on an account that paid → subscribed; with nothing → "Nothing to restore"
 - [ ] Phone: Manage subscription opens the Customer Center
-- [ ] Every other member of the band gets in without paying
 - [ ] A buyer who can still get the trial sees "Start free trial" with the price it rolls into; after buying, settings says "Free month, ends …"
-- [ ] Buying for a second band from the same Apple ID / Google account shows the plain prices (no second trial)
+- [ ] The same store account buying again shows the plain prices (no second trial)
 - [ ] The yearly plan says "2 months free", and Terms and Privacy links sit under the plans on web and phone

@@ -11,9 +11,13 @@ import {
 import {
   boardThemeSchema,
   createBoardSchema,
+  deleteBoardSchema,
+  transferBoardSchema,
   updateBoardSchema,
   type BoardThemeDto,
   type CreateBoardDto,
+  type DeleteBoardDto,
+  type TransferBoardDto,
   type UpdateBoardDto,
 } from '@artist/shared';
 import { CurrentUser, type AuthUser } from '../auth/current-user.decorator';
@@ -38,8 +42,9 @@ export class BoardsController {
   }
 
   /**
-   * Start a new band with the caller as its admin. Like `findAll`, no board
-   * guard: anyone signed in may start one.
+   * Start a new band with the caller as its owner and admin. Like `findAll`,
+   * no board guard. With billing enforced, the service wants a subscription
+   * and no band already owned.
    */
   @Post()
   create(
@@ -71,6 +76,28 @@ export class BoardsController {
     @Body(new ZodValidationPipe(boardThemeSchema)) dto: BoardThemeDto,
   ) {
     return this.boards.saveTheme(id, dto);
+  }
+
+  /** Owner only, checked in the service: the owner isn't a role. */
+  @Delete(':id')
+  @BoardRoles('USER')
+  remove(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Body(new ZodValidationPipe(deleteBoardSchema)) dto: DeleteBoardDto,
+  ) {
+    return this.boards.remove(id, user.userId, dto.name);
+  }
+
+  /** Owner only, as above. */
+  @Post(':id/transfer')
+  @BoardRoles('USER')
+  transfer(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Body(new ZodValidationPipe(transferBoardSchema)) dto: TransferBoardDto,
+  ) {
+    return this.boards.transfer(id, user.userId, dto.userId);
   }
 
   @Delete(':id/members/:userId')

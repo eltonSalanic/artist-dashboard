@@ -4,7 +4,11 @@ import { ActivityService } from '../activity/activity.service';
 import type { BillingService } from '../billing/billing.service';
 
 /** Billing not enforced, as in dev: every board summary reads as open. */
-const billingOff = { enforced: false } as unknown as BillingService;
+const billingOff = {
+  enforced: false,
+  ownershipBlock: () => Promise.resolve(null),
+  subscriptionOf: () => Promise.resolve(null),
+} as unknown as BillingService;
 
 describe('UsersService.bootstrap', () => {
   const tx = {
@@ -148,6 +152,7 @@ describe('UsersService.me — multi-board', () => {
         role: 'ADMIN',
         palette: 'playful',
         isPro: false,
+        isOwner: false,
         subscriptionRequired: false,
       },
       {
@@ -157,6 +162,7 @@ describe('UsersService.me — multi-board', () => {
         role: 'USER',
         palette: 'playful',
         isPro: false,
+        isOwner: false,
         subscriptionRequired: false,
       },
     ]);

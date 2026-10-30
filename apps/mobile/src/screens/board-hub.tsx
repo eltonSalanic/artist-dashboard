@@ -21,6 +21,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   toUserMessage,
   useBoard,
+  useMySubscription,
   usePermissions,
   useResetMobileLayout,
   useSaveBoardTheme,
@@ -61,6 +62,7 @@ import { radius, spacing, usePosterCanvas, useThemeColors } from '@/theme';
 export function BoardHubScreen() {
   const colors = useThemeColors();
   const { board, boards, loading } = useSelectedBoard();
+  const mine = useMySubscription();
 
   // With billing enforced, an unpaid band's routes all answer 402: it lands on
   // the subscription screen instead of a wall of failed cards. Someone in several bands can
@@ -93,12 +95,21 @@ export function BoardHubScreen() {
             color={colors.mutedForeground}
           />
           <ThemedText variant="title" style={{ textAlign: 'center' }}>
-            You&apos;re not on any band&apos;s wall yet
+            You haven&apos;t joined any bands yet
           </ThemedText>
           <ThemedText variant="subhead" tone="muted" style={{ textAlign: 'center' }}>
             Join or create one. To join, ask one of the band&apos;s admins to invite you.
           </ThemedText>
-          <Button title="Create a band" onPress={() => router.push('/boards?create=1')} />
+          <Button
+            title="Create A Band"
+            // No subscription yet: straight to it, rather than through a sheet
+            // holding a second "Create a band".
+            onPress={() =>
+              router.push(
+                mine.data?.createBlock === 'NO_SUBSCRIPTION' ? '/subscribe' : '/boards?create=1',
+              )
+            }
+          />
         </View>
       )}
       <Stack.Screen

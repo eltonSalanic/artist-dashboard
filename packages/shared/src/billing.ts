@@ -1,15 +1,17 @@
 import type { SubscriptionStatus, SubscriptionStore } from './enums';
 
 /**
- * The Band Wall subscription: one per board, shared by everyone on it. There is no
- * free tier: when the API runs with BILLING_ENFORCED=true, every board route
- * answers 402 `BOARD_SUBSCRIPTION_REQUIRED` until the board has Pro
- * (docs/billing.md lists the routes that stay open).
+ * The Band Wall subscription belongs to a person, and it entitles them to own
+ * one band. Joining a band is free, and anyone can be in as many as they like;
+ * a band stays open while its owner is subscribed. There is no free tier: with
+ * BILLING_ENFORCED=true, every board route answers 402
+ * `BOARD_SUBSCRIPTION_REQUIRED` while the owner isn't subscribed, and creating
+ * a band needs a subscription and no band already owned (docs/billing.md).
  *
- * RevenueCat is the source of truth. The board's id is the RevenueCat app user
- * id on every platform (the phone calls `Purchases.logIn(boardId)`, the web
- * purchase link carries it), so a purchase made on any store lands on the
- * same customer and the same board.
+ * RevenueCat is the source of truth. The user's id is the RevenueCat app user
+ * id on every platform (the phone calls `Purchases.logIn(userId)`, the web SDK
+ * and purchase link carry it), so a purchase made on any store lands on the
+ * same person.
  *
  * Store product ids must match App Store Connect and Play Console
  * (docs/billing.md). Web Billing products are named in RevenueCat and reach
@@ -64,12 +66,9 @@ export const BAND_WALL_PLAN = {
 
 export type SubscriptionPlan = keyof typeof BAND_WALL_PLAN.plans;
 
-/** What `GET /boards/:id/subscription` returns. `null` fields: no purchase yet. */
-export interface BoardSubscriptionDto {
-  boardId: string;
+/** One person's subscription. `null` fields: no purchase yet. */
+export interface SubscriptionDto {
   isPro: boolean;
-  /** Billing is enforced and the board lacks Pro: show the paywall. */
-  required: boolean;
   status: SubscriptionStatus | null;
   store: SubscriptionStore | null;
   productId: string | null;
@@ -77,6 +76,33 @@ export interface BoardSubscriptionDto {
   willRenew: boolean;
   /** In a free trial that ends at `currentPeriodEnd`. Counts as subscribed. */
   isTrial: boolean;
+}
+
+/**
+ * What `GET /boards/:id/subscription` returns: where the band stands, which
+ * is its owner's subscription. Only the owner gets the details (store, dates);
+ * a member sees whether the band is open.
+ */
+export interface BoardSubscriptionDto extends SubscriptionDto {
+  boardId: string;
+  /** Billing is enforced and the owner isn't subscribed: the band is locked. */
+  required: boolean;
+  isOwner: boolean;
+  ownerId: string | null;
+  ownerName: string | null;
+}
+
+/** Why someone can't own a band right now. */
+export type OwnershipBlock = 'NO_SUBSCRIPTION' | 'ALREADY_OWNS_BAND';
+
+/** What `GET /me/subscription` returns: your own subscription. */
+export interface MySubscriptionDto extends SubscriptionDto {
+  /** Billing is enforced, so owning a band takes a subscription. */
+  enforced: boolean;
+  /** The band you own, if any. */
+  ownedBoardId: string | null;
+  /** Null when you can create a band right now. */
+  createBlock: OwnershipBlock | null;
 }
 
 /** The fields `isPro` needs, so it works on a DB row and the DTO alike. */
@@ -102,14 +128,14 @@ export function isPro(
 }
 
 /**
- * The RevenueCat Web Purchase Link for a board. RevenueCat takes the app user
+ * The RevenueCat Web Purchase Link for a person. RevenueCat takes the app user
  * id as the last path segment of the link it gives you. Null when the link is
  * not configured, so callers hide the button.
  */
 export function webPurchaseUrl(
   baseUrl: string | undefined | null,
-  boardId: string,
+  userId: string,
 ): string | null {
   if (!baseUrl) return null;
-  return `${baseUrl.replace(/\/+$/, '')}/${encodeURIComponent(boardId)}`;
+  return `${baseUrl.replace(/\/+$/, '')}/${encodeURIComponent(userId)}`;
 }

@@ -6,9 +6,11 @@ import {
   type SubscriptionLike,
 } from '@artist/shared';
 
-/** The subscription columns a board list selects, for `toBoardSummary`. */
-export const SUMMARY_SUBSCRIPTION_SELECT = {
-  select: { status: true, currentPeriodEnd: true },
+/** What a board list selects: its owner's subscription, for `toBoardSummary`. */
+export const SUMMARY_OWNER_SELECT = {
+  select: {
+    subscription: { select: { status: true, currentPeriodEnd: true } },
+  },
 } as const;
 
 /**
@@ -29,12 +31,14 @@ export function toBoardSummary(
       id: string;
       name: string;
       theme: unknown;
-      subscription?: SubscriptionLike | null;
+      ownerId?: string | null;
+      owner?: { subscription?: SubscriptionLike | null } | null;
     };
   },
+  viewerId: string,
   billingEnforced: boolean,
 ): BoardSummaryDto {
-  const pro = isPro(membership.board.subscription);
+  const pro = isPro(membership.board.owner?.subscription);
   return {
     id: membership.board.id,
     name: membership.board.name,
@@ -44,8 +48,9 @@ export function toBoardSummary(
     // hold a palette written by a newer build, and a list should colour a board
     // the same way opening it does.
     palette: resolveBoardTheme(membership.board.theme).palette,
-    // Listed even when unpaid, so the apps can show which bands need Pro.
+    // Listed even when locked, so the apps can show which bands need renewing.
     isPro: pro,
+    isOwner: membership.board.ownerId === viewerId,
     subscriptionRequired: billingEnforced && !pro,
   };
 }

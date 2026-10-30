@@ -13,6 +13,8 @@ import {
 import {
   useBoard,
   useBoardSubscription,
+  useDeleteBoard,
+  useTransferBoard,
   useCreateShowStatus,
   useCreateStatus,
   useDeleteShowStatus,
@@ -35,7 +37,6 @@ import {
 } from '@artist/api-client';
 import { router } from 'expo-router';
 import { Badge } from '@/components/badge';
-import { billingAvailable } from '@/features/billing/purchases';
 import { Button } from '@/components/button';
 import { ChoiceChips } from '@/components/choice-chips';
 import { Icon } from '@/components/icon';
@@ -75,13 +76,14 @@ export function BoardSettingsScreen({ boardId }: { boardId: string }) {
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={{ padding: spacing.md, gap: spacing.xl }}
     >
-      {billingAvailable() && <SubscriptionSection boardId={boardId} />}
+      <SubscriptionSection boardId={boardId} />
       <NotificationsSection boardId={boardId} />
       {can('member.invite') && <MembersSection boardId={boardId} />}
       {can('member.invite') && <InviteSection boardId={boardId} />}
       {can('status.manage') && <StatusesSection boardId={boardId} />}
       {can('status.manage') && <ShowStatusesSection boardId={boardId} />}
       {can('board.appearance') && <PaletteSection boardId={boardId} />}
+      <OwnerSection boardId={boardId} />
     </ScrollView>
   );
 }
@@ -746,16 +748,96 @@ function PaletteSection({ boardId }: { boardId: string }) {
   );
 }
 
-/** The band's subscription status, one row through to the subscription screen. */
+/**
+ * Whose subscription covers the band. Its owner gets a row through to their
+ * subscription; everyone else just sees who that is.
+ */
 function SubscriptionSection({ boardId }: { boardId: string }) {
   const subscription = useBoardSubscription(boardId);
+  const sub = subscription.data;
+  if (!sub) return null;
   return (
     <Section title="SUBSCRIPTION">
-      <Row
-        first
-        title={subscription.data?.isPro ? 'Subscribed to Band Wall' : 'Subscribe to Band Wall'}
-        meta="One subscription for everyone in the band"
-        onPress={() => router.push(`/board/${boardId}/subscribe`)}
+      {sub.isOwner ? (
+        <Row
+          first
+          title={sub.isPro ? 'Subscribed to Band Wall' : 'Subscribe to Band Wall'}
+          meta="You own this band, so yours covers everyone in it"
+          onPress={() => router.push(`/board/${boardId}/subscribe`)}
+        />
+      ) : (
+        <Row
+          first
+          title={sub.ownerName ? `${sub.ownerName} owns this band` : 'Covered by the owner'}
+          meta="Their subscription covers everyone in it"
+        />
+      )}
+    </Section>
+  );
+}
+
+/** What only a band's owner can do. Not a role; the API checks the owner too. */
+function OwnerSection({ boardId }: { boardId: string }) {
+  const me = useMe(true);
+  const board = useBoard(boardId);
+  const subscription = useBoardSubscription(boardId);
+  const transfer = useTransferBoard(boardId);
+  const remove = useDeleteBoard(boardId);
+  const [typed, setTyped] = useState('');
+  if (!subscription.data?.isOwner) return null;
+
+  const name = board.data?.name ?? '';
+  const others = (board.data?.members ?? []).filter((m) => m.userId !== me.data?.user.id);
+
+  // Back to the hub, which shows the next band or the no-band screen. Awaited
+  // rather than an `onSuccess` here: refreshing `/me` can unmount this screen
+  // first, and then a per-call callback never fires.
+  const deleteBand = async () => {
+    try {
+      await remove.mutateAsync(typed);
+    } catch {
+      return; // The hook has already said why.
+    }
+    if (router.canDismiss()) router.dismissAll();
+    else router.replace('/');
+  };
+
+  const confirmTransfer = (userId: string, displayName: string) =>
+    Alert.alert(
+      `Hand the band to ${displayName}?`,
+      "They need their own subscription and no band of their own. You'll stay on as an admin.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Hand it over', onPress: () => transfer.mutate(userId) },
+      ],
+    );
+
+  return (
+    <Section title="BAND OWNER">
+      {others.map((member, index) => (
+        <Row
+          key={member.userId}
+          first={index === 0}
+          title={`Hand the band to ${member.displayName}`}
+          onPress={() => confirmTransfer(member.userId, member.displayName)}
+        />
+      ))}
+      <TextField
+        label="Delete this band"
+        placeholder={name}
+        autoCorrect={false}
+        value={typed}
+        onChangeText={setTyped}
+      />
+      <ThemedText variant="footnote" tone="muted">
+        {"This wipes the band for everyone, for good: tasks, shows, money, files, all of it. Type the band's name to confirm. You can start a new band after."}
+      </ThemedText>
+      <Button
+        title="Delete band"
+        variant="destructive"
+        disabled={!name || typed.trim() !== name.trim()}
+        loading={remove.isPending}
+        onPress={() => void deleteBand()}
       />
     </Section>
   );
