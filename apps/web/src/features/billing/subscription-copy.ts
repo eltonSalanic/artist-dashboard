@@ -1,4 +1,4 @@
-import { BAND_WALL_PLAN, type BoardSubscriptionDto } from "@artist/shared";
+import { BAND_WALL_PLAN, type SubscriptionDto } from "@artist/shared";
 
 const price = (cents: number) =>
   new Intl.NumberFormat("en-US", {
@@ -9,14 +9,14 @@ const price = (cents: number) =>
 /** "$5.99 a month or $59.99 a year". Display copy; the store charges its own. */
 export const PLAN_PRICE_LINE = `${price(BAND_WALL_PLAN.plans.monthly.priceCents)} a month or ${price(BAND_WALL_PLAN.plans.yearly.priceCents)} a year`;
 
-const STATUS_COPY: Record<NonNullable<BoardSubscriptionDto["status"]>, string> = {
+const STATUS_COPY: Record<NonNullable<SubscriptionDto["status"]>, string> = {
   ACTIVE: "Active",
   GRACE: "Payment problem, still on while the store retries",
   CANCELLED: "Cancelled, on until the end of the paid period",
   EXPIRED: "Expired",
 };
 
-const STORE_COPY: Record<NonNullable<BoardSubscriptionDto["store"]>, string> = {
+const STORE_COPY: Record<NonNullable<SubscriptionDto["store"]>, string> = {
   APP_STORE: "the App Store",
   PLAY_STORE: "Google Play",
   STRIPE: "the web",
@@ -24,7 +24,7 @@ const STORE_COPY: Record<NonNullable<BoardSubscriptionDto["store"]>, string> = {
 };
 
 /** One line describing the band's subscription, for settings. */
-export function describeSubscription(sub: BoardSubscriptionDto): string {
+export function describeSubscription(sub: SubscriptionDto): string {
   if (!sub.status) return "Not subscribed.";
   if (sub.isTrial && sub.status !== "EXPIRED" && sub.currentPeriodEnd) {
     const ends = new Date(sub.currentPeriodEnd).toLocaleDateString(undefined, {

@@ -1,7 +1,7 @@
 "use client";
 
 import { BAND_WALL_PLAN } from "@artist/shared";
-import { usePermissions } from "@artist/api-client";
+import { useBoardSubscription } from "@artist/api-client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,27 +15,26 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { env } from "@/lib/env";
 import { webCheckoutAvailable } from "@/lib/revenuecat";
-import { PLAN_PRICE_LINE, describeSubscription } from "./subscription-copy";
+import { describeSubscription, PLAN_PRICE_LINE } from "./subscription-copy";
 import { SubscribeButtons } from "./subscribe-buttons";
 import { useSubscriptionCheckout } from "./use-subscription-checkout";
 
 /**
- * The band's subscription status in settings. Every member sees it; subscribing
- * and managing are for admins. Store purchases are managed in that store,
- * which is where RevenueCat's management link sends a phone purchase.
+ * The band's subscription in settings. Every member sees whose it is; only
+ * the owner sees the details, because they're paying. Store purchases are
+ * managed in that store, which is where RevenueCat's link sends a phone one.
  */
 export function SubscriptionCard({
   boardId,
+  userId,
   email,
 }: {
   boardId: string;
+  userId: string;
   email: string;
 }) {
-  const { can } = usePermissions();
-  const { subscription, offering, subscribe, manage, opening, awaitingPurchase } =
-    useSubscriptionCheckout(boardId, email);
+  const subscription = useBoardSubscription(boardId);
   const sub = subscription.data;
-  const canManage = can("billing.manage");
 
   return (
     <Card>
@@ -45,34 +44,55 @@ export function SubscriptionCard({
           {sub?.isPro && <Badge variant="secondary">On</Badge>}
         </CardTitle>
         <CardDescription>
-          One subscription for the whole band: {PLAN_PRICE_LINE}.
+          {sub?.isOwner
+            ? `You own this band, so your subscription covers everyone in it: ${PLAN_PRICE_LINE}.`
+            : sub?.ownerName
+              ? `${sub.ownerName} owns this band, and their subscription covers everyone in it.`
+              : "One subscription covers everyone in the band."}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {subscription.isPending && <Skeleton className="h-10" />}
-        {sub && <p className="text-sm">{describeSubscription(sub)}</p>}
-        {awaitingPurchase && (
-          <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Spinner /> Confirming your purchase…
-          </p>
-        )}
-        {canManage && sub && (
-          <div className="flex flex-wrap gap-2">
-            {!sub.isPro && webCheckoutAvailable() && (
-              <SubscribeButtons
-                offering={offering}
-                onSubscribe={(plan) => void subscribe(plan)}
-                busy={opening || awaitingPurchase}
-              />
-            )}
-            {sub.isPro && sub.store !== "PROMOTIONAL" && env.revenueCatWebKey && (
-              <Button variant="outline" onClick={manage}>
-                Manage subscription
-              </Button>
-            )}
-          </div>
-        )}
+        {sub?.isOwner && <OwnerControls userId={userId} email={email} />}
       </CardContent>
     </Card>
+  );
+}
+
+function OwnerControls({ userId, email }: { userId: string; email: string }) {
+  const {
+    subscription,
+    offering,
+    subscribe,
+    manage,
+    opening,
+    awaitingPurchase,
+  } = useSubscriptionCheckout(userId, email);
+  const sub = subscription.data;
+  if (!sub) return null;
+
+  return (
+    <>
+      <p className="text-sm">{describeSubscription(sub)}</p>
+      {awaitingPurchase && (
+        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Spinner /> Confirming your purchase…
+        </p>
+      )}
+      <div className="flex flex-wrap gap-2">
+        {!sub.isPro && webCheckoutAvailable() && (
+          <SubscribeButtons
+            offering={offering}
+            onSubscribe={(plan) => void subscribe(plan)}
+            busy={opening || awaitingPurchase}
+          />
+        )}
+        {sub.isPro && sub.store !== "PROMOTIONAL" && env.revenueCatWebKey && (
+          <Button variant="outline" onClick={manage}>
+            Manage subscription
+          </Button>
+        )}
+      </div>
+    </>
   );
 }

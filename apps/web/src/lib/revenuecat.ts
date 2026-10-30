@@ -3,25 +3,25 @@ import type { Purchases } from "@revenuecat/purchases-js";
 import { env } from "@/lib/env";
 
 /**
- * The RevenueCat Web SDK, set up for one band at a time. the subscription belongs to
- * the board, so the board's id is the RevenueCat app user id here, on the
- * phone (`Purchases.logIn(boardId)`) and in the Web Purchase Link alike.
+ * The RevenueCat Web SDK. The subscription belongs to the person, so the
+ * user's id is the RevenueCat app user id here, on the phone
+ * (`Purchases.logIn(userId)`) and in the Web Purchase Link alike.
  *
  * Loaded on demand: the SDK touches `window`, and most visits never open a
  * paywall.
  */
-async function purchasesFor(boardId: string): Promise<Purchases | null> {
+async function purchasesFor(userId: string): Promise<Purchases | null> {
   if (!env.revenueCatWebKey) return null;
   const { Purchases } = await import("@revenuecat/purchases-js");
   if (!Purchases.isConfigured()) {
     return Purchases.configure({
       apiKey: env.revenueCatWebKey,
-      appUserId: boardId,
+      appUserId: userId,
     });
   }
   const purchases = Purchases.getSharedInstance();
-  // The SDK is a singleton; switching band switches its customer.
-  if (purchases.getAppUserId() !== boardId) await purchases.changeUser(boardId);
+  // The SDK is a singleton; a new sign-in switches its customer.
+  if (purchases.getAppUserId() !== userId) await purchases.changeUser(userId);
   return purchases;
 }
 
@@ -50,8 +50,8 @@ export interface WebOffering {
  * Null when there is no web key (the Web Purchase Link fallback, if any, has
  * no offering to read).
  */
-export async function webOffering(boardId: string): Promise<WebOffering | null> {
-  const purchases = await purchasesFor(boardId);
+export async function webOffering(userId: string): Promise<WebOffering | null> {
+  const purchases = await purchasesFor(userId);
   if (!purchases) return null;
   const offering = (await purchases.getOfferings()).current;
   return {
@@ -76,13 +76,13 @@ export async function webOffering(boardId: string): Promise<WebOffering | null> 
  * Resolves "cancelled" when the person backs out; any other failure throws.
  */
 export async function startCheckout(
-  boardId: string,
+  userId: string,
   plan: SubscriptionPlan,
   customerEmail?: string,
 ): Promise<PaywallOutcome> {
-  const purchases = await purchasesFor(boardId);
+  const purchases = await purchasesFor(userId);
   if (!purchases) {
-    const url = webPurchaseUrl(env.revenueCatWebPurchaseUrl, boardId);
+    const url = webPurchaseUrl(env.revenueCatWebPurchaseUrl, userId);
     if (!url) throw new Error("Subscribing isn't available on the web yet.");
     window.open(url, "_blank", "noopener");
     return "redirected";
@@ -100,7 +100,7 @@ export async function startCheckout(
         offering,
         customerEmail,
         // From the paywall's "manage" link: same place as the settings button.
-        onVisitCustomerCenter: () => void openManageSubscription(boardId),
+        onVisitCustomerCenter: () => void openManageSubscription(userId),
         onBack: (close) => close(),
       }));
     } else {
@@ -129,15 +129,15 @@ export async function startCheckout(
  * stand-in. Null when there is nothing to manage from here.
  */
 export async function manageSubscriptionUrl(
-  boardId: string,
+  userId: string,
 ): Promise<string | null> {
-  const purchases = await purchasesFor(boardId);
+  const purchases = await purchasesFor(userId);
   if (!purchases) return null;
   const info = await purchases.getCustomerInfo();
   return info.managementURL;
 }
 
-async function openManageSubscription(boardId: string) {
-  const url = await manageSubscriptionUrl(boardId);
+async function openManageSubscription(userId: string) {
+  const url = await manageSubscriptionUrl(userId);
   if (url) window.open(url, "_blank", "noopener");
 }

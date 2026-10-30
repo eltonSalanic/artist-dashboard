@@ -11,6 +11,7 @@ import { StatusesCard } from "./statuses-card";
 import { ShowStatusesCard } from "./show-statuses-card";
 import { NotificationsCard } from "./notifications-card";
 import { SubscriptionCard } from "@/features/billing/subscription-card";
+import { OwnerCard } from "@/features/billing/owner-card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -48,7 +49,11 @@ export function SettingsPage() {
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6">
       <h1 className="text-lg font-semibold tracking-tight">Settings</h1>
-      <SubscriptionCard boardId={boardId} email={me.data?.user.email ?? ""} />
+      <SubscriptionCard
+        boardId={boardId}
+        userId={me.data?.user.id ?? ""}
+        email={me.data?.user.email ?? ""}
+      />
       <NotificationsCard boardId={boardId} />
       {isAdmin && (
         <>
@@ -60,6 +65,7 @@ export function SettingsPage() {
           <DefaultLayoutCard boardId={boardId} />
         </>
       )}
+      <OwnerCard boardId={boardId} />
     </main>
   );
 }

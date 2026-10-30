@@ -29,27 +29,35 @@ export function SubscribeButtons({
 }) {
   const prices: Record<SubscriptionPlan, string> = {
     monthly:
-      offering?.prices.monthly ?? fallbackPrice(BAND_WALL_PLAN.plans.monthly.priceCents),
+      offering?.prices.monthly ??
+      fallbackPrice(BAND_WALL_PLAN.plans.monthly.priceCents),
     yearly:
-      offering?.prices.yearly ?? fallbackPrice(BAND_WALL_PLAN.plans.yearly.priceCents),
+      offering?.prices.yearly ??
+      fallbackPrice(BAND_WALL_PLAN.plans.yearly.priceCents),
   };
   const trial = offering?.trial ?? { monthly: false, yearly: false };
   const anyTrial = trial.monthly || trial.yearly;
   // Casual on purpose: it's a band talking to bands.
   const trialNote = anyTrial ? (
     <p className="text-sm text-muted-foreground">
-      First month&apos;s on us. After that it&apos;s {prices.monthly} a month
-      or {prices.yearly} a year. Cancel before it&apos;s up and you won&apos;t
-      pay a thing.
+      First month&apos;s on us. After that it&apos;s {prices.monthly} a month or{" "}
+      {prices.yearly} a year. Cancel before it&apos;s up and you won&apos;t pay
+      a thing.
     </p>
   ) : null;
 
   if (offering?.hasPaywall) {
     return (
       <div className="flex flex-col items-center gap-2">
-        <Button size={size} onClick={() => onSubscribe("monthly")} disabled={busy}>
+        <Button
+          size={size}
+          onClick={() => onSubscribe("monthly")}
+          disabled={busy}
+        >
           {busy && <Spinner data-icon="inline-start" />}
-          {anyTrial ? "Start free trial" : `Subscribe to ${BAND_WALL_PLAN.name}`}
+          {anyTrial
+            ? "Start free trial"
+            : `Subscribe to ${BAND_WALL_PLAN.name}`}
         </Button>
         {trialNote}
         <PlanLinks />
@@ -75,7 +83,9 @@ export function SubscribeButtons({
             {trial[plan]
               ? `Start free trial · ${label}`
               : `${label} · ${prices[plan]}${
-                  plan === "yearly" ? ` · ${BAND_WALL_PLAN.plans.yearly.savings}` : ""
+                  plan === "yearly"
+                    ? ` · ${BAND_WALL_PLAN.plans.yearly.savings}`
+                    : ""
                 }`}
           </Button>
         ))}
@@ -90,10 +100,20 @@ export function SubscribeButtons({
 function PlanLinks() {
   return (
     <p className="flex gap-4 text-xs text-muted-foreground">
-      <a className="underline underline-offset-2" href={BAND_WALL_PLAN.links.terms} target="_blank" rel="noreferrer">
+      <a
+        className="underline underline-offset-2"
+        href={BAND_WALL_PLAN.links.terms}
+        target="_blank"
+        rel="noreferrer"
+      >
         Terms
       </a>
-      <a className="underline underline-offset-2" href={BAND_WALL_PLAN.links.privacy} target="_blank" rel="noreferrer">
+      <a
+        className="underline underline-offset-2"
+        href={BAND_WALL_PLAN.links.privacy}
+        target="_blank"
+        rel="noreferrer"
+      >
         Privacy
       </a>
     </p>

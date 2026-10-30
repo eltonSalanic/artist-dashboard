@@ -21,7 +21,7 @@ export function useMe(enabled: boolean) {
 }
 
 /**
- * Start a new band with the caller as its admin. Resolves once `/me` has
+ * Start a new band with the caller as its owner and admin. Resolves once `/me` has
  * refetched, so the new band is already in `me.boards` when the caller
  * switches to it.
  */
@@ -30,7 +30,11 @@ export function useCreateBoard() {
   return useMutation({
     mutationFn: (name: string) =>
       apiFetch<BoardSummaryDto>("/boards", { method: "POST", body: { name } }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["me"] }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me"] }),
+        queryClient.invalidateQueries({ queryKey: ["my-subscription"] }),
+      ]),
     onError: (error) =>
       notify.error(toUserMessage(error, "Couldn't create the band")),
   });

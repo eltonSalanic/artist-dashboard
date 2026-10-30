@@ -33,7 +33,8 @@ describe('package barrel', () => {
       // The phone's own arrangement (P12b).
       'useMobileLayout', 'useSaveMobileLayout', 'useResetMobileLayout',
       // Subscriptions.
-      'useBoardSubscription', 'useRefreshBoardSubscription',
+      'useBoardSubscription', 'useMySubscription', 'useRefreshSubscription',
+      'useDeleteBoard', 'useTransferBoard',
       'isSubscriptionRequired',
     ];
     for (const name of hooks) {
