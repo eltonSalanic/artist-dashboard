@@ -58,7 +58,8 @@ export function StartBandScreen() {
   // Bought in order to create this band: create it once the API agrees.
   const [creating, setCreating] = useState(false);
   const started = useRef(false);
-  const signingUp = useRef(onboardingIntent() === 'signup').current;
+  // Read once: the step count belongs to the first visit straight after signing up.
+  const [signingUp] = useState(() => onboardingIntent() === 'signup');
 
   useEffect(() => {
     void loadBandDraft().then((draft) => {
