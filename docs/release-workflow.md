@@ -97,6 +97,9 @@ Nothing to install: share the prod URL.
 4. **Prod.** Deploy the API and web to prod and run `prisma migrate deploy`
    against the prod database. Deploy the API **before** the app update, so
    the app never calls an endpoint that isn't there yet.
+   - **The first time billing goes out**, follow [billing.md → Deploying it](billing.md#deploying-it):
+     grant existing bands with `billing:grant --all` before setting
+     `BILLING_ENFORCED=true`, or every band hits the paywall.
 5. **Phone app to the beta.** Pick by what changed:
 
    | What changed | How it ships | Review / wait |

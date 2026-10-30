@@ -60,13 +60,14 @@ Prisma skills are installed under `apps/api/.claude/skills/` and are **scoped to
 
 These are project rules the user has set. Follow them without re-litigating.
 
-- **Latest versions only.** Always install `@latest` and adapt code to new majors — never downgrade a dependency to make something compile. We are intentionally on bleeding-edge Next 16, React 19, Prisma 7, Tailwind 4.
+- **Latest versions only.** Always install `@latest` and adapt code to new majors — never downgrade a dependency to make something compile. We are intentionally on bleeding-edge Next 16, React 19, Prisma 7, Tailwind 4. One approved exception: `react-native-purchases` / `-ui` are pinned to 10.16.0 until 11.x's iOS pod ships (TODO in [docs/billing.md](docs/billing.md)).
 - **Next.js is client-only.** Next is used for routing and SEO metadata, *not* React Server Components or server actions. Don't introduce `"use server"`, server-side data fetching, or RSC-only patterns. Data flows: web → NestJS API (TanStack Query) → Prisma → Postgres.
 - **`⚠️ This is not the Next.js you know.`** Next 16 has breaking changes vs. training data. Per [apps/web/AGENTS.md](apps/web/AGENTS.md), consult `node_modules/next/dist/docs/` before writing Next code.
 - **API tests are Jest units only.** No supertest / e2e HTTP tests. Mock Prisma (see the `*.spec.ts` alongside services).
 - **No `Co-Authored-By` trailer on commits.** Leave it off entirely.
 - **Keep the docs current.** Any major change (a new feature, a changed behaviour or flow, a new env var, command or migration, a new route or module) updates the docs in the same branch: the root [README.md](README.md) feature list and setup, the matching file in [docs/](docs/README.md) and its status line in the docs index, [docs/test-checklist.md](docs/test-checklist.md), the plan's state in [docs/plans/](docs/plans/README.md), and the app README or `.env.example` it touches. Before calling work done, check that no doc still describes the old behaviour.
 - **Auth goes through `AuthClient`.** Web and mobile screens call `auth` from their `src/lib/auth.ts`, never a provider directly. The interface lives in `packages/api-client/src/auth/auth-client.ts` and the Better Auth version in `better-auth-client.ts` next to it; the server side is Better Auth mounted at `/api/auth` in the API ([apps/api/src/auth/better-auth.ts](apps/api/src/auth/better-auth.ts)), and every API request is checked by `SessionAuthGuard`; failures come back as `{ error }` for `authErrorMessage()`, and a 401 from the API still goes through `onUnauthorized`. A new auth need is a new `AuthClient` method, not a direct provider call.
+- **Board routes are behind the subscription.** With `BILLING_ENFORCED=true` every `@BoardRoles` route answers 402 until the band is subscribed (`SubscriptionGuard`), so a new board route is gated automatically. Use `@SkipSubscription()` only for what a band needs before paying (invites, the status itself). Rules, env vars and setup: [docs/billing.md](docs/billing.md).
 - **Permissions have one source of truth.** `packages/shared/src/permissions.ts` (`can()` map) is enforced server-side *and* mirrored in the UI. Never hardcode a role check — extend the shared map.
 
 ---
@@ -104,7 +105,7 @@ Currently a single `DATABASE_URL` serves both runtime and migrations (fine for l
 - `DATABASE_URL` → **pooled** (Supavisor, port 6543) for the running API (the driver adapter).
 - `DIRECT_URL` → **direct** (port 5432) for `prisma migrate deploy` (advisory lock + DDL need a real session). Point [apps/api/prisma.config.ts](apps/api/prisma.config.ts) at `DIRECT_URL`.
 
-Neither Prisma nor Supabase deploys the NestJS/Next.js *code* — those need their own hosts (e.g. Railway/Render for the API, Vercel for web) pointed at Supabase's connection strings + keys. Server-only secrets: `SUPABASE_SERVICE_ROLE_KEY` (Storage) and `BETTER_AUTH_SECRET` (sessions and invite codes; rotating it signs everyone out). The web and phone apps only get the API's URL; they hold no Supabase key.
+Neither Prisma nor Supabase deploys the NestJS/Next.js *code* — those need their own hosts (e.g. Railway/Render for the API, Vercel for web) pointed at Supabase's connection strings + keys. Server-only secrets: `SUPABASE_SERVICE_ROLE_KEY` (Storage), `BETTER_AUTH_SECRET` (sessions and invite codes; rotating it signs everyone out) and `REVENUECAT_WEBHOOK_AUTH` (the RevenueCat webhook's shared Authorization value). The web and phone apps only get the API's URL; they hold no Supabase key.
 
 ---
 
@@ -114,6 +115,7 @@ Neither Prisma nor Supabase deploys the NestJS/Next.js *code* — those need the
 npm run dev                 # both apps (concurrently) — from repo root
 npm run test                # shared, api-client, api, web and mobile test suites
 npm run db:seed -w apps/api # (re)seed the demo board — DESTRUCTIVE, dev only
+npm run billing:grant -w apps/api -- --all  # free subscriptions for existing bands (docs/billing.md)
 npx prisma migrate dev      # from apps/api — new migration in dev
 npx prisma migrate deploy   # from apps/api — apply migrations in prod/CI
 npx supabase start|stop     # local Supabase stack
