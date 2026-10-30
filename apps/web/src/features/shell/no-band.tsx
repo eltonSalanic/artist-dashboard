@@ -30,7 +30,7 @@ export function NoBand({ email }: { email: string }) {
         </span>
         <div className="flex flex-col gap-2">
           <h1 className="font-heading text-2xl font-semibold tracking-tight text-balance">
-            You&apos;re not on any band&apos;s wall yet
+            You haven&apos;t joined any bands yet
           </h1>
           <p className="text-sm text-muted-foreground">
             Join or create one. To join a band, ask one of its admins to
@@ -40,7 +40,7 @@ export function NoBand({ email }: { email: string }) {
         </div>
         <Button size="lg" onClick={() => setCreating(true)}>
           <Plus data-icon="inline-start" />
-          Create a band
+          Create A Band
         </Button>
         <Button variant="ghost" size="sm" onClick={signOut}>
           <LogOut data-icon="inline-start" />

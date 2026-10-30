@@ -95,13 +95,13 @@ export function BoardHubScreen() {
             color={colors.mutedForeground}
           />
           <ThemedText variant="title" style={{ textAlign: 'center' }}>
-            You&apos;re not on any band&apos;s wall yet
+            You haven&apos;t joined any bands yet
           </ThemedText>
           <ThemedText variant="subhead" tone="muted" style={{ textAlign: 'center' }}>
             Join or create one. To join, ask one of the band&apos;s admins to invite you.
           </ThemedText>
           <Button
-            title="Create a band"
+            title="Create A Band"
             // No subscription yet: straight to it, rather than through a sheet
             // holding a second "Create a band".
             onPress={() =>

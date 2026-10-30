@@ -347,7 +347,7 @@ number is the failure mode here, and only you can spot it.
 - [ ] ★ Tap `⋯` → A sheet listing Manage widgets, Archive and Board settings, each marked with its phase
 - [ ] ★ Sign in as a **member**, not an admin, and tap `⋯` → Board settings is absent; Archive is present
 - [ ] ★ Switch to Calendar, back to Board → The board tab is where you left it
-- [ ] ★ An account in no bands at all → "No band yet", not a crash or an endless spinner
+- [ ] ★ An account in no bands at all → "You haven't joined any bands yet", not a crash or an endless spinner
 
 ### Deliberately not in this phase
 
@@ -819,7 +819,7 @@ Web and phone now sign in through a shared `AuthClient` instead of calling Supab
 
 - [ ] ↻ Web: sign in with email and password → lands on the dashboard
 - [ ] ↻ Web: wrong password → "That email and password don't match" toast, form keeps the email
-- [ ] ↻ Web: create an account → signed in on the "You're not on any band's wall yet" screen, with Create a band
+- [ ] ↻ Web: create an account → signed in on the "You haven't joined any bands yet" screen, with Create A Band
 - [ ] ↻ Web: sign out from the header, and from the "no band" screen → back to `/login`
 - [ ] ↻ Web: invite someone, open the Mailpit link → `/auth/callback` asks for a password, saving it lands on the dashboard
 - [ ] ↻ Web: sign out, then sign in as a different user in the same tab → no data from the first user shows
