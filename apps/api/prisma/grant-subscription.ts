@@ -85,7 +85,7 @@ async function main() {
       `grant ${user.email} until ${until?.toISOString() ?? 'forever'}`,
     );
   }
-  console.log(`Granted a subscription to ${granted} person/people.`);
+  console.log(`Granted ${granted} subscription(s).`);
 }
 
 main()

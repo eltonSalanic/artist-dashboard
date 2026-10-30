@@ -40,9 +40,7 @@ export function SubscribeButtons({
   // Casual on purpose: it's a band talking to bands.
   const trialNote = anyTrial ? (
     <p className="text-sm text-muted-foreground">
-      First month&apos;s on us. After that it&apos;s {prices.monthly} a month or{" "}
-      {prices.yearly} a year. Cancel before it&apos;s up and you won&apos;t pay
-      a thing.
+      {`First month's on us. After that it's ${prices.monthly} a month or ${prices.yearly} a year. Cancel before it's up and you won't pay a thing.`}
     </p>
   ) : null;
 
