@@ -100,7 +100,7 @@ export class BoardsService {
     if (block) throw ownershipError(block);
 
     const board = await this.prisma.board.create({
-      data: newBoardData(dto.name, userId),
+      data: newBoardData(dto.name, userId, dto.palette),
       select: {
         id: true,
         name: true,

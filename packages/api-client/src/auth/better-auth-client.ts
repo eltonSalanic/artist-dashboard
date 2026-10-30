@@ -139,12 +139,13 @@ export function createBetterAuthClient(
     signIn: (email, password) =>
       signInWith("/sign-in/email", { email, password }),
 
-    async signUp(email, password): Promise<SignUpResult> {
+    async signUp(email, password, name): Promise<SignUpResult> {
       const { error, data } = await call(`${authUrl}/sign-up/email`, {
         email,
         password,
-        // Better Auth requires a name; the app's display name starts the same.
-        name: email.split("@")[0],
+        // Better Auth requires a name, and the app's display name starts as
+        // it; without one given, the start of the email stands in.
+        name: name?.trim() || email.split("@")[0],
       });
       const token = (data as { token?: string | null } | null)?.token;
       return { error, needsConfirmation: !error && !token };

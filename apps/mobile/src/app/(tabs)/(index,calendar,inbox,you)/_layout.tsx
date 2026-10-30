@@ -80,6 +80,16 @@ export default function TabStackLayout({ segment }: { segment: string }) {
       <Stack.Screen name="board/[boardId]/settings" options={{ title: 'Settings' }} />
       <Stack.Screen name="board/[boardId]/subscribe" options={{ title: 'Subscription' }} />
       <Stack.Screen name="subscribe" options={{ title: 'Subscription' }} />
+      {/* First-run moments, each painted in the band's colour: no bar, and
+          full screen so the tab bar doesn't sit over them. */}
+      <Stack.Screen
+        name="band-live"
+        options={{ presentation: 'fullScreenModal', headerShown: false, gestureEnabled: false }}
+      />
+      <Stack.Screen
+        name="welcome-in"
+        options={{ presentation: 'fullScreenModal', headerShown: false }}
+      />
       <Stack.Screen
         name="board/[boardId]/status/[taskId]"
         options={{

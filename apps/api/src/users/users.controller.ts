@@ -4,10 +4,16 @@ import {
   Get,
   HttpCode,
   Inject,
+  Patch,
   Post,
   Req,
 } from '@nestjs/common';
-import { setPasswordSchema, type SetPasswordDto } from '@artist/shared';
+import {
+  setPasswordSchema,
+  updateProfileSchema,
+  type SetPasswordDto,
+  type UpdateProfileDto,
+} from '@artist/shared';
 import { CurrentUser, type AuthUser } from '../auth/current-user.decorator';
 import { BETTER_AUTH, type Auth } from '../auth/auth.tokens';
 import { toHeaders } from '../auth/session-auth.guard';
@@ -30,6 +36,16 @@ export class UsersController {
   @Get()
   me(@CurrentUser() user: AuthUser) {
     return this.users.me(user);
+  }
+
+  /** Your name, as bandmates see it. */
+  @Patch()
+  @HttpCode(204)
+  async updateProfile(
+    @CurrentUser() user: AuthUser,
+    @Body(new ZodValidationPipe(updateProfileSchema)) dto: UpdateProfileDto,
+  ): Promise<void> {
+    await this.users.updateProfile(user, dto);
   }
 
   /**

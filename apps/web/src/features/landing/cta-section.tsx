@@ -33,7 +33,7 @@ export function CtaSection() {
             <Button
               className="h-11 rounded-full bg-coral-foreground px-6 text-base text-coral hover:bg-coral-foreground/90"
               nativeButton={false}
-              render={<Link href="/login" />}
+              render={<Link href="/login?mode=signup" />}
             >
               Create account
             </Button>

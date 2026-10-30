@@ -43,7 +43,7 @@ export function Hero() {
             <Button
               className="h-11 rounded-full bg-coral px-6 text-base text-coral-foreground hover:bg-coral/90"
               nativeButton={false}
-              render={<Link href="/login" />}
+              render={<Link href="/login?mode=signup" />}
             >
               Create account
             </Button>

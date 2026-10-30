@@ -109,6 +109,9 @@ function RootLayout() {
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             </Stack.Protected>
             <Stack.Protected guard={session === null}>
+              {/* First, so it's where signing out lands: what Band Wall is,
+                  then a door to start a band or join one. */}
+              <Stack.Screen name="welcome" options={{ headerShown: false }} />
               {/* No bar: the screen's own masthead says what it is, and a
                   white system bar over the cream page read as another app. */}
               <Stack.Screen name="sign-in" options={{ title: 'Sign in', headerShown: false }} />

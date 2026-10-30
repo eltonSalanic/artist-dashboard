@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Stack, router } from 'expo-router';
 import { Alert, Pressable, RefreshControl, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
@@ -21,7 +21,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   toUserMessage,
   useBoard,
-  useMySubscription,
   usePermissions,
   useResetMobileLayout,
   useSaveBoardTheme,
@@ -44,6 +43,9 @@ import { useSelectedBoard } from '@/features/board/selected-board';
 import { useHubCards } from '@/features/board/use-hub-cards';
 import { HeaderText } from '@/features/forms/form-screen';
 import { useRefetchOnFocus } from '@/lib/refetch-on-focus';
+import { SetupChecklist } from '@/features/board/setup-checklist';
+import { takeOnboardingIntent } from '@/features/onboarding/onboarding-state';
+import { StartBandScreen } from '@/screens/start-band';
 import { SubscriptionScreen } from '@/screens/subscription';
 import { radius, spacing, usePosterCanvas, useThemeColors } from '@/theme';
 
@@ -60,9 +62,7 @@ import { radius, spacing, usePosterCanvas, useThemeColors } from '@/theme';
  * colours are the band's, so Done saves those for everyone, web included.
  */
 export function BoardHubScreen() {
-  const colors = useThemeColors();
   const { board, boards, loading } = useSelectedBoard();
-  const mine = useMySubscription();
 
   // With billing enforced, an unpaid band's routes all answer 402: it lands on
   // the subscription screen instead of a wall of failed cards. Someone in several bands can
@@ -83,41 +83,18 @@ export function BoardHubScreen() {
   }
 
   // Keyed by board, so an edit in progress never carries over to another band.
-  if (board !== null) return <BoardHub key={board.id} boardId={board.id} name={board.name} />;
+  if (board !== null) {
+    return (
+      <BoardHub key={board.id} boardId={board.id} name={board.name} isOwner={board.isOwner} />
+    );
+  }
 
+  // In no band: a new account, or someone who left every band. Naming one is
+  // the way in (joining happens through an invite email).
   return (
     <>
-      {!loading && boards.length === 0 && (
-        <View style={styles.centered(colors.background)}>
-          <Icon
-            name={{ sf: 'music.note.house', md: 'home-work' }}
-            size={36}
-            color={colors.mutedForeground}
-          />
-          <ThemedText variant="title" style={{ textAlign: 'center' }}>
-            You haven&apos;t joined any bands yet
-          </ThemedText>
-          <ThemedText variant="subhead" tone="muted" style={{ textAlign: 'center' }}>
-            Join or create one. To join, ask one of the band&apos;s admins to invite you.
-          </ThemedText>
-          <Button
-            title="Create A Band"
-            // No subscription yet: straight to it, rather than through a sheet
-            // holding a second "Create a band".
-            onPress={() =>
-              router.push(
-                mine.data?.createBlock === 'NO_SUBSCRIPTION' ? '/subscribe' : '/boards?create=1',
-              )
-            }
-          />
-        </View>
-      )}
-      <Stack.Screen
-        options={{
-          headerTitle: () => <BoardTitle name="Board" />,
-          headerRight: () => <BoardMenuButton />,
-        }}
-      />
+      {!loading && boards.length === 0 && <StartBandScreen />}
+      <Stack.Screen options={{ headerShown: false }} />
     </>
   );
 }
@@ -149,7 +126,15 @@ const colourSignature = (widgets: BoardTheme['widgets']) =>
  * Mounted only once a board exists, so none of the nine widget queries fire
  * against a `/boards//...` URL while the selection is still resolving.
  */
-function BoardHub({ boardId, name }: { boardId: string; name: string }) {
+function BoardHub({
+  boardId,
+  name,
+  isOwner,
+}: {
+  boardId: string;
+  name: string;
+  isOwner: boolean;
+}) {
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
@@ -188,6 +173,11 @@ function BoardHub({ boardId, name }: { boardId: string; name: string }) {
   }, [hub.loading, hub.items]);
 
   useOnHubEditRequest(startEditing);
+
+  // Just joined with an invite code: welcome them to the band, once.
+  useEffect(() => {
+    if (takeOnboardingIntent() === 'joined') router.push('/welcome-in');
+  }, []);
 
   const change = useCallback(
     (update: (list: MobileLayoutItem[]) => MobileLayoutItem[]) =>
@@ -317,6 +307,12 @@ function BoardHub({ boardId, name }: { boardId: string; name: string }) {
           <Animated.View layout={SLIDE}>
             <Masthead name={name} />
           </Animated.View>
+
+          {isOwner && !editing && (
+            <Animated.View layout={SLIDE}>
+              <SetupChecklist boardId={boardId} />
+            </Animated.View>
+          )}
 
           {hub.loading ? (
             // The arrangement decides how many cards there are, so until it
@@ -458,33 +454,6 @@ function BoardHub({ boardId, name }: { boardId: string; name: string }) {
         }}
       />
     </>
-  );
-}
-
-function BoardTitle({ name }: { name: string }) {
-  const colors = useThemeColors();
-  return (
-    <Link href="/boards" asChild>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${name}. Change band`}
-        style={({ pressed }) => ({
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.xs,
-          opacity: pressed ? 0.6 : 1,
-        })}
-      >
-        <ThemedText variant="headline" numberOfLines={1}>
-          {name}
-        </ThemedText>
-        <Icon
-          name={{ sf: 'chevron.down', md: 'expand-more' }}
-          size={14}
-          color={colors.mutedForeground}
-        />
-      </Pressable>
-    </Link>
   );
 }
 

@@ -42,7 +42,7 @@ import { Badge } from "@/components/ui/badge";
 import { MentionsIndicator } from "@/features/mentions/mentions-indicator";
 import { ThemeToggle } from "@/features/shell/theme-toggle";
 import { CreateBandDialog } from "@/features/shell/create-band-dialog";
-import { NoBand } from "@/features/shell/no-band";
+import { StartBand } from "@/features/onboarding/start-band";
 import { SubscriptionPaywall } from "@/features/billing/subscription-paywall";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -64,7 +64,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   if (me.data && me.data.boards.length === 0) {
-    return <NoBand email={me.data.user.email} />;
+    return <StartBand email={me.data.user.email} />;
   }
 
   if (me.isError || !me.data?.membership || !me.data.board) {

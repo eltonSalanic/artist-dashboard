@@ -8,3 +8,9 @@ export const setPasswordSchema = z.object({
     .max(128),
 });
 export type SetPasswordDto = z.infer<typeof setPasswordSchema>;
+
+/** Your name as bandmates see it on tasks, shows and the locked band screen. */
+export const updateProfileSchema = z.object({
+  displayName: z.string().trim().min(1, 'Add your name.').max(60),
+});
+export type UpdateProfileDto = z.infer<typeof updateProfileSchema>;

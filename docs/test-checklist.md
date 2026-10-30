@@ -347,7 +347,7 @@ number is the failure mode here, and only you can spot it.
 - [ ] ★ Tap `⋯` → A sheet listing Manage widgets, Archive and Board settings, each marked with its phase
 - [ ] ★ Sign in as a **member**, not an admin, and tap `⋯` → Board settings is absent; Archive is present
 - [ ] ★ Switch to Calendar, back to Board → The board tab is where you left it
-- [ ] ★ An account in no bands at all → "You haven't joined any bands yet", not a crash or an endless spinner
+- [ ] ★ An account in no bands at all → "Name Your Band.", not a crash or an endless spinner
 
 ### Deliberately not in this phase
 
@@ -819,8 +819,8 @@ Web and phone now sign in through a shared `AuthClient` instead of calling Supab
 
 - [ ] ↻ Web: sign in with email and password → lands on the dashboard
 - [ ] ↻ Web: wrong password → "That email and password don't match" toast, form keeps the email
-- [ ] ↻ Web: create an account → signed in on the "You haven't joined any bands yet" screen, with Create A Band
-- [ ] ↻ Web: sign out from the header, and from the "no band" screen → back to `/login`
+- [ ] ↻ Web: create an account → signed in on the "Name Your Band." page
+- [ ] ↻ Web: sign out from the header, and from the "Name Your Band." page → back to `/login`
 - [ ] ↻ Web: invite someone, open the Mailpit link → `/auth/callback` asks for a password, saving it lands on the dashboard
 - [ ] ↻ Web: sign out, then sign in as a different user in the same tab → no data from the first user shows
 - [ ] ↻ Web: stop Supabase (`supabase stop`) and sign in → "Can't reach Band Wall" message, button usable again
@@ -835,7 +835,7 @@ Web and phone now sign in through a shared `AuthClient` instead of calling Supab
 
 Sign-in moved from Supabase Auth to Better Auth inside the API (branch `feat/better-auth`, plan [plans/better-auth.md](plans/better-auth.md), cards AUTH-001 to AUTH-006). Accounts from the Supabase days are imported with their passwords by migration `import_supabase_users`: sign in as usual. Run `npx prisma migrate deploy` from `apps/api` and add `BETTER_AUTH_SECRET` to `apps/api/.env` first.
 
-- [ ] 🔵 Web: create an account → signed in on the create-or-join screen; Create a band works
+- [ ] 🔵 Web: create an account → signed in on "Name Your Band."; Continue creates the band
 - [ ] 🔵 Web: sign out, sign in with the same password → back on the band
 - [ ] Web: wrong password → "That email and password don't match", email kept
 - [ ] 🔵 Web: invite a new email → Mailpit shows "<you> invited you to <band> on Band Wall" with a link and a 6-digit code
@@ -867,7 +867,7 @@ Automated checks: webhook mapping, idempotency and auth, the 402 guard, the owne
 - [ ] An admin can still invite to a locked band; the invitee joins and sees the locked screen
 
 ### Owning a band — ★ new
-- [ ] 🔵 No subscription → Create A Band shows the paywall, and joining a band still works
+- [ ] 🔵 No subscription → Continue on "Name Your Band." shows the paywall, and joining a band still works
 - [ ] 🔵 With a subscription → Create a band works once; a second try says you've already got one
 - [ ] Settings → Band owner: delete needs the exact name, wipes the band for everyone, and you can then create a new one
 - [ ] Settings → Band owner: hand-over refuses someone without a subscription; with one, they own it and you stay an admin
@@ -876,7 +876,7 @@ Automated checks: webhook mapping, idempotency and auth, the 402 guard, the owne
 ### Buying — ★ new, Test Store + webhook tunnel
 - [ ] 🔵 Web: buying opens RevenueCat's paywall or checkout; closing it does nothing and shows no error
 - [ ] 🔵 Web: buying a plan → "Confirming your purchase…", then the form or the wall
-- [ ] 🔵 Phone: no subscription → Create A Band opens RevenueCat's paywall; buying goes straight to naming the band
+- [ ] 🔵 Phone: no subscription → Continue on "Name Your Band." opens RevenueCat's paywall; buying creates the band and opens "You're live"
 - [ ] 🔵 Phone and web: with `REVENUECAT_SECRET_API_KEY` set and no webhook, buying still unlocks
 - [ ] With neither the key nor a webhook: after 20 seconds "We can't confirm your purchase yet" and Try again, and trying again opens no second purchase
 - [ ] 🔵 Phone: a lapsed owner's locked band → the button opens the paywall; buying unlocks
@@ -886,3 +886,30 @@ Automated checks: webhook mapping, idempotency and auth, the 402 guard, the owne
 - [ ] A buyer who can still get the trial sees "Start free trial" with the price it rolls into; after buying, settings says "Free month, ends …"
 - [ ] The same store account buying again shows the plain prices (no second trial)
 - [ ] The yearly plan says "2 months free", and Terms and Privacy links sit under the plans on web and phone
+
+## Onboarding
+
+The new first run on phone and web (branch `feat/onboarding-flow`, spec [onboarding.md](onboarding.md)). Test with `BILLING_ENFORCED=true` and the Test Store keys for the paywall steps, and with it off for the rest.
+
+### Phone
+- [ ] 🔵 Signed out → the welcome screen: "Your band's whole life, one wall.", Start a band, I've got an invite, Sign in
+- [ ] 🔵 Start a band → "First, You." (step 1 of 3) asks for your name, email and password; Back returns to the welcome
+- [ ] 🔵 Continue → "Name Your Band." (step 2 of 3); the preview block follows the name and the colour you pick
+- [ ] 🔵 Continue with no subscription → RevenueCat's paywall; closing it leaves the name and colour filled in
+- [ ] 🔵 Buy (Test Store) → "Confirming your free month…", then "You're live" in the band's colour, saying when the free month ends
+- [ ] "You're live": invite an email → "Invited …", and it shows in Mailpit; Go to my wall → the hub
+- [ ] Quit the app on "Name Your Band." and reopen → the name and colour are still there
+- [ ] The band opens in the colour you picked, on phone and web
+- [ ] 🔵 The hub shows a small "Get set up" card to the owner; each row opens its form and ticks off once done; × hides it for good
+- [ ] A member never sees the "Get set up" card
+- [ ] Your name shows on tasks and in the member list, not the start of your email
+- [ ] 🔵 I've got an invite → email, code, your name and a password → "You're In <band>." in the band's colour, then the wall; no paywall
+- [ ] With `BILLING_ENFORCED` off: Continue creates the band straight away and opens "You're live"
+
+### Web
+- [ ] 🔵 The landing page's Create account → `/login?mode=signup`: "First, You." with your name, step 1 of 3
+- [ ] 🔵 Continue → "Name Your Band." page with step 2 of 3 and the preview on the right
+- [ ] 🔵 Continue with no subscription → RevenueCat's paywall (or the two plan buttons, if the offering has none); buying creates the band and opens "You're live"
+- [ ] "You're live": invite an email; Go to my wall → the dashboard
+- [ ] 🔵 The dashboard shows a small "Get set up" card to the owner; × hides it
+

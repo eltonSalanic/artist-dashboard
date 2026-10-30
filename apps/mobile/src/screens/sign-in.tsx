@@ -5,12 +5,16 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import { authErrorMessage, notify } from '@artist/api-client';
+import { router, useLocalSearchParams } from 'expo-router';
+import { apiFetch, authErrorMessage, notify } from '@artist/api-client';
 import { Button } from '@/components/button';
 import { PosterText } from '@/components/poster-text';
 import { TextField } from '@/components/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { auth } from '@/lib/auth';
+import { reportError } from '@/lib/report-error';
+import { setOnboardingIntent } from '@/features/onboarding/onboarding-state';
+import { StepProgress } from '@/features/onboarding/step-progress';
 import { spacing, usePosterCanvas } from '@/theme';
 
 type Mode = 'signin' | 'signup' | 'invite';
@@ -21,13 +25,13 @@ const MIN_PASSWORD = 8;
 const COPY: Record<Mode, { title: string; lead: string; submit: string }> = {
   signin: { title: 'Welcome back', lead: "Sign in to your band's dashboard.", submit: 'Sign in' },
   signup: {
-    title: 'Create your account',
-    lead: 'Start a dashboard for your band.',
-    submit: 'Create account',
+    title: 'First, You.',
+    lead: 'Your bandmates see this name on tasks and shows.',
+    submit: 'Continue',
   },
   invite: {
-    title: 'Join your band',
-    lead: 'Enter the 6-digit code from your invite email and choose a password.',
+    title: 'Join Your Band.',
+    lead: 'Use the email the invite went to and the 6-digit code in it, then choose a password.',
     submit: 'Join',
   },
 };
@@ -43,12 +47,20 @@ const COPY: Record<Mode, { title: string; lead: string; submit: string }> = {
  * step, as web's callback page asks for one. So a bandmate can join from the
  * phone without ever opening the web.
  *
+ * Reached from the welcome screen, which picks the mode: "Start a band" is
+ * step 1 of 3 and asks for your name, "I've got an invite" takes the code.
+ *
  * Opens with the widget page's masthead: the app's name in small caps over
  * the greeting set huge, so the first screen is already in the poster face.
  */
 export function SignInScreen() {
   const canvas = usePosterCanvas();
-  const [mode, setMode] = useState<Mode>('signin');
+  // The welcome screen's doors open this screen in their mode.
+  const params = useLocalSearchParams<{ mode?: string }>();
+  const [mode, setMode] = useState<Mode>(
+    params.mode === 'signup' || params.mode === 'invite' ? params.mode : 'signin',
+  );
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
@@ -69,12 +81,16 @@ export function SignInScreen() {
         return;
       }
 
+      // Set before the session lands, which swaps the stack: the band step
+      // reads it to show it's step 2 of 3.
+      if (mode === 'signup') setOnboardingIntent('signup');
       const result =
         mode === 'signin'
           ? await auth.signIn(email, password)
-          : await auth.signUp(email, password);
+          : await auth.signUp(email, password, name.trim());
 
       if (result.error) {
+        setOnboardingIntent(null);
         // The draft stays put so a typo in the password costs one field, not two.
         setError(
           authErrorMessage(
@@ -107,8 +123,11 @@ export function SignInScreen() {
    * are still in, as web's "Skip for now" leaves them.
    */
   const join = async () => {
+    // Opens the welcome to their band once the stack has swapped.
+    setOnboardingIntent('joined');
     const verified = await auth.verifyInviteCode(email.trim(), code.trim());
     if (verified.error) {
+      setOnboardingIntent(null);
       // A wrong, used or expired code all read as "that code doesn't work".
       setError(authErrorMessage(verified.error, "Couldn't accept the invite. Try again."));
       return;
@@ -119,11 +138,17 @@ export function SignInScreen() {
         `You're in, but the password wasn't saved. ${authErrorMessage(saved.error, 'Set it from the web app.')}`,
       );
     }
+    // The invite made the account, named after the email; this puts their own
+    // name on it. Not worth interrupting a join for: it can be fixed later.
+    await apiFetch('/me', { method: 'PATCH', body: { displayName: name.trim() } }).catch(
+      (error: unknown) => reportError(error, { where: 'signIn.saveName' }),
+    );
   };
 
   const canSubmit =
     email.trim() !== '' &&
     !pending &&
+    (mode === 'signin' || name.trim() !== '') &&
     (mode === 'invite'
       ? /^\d{6}$/.test(code.trim()) && password.length >= MIN_PASSWORD
       : password !== '');
@@ -140,6 +165,19 @@ export function SignInScreen() {
       behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.form}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          hitSlop={12}
+          disabled={pending}
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/welcome'))}
+          style={styles.back}
+        >
+          <PosterText variant="chip" color={canvas.soft}>
+            ‹ Back
+          </PosterText>
+        </Pressable>
+        {mode === 'signup' && <StepProgress step={1} of={3} />}
         <View accessible accessibilityRole="header" style={styles.masthead}>
           <PosterText variant="label" color={canvas.soft}>
             BAND WALL
@@ -151,6 +189,21 @@ export function SignInScreen() {
             {copy.lead}
           </PosterText>
         </View>
+
+        {mode === 'signup' && (
+          <TextField
+            label="Your name"
+            value={name}
+            onChangeText={setName}
+            editable={!pending}
+            autoCapitalize="words"
+            autoComplete="name"
+            textContentType="name"
+            placeholder="Jess Ortega"
+            maxLength={60}
+            doneBar={false}
+          />
+        )}
 
         <TextField
           label="Email"
@@ -187,6 +240,21 @@ export function SignInScreen() {
             maxLength={6}
             // What fails in this mode is the code, so the outline goes here.
             error={error}
+          />
+        )}
+
+        {mode === 'invite' && (
+          <TextField
+            label="Your name"
+            value={name}
+            onChangeText={setName}
+            editable={!pending}
+            autoCapitalize="words"
+            autoComplete="name"
+            textContentType="name"
+            placeholder="What your bandmates call you"
+            maxLength={60}
+            doneBar={false}
           />
         )}
 
@@ -234,13 +302,11 @@ export function SignInScreen() {
           style={styles.link}
         >
           <ThemedText variant="subhead" tone="accent">
-            {mode === 'signin'
-              ? 'New here? Create an account'
-              : 'Already have an account? Sign in'}
+            {mode === 'signin' ? 'New here? Start a band' : 'Already have an account? Sign in'}
           </ThemedText>
         </Pressable>
 
-        {mode !== 'invite' && (
+        {mode === 'signin' && (
           <Pressable
             accessibilityRole="button"
             disabled={pending}
@@ -259,6 +325,7 @@ export function SignInScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, justifyContent: 'center' },
+  back: { alignSelf: 'flex-start', paddingVertical: spacing.xs },
   form: { padding: spacing.lg, gap: spacing.md },
   masthead: { gap: spacing.xs, marginBottom: spacing.sm },
   submit: { marginTop: spacing.sm },

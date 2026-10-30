@@ -42,7 +42,8 @@ export interface AuthClient {
    */
   onSessionChange(callback: (session: AuthSession | null) => void): () => void;
   signIn(email: string, password: string): Promise<AuthResult>;
-  signUp(email: string, password: string): Promise<SignUpResult>;
+  /** `name` is what bandmates see; without one it starts as the email's first part. */
+  signUp(email: string, password: string, name?: string): Promise<SignUpResult>;
   signOut(): Promise<void>;
   /** Sets the signed-in user's password (after an invite, or a change). */
   setPassword(password: string): Promise<AuthResult>;

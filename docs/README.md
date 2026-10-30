@@ -29,6 +29,7 @@ for build conventions and skills read [CLAUDE.md](../CLAUDE.md). Those describe
 | [Mobile app](mobile-app.md) — the Expo/React Native app: phase tracker, navigation design, locked decisions | In progress — P0–P13 and P17 done; P14 and P18 not started |
 | [Release workflow](release-workflow.md) — dev → staging → prod, EAS builds and updates, TestFlight and Play beta, migrations | Guide; staging/prod hosting, EAS Update and store submission not set up yet |
 | [Error handling and logging](error-handling.md) — error shape, user-facing copy, dev vs staging/prod logs, Sentry | Built; Sentry off until DSNs are set |
+| [Onboarding](onboarding.md) — the first run on phone and web: welcome, account, naming the band, the paywall, "You're live", the setup checklist, joining with an invite | Built on `feat/onboarding-flow`, not merged |
 | [Billing — subscriptions](billing.md) — subscriptions through RevenueCat (a person's subscription lets them own a band), the 402 rule, webhook mapping, env vars, account setup | In `main`, not live: no hosting, store products or `BILLING_ENFORCED` yet; manual testing on Trello |
 | [Feature test checklist](test-checklist.md) — what a person must click and see work, per phase and feature | Live — P1–P17, finances, links, show statuses, band name tag, subscriptions |
 | Permissions — the `can()` map, role matrix, and where each action is enforced | Not yet written |

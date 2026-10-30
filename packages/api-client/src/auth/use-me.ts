@@ -1,7 +1,11 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { BoardSummaryDto } from "@artist/shared";
+import type {
+  BoardSummaryDto,
+  CreateBoardDto,
+  UpdateProfileDto,
+} from "@artist/shared";
 import { apiFetch, notify } from "../client";
 import { INLINE_ERROR, toUserMessage } from "../messages";
 import type { MeResponse } from "./types";
@@ -28,8 +32,12 @@ export function useMe(enabled: boolean) {
 export function useCreateBoard() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (name: string) =>
-      apiFetch<BoardSummaryDto>("/boards", { method: "POST", body: { name } }),
+    // A name alone, or the name with the palette picked while naming it.
+    mutationFn: (band: string | CreateBoardDto) =>
+      apiFetch<BoardSummaryDto>("/boards", {
+        method: "POST",
+        body: typeof band === "string" ? { name: band } : band,
+      }),
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ["me"] }),
@@ -37,5 +45,15 @@ export function useCreateBoard() {
       ]),
     onError: (error) =>
       notify.error(toUserMessage(error, "Couldn't create the band")),
+  });
+}
+
+/** Saves your name (`PATCH /me`), then refreshes `/me` so it shows at once. */
+export function useUpdateProfile() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: UpdateProfileDto) =>
+      apiFetch<void>("/me", { method: "PATCH", body: dto }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["me"] }),
   });
 }

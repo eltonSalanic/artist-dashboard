@@ -32,7 +32,7 @@ export function LandingHeader() {
           <Button
             className="h-9 rounded-full bg-coral px-4 text-sm text-coral-foreground hover:bg-coral/90"
             nativeButton={false}
-            render={<Link href="/login" />}
+            render={<Link href="/login?mode=signup" />}
           >
             Create account
           </Button>

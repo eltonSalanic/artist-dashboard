@@ -26,6 +26,7 @@ describe('UsersService.bootstrap', () => {
   const prisma = {
     $transaction: jest.fn((fn: (t: typeof tx) => Promise<void>) => fn(tx)),
     user: { findUnique: jest.fn() },
+    authUser: { findUnique: jest.fn() },
   };
   const service = new UsersService(
     prisma as unknown as PrismaService,
@@ -54,6 +55,32 @@ describe('UsersService.bootstrap', () => {
     expect(tx.user.upsert).toHaveBeenCalled();
     expect(tx.board.create).not.toHaveBeenCalled();
     expect(tx.membership.upsert).not.toHaveBeenCalled();
+  });
+
+  it('names the user from the name given at sign-up', async () => {
+    tx.invite.findMany.mockResolvedValue([]);
+    prisma.authUser.findUnique.mockResolvedValue({ name: 'Sam Ortega' });
+
+    await service.bootstrap(auth);
+
+    expect(tx.user.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: { id: 'u1', email: auth.email, displayName: 'Sam Ortega' },
+      }),
+    );
+  });
+
+  it('falls back to the start of the email without a name', async () => {
+    tx.invite.findMany.mockResolvedValue([]);
+    prisma.authUser.findUnique.mockResolvedValue({ name: '  ' });
+
+    await service.bootstrap(auth);
+
+    expect(tx.user.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: { id: 'u1', email: auth.email, displayName: 'sam' },
+      }),
+    );
   });
 
   it('activates pending invites', async () => {
@@ -239,5 +266,34 @@ describe('UsersService.me — multi-board', () => {
     expect(me.boards).toEqual([]);
     expect(me.board).toBeNull();
     expect(me.membership).toBeNull();
+  });
+});
+
+describe('UsersService.updateProfile', () => {
+  const prisma = {
+    $transaction: jest.fn((ops: unknown[]) => Promise.all(ops)),
+    authUser: { update: jest.fn() },
+    user: { updateMany: jest.fn() },
+  };
+  const service = new UsersService(
+    prisma as unknown as PrismaService,
+    new ActivityService(prisma as unknown as PrismaService),
+    billingOff,
+  );
+
+  it('saves the name on the sign-in account and the user row', async () => {
+    await service.updateProfile(
+      { userId: 'u1', email: 'sam@band.com' },
+      { displayName: 'Sam' },
+    );
+
+    expect(prisma.authUser.update).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      data: { name: 'Sam' },
+    });
+    expect(prisma.user.updateMany).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      data: { displayName: 'Sam' },
+    });
   });
 });

@@ -113,4 +113,17 @@ describe("createBetterAuthClient", () => {
       needsConfirmation: true,
     });
   });
+
+  it("sends the name given at sign-up, or the start of the email", async () => {
+    const fetch = jest.fn().mockResolvedValue(reply(200, { token: "t", user }));
+    const auth = createBetterAuthClient({ apiUrl: "http://api", store: memoryStore(), fetch });
+    const sentName = (call: number) =>
+      (JSON.parse(fetch.mock.calls[call][1].body as string) as { name: string }).name;
+
+    await auth.signUp("a@band.com", "pw-long-enough", "  Jess Ortega ");
+    await auth.signUp("sam@band.com", "pw-long-enough");
+
+    expect(sentName(0)).toBe("Jess Ortega");
+    expect(sentName(1)).toBe("sam");
+  });
 });

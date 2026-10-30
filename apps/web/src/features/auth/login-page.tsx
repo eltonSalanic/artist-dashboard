@@ -16,10 +16,13 @@ import {
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { SetupSteps } from "@/features/onboarding/setup-steps";
+import { markSignedUp } from "@/features/onboarding/onboarding-state";
 
 export function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
@@ -31,8 +34,11 @@ export function LoginPage() {
   // as a toast: this effect runs before the Toaster has mounted, so a toast
   // from here is dropped.
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reads the URL once on mount
-    setExpired(new URLSearchParams(window.location.search).has("expired"));
+    setExpired(params.has("expired"));
+    // The landing page's "Create account" opens straight on step 1.
+    if (params.get("mode") === "signup") setMode("signup");
   }, []);
 
   const submit = async (event: React.FormEvent) => {
@@ -41,7 +47,7 @@ export function LoginPage() {
     const { error } =
       mode === "signin"
         ? await auth.signIn(email, password)
-        : await auth.signUp(email, password);
+        : await auth.signUp(email, password, name.trim());
     setPending(false);
     if (error) {
       toast.error(
@@ -54,6 +60,8 @@ export function LoginPage() {
       );
       return;
     }
+    // A new account has no band, so the dashboard opens on step 2: naming it.
+    if (mode === "signup") markSignedUp();
     router.replace("/dashboard");
   };
 
@@ -61,13 +69,14 @@ export function LoginPage() {
     <main className="flex flex-1 items-center justify-center p-8">
       <Card className="w-full max-w-sm">
         <CardHeader>
+          {mode === "signup" && <SetupSteps current={1} />}
           <CardTitle>
-            {mode === "signin" ? "Welcome back" : "Create your account"}
+            {mode === "signin" ? "Welcome back" : "First, You."}
           </CardTitle>
           <CardDescription>
             {mode === "signin"
               ? "Sign in to your band's dashboard."
-              : "Start a dashboard for your band."}
+              : "Your bandmates see this name on tasks and shows."}
           </CardDescription>
           {expired && mode === "signin" && (
             <p role="status" className="text-sm text-destructive">
@@ -78,6 +87,20 @@ export function LoginPage() {
         <CardContent>
           <form onSubmit={submit}>
             <FieldGroup>
+              {mode === "signup" && (
+                <Field>
+                  <FieldLabel htmlFor="name">Your name</FieldLabel>
+                  <Input
+                    id="name"
+                    autoComplete="name"
+                    required
+                    maxLength={60}
+                    placeholder="Jess Ortega"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </Field>
+              )}
               <Field>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
                 <Input
@@ -105,7 +128,7 @@ export function LoginPage() {
               </Field>
               <Button type="submit" disabled={pending}>
                 {pending && <Spinner data-icon="inline-start" />}
-                {mode === "signin" ? "Sign in" : "Create account"}
+                {mode === "signin" ? "Sign in" : "Continue"}
               </Button>
               <Button
                 type="button"
@@ -113,7 +136,7 @@ export function LoginPage() {
                 onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
               >
                 {mode === "signin"
-                  ? "New here? Create an account"
+                  ? "New here? Start a band"
                   : "Already have an account? Sign in"}
               </Button>
             </FieldGroup>

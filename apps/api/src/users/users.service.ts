@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { resolveBoardTheme } from '@artist/shared';
+import { resolveBoardTheme, type UpdateProfileDto } from '@artist/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
 import { SUMMARY_OWNER_SELECT, toBoardSummary } from '../boards/board-summary';
@@ -24,7 +24,14 @@ export class UsersService {
    * "Join or create one" and starts a band themselves (POST /boards).
    */
   async bootstrap(auth: AuthUser) {
-    const displayName = auth.email.split('@')[0];
+    // The name given at sign-up (or saved by `updateProfile` before this row
+    // existed) lives on the sign-in account; an account without one falls
+    // back to the start of the email.
+    const account = await this.prisma.authUser.findUnique({
+      where: { id: auth.userId },
+      select: { name: true },
+    });
+    const displayName = account?.name?.trim() || auth.email.split('@')[0];
 
     await this.prisma.$transaction(async (tx) => {
       // Accounts made under Supabase Auth left User rows whose id matches no
@@ -98,6 +105,24 @@ export class UsersService {
     });
 
     return this.me(auth);
+  }
+
+  /**
+   * Sets your name. It goes on the sign-in account too, so a bootstrap that
+   * hasn't run yet (a phone saving the name straight after joining) still
+   * starts the User row with it.
+   */
+  async updateProfile(auth: AuthUser, dto: UpdateProfileDto) {
+    await this.prisma.$transaction([
+      this.prisma.authUser.update({
+        where: { id: auth.userId },
+        data: { name: dto.displayName },
+      }),
+      this.prisma.user.updateMany({
+        where: { id: auth.userId },
+        data: { displayName: dto.displayName },
+      }),
+    ]);
   }
 
   async me(auth: AuthUser) {
