@@ -34,17 +34,24 @@ export type TextInput = NativeTextInput;
  * `autoFocus` is done here, after mount, rather than by the native field: the
  * native field focuses the moment it reaches the window, before its bar has
  * attached, and the keyboard then comes up without one.
+ *
+ * `doneBar={false}` leaves the bar off, for a single-line field whose Return key
+ * already puts the keyboard away. The bar has a cost: on iOS, React Native
+ * reloads the keyboard on every prop update of a focused field with an
+ * `inputAccessoryViewID`, and typing is a prop update, so each letter fires
+ * fresh keyboard events and a `KeyboardAvoidingView` around it can jump.
  */
 // eslint-disable-next-line @typescript-eslint/no-redeclare -- a type and a component, one name
 export function TextInput({
   ref,
   inputAccessoryViewID,
   autoFocus,
+  doneBar = true,
   ...props
-}: TextInputProps & { ref?: Ref<NativeTextInput> }) {
+}: TextInputProps & { ref?: Ref<NativeTextInput>; doneBar?: boolean }) {
   const id = useId();
   const field = useRef<NativeTextInput>(null);
-  const withBar = Platform.OS === 'ios' && inputAccessoryViewID == null;
+  const withBar = Platform.OS === 'ios' && doneBar && inputAccessoryViewID == null;
 
   useEffect(() => {
     if (withBar && autoFocus) field.current?.focus();

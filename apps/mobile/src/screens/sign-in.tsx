@@ -163,6 +163,10 @@ export function SignInScreen() {
           keyboardType="email-address"
           textContentType="emailAddress"
           placeholder="you@band.com"
+          // No Done bar on this form: Return closes these keyboards, and the
+          // bar reloaded the keyboard on each letter, which shook the centred
+          // form (see `TextInput`).
+          doneBar={false}
         />
 
         {mode === 'invite' && (
@@ -172,6 +176,10 @@ export function SignInScreen() {
             onChangeText={(text) => setCode(text.replace(/\D/g, '').slice(0, 6))}
             editable={!pending}
             keyboardType="number-pad"
+            doneBar={false}
+            // The number pad has no Return key; this makes React Native add
+            // its own Done toolbar, which does not reload as you type.
+            returnKeyType="done"
             // iOS offers the code from Mail above the keyboard.
             textContentType="oneTimeCode"
             autoComplete="one-time-code"
@@ -197,6 +205,7 @@ export function SignInScreen() {
           // password could not reach the web sign-in anyway.
           autoComplete="current-password"
           textContentType="password"
+          doneBar={false}
           returnKeyType="go"
           onSubmitEditing={() => {
             if (canSubmit) void submit();

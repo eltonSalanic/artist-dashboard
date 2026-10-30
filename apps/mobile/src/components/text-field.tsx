@@ -20,7 +20,12 @@ export function TextField({
   error,
   style,
   ...props
-}: TextInputProps & { label: string; error?: string | null; ref?: Ref<TextInput> }) {
+}: TextInputProps & {
+  label: string;
+  error?: string | null;
+  ref?: Ref<TextInput>;
+  doneBar?: boolean;
+}) {
   const tokens = useTokens();
   const failed = error != null && error !== '';
 
