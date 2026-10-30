@@ -48,6 +48,8 @@ model User {
   splitShares           SplitShare[]
   payouts               Payout[]                 @relation("PayoutMember")
   payoutsRecorded       Payout[]                 @relation("PayoutCreatedBy")
+  subscription          UserSubscription?
+  ownedBoards           Board[]                  @relation("BoardOwner")
   links                 ItemLink[]
 }
 
@@ -87,7 +89,13 @@ model Board {
   splitShares    SplitShare[]
   payouts        Payout[]
   links          ItemLink[]
-  subscription   BoardSubscription?
+  /// Whose subscription keeps this band open. Separate from the ADMIN role:
+  /// there can be several admins, but one owner. Null once that account is
+  /// gone, which locks the band; its data stays.
+  ownerId        String?                  @db.Uuid
+  owner          User?                    @relation("BoardOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  @@index([ownerId])
 }
 
 model Membership {
@@ -799,9 +807,10 @@ model AuthVerification {
   @@index([identifier])
 }
 
-/// The subscription is bought per board, not per person: whoever pays, the whole band
-/// gets it. RevenueCat is the source of truth; this row is our copy of its
-/// entitlement, written only by the RevenueCat webhook (src/billing).
+/// A subscription belongs to a person and entitles them to own one band. Joining
+/// a band is free; a band stays open while its owner is subscribed. RevenueCat is
+/// the source of truth; this row is our copy of its entitlement, written only by
+/// the RevenueCat webhook (src/billing) and the grant script.
 /// GRACE: a renewal failed and the store is retrying. Access stays on.
 /// CANCELLED: auto-renew is off, but the paid period has not ended. Access
 /// stays on until EXPIRED.
@@ -819,9 +828,9 @@ enum SubscriptionStore {
   PROMOTIONAL
 }
 
-model BoardSubscription {
+model UserSubscription {
   id                  String             @id @default(uuid()) @db.Uuid
-  boardId             String             @unique @db.Uuid
+  userId              String             @unique @db.Uuid
   /// RevenueCat entitlement identifier (`BAND_WALL_PLAN.entitlement` in packages/shared).
   entitlement         String             @default("band_wall")
   status              SubscriptionStatus
@@ -834,12 +843,12 @@ model BoardSubscription {
   /// `currentPeriodEnd`; a trial counts as subscribed, the same as a paid
   /// period.
   isTrial             Boolean            @default(false)
-  /// Always the board's id (we `logIn` RevenueCat with it); kept to make the
+  /// Always the user's id (we `logIn` RevenueCat with it); kept to make the
   /// webhook payload easy to match up when debugging.
   revenueCatAppUserId String
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
-  board               Board              @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 /// RevenueCat retries a webhook until it gets a 200 and can send one event
@@ -848,6 +857,6 @@ model BillingWebhookEvent {
   /// RevenueCat's `event.id`.
   id         String   @id
   type       String
-  boardId    String?  @db.Uuid
+  userId     String?  @db.Uuid
   receivedAt DateTime @default(now())
 }

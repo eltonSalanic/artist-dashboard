@@ -13,10 +13,10 @@ import { BillingService } from './billing.service';
 import { SKIP_SUBSCRIPTION_KEY } from './skip-subscription.decorator';
 
 export const SUBSCRIPTION_REQUIRED_MESSAGE =
-  'This band needs a Band Wall subscription. An admin can subscribe from the band’s settings.';
+  'This band’s owner needs to renew.';
 
 /**
- * Closes every board route until the board is subscribed, when
+ * Closes every board route while the band's owner isn't subscribed, when
  * BILLING_ENFORCED=true. A board route is one marked `@BoardRoles`, which is
  * also what makes `BoardRolesGuard` check membership; it runs first, so by
  * the time this answers 402 the caller is known to be on the board, and a
@@ -24,7 +24,7 @@ export const SUBSCRIPTION_REQUIRED_MESSAGE =
  *
  * Routes without a board (sign-in, `/me`, the board list, creating a band,
  * the webhooks) never reach the check. The cross-board calendar and mentions
- * are narrowed to paid boards in `UserBoardsGuard` instead.
+ * are narrowed to open boards in `UserBoardsGuard` instead.
  */
 @Injectable()
 export class SubscriptionGuard implements CanActivate {

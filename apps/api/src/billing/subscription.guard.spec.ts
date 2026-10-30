@@ -28,7 +28,7 @@ class NoBoardRoute {
 
 describe('SubscriptionGuard', () => {
   const findUnique = jest.fn();
-  const prisma = { boardSubscription: { findUnique } };
+  const prisma = { board: { findUnique } };
   let enforced = 'true';
   const billing = new BillingService(
     prisma as unknown as PrismaService,
@@ -51,7 +51,7 @@ describe('SubscriptionGuard', () => {
     enforced = 'true';
   });
 
-  it('answers 402 BOARD_SUBSCRIPTION_REQUIRED on a board without Pro', async () => {
+  it('answers 402 BOARD_SUBSCRIPTION_REQUIRED on a locked band', async () => {
     findUnique.mockResolvedValue(null);
 
     const error = await guard
@@ -64,12 +64,14 @@ describe('SubscriptionGuard', () => {
       code: 'BOARD_SUBSCRIPTION_REQUIRED',
     });
     expect(findUnique).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { boardId: BOARD } }),
+      expect.objectContaining({ where: { id: BOARD } }),
     );
   });
 
-  it('answers 402 once the subscription has expired', async () => {
-    findUnique.mockResolvedValue({ status: 'EXPIRED', currentPeriodEnd: null });
+  it('answers 402 once the owner has lapsed', async () => {
+    findUnique.mockResolvedValue({
+      owner: { subscription: { status: 'EXPIRED', currentPeriodEnd: null } },
+    });
 
     await expect(guard.canActivate(contextFor(BoardRoute))).rejects.toThrow(
       HttpException,
@@ -78,8 +80,12 @@ describe('SubscriptionGuard', () => {
 
   it('lets every member of a paid board through', async () => {
     findUnique.mockResolvedValue({
-      status: 'CANCELLED',
-      currentPeriodEnd: new Date(Date.now() + 86_400_000),
+      owner: {
+        subscription: {
+          status: 'CANCELLED',
+          currentPeriodEnd: new Date(Date.now() + 86_400_000),
+        },
+      },
     });
 
     await expect(guard.canActivate(contextFor(BoardRoute))).resolves.toBe(true);
@@ -92,7 +98,7 @@ describe('SubscriptionGuard', () => {
       guard.canActivate(contextFor(BoardRoute, { id: BOARD })),
     ).rejects.toThrow(HttpException);
     expect(findUnique).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { boardId: BOARD } }),
+      expect.objectContaining({ where: { id: BOARD } }),
     );
   });
 

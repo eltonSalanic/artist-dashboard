@@ -10,7 +10,7 @@ describe('UserBoardsGuard', () => {
   const subscriptions = jest.fn();
   const prisma = {
     membership: { findMany },
-    boardSubscription: { findMany: subscriptions },
+    board: { findMany: subscriptions },
   };
   let enforced = 'false';
   const billing = new BillingService(
@@ -86,7 +86,11 @@ describe('UserBoardsGuard', () => {
     enforced = 'true';
     findMany.mockResolvedValue([{ boardId: 'b1' }, { boardId: 'b2' }]);
     subscriptions.mockResolvedValue([
-      { boardId: 'b2', status: 'ACTIVE', currentPeriodEnd: null },
+      { id: 'b1', owner: { subscription: null } },
+      {
+        id: 'b2',
+        owner: { subscription: { status: 'ACTIVE', currentPeriodEnd: null } },
+      },
     ]);
     const request: Partial<AuthedRequest> = { user: { userId: 'u1' } as never };
 

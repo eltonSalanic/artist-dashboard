@@ -7,8 +7,8 @@ import { SkipSubscription } from '../billing/skip-subscription.decorator';
 import { InvitesService } from './invites.service';
 
 /**
- * Open on a board without a subscription: a band can gather its members before
- * anyone pays.
+ * Open on a locked band: joining never costs anything, and an admin can line
+ * people up while the owner sorts out their subscription.
  */
 @Controller('boards/:boardId/invites')
 @BoardRoles('ADMIN')

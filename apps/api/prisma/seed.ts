@@ -170,6 +170,7 @@ async function main() {
       data: {
         id: boardId,
         name: 'Neon Harbor',
+        ownerId: BAND.jordan.id,
         defaultLayout: DEFAULT_BOARD_LAYOUT as unknown as Prisma.InputJsonValue,
       },
     });

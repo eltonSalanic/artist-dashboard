@@ -61,6 +61,8 @@ export interface BoardDetailDto {
   theme: BoardTheme;
   /** ISO 4217 code the band keeps its books in. */
   currency: string;
+  /** Whose subscription keeps the band open. Null once that account is gone. */
+  ownerId: string | null;
   statuses: TaskStatusDto[];
   showStatuses: ShowStatusDto[];
   members: BoardMemberDto[];

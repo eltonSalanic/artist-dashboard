@@ -3,16 +3,16 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BillingService } from './billing.service';
 import type { RevenueCatEvent } from './revenuecat-event';
 
-const BOARD = '00000000-0000-4000-8000-000000000001';
-const OTHER_BOARD = '00000000-0000-4000-8000-000000000002';
+const USER = '00000000-0000-4000-8000-000000000001';
+const OTHER_USER = '00000000-0000-4000-8000-000000000002';
 const EXPIRES = Date.parse('2026-11-29T12:00:00Z');
 
 const event = (overrides: Partial<RevenueCatEvent> = {}): RevenueCatEvent => ({
   id: 'evt_1',
   type: 'INITIAL_PURCHASE',
-  app_user_id: BOARD,
-  original_app_user_id: BOARD,
-  aliases: [BOARD],
+  app_user_id: USER,
+  original_app_user_id: USER,
+  aliases: [USER],
   product_id: 'bandwall.monthly',
   entitlement_ids: ['band_wall'],
   store: 'APP_STORE',
@@ -23,9 +23,10 @@ const event = (overrides: Partial<RevenueCatEvent> = {}): RevenueCatEvent => ({
 
 function setup(enforced = 'true') {
   const prisma = {
-    board: { findMany: jest.fn() },
+    board: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn() },
+    user: { findMany: jest.fn() },
     billingWebhookEvent: { findUnique: jest.fn(), create: jest.fn() },
-    boardSubscription: {
+    userSubscription: {
       findUnique: jest.fn(),
       findMany: jest.fn(),
       upsert: jest.fn(),
@@ -37,8 +38,8 @@ function setup(enforced = 'true') {
   prisma.$transaction.mockImplementation((fn: (tx: unknown) => unknown) =>
     fn(prisma),
   );
-  // Every uuid the tests use is a real board unless a test says otherwise.
-  prisma.board.findMany.mockImplementation(
+  // Every uuid the tests use is a real person unless a test says otherwise.
+  prisma.user.findMany.mockImplementation(
     ({ where }: { where: { id: { in: string[] } } }) =>
       where.id.in.map((id) => ({ id })),
   );
@@ -50,8 +51,8 @@ function setup(enforced = 'true') {
 }
 
 const upserted = (prisma: ReturnType<typeof setup>['prisma']) =>
-  (prisma.boardSubscription.upsert.mock.calls as unknown[][])[0][0] as {
-    where: { boardId: string };
+  (prisma.userSubscription.upsert.mock.calls as unknown[][])[0][0] as {
+    where: { userId: string };
     create: Record<string, unknown>;
     update: Record<string, unknown>;
   };
@@ -71,7 +72,7 @@ describe('BillingService webhook mapping', () => {
     await expect(service.handleEvent(event({ type }))).resolves.toBe('applied');
 
     const call = upserted(prisma);
-    expect(call.where).toEqual({ boardId: BOARD });
+    expect(call.where).toEqual({ userId: USER });
     expect(call.update).toEqual({
       status,
       store: 'APP_STORE',
@@ -79,10 +80,10 @@ describe('BillingService webhook mapping', () => {
       currentPeriodEnd: new Date(EXPIRES),
       willRenew,
       isTrial: false,
-      revenueCatAppUserId: BOARD,
+      revenueCatAppUserId: USER,
     });
     expect(call.create).toMatchObject({
-      boardId: BOARD,
+      userId: USER,
       entitlement: 'band_wall',
     });
   });
@@ -135,27 +136,27 @@ describe('BillingService webhook mapping', () => {
     expect(upserted(prisma).update.store).toBe(expected);
   });
 
-  it('finds the board through an alias when the purchase began anonymous', async () => {
+  it('finds the person through an alias when the purchase began anonymous', async () => {
     const { service, prisma } = setup();
 
     await service.handleEvent(
       event({
         app_user_id: '$RCAnonymousID:abc',
         original_app_user_id: '$RCAnonymousID:abc',
-        aliases: ['$RCAnonymousID:abc', BOARD],
+        aliases: ['$RCAnonymousID:abc', USER],
       }),
     );
 
-    expect(upserted(prisma).where).toEqual({ boardId: BOARD });
+    expect(upserted(prisma).where).toEqual({ userId: USER });
   });
 
-  it('records but does not apply an event for an id that is no board', async () => {
+  it('records but does not apply an event for an id that is no user', async () => {
     const { service, prisma } = setup();
-    prisma.board.findMany.mockResolvedValue([]);
+    prisma.user.findMany.mockResolvedValue([]);
 
-    await expect(service.handleEvent(event())).resolves.toBe('unknown_board');
+    await expect(service.handleEvent(event())).resolves.toBe('unknown_user');
     expect(prisma.billingWebhookEvent.create).toHaveBeenCalled();
-    expect(prisma.boardSubscription.upsert).not.toHaveBeenCalled();
+    expect(prisma.userSubscription.upsert).not.toHaveBeenCalled();
   });
 
   it('ignores events for another entitlement', async () => {
@@ -164,7 +165,7 @@ describe('BillingService webhook mapping', () => {
     await expect(
       service.handleEvent(event({ entitlement_ids: ['something_else'] })),
     ).resolves.toBe('ignored');
-    expect(prisma.boardSubscription.upsert).not.toHaveBeenCalled();
+    expect(prisma.userSubscription.upsert).not.toHaveBeenCalled();
   });
 
   it('ignores event types it has no mapping for, but records them', async () => {
@@ -174,15 +175,15 @@ describe('BillingService webhook mapping', () => {
       'ignored',
     );
     expect(prisma.billingWebhookEvent.create).toHaveBeenCalledWith({
-      data: { id: 'evt_1', type: 'TEST', boardId: BOARD },
+      data: { id: 'evt_1', type: 'TEST', userId: USER },
     });
-    expect(prisma.boardSubscription.upsert).not.toHaveBeenCalled();
+    expect(prisma.userSubscription.upsert).not.toHaveBeenCalled();
   });
 
-  it('moves the subscription to the receiving board on TRANSFER', async () => {
+  it('moves the subscription to the receiving person on TRANSFER', async () => {
     const { service, prisma } = setup();
-    prisma.boardSubscription.findUnique.mockResolvedValue({
-      boardId: BOARD,
+    prisma.userSubscription.findUnique.mockResolvedValue({
+      userId: USER,
       entitlement: 'band_wall',
       status: 'ACTIVE',
       store: 'APP_STORE',
@@ -199,21 +200,21 @@ describe('BillingService webhook mapping', () => {
           app_user_id: undefined,
           original_app_user_id: undefined,
           aliases: undefined,
-          transferred_from: [BOARD],
-          transferred_to: [OTHER_BOARD],
+          transferred_from: [USER],
+          transferred_to: [OTHER_USER],
         }),
       ),
     ).resolves.toBe('applied');
 
-    expect(upserted(prisma).where).toEqual({ boardId: OTHER_BOARD });
+    expect(upserted(prisma).where).toEqual({ userId: OTHER_USER });
     expect(upserted(prisma).update).toMatchObject({
       status: 'ACTIVE',
       productId: 'bandwall.yearly',
       isTrial: true,
-      revenueCatAppUserId: OTHER_BOARD,
+      revenueCatAppUserId: OTHER_USER,
     });
-    expect(prisma.boardSubscription.updateMany).toHaveBeenCalledWith({
-      where: { boardId: { in: [BOARD] } },
+    expect(prisma.userSubscription.updateMany).toHaveBeenCalledWith({
+      where: { userId: { in: [USER] } },
       data: { status: 'EXPIRED', willRenew: false },
     });
   });
@@ -227,7 +228,7 @@ describe('BillingService webhook idempotency', () => {
 
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(prisma.billingWebhookEvent.create).toHaveBeenCalledWith({
-      data: { id: 'evt_1', type: 'INITIAL_PURCHASE', boardId: BOARD },
+      data: { id: 'evt_1', type: 'INITIAL_PURCHASE', userId: USER },
     });
   });
 
@@ -237,49 +238,115 @@ describe('BillingService webhook idempotency', () => {
 
     await expect(service.handleEvent(event())).resolves.toBe('duplicate');
     expect(prisma.$transaction).not.toHaveBeenCalled();
-    expect(prisma.boardSubscription.upsert).not.toHaveBeenCalled();
+    expect(prisma.userSubscription.upsert).not.toHaveBeenCalled();
   });
 
   it('lets a failure through so the event is not recorded and RevenueCat retries', async () => {
     const { service, prisma } = setup();
-    prisma.boardSubscription.upsert.mockRejectedValue(new Error('db down'));
+    prisma.userSubscription.upsert.mockRejectedValue(new Error('db down'));
 
     await expect(service.handleEvent(event())).rejects.toThrow('db down');
   });
 });
 
 describe('BillingService access', () => {
-  it('reports Pro from the stored row', async () => {
+  const BOARD = '00000000-0000-4000-8000-0000000000b1';
+  const paidUp = {
+    status: 'GRACE',
+    currentPeriodEnd: new Date(Date.now() + 86_400_000),
+  };
+
+  it('opens a band while its owner is subscribed', async () => {
     const { service, prisma } = setup();
-    prisma.boardSubscription.findUnique.mockResolvedValue({
-      status: 'GRACE',
-      currentPeriodEnd: new Date(Date.now() + 86_400_000),
+    prisma.board.findUnique.mockResolvedValue({
+      owner: { subscription: paidUp },
     });
 
     await expect(service.isPro(BOARD)).resolves.toBe(true);
+  });
+
+  it('locks a band once its owner lapses, or has no account left', async () => {
+    const { service, prisma } = setup();
+    prisma.board.findUnique.mockResolvedValueOnce({
+      owner: { subscription: { status: 'EXPIRED', currentPeriodEnd: null } },
+    });
+    await expect(service.isPro(BOARD)).resolves.toBe(false);
+
+    prisma.board.findUnique.mockResolvedValueOnce({ owner: null });
+    await expect(service.isPro(BOARD)).resolves.toBe(false);
   });
 
   it('requires nothing while billing is not enforced', async () => {
     const { service, prisma } = setup('false');
 
     await expect(service.requiresSubscription(BOARD)).resolves.toBe(false);
-    expect(prisma.boardSubscription.findUnique).not.toHaveBeenCalled();
+    await expect(service.ownershipBlock(USER)).resolves.toBeNull();
+    expect(prisma.board.findUnique).not.toHaveBeenCalled();
   });
 
-  it('describes a board with no purchase for the apps', async () => {
+  it('wants a subscription before someone can own a band', async () => {
     const { service, prisma } = setup();
-    prisma.boardSubscription.findUnique.mockResolvedValue(null);
+    prisma.userSubscription.findUnique.mockResolvedValue(null);
 
-    await expect(service.getForBoard(BOARD)).resolves.toEqual({
+    await expect(service.ownershipBlock(USER)).resolves.toBe('NO_SUBSCRIPTION');
+  });
+
+  it('lets a subscription cover one band', async () => {
+    const { service, prisma } = setup();
+    prisma.userSubscription.findUnique.mockResolvedValue(paidUp);
+    prisma.board.findFirst.mockResolvedValueOnce({ id: BOARD });
+    await expect(service.ownershipBlock(USER)).resolves.toBe(
+      'ALREADY_OWNS_BAND',
+    );
+
+    prisma.board.findFirst.mockResolvedValueOnce(null);
+    await expect(service.ownershipBlock(USER)).resolves.toBeNull();
+  });
+
+  it("gives a member the band state but not the owner's billing details", async () => {
+    const { service, prisma } = setup();
+    prisma.board.findUnique.mockResolvedValue({
+      ownerId: OTHER_USER,
+      owner: {
+        displayName: 'Sam',
+        subscription: {
+          status: 'ACTIVE',
+          store: 'APP_STORE',
+          productId: 'bandwall.yearly',
+          currentPeriodEnd: new Date(Date.now() + 86_400_000),
+          willRenew: true,
+          isTrial: true,
+        },
+      },
+    });
+
+    await expect(service.getForBoard(BOARD, USER)).resolves.toEqual({
       boardId: BOARD,
-      isPro: false,
-      required: true,
-      status: null,
+      isPro: true,
+      required: false,
+      isOwner: false,
+      ownerId: OTHER_USER,
+      ownerName: 'Sam',
+      status: 'ACTIVE',
       store: null,
       productId: null,
       currentPeriodEnd: null,
       willRenew: false,
       isTrial: false,
+    });
+  });
+
+  it("tells a locked band's owner it is theirs to renew", async () => {
+    const { service, prisma } = setup();
+    prisma.board.findUnique.mockResolvedValue({
+      ownerId: USER,
+      owner: { displayName: 'Sam', subscription: null },
+    });
+
+    await expect(service.getForBoard(BOARD, USER)).resolves.toMatchObject({
+      isPro: false,
+      required: true,
+      isOwner: true,
     });
   });
 });

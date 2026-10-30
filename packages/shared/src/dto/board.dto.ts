@@ -33,8 +33,10 @@ export interface BoardSummaryDto {
    * so an unset or unrecognised theme reads as the default rather than absent.
    */
   palette: BoardPalette;
-  /** Whether the band is subscribed (see `isPro`). */
+  /** Whether the band's owner is subscribed (see `isPro`). */
   isPro: boolean;
+  /** You're this band's owner, whose subscription keeps it open. */
+  isOwner: boolean;
   /**
    * Billing is enforced and the band lacks Pro: its routes answer 402 and the
    * apps send it to the subscription paywall instead of opening it.
@@ -57,3 +59,10 @@ export const boardThemeSchema = z.object({
   widgets: z.partialRecord(z.enum(WidgetTypes), z.enum(WidgetColors)),
 });
 export type BoardThemeDto = z.infer<typeof boardThemeSchema>;
+
+/** Deleting a band is forever, so the owner types its name to confirm. */
+export const deleteBoardSchema = z.object({ name: z.string().trim().min(1) });
+export type DeleteBoardDto = z.infer<typeof deleteBoardSchema>;
+
+export const transferBoardSchema = z.object({ userId: z.uuid() });
+export type TransferBoardDto = z.infer<typeof transferBoardSchema>;

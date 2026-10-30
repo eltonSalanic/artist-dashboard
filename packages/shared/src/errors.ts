@@ -18,8 +18,12 @@ export type ApiErrorCode =
   | 'INVITE_EMAIL_FAILED'
   /** Better Auth refused a server-side account change; the message says why. */
   | 'AUTH_REJECTED'
-  /** 402: the board needs a subscription before this route will answer. */
+  /** 402: the band's owner isn't subscribed, so this route won't answer. */
   | 'BOARD_SUBSCRIPTION_REQUIRED'
+  /** 402: owning a band takes a subscription. */
+  | 'SUBSCRIPTION_REQUIRED'
+  /** 409: a subscription covers one band, and this person already owns one. */
+  | 'BAND_LIMIT_REACHED'
   | 'INTERNAL';
 
 export interface ApiErrorBody {

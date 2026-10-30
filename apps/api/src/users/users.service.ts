@@ -2,10 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { resolveBoardTheme } from '@artist/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
-import {
-  SUMMARY_SUBSCRIPTION_SELECT,
-  toBoardSummary,
-} from '../boards/board-summary';
+import { SUMMARY_OWNER_SELECT, toBoardSummary } from '../boards/board-summary';
 import { BillingService } from '../billing/billing.service';
 import type { AuthUser } from '../auth/current-user.decorator';
 
@@ -110,7 +107,7 @@ export class UsersService {
         memberships: {
           orderBy: { createdAt: 'asc' },
           include: {
-            board: { include: { subscription: SUMMARY_SUBSCRIPTION_SELECT } },
+            board: { include: { owner: SUMMARY_OWNER_SELECT } },
           },
         },
       },
@@ -132,7 +129,7 @@ export class UsersService {
        * below describe.
        */
       boards: user.memberships.map((m) =>
-        toBoardSummary(m, this.billing.enforced),
+        toBoardSummary(m, auth.userId, this.billing.enforced),
       ),
       /**
        * `membership` and `board` are the pre-multi-board shape, kept populated
@@ -152,7 +149,16 @@ export class UsersService {
         : null,
       // The theme rides along on /me so the dashboard paints the board's colors
       // on first render, without a second round-trip to GET /boards/:id.
-      board: board ? { ...board, theme: resolveBoardTheme(board.theme) } : null,
+      board: board
+        ? { ...withoutOwner(board), theme: resolveBoardTheme(board.theme) }
+        : null,
     };
   }
+}
+
+/** The owner's subscription is for the band list, not this legacy field. */
+function withoutOwner<T extends { owner: unknown }>(board: T) {
+  const rest: Partial<T> = { ...board };
+  delete rest.owner;
+  return rest as Omit<T, 'owner'>;
 }

@@ -1,14 +1,16 @@
 /**
- * Grants a subscription to boards by hand, as a PROMOTIONAL subscription. For the
- * bands that were on the wall before billing, and for comps.
+ * Grants a Band Wall subscription to people by hand, as a PROMOTIONAL
+ * subscription. For the owners of bands that were on the wall before billing,
+ * and for comps.
  *
- *   npm run billing:grant -w apps/api -- <boardId> [<boardId>...]
+ *   npm run billing:grant -w apps/api -- <email or userId> [...]
  *   npm run billing:grant -w apps/api -- --all
  *   npm run billing:grant -w apps/api -- --all --until 2027-06-30
  *
- * `--all` covers every board that doesn't have Pro right now. With no
- * `--until` the grant never ends. A board that already pays through a store
- * is left alone, so a comp never hides a real subscription.
+ * `--all` covers every band owner who isn't subscribed right now, which keeps
+ * every existing band open. With no `--until` the grant never ends. Someone
+ * who already pays through a store is left alone, so a comp never hides a real
+ * subscription.
  *
  * This writes our database only; RevenueCat doesn't know about it. A comp
  * granted in the RevenueCat dashboard instead arrives through the webhook as
@@ -35,24 +37,30 @@ function parseArgs(argv: string[]) {
     } else ids.push(arg);
   }
   if (!all && ids.length === 0)
-    throw new Error('Name the boards to grant, or pass --all.');
+    throw new Error('Name the people to grant, or pass --all.');
   return { ids, all, until };
 }
 
 async function main() {
   const { ids, all, until } = parseArgs(process.argv.slice(2));
-  const boards = await prisma.board.findMany({
-    where: all ? {} : { id: { in: ids } },
-    select: { id: true, name: true, subscription: true },
+  const emails = ids.filter((id) => id.includes('@'));
+  const userIds = ids.filter((id) => !id.includes('@'));
+  const users = await prisma.user.findMany({
+    where: all
+      ? { ownedBoards: { some: {} } }
+      : { OR: [{ id: { in: userIds } }, { email: { in: emails } }] },
+    select: { id: true, email: true, subscription: true },
   });
-  const missing = ids.filter((id) => !boards.some((b) => b.id === id));
-  if (missing.length) console.warn(`No such board: ${missing.join(', ')}`);
+  const missing = ids.filter(
+    (id) => !users.some((u) => u.id === id || u.email === id),
+  );
+  if (missing.length) console.warn(`No such user: ${missing.join(', ')}`);
 
   let granted = 0;
-  for (const board of boards) {
-    const sub = board.subscription;
+  for (const user of users) {
+    const sub = user.subscription;
     if (sub && sub.store !== 'PROMOTIONAL' && isPro(sub)) {
-      console.log(`skip  ${board.name} (${board.id}): pays via ${sub.store}`);
+      console.log(`skip  ${user.email}: pays via ${sub.store}`);
       continue;
     }
     if (all && isPro(sub)) continue;
@@ -65,19 +73,19 @@ async function main() {
       currentPeriodEnd: until,
       willRenew: false,
       isTrial: false,
-      revenueCatAppUserId: board.id,
+      revenueCatAppUserId: user.id,
     };
-    await prisma.boardSubscription.upsert({
-      where: { boardId: board.id },
-      create: { boardId: board.id, ...fields },
+    await prisma.userSubscription.upsert({
+      where: { userId: user.id },
+      create: { userId: user.id, ...fields },
       update: fields,
     });
     granted++;
     console.log(
-      `grant ${board.name} (${board.id}) until ${until?.toISOString() ?? 'forever'}`,
+      `grant ${user.email} until ${until?.toISOString() ?? 'forever'}`,
     );
   }
-  console.log(`Granted a subscription to ${granted} board(s).`);
+  console.log(`Granted a subscription to ${granted} person/people.`);
 }
 
 main()

@@ -1,29 +1,57 @@
 import {
   BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  HttpException,
+  HttpStatus,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import {
   resolveBoardTheme,
   withShippedWidgets,
+  type ApiErrorBody,
   type BoardSummaryDto,
   type BoardThemeDto,
   type CreateBoardDto,
   type LayoutItem,
+  type OwnershipBlock,
   type UpdateBoardDto,
 } from '@artist/shared';
 import { PrismaService } from '../prisma/prisma.service';
-import { SUMMARY_SUBSCRIPTION_SELECT, toBoardSummary } from './board-summary';
+import { SUMMARY_OWNER_SELECT, toBoardSummary } from './board-summary';
 import { BillingService } from '../billing/billing.service';
+import { StorageService } from '../attachments/storage.service';
 import { newBoardData } from './new-board';
 import { ActivityService } from '../activity/activity.service';
 
+/** A person can't own a band: 402 to subscribe, or 409 for the one-band limit. */
+function ownershipError(block: OwnershipBlock): HttpException {
+  if (block === 'NO_SUBSCRIPTION') {
+    const body: ApiErrorBody = {
+      statusCode: HttpStatus.PAYMENT_REQUIRED,
+      code: 'SUBSCRIPTION_REQUIRED',
+      message: 'You need a Band Wall subscription to own a band.',
+    };
+    return new HttpException(body, HttpStatus.PAYMENT_REQUIRED);
+  }
+  return new ConflictException({
+    statusCode: HttpStatus.CONFLICT,
+    code: 'BAND_LIMIT_REACHED',
+    message: 'A subscription covers one band, and that one’s already taken.',
+  } satisfies ApiErrorBody);
+}
+
 @Injectable()
 export class BoardsService {
+  private readonly logger = new Logger(BoardsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly activity: ActivityService,
     private readonly billing: BillingService,
+    private readonly storage: StorageService,
   ) {}
 
   /**
@@ -52,18 +80,25 @@ export class BoardsService {
             id: true,
             name: true,
             theme: true,
-            subscription: SUMMARY_SUBSCRIPTION_SELECT,
+            ownerId: true,
+            owner: SUMMARY_OWNER_SELECT,
           },
         },
       },
     });
 
     const enforced = this.billing.enforced;
-    return memberships.map((m) => toBoardSummary(m, enforced));
+    return memberships.map((m) => toBoardSummary(m, userId, enforced));
   }
 
-  /** A new band with the caller as its only admin, as a board summary. */
+  /**
+   * A new band with the caller as its owner and only admin. With billing
+   * enforced that takes a subscription and no band already owned.
+   */
   async create(userId: string, dto: CreateBoardDto): Promise<BoardSummaryDto> {
+    const block = await this.billing.ownershipBlock(userId);
+    if (block) throw ownershipError(block);
+
     const board = await this.prisma.board.create({
       data: newBoardData(dto.name, userId),
       select: {
@@ -74,13 +109,19 @@ export class BoardsService {
       },
     });
     const [membership] = board.memberships;
-    // A new band has no subscription yet.
     return toBoardSummary(
       {
         id: membership.id,
         role: membership.role,
-        board: { id: board.id, name: board.name, theme: board.theme },
+        board: {
+          id: board.id,
+          name: board.name,
+          theme: board.theme,
+          ownerId: userId,
+          owner: { subscription: await this.billing.subscriptionOf(userId) },
+        },
       },
+      userId,
       this.billing.enforced,
     );
   }
@@ -103,6 +144,7 @@ export class BoardsService {
       ),
       theme: resolveBoardTheme(board.theme),
       currency: board.currency,
+      ownerId: board.ownerId,
       statuses: board.statuses,
       showStatuses: board.showStatuses,
       members: board.memberships.map((m) => ({
@@ -131,6 +173,96 @@ export class BoardsService {
       data: { theme: dto },
       select: { id: true, theme: true },
     });
+  }
+
+  /**
+   * Deletes the band for everyone, for good. Owner only, and the owner types
+   * the band's name so it can't be done by a stray tap.
+   *
+   * Foreign keys cascade from the board, except that an event blocks deleting
+   * its show status, so events go first. Stored files aren't rows: they're
+   * removed after the commit, and a failure there leaves orphaned files rather
+   * than a half-deleted band.
+   */
+  async remove(boardId: string, userId: string, confirmName: string) {
+    const board = await this.requireOwned(boardId, userId);
+    if (confirmName.trim() !== board.name.trim()) {
+      throw new BadRequestException('That doesn’t match the band’s name.');
+    }
+
+    const attachments = await this.prisma.attachment.findMany({
+      where: { boardId },
+      select: { storagePath: true },
+    });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.event.deleteMany({ where: { boardId } });
+      await tx.board.delete({ where: { id: boardId } });
+    });
+
+    if (attachments.length > 0) {
+      try {
+        await this.storage.remove(attachments.map((a) => a.storagePath));
+      } catch (error) {
+        this.logger.warn(
+          `Band ${boardId} deleted, but its files were not: ${String(error)}`,
+        );
+      }
+    }
+    return { deleted: true };
+  }
+
+  /**
+   * Hands the band to another member, who has to be able to own a band. Their
+   * subscription keeps it open from here on. The new owner becomes an admin,
+   * and the old owner stays on as one.
+   */
+  async transfer(boardId: string, userId: string, newOwnerId: string) {
+    await this.requireOwned(boardId, userId);
+    if (newOwnerId === userId) {
+      throw new BadRequestException('You already own this band.');
+    }
+    const membership = await this.prisma.membership.findUnique({
+      where: { boardId_userId: { boardId, userId: newOwnerId } },
+    });
+    if (!membership) throw new NotFoundException('Member not found');
+
+    const block = await this.billing.ownershipBlock(newOwnerId);
+    if (block === 'NO_SUBSCRIPTION') {
+      throw new BadRequestException(
+        'They need their own Band Wall subscription to take over.',
+      );
+    }
+    if (block === 'ALREADY_OWNS_BAND') {
+      throw new ConflictException({
+        statusCode: HttpStatus.CONFLICT,
+        code: 'BAND_LIMIT_REACHED',
+        message: 'They already own a band.',
+      } satisfies ApiErrorBody);
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.board.update({
+        where: { id: boardId },
+        data: { ownerId: newOwnerId },
+      });
+      await tx.membership.update({
+        where: { id: membership.id },
+        data: { role: 'ADMIN' },
+      });
+    });
+    return { ownerId: newOwnerId };
+  }
+
+  private async requireOwned(boardId: string, userId: string) {
+    const board = await this.prisma.board.findUnique({
+      where: { id: boardId },
+      select: { name: true, ownerId: true },
+    });
+    if (!board) throw new NotFoundException('Board not found');
+    if (board.ownerId !== userId) {
+      throw new ForbiddenException('Only the band’s owner can do that.');
+    }
+    return board;
   }
 
   /**
