@@ -16,10 +16,10 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Spinner } from "@/components/ui/spinner";
 import { webCheckoutAvailable } from "@/lib/revenuecat";
 import { PLAN_PRICE_LINE } from "@/features/billing/subscription-copy";
 import { SubscribeButtons } from "@/features/billing/subscribe-buttons";
+import { ConfirmingPurchase } from "@/features/billing/confirming-purchase";
 import { useSubscriptionCheckout } from "@/features/billing/use-subscription-checkout";
 
 /**
@@ -107,7 +107,7 @@ export function CreateBandDialog({
 /** Owning a band takes a subscription. The form appears once the API agrees. */
 function SubscribeToCreate() {
   const me = useMe(true);
-  const { subscribe, offering, opening, awaitingPurchase } =
+  const { subscribe, offering, opening, awaitingPurchase, stuck, retryConfirm } =
     useSubscriptionCheckout(me.data?.user.id ?? "", me.data?.user.email);
 
   return (
@@ -121,9 +121,7 @@ function SubscribeToCreate() {
         </DialogDescription>
       </DialogHeader>
       {awaitingPurchase ? (
-        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Spinner /> Confirming your purchase…
-        </p>
+        <ConfirmingPurchase stuck={stuck} onRetry={retryConfirm} />
       ) : webCheckoutAvailable() ? (
         <SubscribeButtons
           offering={offering}

@@ -71,11 +71,14 @@ With `BILLING_ENFORCED=true`, **every board route answers `402` with code `BOARD
 | `/boards/:boardId/invites` (`@SkipSubscription`) | Joining never costs anything, and admins can line people up while the owner renews |
 | Joining with an invite (`/me/bootstrap` email match, the invite-code sign-in) | No board route involved |
 | `GET /boards/:boardId/subscription` (`@SkipSubscription`) | What tells the apps which screen to show |
+| `GET /me/subscription`, `POST /me/subscription/sync` | About you, not a band |
 | `POST /billing/revenuecat/webhook`, `/webhooks/resend`, `/unsubscribe`, `/health` | No board |
 
 **Narrowed rather than refused:** the cross-board `GET /calendar` and `/mentions` skip locked bands (`UserBoardsGuard` drops them), the same way their own routes answer 402.
 
 Everything else on a band, including `GET /boards/:id`, settings, removing members, delete, hand-over and notification preferences, is closed until the owner renews. So a lapsed owner renews first, then deletes or hands over.
+
+**Confirming a purchase:** the webhook is the main path, but the store answers the app first. So after a purchase or restore the apps poll `POST /me/subscription/sync`, which asks RevenueCat's `GET /v1/subscribers/:id` directly (with `REVENUECAT_SECRET_API_KEY`) and saves an active `band_wall` entitlement the way the webhook does. It only adds access, never removes it, and without a key or if RevenueCat fails it just answers your subscription as it stood. After 20 seconds the apps stop waiting and offer Try again. Before opening a paywall or purchase, both apps check RevenueCat's customer info: an active entitlement skips straight to confirming, so nobody buys twice.
 
 **The apps:** `/me`'s board list carries `subscriptionRequired` (enforced and the owner isn't subscribed). The web shell shows a screen in place of every page for such a band, and the phone in place of the hub and every `/board/:boardId/…` route: the owner gets the plans, everyone else gets "This band's owner needs to renew". The web's band switcher marks it "Needs renewing" (owner) or "Locked" (member). "Create a band" shows the plans first if you need them (the web in its dialog, the phone at `/subscribe`), or explains the one-band limit.
 
@@ -140,12 +143,13 @@ It writes the database `DATABASE_URL` points at, and RevenueCat doesn't know abo
 |---|---|---|---|---|
 | `BILLING_ENFORCED` | API | `false` | `true` when ready | `true` after the grant |
 | `REVENUECAT_WEBHOOK_AUTH` | API | optional (only to test the webhook through a tunnel) | its own random value | its own random value |
+| `REVENUECAT_SECRET_API_KEY` | API | a V1 secret key, to confirm purchases without a webhook | a V1 secret key | a V1 secret key |
 | `NEXT_PUBLIC_REVENUECAT_WEB_KEY` | web | Test Store key (`test_…`) | Web Billing **sandbox** key (Stripe test mode) | Web Billing **production** key (live Stripe) |
 | `NEXT_PUBLIC_REVENUECAT_WEB_PURCHASE_URL` | web | optional | optional | optional |
 | `EXPO_PUBLIC_REVENUECAT_IOS_KEY` | mobile | Test Store key | Apple key (`appl_…`) | Apple key (`appl_…`) |
 | `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` | mobile | Test Store key | Google key (`goog_…`) | Google key (`goog_…`) |
 
-- Every key above except `REVENUECAT_WEBHOOK_AUTH` is a **public** SDK key: it ships in the web bundle or the app. Still, keep them in env files that git ignores (`apps/web/.env.local`, `apps/mobile/.env`) or the host's / EAS's environment, not in the repo.
+- Every key above except `REVENUECAT_WEBHOOK_AUTH` and `REVENUECAT_SECRET_API_KEY` is a **public** SDK key: it ships in the web bundle or the app. Still, keep them in env files that git ignores (`apps/web/.env.local`, `apps/mobile/.env`) or the host's / EAS's environment, not in the repo.
 - Missing web or mobile keys hide the buying controls. With billing enforced and no key, the paywall says to subscribe from the other platform.
 - `NEXT_PUBLIC_REVENUECAT_WEB_PURCHASE_URL` is a fallback for a build with no web key: the button opens RevenueCat's hosted checkout (the link from the dashboard, with the user id appended as the app user id) in a new tab.
 - On EAS, set the mobile keys per build profile in `eas.json` or as EAS environment variables. Changing them needs a new build or update, since `EXPO_PUBLIC_*` values are inlined.
@@ -219,5 +223,5 @@ Nothing is hosted yet ([release-workflow.md](release-workflow.md)). When the API
 
 1. Put the Test Store key in `apps/web/.env.local` (`NEXT_PUBLIC_REVENUECAT_WEB_KEY`) and `apps/mobile/.env` (both `EXPO_PUBLIC_REVENUECAT_*_KEY`). Restart the dev servers.
 2. Set `BILLING_ENFORCED=true` in `apps/api/.env` and restart the API: every band whose owner isn't subscribed locks. With it off (the default), neither app shows a paywall: Create A Band goes straight to naming the band.
-3. For the purchase to unlock the band, the webhook has to reach your API: expose it (e.g. ngrok), add a dev webhook in RevenueCat with an Authorization value, and set the same value as `REVENUECAT_WEBHOOK_AUTH`. Without that, the purchase succeeds in RevenueCat but the page waits on "Confirming your purchase…". `npm run billing:grant -w apps/api -- <owner's email>` unlocks a band by hand.
+3. For the purchase to unlock the band, the API has to hear about it. The easy way is `REVENUECAT_SECRET_API_KEY` in `apps/api/.env`: in RevenueCat, Project settings → API keys → new secret key, API version V1. The other is the webhook: expose your API (e.g. ngrok), add a dev webhook in RevenueCat with an Authorization value, and set the same value as `REVENUECAT_WEBHOOK_AUTH`. With neither, the purchase succeeds in RevenueCat, the apps wait on "Confirming your purchase…", and after 20 seconds they say so and offer Try again. `npm run billing:grant -w apps/api -- <owner's email>` unlocks a band by hand.
 4. Turn `BILLING_ENFORCED` back off afterwards, or grant your local boards.

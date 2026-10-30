@@ -33,6 +33,9 @@ async function ready(userId: string) {
 const hasPro = (info: { entitlements: { active: Record<string, unknown> } }) =>
   BAND_WALL_PLAN.entitlement in info.entitlements.active;
 
+/** RevenueCat already has it, so selling it again would only add a duplicate. */
+const alreadySubscribed = async () => hasPro(await Purchases.getCustomerInfo());
+
 export interface PlanOption {
   pkg: PurchasesPackage;
   /** The plan has a free trial this store account can still get. */
@@ -88,6 +91,7 @@ export async function buySubscription(
   pkg: PurchasesPackage,
 ): Promise<PurchaseOutcome> {
   await ready(userId);
+  if (await alreadySubscribed()) return 'purchased';
   try {
     const { customerInfo } = await Purchases.purchasePackage(pkg);
     return hasPro(customerInfo) ? 'purchased' : 'not_entitled';
@@ -107,6 +111,7 @@ export type PaywallOutcome = 'subscribed' | 'closed' | 'unavailable';
  */
 export async function showPaywall(userId: string): Promise<PaywallOutcome> {
   await ready(userId);
+  if (await alreadySubscribed()) return 'subscribed';
   const offerings = await Purchases.getOfferings();
   if (!offerings.current) return 'unavailable';
   const result = await RevenueCatUI.presentPaywall({ offering: offerings.current });

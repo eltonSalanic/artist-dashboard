@@ -34,6 +34,13 @@ describe('showPaywall', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     getOfferings.mockResolvedValue({ current: offering });
+    getCustomerInfo.mockResolvedValue({ entitlements: { active: {} } });
+  });
+
+  it('never sells an active subscription again', async () => {
+    getCustomerInfo.mockResolvedValue({ entitlements: { active: { band_wall: {} } } });
+    await expect(showPaywall('user-1')).resolves.toBe('subscribed');
+    expect(presentPaywall).not.toHaveBeenCalled();
   });
 
   it('opens the current offering', async () => {
@@ -49,9 +56,11 @@ describe('showPaywall', () => {
 
   it('only counts a restore that brought the subscription back', async () => {
     presentPaywall.mockResolvedValue('RESTORED');
-    getCustomerInfo.mockResolvedValueOnce({ entitlements: { active: { band_wall: {} } } });
+    getCustomerInfo
+      .mockResolvedValueOnce({ entitlements: { active: {} } })
+      .mockResolvedValueOnce({ entitlements: { active: { band_wall: {} } } });
     await expect(showPaywall('user-1')).resolves.toBe('subscribed');
-    getCustomerInfo.mockResolvedValueOnce({ entitlements: { active: {} } });
+    getCustomerInfo.mockResolvedValue({ entitlements: { active: {} } });
     await expect(showPaywall('user-1')).resolves.toBe('closed');
   });
 

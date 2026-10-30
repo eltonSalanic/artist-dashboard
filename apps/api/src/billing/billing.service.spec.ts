@@ -350,3 +350,94 @@ describe('BillingService access', () => {
     });
   });
 });
+
+describe('BillingService.syncFromRevenueCat', () => {
+  const realFetch = global.fetch;
+  const fetchMock = jest.fn();
+
+  const answers = (subscriber: object, ok = true) =>
+    fetchMock.mockResolvedValue({
+      ok,
+      status: ok ? 200 : 500,
+      json: () => Promise.resolve({ subscriber }),
+    });
+  const active = {
+    entitlements: {
+      band_wall: {
+        expires_date: new Date(Date.now() + 86_400_000).toISOString(),
+        product_identifier: 'band_wall_monthly',
+      },
+    },
+    subscriptions: {
+      band_wall_monthly: { period_type: 'trial', store: 'app_store' },
+    },
+  };
+
+  beforeEach(() => {
+    fetchMock.mockReset();
+    global.fetch = fetchMock;
+  });
+  afterAll(() => {
+    global.fetch = realFetch;
+  });
+
+  function subject(key: string | undefined = 'sk_test') {
+    const { prisma } = setup();
+    prisma.userSubscription.findUnique.mockResolvedValue(null);
+    prisma.board.findFirst.mockResolvedValue(null);
+    const service = new BillingService(
+      prisma as unknown as PrismaService,
+      {
+        get: (name: string) =>
+          name === 'REVENUECAT_SECRET_API_KEY' ? key : 'true',
+      } as unknown as ConfigService,
+    );
+    return { service, prisma };
+  }
+
+  it('saves an active entitlement the way the webhook does', async () => {
+    answers(active);
+    const { service, prisma } = subject();
+    await service.syncFromRevenueCat(USER);
+
+    const [url, init] = fetchMock.mock.calls[0] as [
+      string,
+      { headers: { Authorization: string } },
+    ];
+    expect(url).toContain(`/subscribers/${USER}`);
+    expect(init.headers.Authorization).toBe('Bearer sk_test');
+    expect(upserted(prisma).create).toMatchObject({
+      entitlement: 'band_wall',
+      status: 'ACTIVE',
+      store: 'APP_STORE',
+      productId: 'band_wall_monthly',
+      isTrial: true,
+      willRenew: true,
+      revenueCatAppUserId: USER,
+    });
+  });
+
+  it('never takes access away', async () => {
+    answers({ entitlements: {}, subscriptions: {} });
+    const { service, prisma } = subject();
+    await service.syncFromRevenueCat(USER);
+    expect(prisma.userSubscription.upsert).not.toHaveBeenCalled();
+  });
+
+  it('answers as before with no key, without calling RevenueCat', async () => {
+    const { service, prisma } = subject('');
+    await expect(service.syncFromRevenueCat(USER)).resolves.toMatchObject({
+      isPro: false,
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(prisma.userSubscription.upsert).not.toHaveBeenCalled();
+  });
+
+  it('answers as before when RevenueCat fails', async () => {
+    answers({}, false);
+    const { service } = subject();
+    await expect(service.syncFromRevenueCat(USER)).resolves.toMatchObject({
+      isPro: false,
+    });
+  });
+});

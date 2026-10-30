@@ -29,6 +29,7 @@ const base = z
     // fails at boot instead of quietly leaving billing off.
     BILLING_ENFORCED: z.enum(['true', 'false']).optional(),
     REVENUECAT_WEBHOOK_AUTH: z.string().min(16).optional(),
+    REVENUECAT_SECRET_API_KEY: z.string().min(1).optional(),
   })
   .loose();
 

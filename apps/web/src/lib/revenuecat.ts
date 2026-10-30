@@ -92,6 +92,11 @@ export async function startCheckout(
     "@revenuecat/purchases-js"
   );
   try {
+    // Already theirs: selling it again would only add a duplicate.
+    const existing = await purchases.getCustomerInfo();
+    if (existing.entitlements.active[BAND_WALL_PLAN.entitlement]) {
+      return "purchased";
+    }
     const offering = (await purchases.getOfferings()).current;
     if (!offering) throw new Error("No subscription offering is set up.");
     let customerInfo;

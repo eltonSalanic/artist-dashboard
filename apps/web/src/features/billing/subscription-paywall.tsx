@@ -3,10 +3,10 @@
 import { Lock, Sparkles } from "lucide-react";
 import { BAND_WALL_PLAN } from "@artist/shared";
 import { useBoardSubscription } from "@artist/api-client";
-import { Spinner } from "@/components/ui/spinner";
 import { webCheckoutAvailable } from "@/lib/revenuecat";
 import { PLAN_PRICE_LINE } from "./subscription-copy";
 import { SubscribeButtons } from "./subscribe-buttons";
+import { ConfirmingPurchase } from "./confirming-purchase";
 import { useSubscriptionCheckout } from "./use-subscription-checkout";
 
 /**
@@ -73,7 +73,7 @@ function RenewPaywall({
   userId: string;
   email: string;
 }) {
-  const { subscribe, offering, opening, awaitingPurchase } =
+  const { subscribe, offering, opening, awaitingPurchase, stuck, retryConfirm } =
     useSubscriptionCheckout(userId, email);
 
   return (
@@ -93,9 +93,7 @@ function RenewPaywall({
         </div>
 
         {awaitingPurchase ? (
-          <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Spinner /> Confirming your purchase…
-          </p>
+          <ConfirmingPurchase stuck={stuck} onRetry={retryConfirm} />
         ) : webCheckoutAvailable() ? (
           <SubscribeButtons
             size="lg"

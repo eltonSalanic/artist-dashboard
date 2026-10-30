@@ -12,11 +12,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Spinner } from "@/components/ui/spinner";
 import { env } from "@/lib/env";
 import { webCheckoutAvailable } from "@/lib/revenuecat";
 import { describeSubscription, PLAN_PRICE_LINE } from "./subscription-copy";
 import { SubscribeButtons } from "./subscribe-buttons";
+import { ConfirmingPurchase } from "./confirming-purchase";
 import { useSubscriptionCheckout } from "./use-subscription-checkout";
 
 /**
@@ -67,6 +67,8 @@ function OwnerControls({ userId, email }: { userId: string; email: string }) {
     manage,
     opening,
     awaitingPurchase,
+    stuck,
+    retryConfirm,
   } = useSubscriptionCheckout(userId, email);
   const sub = subscription.data;
   if (!sub) return null;
@@ -75,9 +77,7 @@ function OwnerControls({ userId, email }: { userId: string; email: string }) {
     <>
       <p className="text-sm">{describeSubscription(sub)}</p>
       {awaitingPurchase && (
-        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Spinner /> Confirming your purchase…
-        </p>
+        <ConfirmingPurchase stuck={stuck} onRetry={retryConfirm} />
       )}
       <div className="flex flex-wrap gap-2">
         {!sub.isPro && webCheckoutAvailable() && (

@@ -8,7 +8,7 @@ import { BAND_WALL_PLAN, type BoardSubscriptionDto } from '@artist/shared';
 import {
   useBoardSubscription,
   useMe,
-  useMySubscription,
+  usePurchaseConfirmation,
   useRefreshSubscription,
 } from '@artist/api-client';
 import { Button } from '@/components/button';
@@ -105,12 +105,11 @@ function OwnerView({ boardId, footer }: { boardId?: string; footer?: ReactNode }
   const me = useMe(true);
   const userId = me.data?.user.id ?? '';
   const name = me.data?.boards.find((b) => b.id === boardId)?.name ?? 'Your band';
-  const [purchased, setPurchased] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [paywallFailed, setPaywallFailed] = useState(false);
   const announced = useRef(false);
   const paywallOpened = useRef(false);
-  const subscription = useMySubscription({ awaitingPurchase: purchased });
+  const { subscription, purchased, awaiting, stuck, confirm } = usePurchaseConfirmation();
   const refresh = useRefreshSubscription();
   const sub = subscription.data;
   const isPro = sub?.isPro ?? false;
@@ -127,8 +126,8 @@ function OwnerView({ boardId, footer }: { boardId?: string; footer?: ReactNode }
     if (!purchased || !isPro || announced.current) return;
     announced.current = true;
     void refresh().then(() => {
-      // Bought in order to create a band: back to where Create A Band was.
-      if (!boardId && router.canGoBack()) router.back();
+      // Bought in order to create a band: straight on to naming it.
+      if (!boardId) router.replace('/boards?create=1');
     });
   }, [purchased, isPro, boardId, refresh]);
 
@@ -137,7 +136,7 @@ function OwnerView({ boardId, footer }: { boardId?: string; footer?: ReactNode }
     try {
       if (await action()) {
         announced.current = false;
-        setPurchased(true);
+        confirm();
       }
     } catch (error) {
       reportError(error, { where: `subscription.${key}` });
@@ -184,7 +183,6 @@ function OwnerView({ boardId, footer }: { boardId?: string; footer?: ReactNode }
       return restored;
     });
 
-  const awaiting = purchased && !isPro;
   const anyTrial = packages.data?.some((p) => p.freeTrial) ?? true;
   const trialNote = packages.data?.some((p) => p.freeTrial) && (
     <ThemedText variant="footnote" tone="muted">
@@ -231,10 +229,19 @@ function OwnerView({ boardId, footer }: { boardId?: string; footer?: ReactNode }
         </Section>
       )}
 
-      {awaiting && (
+      {awaiting && !stuck && (
         <ThemedText variant="subhead" tone="muted">
           Confirming your purchase…
         </ThemedText>
+      )}
+
+      {stuck && (
+        <View style={{ gap: spacing.sm }}>
+          <ThemedText variant="subhead" tone="muted">
+            {"We can't confirm your purchase yet. If you bought it, you're covered, so there's no need to buy again."}
+          </ThemedText>
+          <Button title="Try again" onPress={confirm} />
+        </View>
       )}
 
       {!isPro && !awaiting && canBuy && !paywallFailed && (

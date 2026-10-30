@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { BoardSubscriptionDto, MySubscriptionDto } from "@artist/shared";
 import { ApiError, apiFetch, notify } from "../client";
@@ -9,8 +10,10 @@ export const boardSubscriptionKey = (boardId: string | null | undefined) =>
   ["board-subscription", boardId] as const;
 export const MY_SUBSCRIPTION_KEY = ["my-subscription"] as const;
 
-/** How often to look again while a purchase waits on RevenueCat's webhook. */
+/** How often to look again while a purchase waits on RevenueCat. */
 const AWAITING_PURCHASE_POLL_MS = 3_000;
+/** How long to wait before saying so and offering a retry. */
+const AWAITING_PURCHASE_TIMEOUT_MS = 20_000;
 
 /**
  * Whether a band is open, which is its owner's subscription. Any member may
@@ -31,7 +34,8 @@ export function useBoardSubscription(boardId: string | null | undefined) {
  *
  * The store confirms a purchase to the app before RevenueCat's webhook
  * reaches the API, so right after buying the API can still say "not
- * subscribed". Pass `awaitingPurchase` and the query polls until it flips.
+ * subscribed". Pass `awaitingPurchase` and the query polls until it flips,
+ * asking the API to check with RevenueCat itself each time.
  */
 export function useMySubscription({
   enabled = true,
@@ -39,13 +43,51 @@ export function useMySubscription({
 }: { enabled?: boolean; awaitingPurchase?: boolean } = {}) {
   return useQuery({
     queryKey: MY_SUBSCRIPTION_KEY,
-    queryFn: () => apiFetch<MySubscriptionDto>("/me/subscription"),
+    queryFn: () =>
+      awaitingPurchase
+        ? apiFetch<MySubscriptionDto>("/me/subscription/sync", {
+            method: "POST",
+          })
+        : apiFetch<MySubscriptionDto>("/me/subscription"),
     enabled,
     refetchInterval: (query) =>
       awaitingPurchase && !query.state.data?.isPro
         ? AWAITING_PURCHASE_POLL_MS
         : false,
   });
+}
+
+/**
+ * Waiting for the API to agree that a purchase went through. `awaiting` lasts
+ * until it does; after a while `stuck` says to stop spinning and offer `confirm`
+ * again, since the purchase may be fine and buying again wouldn't help.
+ */
+export function usePurchaseConfirmation() {
+  const [purchased, setPurchased] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
+  const subscription = useMySubscription({
+    awaitingPurchase: purchased && !timedOut,
+  });
+  const { refetch } = subscription;
+  const awaiting = purchased && !subscription.data?.isPro;
+  const checking = awaiting && !timedOut;
+
+  useEffect(() => {
+    if (!checking) return;
+    void refetch();
+    const timer = setTimeout(
+      () => setTimedOut(true),
+      AWAITING_PURCHASE_TIMEOUT_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [checking, refetch]);
+
+  const confirm = useCallback(() => {
+    setTimedOut(false);
+    setPurchased(true);
+  }, []);
+
+  return { subscription, purchased, awaiting, stuck: awaiting && timedOut, confirm };
 }
 
 /**

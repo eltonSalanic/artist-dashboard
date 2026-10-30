@@ -876,7 +876,9 @@ Automated checks: webhook mapping, idempotency and auth, the 402 guard, the owne
 ### Buying — ★ new, Test Store + webhook tunnel
 - [ ] 🔵 Web: buying opens RevenueCat's paywall or checkout; closing it does nothing and shows no error
 - [ ] 🔵 Web: buying a plan → "Confirming your purchase…", then the form or the wall
-- [ ] 🔵 Phone: no subscription → Create A Band opens RevenueCat's paywall; buying goes back to the no-bands screen, and Create A Band then asks for the band's name
+- [ ] 🔵 Phone: no subscription → Create A Band opens RevenueCat's paywall; buying goes straight to naming the band
+- [ ] 🔵 Phone and web: with `REVENUECAT_SECRET_API_KEY` set and no webhook, buying still unlocks
+- [ ] With neither the key nor a webhook: after 20 seconds "We can't confirm your purchase yet" and Try again, and trying again opens no second purchase
 - [ ] 🔵 Phone: a lapsed owner's locked band → the button opens the paywall; buying unlocks
 - [ ] Phone: closing the paywall or backing out of the store sheet shows no error, and Restore purchases is still there
 - [ ] Phone: Restore purchases on an account that paid → subscribed; with nothing → "Nothing to restore"

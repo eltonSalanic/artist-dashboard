@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Post } from '@nestjs/common';
 import { CurrentUser, type AuthUser } from '../auth/current-user.decorator';
 import { BoardRoles } from '../common/board-roles.decorator';
 import { BillingService } from './billing.service';
@@ -29,5 +29,11 @@ export class MySubscriptionController {
   @Get()
   get(@CurrentUser() user: AuthUser) {
     return this.billing.getMine(user.userId);
+  }
+
+  /** Right after buying: check with RevenueCat rather than wait for its webhook. */
+  @Post('sync')
+  sync(@CurrentUser() user: AuthUser) {
+    return this.billing.syncFromRevenueCat(user.userId);
   }
 }

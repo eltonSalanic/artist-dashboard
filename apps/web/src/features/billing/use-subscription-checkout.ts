@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   toUserMessage,
-  useMySubscription,
+  usePurchaseConfirmation,
   useRefreshSubscription,
 } from "@artist/api-client";
 import {
@@ -26,14 +26,17 @@ export function useSubscriptionCheckout(
   customerEmail?: string,
 ) {
   const [opening, setOpening] = useState(false);
-  const [purchased, setPurchased] = useState(false);
   const announced = useRef(false);
-  // Polls while `purchased` until the API says subscribed, then stops by itself.
-  const subscription = useMySubscription({ awaitingPurchase: purchased });
+  // Polls after a purchase until the API says subscribed, or a while has passed.
+  const {
+    subscription,
+    purchased,
+    awaiting: awaitingPurchase,
+    stuck,
+    confirm,
+  } = usePurchaseConfirmation();
   const refresh = useRefreshSubscription();
   const isPro = subscription.data?.isPro ?? false;
-  // Derived, not stored: the wait is over as soon as the API agrees.
-  const awaitingPurchase = purchased && !isPro;
   // Whether to show RevenueCat's paywall or our own two plan buttons.
   const offering = useQuery({
     queryKey: ["subscription-web-offering", userId],
@@ -56,7 +59,7 @@ export function useSubscriptionCheckout(
       // A hosted checkout in another tab also ends in the webhook.
       if (outcome !== "cancelled") {
         announced.current = false;
-        setPurchased(true);
+        confirm();
       }
     } catch (error) {
       toast.error(toUserMessage(error, "Couldn't open checkout. Try again."));
@@ -82,5 +85,7 @@ export function useSubscriptionCheckout(
     manage,
     opening,
     awaitingPurchase,
+    stuck,
+    retryConfirm: confirm,
   };
 }

@@ -11,6 +11,7 @@ import {
   type SubscriptionStore,
 } from '@artist/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { activeEntitlement } from './revenuecat-customer';
 import type { RevenueCatEvent } from './revenuecat-event';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -40,6 +41,9 @@ const STATUS_FOR: Record<string, SubscriptionStatus> = {
   BILLING_ISSUE: 'GRACE',
   EXPIRATION: 'EXPIRED',
 };
+
+const REVENUECAT_API = 'https://api.revenuecat.com/v1';
+const REVENUECAT_TIMEOUT_MS = 5_000;
 
 export type WebhookOutcome =
   'applied' | 'duplicate' | 'ignored' | 'unknown_user';
@@ -184,6 +188,59 @@ export class BillingService {
       ownedBoardId: owned?.id ?? null,
       createBlock,
     };
+  }
+
+  /**
+   * Asks RevenueCat directly, for when the app knows about a purchase before
+   * the webhook has arrived, or a webhook can't arrive at all. The webhook
+   * stays the main path: this only ever adds an active entitlement, so it
+   * can't undo a grant or a newer event, and if it can't reach RevenueCat (or
+   * has no key) you just get the subscription as it stood.
+   */
+  async syncFromRevenueCat(userId: string): Promise<MySubscriptionDto> {
+    const key = this.config.get<string>('REVENUECAT_SECRET_API_KEY');
+    if (key) {
+      try {
+        await this.applyRevenueCatCustomer(userId, key);
+      } catch (error) {
+        this.logger.warn(`RevenueCat sync failed: ${String(error)}`);
+      }
+    }
+    return this.getMine(userId);
+  }
+
+  private async applyRevenueCatCustomer(userId: string, key: string) {
+    const response = await fetch(
+      `${REVENUECAT_API}/subscribers/${encodeURIComponent(userId)}`,
+      {
+        headers: { Authorization: `Bearer ${key}` },
+        signal: AbortSignal.timeout(REVENUECAT_TIMEOUT_MS),
+      },
+    );
+    if (!response.ok) {
+      throw new Error(`RevenueCat answered ${response.status}`);
+    }
+    const active = activeEntitlement(await response.json(), new Date());
+    if (!active) return;
+
+    const fields = {
+      status: active.billingIssue
+        ? ('GRACE' as const)
+        : active.cancelled
+          ? ('CANCELLED' as const)
+          : ('ACTIVE' as const),
+      store: STORES[active.store ?? ''] ?? 'PROMOTIONAL',
+      productId: active.productId,
+      currentPeriodEnd: active.expiresAt,
+      willRenew: !active.cancelled,
+      isTrial: active.isTrial,
+      revenueCatAppUserId: userId,
+    };
+    await this.prisma.userSubscription.upsert({
+      where: { userId },
+      create: { userId, entitlement: BAND_WALL_PLAN.entitlement, ...fields },
+      update: fields,
+    });
   }
 
   /**
