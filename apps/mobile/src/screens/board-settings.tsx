@@ -789,6 +789,19 @@ function OwnerSection({ boardId }: { boardId: string }) {
   const name = board.data?.name ?? '';
   const others = (board.data?.members ?? []).filter((m) => m.userId !== me.data?.user.id);
 
+  // Back to the hub, which shows the next band or the no-band screen. Awaited
+  // rather than an `onSuccess` here: refreshing `/me` can unmount this screen
+  // first, and then a per-call callback never fires.
+  const deleteBand = async () => {
+    try {
+      await remove.mutateAsync(typed);
+    } catch {
+      return; // The hook has already said why.
+    }
+    if (router.canDismiss()) router.dismissAll();
+    else router.replace('/');
+  };
+
   const confirmTransfer = (userId: string, displayName: string) =>
     Alert.alert(
       `Hand the band to ${displayName}?`,
@@ -824,7 +837,7 @@ function OwnerSection({ boardId }: { boardId: string }) {
         variant="destructive"
         disabled={!name || typed.trim() !== name.trim()}
         loading={remove.isPending}
-        onPress={() => remove.mutate(typed, { onSuccess: () => router.replace('/') })}
+        onPress={() => void deleteBand()}
       />
     </Section>
   );

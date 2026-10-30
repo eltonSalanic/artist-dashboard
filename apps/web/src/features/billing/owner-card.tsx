@@ -116,19 +116,25 @@ function DeleteBand({ boardId }: { boardId: string }) {
   const name = board.data?.name ?? "";
   const matches = !!name && typed.trim() === name.trim();
 
+  // Awaited rather than an `onSuccess` here: refreshing `/me` can swap the
+  // shell out from under this card, and then a per-call callback never fires.
+  const deleteBand = async () => {
+    const next = me.data?.boards.find((b) => b.id !== boardId);
+    try {
+      await remove.mutateAsync(typed);
+    } catch {
+      return; // The hook has already said why.
+    }
+    if (next) selectBoard(next.id);
+    router.push("/dashboard");
+  };
+
   return (
     <form
       className="flex flex-col gap-2"
       onSubmit={(e) => {
         e.preventDefault();
-        if (!matches) return;
-        remove.mutate(typed, {
-          onSuccess: () => {
-            const next = me.data?.boards.find((b) => b.id !== boardId);
-            if (next) selectBoard(next.id);
-            router.push("/dashboard");
-          },
-        });
+        if (matches) void deleteBand();
       }}
     >
       <Field>

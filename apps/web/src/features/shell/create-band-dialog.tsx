@@ -41,18 +41,21 @@ export function CreateBandDialog({
   const mine = useMySubscription({ enabled: open });
   const block = mine.data?.createBlock ?? null;
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = name.trim();
     if (!trimmed || create.isPending) return;
-    create.mutate(trimmed, {
-      onSuccess: (board) => {
-        selectBoard(board.id);
-        setName("");
-        onOpenChange(false);
-        router.push("/dashboard");
-      },
-    });
+    // Awaited: on the no-band screen, refreshing `/me` removes this dialog,
+    // and a per-call `onSuccess` would never fire.
+    try {
+      const board = await create.mutateAsync(trimmed);
+      selectBoard(board.id);
+      setName("");
+      onOpenChange(false);
+      router.push("/dashboard");
+    } catch {
+      // The hook has already said why.
+    }
   };
 
   return (

@@ -88,11 +88,13 @@ export function useTransferBoard(boardId: string) {
         method: "POST",
         body: { userId },
       }),
-    onSuccess: () =>
-      Promise.all([
+    onSuccess: () => {
+      notify.success("Done, the band's theirs now.");
+      return Promise.all([
         refresh(),
         queryClient.invalidateQueries({ queryKey: ["board", boardId] }),
-      ]),
+      ]);
+    },
     onError: (error) =>
       notify.error(toUserMessage(error, "Couldn't hand the band over")),
   });
