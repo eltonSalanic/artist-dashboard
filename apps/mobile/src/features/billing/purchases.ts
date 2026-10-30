@@ -4,7 +4,7 @@ import Purchases, {
   type PurchasesError,
   type PurchasesPackage,
 } from 'react-native-purchases';
-import RevenueCatUI from 'react-native-purchases-ui';
+import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 import { BAND_WALL_PLAN } from '@artist/shared';
 import { env } from '@/lib/env';
 
@@ -96,6 +96,29 @@ export async function buySubscription(
       return 'cancelled';
     }
     throw error;
+  }
+}
+
+export type PaywallOutcome = 'subscribed' | 'closed' | 'unavailable';
+
+/**
+ * The paywall designed in RevenueCat, the same one the web opens. "unavailable"
+ * means it couldn't be shown, so the caller falls back to its own plan list.
+ */
+export async function showPaywall(userId: string): Promise<PaywallOutcome> {
+  await ready(userId);
+  const offerings = await Purchases.getOfferings();
+  if (!offerings.current) return 'unavailable';
+  const result = await RevenueCatUI.presentPaywall({ offering: offerings.current });
+  switch (result) {
+    case PAYWALL_RESULT.PURCHASED:
+      return 'subscribed';
+    case PAYWALL_RESULT.RESTORED:
+      return hasPro(await Purchases.getCustomerInfo()) ? 'subscribed' : 'closed';
+    case PAYWALL_RESULT.CANCELLED:
+      return 'closed';
+    default:
+      return 'unavailable';
   }
 }
 

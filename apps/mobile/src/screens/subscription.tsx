@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from 'react';
 import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -22,6 +22,7 @@ import {
   buySubscription,
   manageSubscription,
   restoreSubscription,
+  showPaywall,
 } from '@/features/billing/purchases';
 import { reportError } from '@/lib/report-error';
 import { spacing, useThemeColors } from '@/theme';
@@ -41,6 +42,10 @@ const STATUS_COPY: Record<NonNullable<BoardSubscriptionDto['status']>, string> =
  * The store answers the purchase before RevenueCat's webhook reaches the API,
  * so after buying this polls your subscription until the API agrees, then
  * refreshes `/me`, which lets the band back onto its wall.
+ *
+ * Plans are sold through RevenueCat's paywall, which opens by itself for someone
+ * creating their first band and from a button on a locked band. The plain plan
+ * list only shows if the paywall can't load.
  */
 export function SubscriptionScreen({
   boardId,
@@ -102,7 +107,9 @@ function OwnerView({ boardId, footer }: { boardId?: string; footer?: ReactNode }
   const name = me.data?.boards.find((b) => b.id === boardId)?.name ?? 'Your band';
   const [purchased, setPurchased] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const [paywallFailed, setPaywallFailed] = useState(false);
   const announced = useRef(false);
+  const paywallOpened = useRef(false);
   const subscription = useMySubscription({ awaitingPurchase: purchased });
   const refresh = useRefreshSubscription();
   const sub = subscription.data;
@@ -120,7 +127,7 @@ function OwnerView({ boardId, footer }: { boardId?: string; footer?: ReactNode }
     if (!purchased || !isPro || announced.current) return;
     announced.current = true;
     void refresh().then(() => {
-      // Bought in order to create a band: back to the name field.
+      // Bought in order to create a band: back to where Create A Band was.
       if (!boardId && router.canGoBack()) router.back();
     });
   }, [purchased, isPro, boardId, refresh]);
@@ -146,6 +153,28 @@ function OwnerView({ boardId, footer }: { boardId?: string; footer?: ReactNode }
       return outcome === 'purchased';
     });
 
+  const openPaywall = () =>
+    run('paywall', async () => {
+      try {
+        const outcome = await showPaywall(userId);
+        if (outcome === 'unavailable') setPaywallFailed(true);
+        return outcome === 'subscribed';
+      } catch (error) {
+        reportError(error, { where: 'subscription.paywall' });
+        setPaywallFailed(true);
+        return false;
+      }
+    });
+  const openPaywallOnce = useEffectEvent(openPaywall);
+
+  // Pressing Create A Band already asked for this, so skip the extra tap.
+  const opensByItself = !boardId && canBuy && !!userId && subscription.data?.isPro === false;
+  useEffect(() => {
+    if (!opensByItself || paywallOpened.current) return;
+    paywallOpened.current = true;
+    void openPaywallOnce();
+  }, [opensByItself]);
+
   const restore = () =>
     run('restore', async () => {
       const restored = await restoreSubscription(userId);
@@ -156,6 +185,14 @@ function OwnerView({ boardId, footer }: { boardId?: string; footer?: ReactNode }
     });
 
   const awaiting = purchased && !isPro;
+  const anyTrial = packages.data?.some((p) => p.freeTrial) ?? true;
+  const trialNote = packages.data?.some((p) => p.freeTrial) && (
+    <ThemedText variant="footnote" tone="muted">
+      {`First month's on us. After that it's ${packages.data
+        .map(({ pkg }) => `${pkg.product.priceString} ${pkg.packageType === 'ANNUAL' ? 'a year' : 'a month'}`)
+        .join(' or ')}. Cancel before it's up and you won't pay a thing.`}
+    </ThemedText>
+  );
 
   return (
     <ScrollView
@@ -200,7 +237,19 @@ function OwnerView({ boardId, footer }: { boardId?: string; footer?: ReactNode }
         </ThemedText>
       )}
 
-      {!isPro && !awaiting && canBuy && (
+      {!isPro && !awaiting && canBuy && !paywallFailed && (
+        <View style={{ gap: spacing.sm }}>
+          <Button
+            title={anyTrial ? 'Start free trial' : `Subscribe to ${BAND_WALL_PLAN.name}`}
+            loading={busy === 'paywall'}
+            disabled={busy !== null}
+            onPress={() => void openPaywall()}
+          />
+          {trialNote}
+        </View>
+      )}
+
+      {!isPro && !awaiting && canBuy && paywallFailed && (
         <Section title="CHOOSE A PLAN">
           {packages.isPending ? (
             <Skeleton width="100%" height={120} />
@@ -227,13 +276,7 @@ function OwnerView({ boardId, footer }: { boardId?: string; footer?: ReactNode }
                   onPress={() => void buy(pkg)}
                 />
               ))}
-              {packages.data.some((p) => p.freeTrial) && (
-                <ThemedText variant="footnote" tone="muted">
-                  {`First month's on us. After that it's ${packages.data
-                    .map(({ pkg }) => `${pkg.product.priceString} ${pkg.packageType === 'ANNUAL' ? 'a year' : 'a month'}`)
-                    .join(' or ')}. Cancel before it's up and you won't pay a thing.`}
-                </ThemedText>
-              )}
+              {trialNote}
             </>
           )}
         </Section>

@@ -52,7 +52,7 @@ The paywalls read the offering, not these ids, so a mismatch shows up as a packa
 - **Terms and Privacy:** both subscription screens link to `https://bandwall.app/terms` and `https://bandwall.app/privacy` (`BAND_WALL_PLAN.links`), which Apple and Google require. Those pages don't exist yet; publish them before submitting the app. The RevenueCat paywall needs the same two links set in its editor.
 - **Who sees what:** the owner gets the plans, the status and Manage subscription. A member sees whose subscription covers the band and whether it's open (`billing.view`); the API doesn't send them the owner's store, dates or trial. "Owner" isn't a role, so it isn't in the `can()` map: `isOwner` on the board summary and on `GET /boards/:id/subscription` says who, and the API checks it for delete and hand-over.
 - **The web checkout:** `@revenuecat/purchases-js`, configured with the board's id. When the current offering has a RevenueCat paywall, "Start free trial" (or "Subscribe to Band Wall") presents it. Without one, the web shows one button per plan, priced from the offering, and goes straight to RevenueCat's checkout for that package. The web SDK has no Customer Center, so "Manage subscription" opens RevenueCat's `managementURL`.
-- **The phone:** a native screen (`/board/:boardId/subscribe`) listing the offering's packages, with restore purchases and RevenueCat's Customer Center for managing. It does not use RevenueCat's paywall UI.
+- **The phone:** the same RevenueCat paywall, through `RevenueCatUI.presentPaywall`. It opens by itself at `/subscribe`, when someone with no subscription presses Create A Band, and from "Start free trial" (or "Subscribe to Band Wall") on a locked band and at `/board/:boardId/subscribe`. Those screens also carry restore purchases, and RevenueCat's Customer Center handles managing. If the paywall can't load, the screen falls back to a plain list of the offering's plans.
 
 ## The enforcement rule
 
@@ -212,13 +212,12 @@ Nothing is hosted yet ([release-workflow.md](release-workflow.md)). When the API
   - Publish `bandwall.app/terms` and `bandwall.app/privacy` before store submission.
   - Gate the notification jobs for locked bands (see *Not gated* above).
   - Skip out-of-order webhook events (see *Not handled yet* above).
-  - The RevenueCat paywall on the web has no way to close it, and Escape doesn't either. Add a close button in RevenueCat's paywall editor (the web already handles it). Its headline also says "Try It Free" to someone who has used their trial.
   - The phone's band switcher doesn't mark locked bands the way the web's does.
   - Deleting an account, and a way back for a band whose owner is gone (see *Bands and owners*).
 
 ## Testing locally with the Test Store
 
 1. Put the Test Store key in `apps/web/.env.local` (`NEXT_PUBLIC_REVENUECAT_WEB_KEY`) and `apps/mobile/.env` (both `EXPO_PUBLIC_REVENUECAT_*_KEY`). Restart the dev servers.
-2. Set `BILLING_ENFORCED=true` in `apps/api/.env` and restart the API: every band whose owner isn't subscribed locks.
+2. Set `BILLING_ENFORCED=true` in `apps/api/.env` and restart the API: every band whose owner isn't subscribed locks. With it off (the default), neither app shows a paywall: Create A Band goes straight to naming the band.
 3. For the purchase to unlock the band, the webhook has to reach your API: expose it (e.g. ngrok), add a dev webhook in RevenueCat with an Authorization value, and set the same value as `REVENUECAT_WEBHOOK_AUTH`. Without that, the purchase succeeds in RevenueCat but the page waits on "Confirming your purchase…". `npm run billing:grant -w apps/api -- <owner's email>` unlocks a band by hand.
 4. Turn `BILLING_ENFORCED` back off afterwards, or grant your local boards.

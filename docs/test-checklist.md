@@ -867,7 +867,7 @@ Automated checks: webhook mapping, idempotency and auth, the 402 guard, the owne
 - [ ] An admin can still invite to a locked band; the invitee joins and sees the locked screen
 
 ### Owning a band — ★ new
-- [ ] 🔵 No subscription → Create a band shows the plans, and joining a band still works
+- [ ] 🔵 No subscription → Create A Band shows the paywall, and joining a band still works
 - [ ] 🔵 With a subscription → Create a band works once; a second try says you've already got one
 - [ ] Settings → Band owner: delete needs the exact name, wipes the band for everyone, and you can then create a new one
 - [ ] Settings → Band owner: hand-over refuses someone without a subscription; with one, they own it and you stay an admin
@@ -876,8 +876,9 @@ Automated checks: webhook mapping, idempotency and auth, the 402 guard, the owne
 ### Buying — ★ new, Test Store + webhook tunnel
 - [ ] 🔵 Web: buying opens RevenueCat's paywall or checkout; closing it does nothing and shows no error
 - [ ] 🔵 Web: buying a plan → "Confirming your purchase…", then the form or the wall
-- [ ] 🔵 Phone: the screen lists Monthly and Yearly with prices; buying unlocks
-- [ ] Phone: backing out of the store sheet shows no error
+- [ ] 🔵 Phone: no subscription → Create A Band opens RevenueCat's paywall; buying goes back to the no-bands screen, and Create A Band then asks for the band's name
+- [ ] 🔵 Phone: a lapsed owner's locked band → the button opens the paywall; buying unlocks
+- [ ] Phone: closing the paywall or backing out of the store sheet shows no error, and Restore purchases is still there
 - [ ] Phone: Restore purchases on an account that paid → subscribed; with nothing → "Nothing to restore"
 - [ ] Phone: Manage subscription opens the Customer Center
 - [ ] A buyer who can still get the trial sees "Start free trial" with the price it rolls into; after buying, settings says "Free month, ends …"
