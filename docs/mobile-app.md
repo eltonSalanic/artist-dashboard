@@ -6,7 +6,7 @@
 > (store builds) and P18 (join links) are not started; P15 (web band switcher)
 > is built and awaiting verification; P16 was dropped for titled notes.
 > Features built since the phases (finances, links on items, show statuses,
-> the band name tag) are tracked in [the test checklist](test-checklist.md).
+> the band name tag) are tested from their cards on the Band Board in Trello.
 >
 > **Progress is tracked in [the phase table](#phases).** Update the Status
 > column in the same commit that lands the work. ☑ done and user-verified ·
@@ -127,8 +127,8 @@ deliberately scheduled after mobile rather than blocking it.
 
 Each phase ends with a **hard stop for manual verification** before the next
 begins, per the project's phase-gated convention. What to verify is tracked
-separately in the [feature test checklist](test-checklist.md) — this table
-records what has been *built*, that one records what has been *seen working*.
+separately, on each phase's Testing card on the Band Board in Trello — this
+table records what has been *built*, that one records what has been *seen working*.
 
 P1–P4 are API and package work that require no React Native decisions. They are
 safe to build first and are useful even if the runtime choice ever changed.

@@ -174,8 +174,8 @@ Each would otherwise read as an oversight:
 They are plain `ts-jest` tests of logic pulled out of the screens (the chunking
 store, dev-host detection, push routing and token changes, reorder, note
 editing, finance drafts and so on). Nothing here renders a component, so how a
-screen looks and behaves is checked on a phone, per
-[docs/test-checklist.md](../../docs/test-checklist.md).
+screen looks and behaves is checked on a phone, from the feature's Testing
+card on the Band Board in Trello.
 
 ## EAS build profiles
 

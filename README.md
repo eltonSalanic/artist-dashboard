@@ -97,7 +97,7 @@ npm test -w apps/web
 npm test -w apps/mobile   # typecheck + Jest units
 ```
 
-Lint with `npm run lint -w apps/api` / `-w apps/web` / `-w apps/mobile`. What a person has to click through per phase and feature is in [docs/test-checklist.md](docs/test-checklist.md); `phase_testing/` holds the older sign-off checklists for phases 4 and 5 of the web app.
+Lint with `npm run lint -w apps/api` / `-w apps/web` / `-w apps/mobile`. What a person has to click through per phase and feature lives on its Testing card on the [Band Board](https://trello.com/b/xsGE7BMR/band-board) in Trello; `phase_testing/` holds the older sign-off checklists for phases 4 and 5 of the web app.
 
 ## Troubleshooting
 

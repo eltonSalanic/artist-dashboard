@@ -84,7 +84,7 @@ Nothing to install: share the prod URL.
 ## Shipping a change
 
 1. **Dev.** Build and test on your Mac as now: a feature branch, the dev
-   client, `/feature-test`, the [test checklist](test-checklist.md).
+   client, `/feature-test`, the feature's Testing card in Trello.
 2. **Merge to `main`.**
 3. **Staging.**
    - Deploy the API and web to staging. Run `npx prisma migrate deploy`

@@ -31,7 +31,6 @@ for build conventions and skills read [CLAUDE.md](../CLAUDE.md). Those describe
 | [Error handling and logging](error-handling.md) — error shape, user-facing copy, dev vs staging/prod logs, Sentry | Built; Sentry off until DSNs are set |
 | [Onboarding](onboarding.md) — the first run on phone and web: welcome, account, naming the band, the paywall, "You're live", the setup checklist, joining with an invite | Built on `feat/onboarding-flow`, not merged |
 | [Billing — subscriptions](billing.md) — subscriptions through RevenueCat (a person's subscription lets them own a band), the 402 rule, webhook mapping, env vars, account setup | In `main`, not live: no hosting, store products or `BILLING_ENFORCED` yet; manual testing on Trello |
-| [Feature test checklist](test-checklist.md) — what a person must click and see work, per phase and feature | Live — P1–P17, finances, links, show statuses, band name tag, subscriptions |
 | Permissions — the `can()` map, role matrix, and where each action is enforced | Not yet written |
 | Tasks — statuses, subtasks, assignees, checklists, ordering | Not yet written |
 | Planning — goals, events, reminders, focus pins, calendar | Not yet written |
@@ -39,6 +38,6 @@ for build conventions and skills read [CLAUDE.md](../CLAUDE.md). Those describe
 | Comments & attachments — markdown, mentions, the signed-URL upload flow | Not yet written |
 | Archive — the two-tier archive/delete model and its cascade rules | Not yet written |
 | Board appearance — palettes and per-widget colour slots | Not yet written |
-| Finances — ledger, splits, payouts, receipts, member history | Not yet written; see the [Band finances](test-checklist.md#band-finances) checks |
+| Finances — ledger, splits, payouts, receipts, member history | Not yet written |
 | Show statuses — per-band show steps, categories, cancelled filtering | Not yet written; see the [plan](plans/show-statuses.md) |
-| Links on items — named web links on tasks, events, goals and reminders | Not yet written; see the [Links on items](test-checklist.md#links-on-items) checks |
+| Links on items — named web links on tasks, events, goals and reminders | Not yet written |
