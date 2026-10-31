@@ -27,8 +27,8 @@ Two kinds of new person arrive: someone **starting a band**, who pays, and someo
 `/welcome` plays a band's wall building itself, like a Spotify Wrapped story, with the three actions fixed underneath. It's five beats, about 18 seconds, on a loop:
 
 1. "Welcome to / Band Wall." stamps onto the band's colour, which then lifts away like a curtain.
-2. "Every Event." sweeps across as the band's name slides into the hub masthead and Shows and Rehearsals land; then those two cards are outlined for a moment.
-3. "Who's Doing What." sweeps across as the task cards land; then they are outlined while the event cards step back.
+2. "Every Event." sweeps across the page as the band's name slides into the hub masthead, then the first real hub cards land.
+3. "Who's Doing What." sweeps across first, then the task cards land.
 4. The last cards land under "Track Expenses." as the camera rides down the wall.
 5. The wall shrinks into a tilted phone on the band's colour, under "It all lives on Band Wall."
 

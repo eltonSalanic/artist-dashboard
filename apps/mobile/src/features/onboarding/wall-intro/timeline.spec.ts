@@ -9,7 +9,6 @@ import {
   cameraAt,
   cubicBezier,
   curtain,
-  highlight,
   landing,
   phonePose,
   sweep,
@@ -52,12 +51,6 @@ describe('the timeline', () => {
     expect(landing(699, 700).shown).toBe(false);
     expect(landing(700, 700)).toEqual({ shown: true, away: 1, scale: 1 });
     expect(landing(700 + 860, 700)).toEqual({ shown: true, away: 0, scale: 1 });
-  });
-
-  it('brings a highlight up, holds it, and lets it go', () => {
-    expect(highlight(999, 1000, 3000)).toBe(0);
-    expect(highlight(2000, 1000, 3000)).toBe(1);
-    expect(highlight(3001, 1000, 3000)).toBe(0);
   });
 
   it('brings a headline fully in, then fully out', () => {

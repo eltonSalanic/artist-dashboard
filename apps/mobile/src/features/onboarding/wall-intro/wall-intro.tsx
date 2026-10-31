@@ -21,21 +21,13 @@ import { MastheadTitle } from '@/features/board/masthead';
 import {
   BoardPaletteProvider,
   posterSlot,
-  radius,
   spacing,
   usePosterCanvas,
   useScheme,
   type PosterColor,
 } from '@/theme';
 import { DEMO_BANDS, type DemoBand } from './bands';
-import {
-  DEMO_LAYOUT,
-  DEMO_ROWS,
-  HEADLINES,
-  SPOTLIGHTS,
-  demoCard,
-  type DemoCell,
-} from './demo-wall';
+import { DEMO_LAYOUT, DEMO_ROWS, HEADLINES, demoCard, type DemoCell } from './demo-wall';
 import {
   BEATS,
   BEAT_START,
@@ -48,7 +40,6 @@ import {
   beatAt,
   cameraAt,
   curtain,
-  highlight,
   landing,
   phonePose,
   progress,
@@ -366,7 +357,6 @@ export function WallIntro({ footer }: { footer: (look: IntroLook) => ReactNode }
                         gridWidth={gridWidth}
                         width={width}
                         height={height}
-                        ring={canvas.ink}
                       />
                     ))}
                   </BoardPaletteProvider>
@@ -495,7 +485,6 @@ function LandingCard({
   gridWidth,
   width,
   height,
-  ring,
 }: {
   cell: DemoCell;
   band: DemoBand;
@@ -504,8 +493,6 @@ function LandingCard({
   gridWidth: number;
   width: number;
   height: number;
-  /** The outline it's picked out with. */
-  ring: string;
 }) {
   // [x, y, rotation] at the start of the throw.
   const from =
@@ -514,33 +501,18 @@ function LandingCard({
       : cell.from === 'right'
         ? [width + 80, 60, 14]
         : [0, height * 0.75, 6];
-  // Its own spotlight lifts it; another section's steps it back.
-  const glowAt = (now: number) => {
-    'worklet';
-    let glow = 0;
-    let dim = 0;
-    for (const spot of SPOTLIGHTS) {
-      const on = highlight(now, WALL + spot.from, WALL + spot.to);
-      if (spot.section === cell.section) glow = Math.max(glow, on);
-      else dim = Math.max(dim, on);
-    }
-    return { glow, dim };
-  };
   const style = useAnimatedStyle(() => {
-    const now = t.get();
-    const { shown, away, scale } = landing(now, WALL + cell.lands);
-    const { glow, dim } = glowAt(now);
+    const { shown, away, scale } = landing(t.get(), WALL + cell.lands);
     return {
-      opacity: shown ? 1 - 0.6 * dim : 0,
+      opacity: shown ? 1 : 0,
       transform: [
         { translateX: from[0] * away },
         { translateY: from[1] * away },
         { rotate: `${from[2] * away}deg` },
-        { scale: scale * (1 + 0.04 * glow) },
+        { scale },
       ],
     };
   });
-  const ringStyle = useAnimatedStyle(() => ({ opacity: glowAt(t.get()).glow }));
   return (
     <Animated.View
       style={[
@@ -555,10 +527,6 @@ function LandingCard({
       ]}
     >
       <HubStatCard card={demoCard(cell.type, band)} />
-      <Animated.View
-        pointerEvents="none"
-        style={[styles.ring, { borderColor: ring, borderRadius: radius.lg + 5 }, ringStyle]}
-      />
     </Animated.View>
   );
 }
@@ -737,7 +705,6 @@ const styles = StyleSheet.create({
       'radial-gradient(closest-side, rgba(0,0,0,0.45), rgba(0,0,0,0))',
   },
   edge: { position: 'absolute', backgroundColor: '#1d1c1f' },
-  ring: { position: 'absolute', inset: -5, borderWidth: 3, borderCurve: 'continuous' },
   bezel: {
     position: 'absolute',
     experimental_backgroundImage:
