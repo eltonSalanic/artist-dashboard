@@ -17,8 +17,9 @@ export function WelcomeScreen() {
 }
 
 /**
- * The buttons sit on the page until the preview cuts to the band's colour,
- * then take that colour's tokens, the way a button on a coloured card does.
+ * While the screen is on the band's colour (the opening welcome card and the
+ * closing phone) the buttons take that colour's tokens, the way a button on a
+ * coloured card does. While the wall builds they keep the page's own look.
  */
 function Actions({ look }: { look: IntroLook }) {
   const canvas = usePosterCanvas();
