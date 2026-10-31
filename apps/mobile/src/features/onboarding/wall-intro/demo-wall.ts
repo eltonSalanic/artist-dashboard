@@ -19,21 +19,30 @@ export interface DemoCell {
   lands: number;
   /** Which edge it's thrown in from. */
   from: 'left' | 'right' | 'below';
+  /** The headline it belongs to, if it gets picked out after landing. */
+  section?: 'events' | 'tasks';
 }
 
 /**
  * The hub's default arrangement without Focus, since the preview goes straight
- * from the band's name to the cards that do the work. "Every Event." crosses
- * the page as the name slides in, then Shows and Rehearsals land; "Who's Doing
- * What." comes in before the task cards land, and the rest land as the camera
- * rides down to Finances.
+ * from the band's name to the cards that do the work. Shows and Rehearsals
+ * land with "Every Event." and the name; the task cards land with "Who's Doing
+ * What."; the rest land as the camera rides down to Finances.
  */
 export const DEMO_LAYOUT: readonly DemoCell[] = [
-  { type: 'SHOWS', row: 0, col: 0, wide: false, lands: 1300, from: 'left' },
-  { type: 'NEXT_REHEARSALS', row: 0, col: 1, wide: false, lands: 2200, from: 'right' },
-  { type: 'TODOS', row: 1, col: 0, wide: true, lands: 4700, from: 'below' },
-  { type: 'MY_TASKS', row: 2, col: 0, wide: false, lands: 5300, from: 'left' },
-  { type: 'GOALS', row: 2, col: 1, wide: false, lands: 5440, from: 'right' },
+  { type: 'SHOWS', row: 0, col: 0, wide: false, lands: 100, from: 'left', section: 'events' },
+  {
+    type: 'NEXT_REHEARSALS',
+    row: 0,
+    col: 1,
+    wide: false,
+    lands: 200,
+    from: 'right',
+    section: 'events',
+  },
+  { type: 'TODOS', row: 1, col: 0, wide: true, lands: 3800, from: 'below', section: 'tasks' },
+  { type: 'MY_TASKS', row: 2, col: 0, wide: false, lands: 3870, from: 'left', section: 'tasks' },
+  { type: 'GOALS', row: 2, col: 1, wide: false, lands: 3940, from: 'right', section: 'tasks' },
   { type: 'NEXT_MEETINGS', row: 3, col: 0, wide: false, lands: 7180, from: 'left' },
   { type: 'REMINDERS', row: 3, col: 1, wide: false, lands: 7300, from: 'right' },
   { type: 'ACTIVITY_FEED', row: 4, col: 0, wide: true, lands: 7460, from: 'below' },
@@ -46,6 +55,15 @@ export const DEMO_LAYOUT: readonly DemoCell[] = [
  * `at` counts from when the wall starts building; `top` is for an 844pt-tall
  * screen and scales with the real one.
  */
+/**
+ * Once a headline has gone, its cards are picked out for a moment while the
+ * rest of the wall steps back, in ms after the wall starts building.
+ */
+export const SPOTLIGHTS = [
+  { section: 'events', from: 1450, to: 3300 },
+  { section: 'tasks', from: 5150, to: 6800 },
+] as const;
+
 export const HEADLINES = [
   { text: 'Every Event.', at: 100, top: 330, slot: 'c1', tilt: -6 },
   { text: "Who's Doing\nWhat.", at: 3800, top: 440, slot: 'c2', tilt: 5 },

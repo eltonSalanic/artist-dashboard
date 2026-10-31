@@ -25,7 +25,7 @@ export const LIFT = 550;
  * The frame each beat holds on when motion is reduced: the welcome fully in,
  * a headline fully in, or for the last beat, the phone at rest.
  */
-export const REST = [1500, WALL + 870, WALL + 4570, WALL + 9370, TOTAL - 1] as const;
+export const REST = [1500, WALL + 1080, WALL + 4820, WALL + 9370, TOTAL - 1] as const;
 
 /** A card's flight from off screen into its cell, and the press-bounce after. */
 export const LAND = 860;
@@ -79,6 +79,9 @@ export const PRESS = cubicBezier(0.3, 0, 0.5, 1);
 /** The app's morph curve, for the camera and a headline leaving. */
 export const MORPH = cubicBezier(0.77, 0, 0.175, 1);
 export const EASE_IN_OUT = cubicBezier(0.42, 0, 0.58, 1);
+
+/** How long a highlight takes to come up, and to go. */
+export const GLOW = 250;
 
 /** How far through an animation `t` is, from 0 to 1. */
 export function progress(t: number, at: number, duration: number): number {
@@ -176,4 +179,13 @@ export function curtain(t: number): number {
   'worklet';
   if (t >= WALL) return 0;
   return 1 - MORPH(progress(t, WALL - LIFT, LIFT));
+}
+
+/** A highlight held from `from` to `to`, eased in and out: 0 off, 1 fully on. */
+export function highlight(t: number, from: number, to: number): number {
+  'worklet';
+  if (t < from || t > to) return 0;
+  const up = EASE_IN_OUT(Math.min(1, (t - from) / GLOW));
+  const down = EASE_IN_OUT(Math.min(1, (to - t) / GLOW));
+  return Math.min(up, down);
 }
