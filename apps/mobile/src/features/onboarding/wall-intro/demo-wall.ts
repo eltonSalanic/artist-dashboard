@@ -24,13 +24,13 @@ export interface DemoCell {
 /**
  * The hub's default arrangement without Focus, since the preview goes straight
  * from the band's name to the cards that do the work. "Every Event." crosses
- * the empty page first, then the name slides in and Shows and Rehearsals land;
+ * the page as the name slides in, then Shows and Rehearsals land;
  * the tasks land under "Who's Doing What.", and the rest as the camera rides
  * down to Finances.
  */
 export const DEMO_LAYOUT: readonly DemoCell[] = [
-  { type: 'SHOWS', row: 0, col: 0, wide: false, lands: 1800, from: 'left' },
-  { type: 'NEXT_REHEARSALS', row: 0, col: 1, wide: false, lands: 2500, from: 'right' },
+  { type: 'SHOWS', row: 0, col: 0, wide: false, lands: 1300, from: 'left' },
+  { type: 'NEXT_REHEARSALS', row: 0, col: 1, wide: false, lands: 2200, from: 'right' },
   { type: 'TODOS', row: 1, col: 0, wide: true, lands: 3800, from: 'below' },
   { type: 'MY_TASKS', row: 2, col: 0, wide: false, lands: 5600, from: 'left' },
   { type: 'GOALS', row: 2, col: 1, wide: false, lands: 5740, from: 'right' },

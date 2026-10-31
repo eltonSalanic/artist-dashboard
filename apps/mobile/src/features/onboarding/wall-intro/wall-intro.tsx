@@ -64,8 +64,8 @@ const FADE = 80;
 /** The phone's thickness, as layers stacked behind its screen. */
 const EDGES = [1, 2, 3, 4, 5, 6, 7, 8];
 const DEG = Math.PI / 180;
-/** The band's name slides in once "Every Event." has had the page to itself. */
-const NAME = WALL + 1250;
+/** The band's name slides in alongside "Every Event.", the wall's first headline. */
+const NAME = WALL + 100;
 
 /**
  * The welcome screen's preview: a band's hub building itself, the way a
