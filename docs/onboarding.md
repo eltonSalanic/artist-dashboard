@@ -28,7 +28,7 @@ Two kinds of new person arrive: someone **starting a band**, who pays, and someo
 
 1. "Welcome to / Band Wall." stamps onto the band's colour, which then lifts away like a curtain.
 2. "Every Event." sweeps across the page as the band's name slides into the hub masthead, then the first real hub cards land.
-3. More cards land under "Who's Doing What."
+3. "Who's Doing What." sweeps across first, then the task cards land.
 4. The last cards land under "Track Expenses." as the camera rides down the wall.
 5. The wall shrinks into a tilted phone on the band's colour, under "It all lives on Band Wall."
 
