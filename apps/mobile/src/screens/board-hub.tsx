@@ -39,6 +39,7 @@ import { HubCardSkeleton } from '@/components/stat-card';
 import { ThemedText } from '@/components/themed-text';
 import { HubGrid, ROW_HEIGHT } from '@/features/board/hub-grid';
 import { useOnHubEditRequest } from '@/features/board/hub-edit';
+import { MastheadTitle } from '@/features/board/masthead';
 import { useSelectedBoard } from '@/features/board/selected-board';
 import { useHubCards } from '@/features/board/use-hub-cards';
 import { HeaderText } from '@/features/forms/form-screen';
@@ -458,18 +459,11 @@ function BoardHub({
 }
 
 /**
- * Today's date in small caps, then the band's name as big as it will go, with
- * a round button that says it opens something. The name *is* the switcher:
- * tapping a title to change context is the Slack/Notion/Linear convention and
- * needs no teaching; here it is simply a much bigger title.
+ * The masthead as the band switcher. The name *is* the switcher: tapping a
+ * title to change context is the Slack/Notion/Linear convention and needs no
+ * teaching; here it is simply a much bigger title.
  */
 function Masthead({ name }: { name: string }) {
-  const canvas = usePosterCanvas();
-  const today = new Date().toLocaleDateString(undefined, {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  });
   return (
     <Link href="/boards" asChild>
       <Pressable
@@ -477,38 +471,7 @@ function Masthead({ name }: { name: string }) {
         accessibilityLabel={`${name}. Change band`}
         style={({ pressed }) => ({ gap: 2, opacity: pressed ? 0.6 : 1 })}
       >
-        <PosterText variant="label" color={canvas.soft}>
-          {today.toUpperCase()}
-        </PosterText>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-          <PosterText
-            variant="display"
-            color={canvas.ink}
-            numberOfLines={2}
-            adjustsFontSizeToFit
-            minimumFontScale={0.6}
-            style={{ flexShrink: 1 }}
-          >
-            {name}
-          </PosterText>
-          <View
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: 15,
-              backgroundColor: canvas.ink,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginTop: 4,
-            }}
-          >
-            <Icon
-              name={{ sf: 'chevron.down', md: 'expand-more' }}
-              size={14}
-              color={canvas.background}
-            />
-          </View>
-        </View>
+        <MastheadTitle name={name} />
       </Pressable>
     </Link>
   );
