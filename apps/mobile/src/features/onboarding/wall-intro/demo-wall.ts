@@ -15,7 +15,7 @@ export interface DemoCell {
   col: 0 | 1;
   /** Both columns. */
   wide: boolean;
-  /** When it lands on the preview's clock, in ms. */
+  /** When it lands, in ms after the wall starts building. */
   lands: number;
   /** Which edge it's thrown in from. */
   from: 'left' | 'right' | 'below';
@@ -42,7 +42,8 @@ export const DEMO_LAYOUT: readonly DemoCell[] = [
 
 /**
  * The three headlines, each on its own palette slot, tilted a different way.
- * `top` is for an 844pt-tall screen and scales with the real one.
+ * `at` counts from when the wall starts building; `top` is for an 844pt-tall
+ * screen and scales with the real one.
  */
 export const HEADLINES = [
   { text: 'Every Event.', at: 1150, top: 330, slot: 'c1', tilt: -6 },

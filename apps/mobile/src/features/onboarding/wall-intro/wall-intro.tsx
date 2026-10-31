@@ -36,8 +36,10 @@ import {
   SHRINK,
   SPRING,
   TOTAL,
+  WALL,
   beatAt,
   cameraAt,
+  curtain,
   landing,
   phonePose,
   progress,
@@ -47,7 +49,7 @@ import {
 /** What the buttons under the preview paint with. */
 export interface IntroLook {
   palette: BoardPalette;
-  /** The band's lead colour once the wall has become a phone on it; null before. */
+  /** The band's lead colour while the screen is on it (the welcome, the phone); null otherwise. */
   poster: PosterColor | null;
 }
 
@@ -65,7 +67,8 @@ const DEG = Math.PI / 180;
 
 /**
  * The welcome screen's preview: a band's hub building itself, the way a
- * Spotify Wrapped story plays. The name slides in, the real widget cards are
+ * Spotify Wrapped story plays. It opens on "Welcome to Band Wall." in the
+ * band's colour, which lifts away; the name slides in, the real widget cards are
  * thrown onto the grid under three headlines, and then the whole wall shrinks
  * into a phone on the band's colour. Every loop it's a different band.
  *
@@ -84,13 +87,17 @@ export function WallIntro({ footer }: { footer: (look: IntroLook) => ReactNode }
 
   const [bandIndex, setBandIndex] = useState(0);
   const [beat, setBeat] = useState(0);
-  const [cut, setCut] = useState(false);
+  // Whether the status bar and progress bars, and the buttons, sit on the band's colour.
+  const [chromeOnColour, setChromeOnColour] = useState(true);
+  const [footOnColour, setFootOnColour] = useState(true);
   const [gridBottom, setGridBottom] = useState(0);
   const [footTop, setFootTop] = useState(height);
 
   const band = DEMO_BANDS[bandIndex];
   const lead = posterSlot(band.palette, scheme, 'c1');
-  const ink = cut ? lead.ink : canvas.ink;
+  const ink = chromeOnColour ? lead.ink : canvas.ink;
+  const barsTop = insets.top + 6;
+  const legalBottom = Math.max(insets.bottom - 8, spacing.sm);
 
   const t = useSharedValue<number>(reduced ? REST[0] : 0);
   const pan = useSharedValue(0);
@@ -142,11 +149,27 @@ export function WallIntro({ footer }: { footer: (look: IntroLook) => ReactNode }
     else go(current + direction);
   };
 
+  // Each flips as the welcome card's bottom edge actually clears that part of
+  // the screen, and back at the cut.
   useAnimatedReaction(
-    () => t.get() >= CUT,
-    (now, before) => {
-      if (now !== before) scheduleOnRN(setCut, now);
+    () => {
+      const now = t.get();
+      return now >= CUT || curtain(now) * height > barsTop + 10;
     },
+    (now, before) => {
+      if (now !== before) scheduleOnRN(setChromeOnColour, now);
+    },
+    [height, barsTop, footTop, legalBottom],
+  );
+  useAnimatedReaction(
+    () => {
+      const now = t.get();
+      return now >= CUT || curtain(now) * height > (footTop + height - legalBottom) / 2;
+    },
+    (now, before) => {
+      if (now !== before) scheduleOnRN(setFootOnColour, now);
+    },
+    [height, barsTop, footTop, legalBottom],
   );
 
   // The camera rides down far enough for Finances to land clear of the fade.
@@ -155,7 +178,6 @@ export function WallIntro({ footer }: { footer: (look: IntroLook) => ReactNode }
   }, [gridBottom, footTop, pan]);
 
   const k = width / BASE_WIDTH;
-  const barsTop = insets.top + 6;
   const brandTop = insets.top + 18;
   const phoneTop = Math.max(height * (196 / BASE_HEIGHT), brandTop + 2 * 46 + spacing.lg);
   // Room for the spring's overshoot too, so the phone never dips onto the buttons.
@@ -163,7 +185,6 @@ export function WallIntro({ footer }: { footer: (look: IntroLook) => ReactNode }
   const phoneScale = Math.min(0.5, Math.max(0.36, phoneRoom / height));
   const gridWidth = width - 2 * spacing.md;
   const cellWidth = (gridWidth - GAP) / 2;
-  const legalBottom = Math.max(insets.bottom - 8, spacing.sm);
 
   const camStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: -pan.get() * cameraAt(t.get()) }],
@@ -194,21 +215,21 @@ export function WallIntro({ footer }: { footer: (look: IntroLook) => ReactNode }
     };
   });
   const dateStyle = useAnimatedStyle(() => ({
-    opacity: t.get() >= 80 ? 1 : 0,
-    transform: [{ translateY: 8 * (1 - SPRING(progress(t.get(), 80, 300))) }],
+    opacity: t.get() >= WALL + 80 ? 1 : 0,
+    transform: [{ translateY: 8 * (1 - SPRING(progress(t.get(), WALL + 80, 300))) }],
   }));
   const nameStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: -1.1 * width * (1 - SPRING(progress(t.get(), 140, 520))) }],
+    transform: [{ translateX: -1.1 * width * (1 - SPRING(progress(t.get(), WALL + 140, 520))) }],
   }));
   const chevronStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: SPRING(progress(t.get(), 520, 420)) }],
+    transform: [{ scale: SPRING(progress(t.get(), WALL + 520, 420)) }],
   }));
 
   const accessibilityLabel = `An example wall for ${band.name}: shows, rehearsals, to-dos, goals, reminders, notes and money, all in one place.`;
 
   return (
     <View style={{ flex: 1, backgroundColor: canvas.background, overflow: 'hidden' }}>
-      <StatusBar style={cut ? (isLight(lead.ink) ? 'light' : 'dark') : 'auto'} />
+      <StatusBar style={chromeOnColour ? (isLight(lead.ink) ? 'light' : 'dark') : 'auto'} />
 
       <View
         style={StyleSheet.absoluteFill}
@@ -389,7 +410,14 @@ export function WallIntro({ footer }: { footer: (look: IntroLook) => ReactNode }
 
         <View pointerEvents="none" style={[styles.brand, { top: brandTop }]}>
           {['It all lives', 'on Band Wall.'].map((line, index) => (
-            <BrandLine key={line} line={line} index={index} t={t} color={lead.ink} />
+            <StampLine
+              key={line}
+              line={line}
+              at={CUT + 380 + index * 190}
+              variant="display"
+              t={t}
+              color={lead.ink}
+            />
           ))}
         </View>
 
@@ -397,7 +425,7 @@ export function WallIntro({ footer }: { footer: (look: IntroLook) => ReactNode }
           <Headline
             key={headline.text}
             text={headline.text}
-            at={headline.at}
+            at={WALL + headline.at}
             top={headline.top * (height / BASE_HEIGHT)}
             tilt={headline.tilt}
             colour={posterSlot(band.palette, scheme, headline.slot)}
@@ -405,6 +433,8 @@ export function WallIntro({ footer }: { footer: (look: IntroLook) => ReactNode }
             width={width}
           />
         ))}
+
+        <WelcomeCard t={t} colour={lead} height={height} />
 
         <View pointerEvents="none" style={[styles.bars, { top: barsTop }]}>
           {BEATS.map((_, index) => (
@@ -424,11 +454,11 @@ export function WallIntro({ footer }: { footer: (look: IntroLook) => ReactNode }
         onLayout={(event) => setFootTop(event.nativeEvent.layout.y)}
         style={[styles.foot, { bottom: legalBottom + 22 }]}
       >
-        {footer({ palette: band.palette, poster: cut ? lead : null })}
+        {footer({ palette: band.palette, poster: footOnColour ? lead : null })}
       </View>
       <PosterText
         variant="meta"
-        color={cut ? lead.soft : canvas.soft}
+        color={footOnColour ? lead.soft : canvas.soft}
         style={[styles.legal, { bottom: legalBottom }]}
       >
         {"Band names for illustration only. Band Wall isn't affiliated with or endorsed by these bands."}
@@ -470,7 +500,7 @@ function LandingCard({
         ? [width + 80, 60, 14]
         : [0, height * 0.75, 6];
   const style = useAnimatedStyle(() => {
-    const { shown, away, scale } = landing(t.get(), cell.lands);
+    const { shown, away, scale } = landing(t.get(), WALL + cell.lands);
     return {
       opacity: shown ? 1 : 0,
       transform: [
@@ -539,26 +569,57 @@ function Headline({
   );
 }
 
-/** One line of "It all lives on Band Wall.", stamped down from twice its size. */
-function BrandLine({
+/**
+ * The opening card: "Welcome to Band Wall." stamped onto the band's colour,
+ * which then lifts away like a curtain to show the wall underneath.
+ */
+function WelcomeCard({
+  t,
+  colour,
+  height,
+}: {
+  t: SharedValue<number>;
+  colour: PosterColor;
+  height: number;
+}) {
+  const style = useAnimatedStyle(() => ({
+    opacity: t.get() < WALL ? 1 : 0,
+    transform: [{ translateY: -height * (1 - curtain(t.get())) }],
+  }));
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[StyleSheet.absoluteFill, { backgroundColor: colour.bg }, style]}
+    >
+      <View style={[styles.welcome, { top: height * 0.36 }]}>
+        <StampLine line="Welcome to" at={250} variant="display" t={t} color={colour.ink} />
+        <StampLine line="Band Wall." at={520} variant="figure" t={t} color={colour.ink} />
+      </View>
+    </Animated.View>
+  );
+}
+
+/** One line of a poster's words, stamped down from more than twice its size. */
+function StampLine({
   line,
-  index,
+  at,
+  variant,
   t,
   color,
 }: {
   line: string;
-  index: number;
+  at: number;
+  variant: 'display' | 'figure';
   t: SharedValue<number>;
   color: string;
 }) {
-  const at = CUT + 380 + index * 190;
   const style = useAnimatedStyle(() => ({
     opacity: t.get() >= at ? 1 : 0,
     transform: [{ scale: 2.4 - 1.4 * SPRING(progress(t.get(), at, 380)) }],
   }));
   return (
     <Animated.View style={[{ alignSelf: 'flex-start', transformOrigin: '0% 70%' }, style]}>
-      <PosterText variant="display" color={color}>
+      <PosterText variant={variant} color={color} numberOfLines={1} adjustsFontSizeToFit>
         {line}
       </PosterText>
     </Animated.View>
@@ -670,6 +731,7 @@ const styles = StyleSheet.create({
   fill: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   mask: { position: 'absolute', left: 0, right: 0, top: 0 },
   brand: { position: 'absolute', left: spacing.lg, right: spacing.lg },
+  welcome: { position: 'absolute', left: spacing.lg, right: spacing.lg },
   headline: {
     position: 'absolute',
     left: -60,

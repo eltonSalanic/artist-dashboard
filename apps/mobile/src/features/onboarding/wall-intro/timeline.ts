@@ -7,18 +7,25 @@
  * node.
  */
 
-/** Four beats, like four story cards: build, tasks, money, the phone. */
-export const BEATS = [3700, 3400, 3800, 4600] as const;
+/**
+ * Five beats, like five story cards: the welcome, then the wall's events,
+ * tasks and money, then the phone.
+ */
+export const BEATS = [2600, 3700, 3400, 3800, 4600] as const;
 export const BEAT_START = BEATS.map((_, i) => BEATS.slice(0, i).reduce((a, b) => a + b, 0));
 export const TOTAL = BEATS.reduce((a, b) => a + b, 0);
+/** When the wall starts building, after the welcome. Its own moments count from here. */
+export const WALL = BEAT_START[1];
 /** When the wall turns into a phone on the band's colour. */
-export const CUT = BEAT_START[3];
+export const CUT = BEAT_START[4];
+/** The welcome card lifting away to show the wall. */
+export const LIFT = 550;
 
 /**
- * The frame each beat holds on when motion is reduced: its headline fully in,
- * or for the last beat, the phone at rest.
+ * The frame each beat holds on when motion is reduced: the welcome fully in,
+ * a headline fully in, or for the last beat, the phone at rest.
  */
-export const REST = [1920, 5030, 9370, TOTAL - 1] as const;
+export const REST = [1500, WALL + 1920, WALL + 5030, WALL + 9370, TOTAL - 1] as const;
 
 /** A card's flight from off screen into its cell, and the press-bounce after. */
 export const LAND = 860;
@@ -157,6 +164,16 @@ export function phonePose(t: number, top: number, scale: number): Pose {
 /** How far the camera has ridden down the wall, from 0 to 1. */
 export function cameraAt(t: number): number {
   'worklet';
-  if (t < CUT) return MORPH(progress(t, BEAT_START[2] + 60, 1100));
+  if (t < CUT) return MORPH(progress(t, BEAT_START[3] + 60, 1100));
   return 1 - MORPH(progress(t, CUT, 700));
+}
+
+/**
+ * How much of the screen the welcome card still covers, from the top, as it
+ * lifts away: 1 is all of it, 0 none.
+ */
+export function curtain(t: number): number {
+  'worklet';
+  if (t >= WALL) return 0;
+  return 1 - MORPH(progress(t, WALL - LIFT, LIFT));
 }

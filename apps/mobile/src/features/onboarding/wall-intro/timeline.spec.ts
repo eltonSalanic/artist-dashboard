@@ -1,11 +1,14 @@
 import {
   BEAT_START,
   CUT,
+  LIFT,
   REST,
   TOTAL,
+  WALL,
   beatAt,
   cameraAt,
   cubicBezier,
+  curtain,
   landing,
   phonePose,
   sweep,
@@ -26,10 +29,18 @@ describe('cubicBezier', () => {
 });
 
 describe('the timeline', () => {
-  it('runs four beats back to back', () => {
-    expect(BEAT_START).toEqual([0, 3700, 7100, 10900]);
-    expect(TOTAL).toBe(15500);
-    expect(CUT).toBe(10900);
+  it('runs five beats back to back', () => {
+    expect(BEAT_START).toEqual([0, 2600, 6300, 9700, 13500]);
+    expect(TOTAL).toBe(18100);
+    expect(WALL).toBe(2600);
+    expect(CUT).toBe(13500);
+  });
+
+  it('lifts the welcome card off the whole screen before the wall builds', () => {
+    expect(curtain(0)).toBe(1);
+    expect(curtain(WALL - LIFT)).toBe(1);
+    expect(curtain(WALL - 1)).toBeLessThan(0.05);
+    expect(curtain(WALL)).toBe(0);
   });
 
   it('holds each beat on a frame inside it', () => {

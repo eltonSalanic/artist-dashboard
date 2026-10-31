@@ -30,8 +30,8 @@ const band = (
 ): DemoBand => ({ name, palette, show: { day, venue }, note: `Setlist: ${setlist}` });
 
 export const DEMO_BANDS: readonly DemoBand[] = [
-  band('My Chemical Romance', 'mono', 'Fri', 'The Forum', 'Helena, Teenagers, then Welcome to the Black Parade'),
   band('Turnstile', 'playful', 'Sat', 'The Ottobar', 'Mystery, Blackout, then Holiday to close'),
+  band('My Chemical Romance', 'mono', 'Fri', 'The Forum', 'Helena, Teenagers, then Welcome to the Black Parade'),
   band('The Beatles', 'ocean', 'Thu', 'The Cavern Club', 'Twist and Shout, She Loves You, I Saw Her Standing There'),
   band('Paramore', 'playful', 'Sat', 'The Ryman', "Misery Business, Hard Times, then Ain't It Fun to close"),
   band('Nirvana', 'mono', 'Fri', 'The Crocodile', 'In Bloom, Lithium, then Smells Like Teen Spirit'),
