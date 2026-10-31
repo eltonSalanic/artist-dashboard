@@ -64,6 +64,8 @@ const FADE = 80;
 /** The phone's thickness, as layers stacked behind its screen. */
 const EDGES = [1, 2, 3, 4, 5, 6, 7, 8];
 const DEG = Math.PI / 180;
+/** The band's name slides in once "Every Event." has had the page to itself. */
+const NAME = WALL + 1250;
 
 /**
  * The welcome screen's preview: a band's hub building itself, the way a
@@ -215,14 +217,14 @@ export function WallIntro({ footer }: { footer: (look: IntroLook) => ReactNode }
     };
   });
   const dateStyle = useAnimatedStyle(() => ({
-    opacity: t.get() >= WALL + 80 ? 1 : 0,
-    transform: [{ translateY: 8 * (1 - SPRING(progress(t.get(), WALL + 80, 300))) }],
+    opacity: t.get() >= NAME ? 1 : 0,
+    transform: [{ translateY: 8 * (1 - SPRING(progress(t.get(), NAME, 300))) }],
   }));
   const nameStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: -1.1 * width * (1 - SPRING(progress(t.get(), WALL + 140, 520))) }],
+    transform: [{ translateX: -1.1 * width * (1 - SPRING(progress(t.get(), NAME + 60, 520))) }],
   }));
   const chevronStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: SPRING(progress(t.get(), WALL + 520, 420)) }],
+    transform: [{ scale: SPRING(progress(t.get(), NAME + 440, 420)) }],
   }));
 
   const accessibilityLabel = `An example wall for ${band.name}: shows, rehearsals, to-dos, goals, reminders, notes and money, all in one place.`;

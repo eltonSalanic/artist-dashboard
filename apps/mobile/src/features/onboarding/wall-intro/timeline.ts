@@ -25,7 +25,7 @@ export const LIFT = 550;
  * The frame each beat holds on when motion is reduced: the welcome fully in,
  * a headline fully in, or for the last beat, the phone at rest.
  */
-export const REST = [1500, WALL + 1920, WALL + 5030, WALL + 9370, TOTAL - 1] as const;
+export const REST = [1500, WALL + 870, WALL + 5030, WALL + 9370, TOTAL - 1] as const;
 
 /** A card's flight from off screen into its cell, and the press-bounce after. */
 export const LAND = 860;

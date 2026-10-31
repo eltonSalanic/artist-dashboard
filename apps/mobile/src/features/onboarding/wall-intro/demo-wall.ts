@@ -23,13 +23,14 @@ export interface DemoCell {
 
 /**
  * The hub's default arrangement without Focus, since the preview goes straight
- * from the band's name to the cards that do the work. Shows and Rehearsals
- * land under "Every Event.", the tasks under "Who's Doing What.", and the rest
- * as the camera rides down to Finances.
+ * from the band's name to the cards that do the work. "Every Event." crosses
+ * the empty page first, then the name slides in and Shows and Rehearsals land;
+ * the tasks land under "Who's Doing What.", and the rest as the camera rides
+ * down to Finances.
  */
 export const DEMO_LAYOUT: readonly DemoCell[] = [
-  { type: 'SHOWS', row: 0, col: 0, wide: false, lands: 700, from: 'left' },
-  { type: 'NEXT_REHEARSALS', row: 0, col: 1, wide: false, lands: 2450, from: 'right' },
+  { type: 'SHOWS', row: 0, col: 0, wide: false, lands: 1800, from: 'left' },
+  { type: 'NEXT_REHEARSALS', row: 0, col: 1, wide: false, lands: 2500, from: 'right' },
   { type: 'TODOS', row: 1, col: 0, wide: true, lands: 3800, from: 'below' },
   { type: 'MY_TASKS', row: 2, col: 0, wide: false, lands: 5600, from: 'left' },
   { type: 'GOALS', row: 2, col: 1, wide: false, lands: 5740, from: 'right' },
@@ -46,7 +47,7 @@ export const DEMO_LAYOUT: readonly DemoCell[] = [
  * screen and scales with the real one.
  */
 export const HEADLINES = [
-  { text: 'Every Event.', at: 1150, top: 330, slot: 'c1', tilt: -6 },
+  { text: 'Every Event.', at: 100, top: 330, slot: 'c1', tilt: -6 },
   { text: "Who's Doing\nWhat.", at: 4260, top: 440, slot: 'c2', tilt: 5 },
   { text: 'Track\nExpenses.', at: 8600, top: 170, slot: 'c3', tilt: -5 },
 ] as const;
