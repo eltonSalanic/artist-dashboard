@@ -11,7 +11,7 @@ import { esc } from '../notifications/templates/layout';
 /**
  * Sends the invite email when Better Auth hands us a 6-digit sign-in code.
  *
- * The code route is public (the phone's "Join with your code" needs it), so
+ * The code route is public (the phone's "I've got an invite" needs it), so
  * anyone could ask for a code for any address. We only mail people with a
  * pending invite: for everyone else this is a silent no-op, which keeps the
  * route from becoming a way to spam strangers.
@@ -79,7 +79,7 @@ export function renderInviteMail(input: InviteMailInput): OutgoingMail {
       <p style="margin:0 0 12px">${esc(input.inviterName)} added you to ${esc(input.boardName)}: shows, rehearsals, to-dos and notes in one place.</p>
     </div>
     <p style="margin:24px 0 0"><a href="${esc(input.acceptUrl)}" style="display:inline-block;background:${CORAL};color:#fff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:999px">Accept the invite on the web</a></p>
-    <p style="margin:28px 0 8px;font-size:15px;line-height:1.6">On your phone? Open the Band Wall app, tap <strong>Invited to a band? Join with your code</strong>, and enter:</p>
+    <p style="margin:28px 0 8px;font-size:15px;line-height:1.6">On your phone? Open the Band Wall app, tap <strong>I've got an invite</strong>, and enter:</p>
     <p style="margin:0;font-size:28px;font-weight:700;letter-spacing:6px">${esc(input.code)}</p>
     <p style="margin:24px 0 0;font-size:13px;line-height:1.5;color:${MUTED}">The link and the code work once and expire in an hour. If they have expired, ask your band admin to invite you again.</p>
   </div>
@@ -89,7 +89,7 @@ export function renderInviteMail(input: InviteMailInput): OutgoingMail {
     '',
     `Accept the invite on the web: ${input.acceptUrl}`,
     '',
-    `On your phone? Open the Band Wall app, tap "Invited to a band? Join with your code", and enter: ${input.code}`,
+    `On your phone? Open the Band Wall app, tap "I've got an invite", and enter: ${input.code}`,
     '',
     'The link and the code work once and expire in an hour. If they have expired, ask your band admin to invite you again.',
   ].join('\n');
