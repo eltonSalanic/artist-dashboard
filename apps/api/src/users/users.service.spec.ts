@@ -14,6 +14,7 @@ describe('UsersService.bootstrap', () => {
   const tx = {
     user: { upsert: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
     authUser: { findUnique: jest.fn() },
+    $queryRaw: jest.fn(),
     invite: { findMany: jest.fn(), update: jest.fn() },
     membership: {
       upsert: jest.fn(),
@@ -26,7 +27,6 @@ describe('UsersService.bootstrap', () => {
   const prisma = {
     $transaction: jest.fn((fn: (t: typeof tx) => Promise<void>) => fn(tx)),
     user: { findUnique: jest.fn() },
-    authUser: { findUnique: jest.fn() },
   };
   const service = new UsersService(
     prisma as unknown as PrismaService,
@@ -37,6 +37,7 @@ describe('UsersService.bootstrap', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    tx.$queryRaw.mockResolvedValue([]);
     prisma.user.findUnique.mockResolvedValue({
       id: 'u1',
       email: auth.email,
@@ -59,7 +60,7 @@ describe('UsersService.bootstrap', () => {
 
   it('names the user from the name given at sign-up', async () => {
     tx.invite.findMany.mockResolvedValue([]);
-    prisma.authUser.findUnique.mockResolvedValue({ name: 'Sam Ortega' });
+    tx.$queryRaw.mockResolvedValue([{ name: 'Sam Ortega' }]);
 
     await service.bootstrap(auth);
 
@@ -70,9 +71,18 @@ describe('UsersService.bootstrap', () => {
     );
   });
 
+  it('reads the name under a lock, so a save right after joining waits', async () => {
+    tx.invite.findMany.mockResolvedValue([]);
+
+    await service.bootstrap(auth);
+
+    const [sql] = tx.$queryRaw.mock.calls[0] as [TemplateStringsArray];
+    expect(sql.join('?')).toContain('FOR UPDATE');
+  });
+
   it('falls back to the start of the email without a name', async () => {
     tx.invite.findMany.mockResolvedValue([]);
-    prisma.authUser.findUnique.mockResolvedValue({ name: '  ' });
+    tx.$queryRaw.mockResolvedValue([{ name: '  ' }]);
 
     await service.bootstrap(auth);
 

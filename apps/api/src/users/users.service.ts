@@ -24,16 +24,16 @@ export class UsersService {
    * "Join or create one" and starts a band themselves (POST /boards).
    */
   async bootstrap(auth: AuthUser) {
-    // The name given at sign-up (or saved by `updateProfile` before this row
-    // existed) lives on the sign-in account; an account without one falls
-    // back to the start of the email.
-    const account = await this.prisma.authUser.findUnique({
-      where: { id: auth.userId },
-      select: { name: true },
-    });
-    const displayName = account?.name?.trim() || auth.email.split('@')[0];
-
     await this.prisma.$transaction(async (tx) => {
+      // The name given at sign-up (or saved by `updateProfile` before this row
+      // existed) lives on the sign-in account; an account without one falls
+      // back to the start of the email. The lock makes `updateProfile` wait for
+      // this transaction: a phone saves the name straight after joining, so
+      // otherwise the save can miss a User row that isn't committed yet.
+      const [account] = await tx.$queryRaw<{ name: string | null }[]>`
+        SELECT "name" FROM "AuthUser" WHERE "id" = ${auth.userId} FOR UPDATE`;
+      const displayName = account?.name?.trim() || auth.email.split('@')[0];
+
       // Accounts made under Supabase Auth left User rows whose id matches no
       // sign-in account. Signing up again with that email takes the row over
       // (every foreign key to User cascades on update), so the bands and
