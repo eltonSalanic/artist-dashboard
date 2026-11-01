@@ -42,7 +42,7 @@ export function DashboardPage({ boardId }: { boardId: string }) {
   const layoutQuery = useLayout(boardId);
   const saveLayout = useSaveLayout(boardId);
   const resetLayout = useResetLayout(boardId);
-  const theme = useBoardTheme();
+  const theme = useBoardTheme(boardId);
   const saveTheme = useSaveBoardTheme(boardId);
   const { can } = usePermissions();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);

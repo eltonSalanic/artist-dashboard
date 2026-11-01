@@ -5,6 +5,7 @@ import { notify } from "../client";
 import { resolveBoardTheme, type BoardTheme } from "@artist/shared";
 import { apiFetch } from "../client";
 import { toUserMessage } from "../messages";
+import { useBoard } from "../auth/use-board";
 import { useMe } from "../auth/use-me";
 import type { BoardDetailDto, MeResponse } from "../auth/types";
 
@@ -14,12 +15,15 @@ const showError = (error: unknown) =>
   );
 
 /**
- * The board's palette and widget colors. Read off `/me`, which already carries
- * the board, so painting the dashboard costs no extra request.
+ * The band's palette and widget colors. `/me` only carries the first band's
+ * full theme, so this reads the band itself; its palette on `me.boards` paints
+ * the page until that arrives.
  */
-export function useBoardTheme(): BoardTheme {
+export function useBoardTheme(boardId: string): BoardTheme {
   const me = useMe(true);
-  return resolveBoardTheme(me.data?.board?.theme);
+  const board = useBoard(boardId);
+  const palette = me.data?.boards.find((b) => b.id === boardId)?.palette;
+  return board.data?.theme ?? resolveBoardTheme({ palette });
 }
 
 export function useSaveBoardTheme(boardId: string) {
