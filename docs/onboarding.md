@@ -1,6 +1,6 @@
 # Onboarding — the first run
 
-**Status:** built on `feat/onboarding-flow` (2026-10-30), not merged. Designed in the project's "Band Wall onboarding redesign" page; Elton kept the welcome, account and band steps, RevenueCat's own paywall, "You're live", and a smaller setup checklist.
+**Status:** built on `feat/onboarding-flow` (2026-10-30), merged into `main` 2026-11-02. Designed in the project's "Band Wall onboarding redesign" page; Elton kept the welcome, account and band steps, RevenueCat's own paywall, "You're live", and a smaller setup checklist.
 
 Two kinds of new person arrive: someone **starting a band**, who pays, and someone **joining one**, who never does. The flow splits them on the first screen.
 
