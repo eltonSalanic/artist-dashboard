@@ -58,54 +58,54 @@ export function BandLiveScreen({ boardId }: { boardId: string }) {
           { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.md },
         ]}
       >
-        <View accessible accessibilityRole="header" style={{ gap: spacing.sm }}>
-          <PosterText variant="label" color={block.soft}>
-            {"YOU'RE LIVE"}
-          </PosterText>
-          <PosterText variant="display" color={block.ink}>
-            {`${band?.name ?? 'Your band'}\nIs Open.`}
-          </PosterText>
-          <PosterText variant="body" color={block.ink}>
-            {freeUntil
-              ? `Free until ${freeUntil}. Bring the band in: they join free.`
-              : 'Bring the band in: they join free.'}
-          </PosterText>
-        </View>
-
-        <View style={{ flex: 1 }} />
-
-        <View style={[styles.inviteBlock, { backgroundColor: block.ink + '1A' }]}>
-          <PosterText variant="label" color={block.soft}>
-            INVITE A BANDMATE
-          </PosterText>
-          <TextInput
-            accessibilityLabel="Bandmate's email"
-            value={email}
-            onChangeText={setEmail}
-            placeholder="bandmate@email.com"
-            placeholderTextColor={block.soft}
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoComplete="email"
-            keyboardType="email-address"
-            returnKeyType="send"
-            onSubmitEditing={send}
-            style={[posterInput, styles.input, { color: block.ink, borderColor: block.soft }]}
-          />
-          <InkButton
-            title="Send invite"
-            ink={block.ink}
-            bg={block.bg}
-            outline
-            loading={invite.isPending}
-            disabled={!email.trim()}
-            onPress={send}
-          />
-          {sent.length > 0 && (
-            <PosterText variant="body" color={block.ink}>
-              {`Invited ${sent.join(', ')}. They'll get an email with a code.`}
+        <View style={styles.middle}>
+          <View accessible accessibilityRole="header" style={{ gap: spacing.sm }}>
+            <PosterText variant="label" color={block.soft}>
+              {"YOU'RE LIVE"}
             </PosterText>
-          )}
+            <PosterText variant="display" color={block.ink}>
+              {`${band?.name ?? 'Your band'}\nIs Open.`}
+            </PosterText>
+            <PosterText variant="body" color={block.ink}>
+              {freeUntil
+                ? `Free until ${freeUntil}. Bring the band in: they join free.`
+                : 'Bring the band in: they join free.'}
+            </PosterText>
+          </View>
+
+          <View style={[styles.inviteBlock, { backgroundColor: block.ink + '1A' }]}>
+            <PosterText variant="label" color={block.soft}>
+              INVITE A BANDMATE
+            </PosterText>
+            <TextInput
+              accessibilityLabel="Bandmate's email"
+              value={email}
+              onChangeText={setEmail}
+              placeholder="bandmate@email.com"
+              placeholderTextColor={block.soft}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="email"
+              keyboardType="email-address"
+              returnKeyType="send"
+              onSubmitEditing={send}
+              style={[posterInput, styles.input, { color: block.ink, borderColor: block.soft }]}
+            />
+            <InkButton
+              title="Send invite"
+              ink={block.ink}
+              bg={block.bg}
+              outline
+              loading={invite.isPending}
+              disabled={!email.trim()}
+              onPress={send}
+            />
+            {sent.length > 0 && (
+              <PosterText variant="body" color={block.ink}>
+                {`Invited ${sent.join(', ')}. They'll get an email with a code.`}
+              </PosterText>
+            )}
+          </View>
         </View>
 
         <InkButton
@@ -121,6 +121,8 @@ export function BandLiveScreen({ boardId }: { boardId: string }) {
 
 const styles = StyleSheet.create({
   content: { flexGrow: 1, paddingHorizontal: spacing.lg, gap: spacing.lg },
+  // Fills the room above the button and sits the message and invite just above its middle.
+  middle: { flex: 1, justifyContent: 'center', gap: spacing.lg, paddingBottom: spacing.xl },
   inviteBlock: {
     borderRadius: posterRadius.block * 1.7,
     borderCurve: 'continuous',

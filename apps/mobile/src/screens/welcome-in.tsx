@@ -26,7 +26,7 @@ export function WelcomeInScreen() {
         { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.md },
       ]}
     >
-      <View accessible accessibilityRole="header" style={{ gap: spacing.sm }}>
+      <View accessible accessibilityRole="header" style={styles.middle}>
         <PosterText variant="label" color={block.soft}>
           WELCOME IN
         </PosterText>
@@ -39,7 +39,6 @@ export function WelcomeInScreen() {
             : "It's free for you: the band's owner covers everyone in it."}
         </PosterText>
       </View>
-      <View style={{ flex: 1 }} />
       <InkButton
         title="See the wall"
         ink={block.ink}
@@ -52,4 +51,6 @@ export function WelcomeInScreen() {
 
 const styles = StyleSheet.create({
   content: { flexGrow: 1, paddingHorizontal: spacing.lg, gap: spacing.lg },
+  // Fills the room above the button and sits the message just above its middle.
+  middle: { flex: 1, justifyContent: 'center', gap: spacing.sm, paddingBottom: spacing.xxl },
 });
