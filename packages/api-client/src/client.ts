@@ -169,6 +169,8 @@ export async function apiFetch<T>(
     if (response.status === 401 && token) config?.onUnauthorized?.();
     throw new ApiError(response.status, message, parsed);
   }
+  // 204 No Content (PATCH /me, say) has no body for json() to parse.
+  if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }
 

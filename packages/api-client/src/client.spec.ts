@@ -33,6 +33,15 @@ describe('api client', () => {
     expect(fetchMock.mock.calls[0][0]).toBe('https://api.test/tasks');
   });
 
+  it('resolves a 204 without parsing the empty body', async () => {
+    const json = jest.fn(async () => {
+      throw new SyntaxError('JSON Parse error: Unexpected end of input');
+    });
+    fetchMock.mockResolvedValue({ ok: true, status: 204, json });
+    await expect(apiFetch('/me', { method: 'PATCH', body: {} })).resolves.toBeUndefined();
+    expect(json).not.toHaveBeenCalled();
+  });
+
   it('sends the injected token as a bearer header', async () => {
     fetchMock.mockResolvedValue(ok({}));
     await apiFetch('/me');
