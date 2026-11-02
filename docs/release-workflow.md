@@ -151,6 +151,13 @@ Checked against the repo on 2026-10-29.
 - **Staging and prod hosting.** No API, web or database is deployed yet. The
   candidates and costs are in the hosting cost report; this guide assumes two
   of each (staging and prod).
+- **Lock the database's Data API.** Nothing reads Supabase's Data API (the
+  API talks to Postgres directly), so for each hosted project: in
+  Settings → Data API, remove `public` from the exposed schemas (or turn the
+  Data API off), then run the Security Advisor and expect no "RLS disabled"
+  warnings. Migration `20261102200000_lock_down_data_api` already turns RLS on
+  for every table and revokes the `anon`/`authenticated` roles, so this is
+  the second lock, not the only one.
 - **API URLs for EAS builds.** `preview` and `production` don't set
   `EXPO_PUBLIC_API_URL`, and `.env` is gitignored so EAS cloud builds don't
   see it. Outside a dev build there's no Metro address to fall back on, so
