@@ -333,5 +333,10 @@ Invites skip the notification machinery on purpose: no preference check, no
 unsubscribe link, no digest. An invite is an account email, not a
 notification. The code route is public (the phone needs it), so
 `InviteCodeMail` only mails addresses with a pending invite; a request for
-anyone else sends nothing. Someone who already has an account gets no email:
-their pending invite is matched by email the next time they sign in.
+anyone else sends nothing. Someone whose account email is already verified
+gets no email: their pending invite is matched by email the next time they
+sign in. An account whose email isn't verified (a password sign-up) does get
+the code, because `/me/bootstrap` only accepts invites for a verified email,
+and signing in with the code is what verifies it. Better Auth then drops any
+password or session the account had from before, so whoever signed up with
+someone else's address loses it.
