@@ -1,10 +1,5 @@
 import { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Pressable,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { apiFetch, authErrorMessage, notify } from '@artist/api-client';
 import { Button } from '@/components/button';
@@ -160,9 +155,22 @@ export function SignInScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.root, { backgroundColor: canvas.background }]}
-      behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined}
+    // A scroll view that takes the keyboard as an inset, not a view that
+    // re-centres the form above it. The row over the iOS keyboard (Passwords,
+    // predictions, contacts) comes and goes as you type, which changes the
+    // keyboard's height by 27pt; a KeyboardAvoidingView moved the whole form
+    // each time, so it shook. An inset leaves the form still, scrolls only to
+    // keep the focused field in view, and lets Join's taller form scroll
+    // rather than run under the status bar.
+    <ScrollView
+      style={{ backgroundColor: canvas.background }}
+      contentContainerStyle={styles.root}
+      // Centred on the whole screen, as before: the form fits it, so only
+      // the keyboard's inset ever scrolls it.
+      contentInsetAdjustmentBehavior="never"
+      automaticallyAdjustKeyboardInsets
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="interactive"
     >
       <View style={styles.form}>
         <Pressable
@@ -319,12 +327,12 @@ export function SignInScreen() {
           </Pressable>
         )}
       </View>
-    </KeyboardAvoidingView>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, justifyContent: 'center' },
+  root: { flexGrow: 1, justifyContent: 'center' },
   back: { alignSelf: 'flex-start', paddingVertical: spacing.xs },
   form: { padding: spacing.lg, gap: spacing.md },
   masthead: { gap: spacing.xs, marginBottom: spacing.sm },
