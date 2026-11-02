@@ -19,7 +19,7 @@ Two kinds of new person arrive: someone **starting a band**, who pays, and someo
 - **Already subscribed, or billing off:** Continue creates the band straight away.
 - **"2 of 3"** shows only straight after signing up. Anyone else in no band (someone who left every band) sees the same screen without the step count.
 - **Your name** goes to Better Auth at sign-up, and `POST /me/bootstrap` starts the user's display name from it (it used to be the start of the email). `PATCH /me` with `{ displayName }` changes it later.
-- **The setup card** is the owner's only. Each row ticks itself from the band's data: invited (another member or a pending invite), a show (any event), a task. It hides when all three are done or when the owner closes it (remembered per band on that device).
+- **The setup card** is the owner's only. Each row ticks itself from the band's data: invited (another member or a pending invite), a show (any event), a task. "Invite your bandmates" opens Settings already at the invite section (`/board/:id/settings?section=invite` on the phone, `/settings#invite` on the web, which also puts the cursor in the email field). It hides when all three are done or when the owner closes it (remembered per band on that device).
 - Creating a second band from the band switcher is unchanged: `/subscribe` on the phone, the Create a band dialog on the web.
 
 ## The welcome preview (phone)

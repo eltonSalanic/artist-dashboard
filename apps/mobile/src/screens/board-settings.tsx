@@ -1,5 +1,12 @@
-import { useState } from 'react';
-import { Alert, Pressable, ScrollView, Switch, View } from 'react-native';
+import { useRef, useState } from 'react';
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  Switch,
+  View,
+  type LayoutChangeEvent,
+} from 'react-native';
 import {
   BOARD_PALETTES,
   DEFAULT_TASK_STATUSES,
@@ -64,12 +71,34 @@ import {
  * palette is the decision that matters, and it is here) and the default layout,
  * which is P12's layout editor.
  */
-export function BoardSettingsScreen({ boardId }: { boardId: string }) {
+export function BoardSettingsScreen({
+  boardId,
+  scrollToInvite = false,
+}: {
+  boardId: string;
+  scrollToInvite?: boolean;
+}) {
   const colors = useThemeColors();
   const { can } = usePermissions();
+  const scroller = useRef<ScrollView>(null);
+  // The members list above loads after the screen opens and pushes the invite
+  // section down, so follow its position until the person scrolls themselves.
+  const following = useRef(scrollToInvite);
+
+  const onInviteLayout = (event: LayoutChangeEvent) => {
+    if (!following.current) return;
+    scroller.current?.scrollTo({
+      y: Math.max(0, event.nativeEvent.layout.y - spacing.md),
+      animated: true,
+    });
+  };
 
   return (
     <ScrollView
+      ref={scroller}
+      onScrollBeginDrag={() => {
+        following.current = false;
+      }}
       style={{ flex: 1, backgroundColor: colors.background }}
       contentInsetAdjustmentBehavior="automatic"
       automaticallyAdjustKeyboardInsets
@@ -79,7 +108,11 @@ export function BoardSettingsScreen({ boardId }: { boardId: string }) {
       <SubscriptionSection boardId={boardId} />
       <NotificationsSection boardId={boardId} />
       {can('member.invite') && <MembersSection boardId={boardId} />}
-      {can('member.invite') && <InviteSection boardId={boardId} />}
+      {can('member.invite') && (
+        <View onLayout={onInviteLayout}>
+          <InviteSection boardId={boardId} />
+        </View>
+      )}
       {can('status.manage') && <StatusesSection boardId={boardId} />}
       {can('status.manage') && <ShowStatusesSection boardId={boardId} />}
       {can('board.appearance') && <PaletteSection boardId={boardId} />}

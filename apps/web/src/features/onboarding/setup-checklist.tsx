@@ -32,7 +32,7 @@ export function SetupChecklist({ boardId }: { boardId: string }) {
     {
       title: "Invite your bandmates",
       done: board.data.members.length > 1 || invites.data.length > 0,
-      href: "/settings",
+      href: "/settings#invite",
     },
     {
       title: "Add your next show",

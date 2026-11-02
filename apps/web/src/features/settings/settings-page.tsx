@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 import type { BoardRole } from "@artist/shared";
 import { useBoard, useInvites, usePermissions, useRemoveMember, useRevokeInvite, useSendInvite } from "@artist/api-client";
@@ -138,8 +138,17 @@ function InvitesCard({ boardId }: { boardId: string }) {
   const sendInvite = useSendInvite(boardId);
   const revokeInvite = useRevokeInvite(boardId);
 
+  // The dashboard's "Get set up" card links to /settings#invite. The page is a
+  // skeleton until the band loads, so the browser's own jump to the anchor
+  // finds nothing: scroll here once the card exists, and start in the field.
+  useEffect(() => {
+    if (window.location.hash !== "#invite") return;
+    document.getElementById("invite")?.scrollIntoView({ block: "start" });
+    document.getElementById("invite-email")?.focus({ preventScroll: true });
+  }, []);
+
   return (
-    <Card>
+    <Card id="invite" className="scroll-mt-6">
       <CardHeader>
         <CardTitle>Invite a member</CardTitle>
         <CardDescription>
