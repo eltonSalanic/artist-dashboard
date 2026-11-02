@@ -101,7 +101,10 @@ function MembersCard({ boardId }: { boardId: string }) {
             <Badge variant={member.role === "ADMIN" ? "default" : "secondary"}>
               {member.role === "ADMIN" ? "Admin" : "Member"}
             </Badge>
-            {member.userId !== myUserId && (
+            {/* Not yourself (that's leaving), and never the owner: the band
+                runs on their subscription, so only they can hand it over. */}
+            {member.userId !== myUserId &&
+              member.userId !== board.data?.ownerId && (
               <Button
                 variant="ghost"
                 size="icon-sm"

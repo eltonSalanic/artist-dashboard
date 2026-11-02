@@ -56,10 +56,24 @@ describe('BoardsService.removeMember', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
+  it('refuses to remove the owner', async () => {
+    prisma.membership.findFirst.mockResolvedValue({
+      id: 'm1',
+      user: { displayName: 'jordan' },
+      board: { ownerId: 'owner' },
+    });
+
+    await expect(
+      service.removeMember('b1', 'admin', 'owner'),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.membership.delete).not.toHaveBeenCalled();
+  });
+
   it('deletes the membership, cleans up board data and logs it', async () => {
     prisma.membership.findFirst.mockResolvedValue({
       id: 'm2',
       user: { displayName: 'sam' },
+      board: { ownerId: 'admin' },
     });
 
     const result = await service.removeMember('b1', 'admin', 'u2');

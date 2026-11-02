@@ -159,8 +159,10 @@ function MembersSection({ boardId }: { boardId: string }) {
           trailing={
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
               <Badge label={member.role === 'ADMIN' ? 'Admin' : 'Member'} />
-              {/* You cannot remove yourself here — that is leaving, not admin. */}
-              {member.userId !== me.data?.user.id && (
+              {/* You cannot remove yourself here — that is leaving, not admin.
+                  Nor the owner: only they can hand the band over. */}
+              {member.userId !== me.data?.user.id &&
+                member.userId !== board.data?.ownerId && (
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`Remove ${member.displayName}`}

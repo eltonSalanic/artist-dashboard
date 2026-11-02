@@ -269,7 +269,9 @@ export class BoardsService {
    * Removes a member from the board: revokes their membership and cleans up
    * their board-scoped data (personal layout, task assignments). The user
    * account itself is global and stays. Admins can't remove themselves — that
-   * avoids orphaning the board and locking out its last admin.
+   * avoids orphaning the board and locking out its last admin — and nobody can
+   * remove the owner: the band runs on their subscription, so it's theirs to
+   * hand over or delete.
    */
   async removeMember(boardId: string, actorId: string, userId: string) {
     if (userId === actorId) {
@@ -280,9 +282,15 @@ export class BoardsService {
 
     const membership = await this.prisma.membership.findFirst({
       where: { boardId, userId },
-      include: { user: { select: { displayName: true } } },
+      include: {
+        user: { select: { displayName: true } },
+        board: { select: { ownerId: true } },
+      },
     });
     if (!membership) throw new NotFoundException('Member not found');
+    if (membership.board.ownerId === userId) {
+      throw new ForbiddenException('The band’s owner can’t be removed.');
+    }
 
     await this.prisma.$transaction(async (tx) => {
       await tx.membership.delete({ where: { id: membership.id } });
