@@ -81,9 +81,10 @@ function MemberView({ boardId, footer }: { boardId: string; footer?: ReactNode }
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={{ padding: spacing.md, gap: spacing.xl }}
+      contentContainerStyle={{ flexGrow: 1, padding: spacing.md, gap: spacing.xl }}
     >
-      <View style={{ gap: spacing.sm }}>
+      {/* Only a few lines, so they sit just above the middle rather than under the header. */}
+      <View style={{ flex: 1, justifyContent: 'center', gap: spacing.sm, paddingBottom: spacing.xxl }}>
         <ThemedText variant="title">
           {locked ? "This band's owner needs to renew" : `${name} is good to go`}
         </ThemedText>
