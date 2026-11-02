@@ -298,6 +298,25 @@ describe('TasksService', () => {
         }),
       ).rejects.toBeInstanceOf(BadRequestException);
     });
+
+    it('rejects an assignee who is not on the board', async () => {
+      prisma.taskStatus.findFirst.mockResolvedValue({ id: 's1' });
+      prisma.membership.findMany.mockResolvedValue([{ userId: 'u2' }]);
+
+      await expect(
+        service.create('b1', 'u1', 'ADMIN', {
+          title: 'Load-in',
+          priority: 'MEDIUM',
+          statusId: 's1',
+          assigneeIds: ['u2', 'stranger'],
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.membership.findMany).toHaveBeenCalledWith({
+        where: { boardId: 'b1', userId: { in: ['u2', 'stranger'] } },
+        select: { userId: true },
+      });
+      expect(prisma.task.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('update', () => {

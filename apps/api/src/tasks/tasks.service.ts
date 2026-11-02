@@ -156,6 +156,7 @@ export class TasksService {
     await this.assertStatusInBoard(boardId, statusId);
     if (dto.goalId) await this.assertGoalInBoard(boardId, dto.goalId);
     if (dto.eventId) await this.assertEventInBoard(boardId, dto.eventId);
+    await this.assertAssigneesAreMembers(boardId, dto.assigneeIds);
 
     const last = await this.prisma.task.aggregate({
       where: { boardId, parentTaskId: dto.parentTaskId ?? null },
@@ -516,13 +517,7 @@ export class TasksService {
     });
     if (!task) throw new NotFoundException('Task not found');
 
-    const members = await this.prisma.membership.findMany({
-      where: { boardId, userId: { in: dto.assigneeIds } },
-      select: { userId: true },
-    });
-    if (members.length !== dto.assigneeIds.length) {
-      throw new BadRequestException('All assignees must be board members');
-    }
+    await this.assertAssigneesAreMembers(boardId, dto.assigneeIds);
 
     // The endpoint replaces the whole set, so who actually joined or left is a
     // diff against the previous one — that's what the feed reports.
@@ -715,6 +710,18 @@ export class TasksService {
       where: { id: itemId, taskId, task: { boardId } },
     });
     if (!item) throw new NotFoundException('Checklist item not found');
+  }
+
+  /** Only people on this board can be handed one of its tasks. */
+  private async assertAssigneesAreMembers(boardId: string, userIds: string[]) {
+    if (userIds.length === 0) return;
+    const members = await this.prisma.membership.findMany({
+      where: { boardId, userId: { in: userIds } },
+      select: { userId: true },
+    });
+    if (members.length !== new Set(userIds).size) {
+      throw new BadRequestException('All assignees must be board members');
+    }
   }
 
   private async assertGoalInBoard(boardId: string, goalId: string) {
