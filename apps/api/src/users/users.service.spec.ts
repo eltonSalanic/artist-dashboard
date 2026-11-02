@@ -37,7 +37,7 @@ describe('UsersService.bootstrap', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    tx.$queryRaw.mockResolvedValue([]);
+    tx.$queryRaw.mockResolvedValue([{ name: null, emailVerified: true }]);
     prisma.user.findUnique.mockResolvedValue({
       id: 'u1',
       email: auth.email,
@@ -60,7 +60,9 @@ describe('UsersService.bootstrap', () => {
 
   it('names the user from the name given at sign-up', async () => {
     tx.invite.findMany.mockResolvedValue([]);
-    tx.$queryRaw.mockResolvedValue([{ name: 'Sam Ortega' }]);
+    tx.$queryRaw.mockResolvedValue([
+      { name: 'Sam Ortega', emailVerified: true },
+    ]);
 
     await service.bootstrap(auth);
 
@@ -82,7 +84,7 @@ describe('UsersService.bootstrap', () => {
 
   it('falls back to the start of the email without a name', async () => {
     tx.invite.findMany.mockResolvedValue([]);
-    tx.$queryRaw.mockResolvedValue([{ name: '  ' }]);
+    tx.$queryRaw.mockResolvedValue([{ name: '  ', emailVerified: true }]);
 
     await service.bootstrap(auth);
 
@@ -113,6 +115,18 @@ describe('UsersService.bootstrap', () => {
     expect(tx.board.create).not.toHaveBeenCalled();
   });
 
+  it('leaves invites pending while the email is unverified', async () => {
+    // A password sign-up proves nothing about the address: whoever signs up
+    // as an invited bandmate must not take their seat.
+    tx.$queryRaw.mockResolvedValue([{ name: null, emailVerified: false }]);
+
+    await service.bootstrap(auth);
+
+    expect(tx.invite.findMany).not.toHaveBeenCalled();
+    expect(tx.membership.upsert).not.toHaveBeenCalled();
+    expect(tx.invite.update).not.toHaveBeenCalled();
+  });
+
   describe('adopting a User row left from Supabase Auth', () => {
     beforeEach(() => tx.invite.findMany.mockResolvedValue([]));
 
@@ -126,6 +140,16 @@ describe('UsersService.bootstrap', () => {
         where: { id: 'old' },
         data: { id: 'u1' },
       });
+    });
+
+    it('never takes over a row for an unverified email', async () => {
+      tx.$queryRaw.mockResolvedValue([{ name: null, emailVerified: false }]);
+      tx.user.findUnique.mockResolvedValue({ id: 'old' });
+      tx.authUser.findUnique.mockResolvedValue(null);
+
+      await service.bootstrap(auth);
+
+      expect(tx.user.update).not.toHaveBeenCalled();
     });
 
     it('never takes over a row that belongs to a live account', async () => {

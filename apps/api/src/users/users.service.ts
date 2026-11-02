@@ -20,6 +20,11 @@ export class UsersService {
    *    upsert the local User row.
    * 2. Activate any pending invites matching the email.
    *
+   * Steps that trust the email (adopting a row, joining from an invite) need
+   * it verified. Signing up with a password proves nothing about the address,
+   * so without this anyone could sign up as an invited bandmate and take their
+   * seat. An invite code proves it, and Better Auth marks it verified.
+   *
    * It never creates a band: someone who signs up with no invite lands on
    * "Join or create one" and starts a band themselves (POST /boards).
    */
@@ -30,20 +35,25 @@ export class UsersService {
       // back to the start of the email. The lock makes `updateProfile` wait for
       // this transaction: a phone saves the name straight after joining, so
       // otherwise the save can miss a User row that isn't committed yet.
-      const [account] = await tx.$queryRaw<{ name: string | null }[]>`
-        SELECT "name" FROM "AuthUser" WHERE "id" = ${auth.userId} FOR UPDATE`;
+      const [account] = await tx.$queryRaw<
+        { name: string | null; emailVerified: boolean }[]
+      >`
+        SELECT "name", "emailVerified" FROM "AuthUser"
+        WHERE "id" = ${auth.userId} FOR UPDATE`;
       const displayName = account?.name?.trim() || auth.email.split('@')[0];
+      const emailVerified = account?.emailVerified === true;
 
       // Accounts made under Supabase Auth left User rows whose id matches no
       // sign-in account. Signing up again with that email takes the row over
       // (every foreign key to User cascades on update), so the bands and
-      // history come along. A row that still belongs to a live account is
-      // never touched: the upsert below then fails on the unique email.
+      // history come along. A row that still belongs to a live account, or an
+      // account whose email isn't verified, is never touched: the upsert below
+      // then fails on the unique email.
       const sameEmail = await tx.user.findUnique({
         where: { email: auth.email },
         select: { id: true },
       });
-      if (sameEmail && sameEmail.id !== auth.userId) {
+      if (emailVerified && sameEmail && sameEmail.id !== auth.userId) {
         const owner = await tx.authUser.findUnique({
           where: { id: sameEmail.id },
           select: { id: true },
@@ -62,9 +72,13 @@ export class UsersService {
         create: { id: auth.userId, email: auth.email, displayName },
       });
 
-      const pendingInvites = await tx.invite.findMany({
-        where: { email: auth.email, status: 'PENDING' },
-      });
+      // Unverified: the invites wait. Re-sending one mails a code to this
+      // address (InviteMailer), and signing in with it verifies the email.
+      const pendingInvites = emailVerified
+        ? await tx.invite.findMany({
+            where: { email: auth.email, status: 'PENDING' },
+          })
+        : [];
       for (const invite of pendingInvites) {
         const existingMembership = await tx.membership.findUnique({
           where: {

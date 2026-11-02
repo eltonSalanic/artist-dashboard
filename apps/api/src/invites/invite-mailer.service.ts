@@ -22,17 +22,19 @@ export class InviteMailer {
   ) {}
 
   /**
-   * Mails a 6-digit code (and a link carrying it) to someone with no account.
-   * Returns 'already_registered' for an existing account instead: not an
+   * Mails a 6-digit code (and a link carrying it) to someone with no account,
+   * or whose account's email isn't verified yet: bootstrap only accepts an
+   * invite for a verified email, and signing in with the code verifies it.
+   * Returns 'already_registered' for a verified account instead: not an
    * error for our flow, since the pending Invite row is matched by email the
    * next time they sign in.
    */
   async inviteByEmail(email: string): Promise<'sent' | 'already_registered'> {
     const existing = await this.prisma.authUser.findUnique({
       where: { email },
-      select: { id: true },
+      select: { emailVerified: true },
     });
-    if (existing) return 'already_registered';
+    if (existing?.emailVerified) return 'already_registered';
 
     // Better Auth creates and stores the code, then calls InviteCodeMail.
     try {
