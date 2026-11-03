@@ -21,6 +21,7 @@ import { BoardFilter } from '@/components/board-filter';
 import { ChoiceChips } from '@/components/choice-chips';
 import { Icon, type IconName } from '@/components/icon';
 import { ListState } from '@/components/list-state';
+import { MyMascot } from '@/components/mascot';
 import { PosterText } from '@/components/poster-text';
 import { useBoardScope } from '@/features/boards/use-board-scope';
 import { timeOfDay } from '@/features/board/format';
@@ -440,6 +441,9 @@ function EmptyMonth({
   return (
     // Fills the room under the month header and sits in its middle.
     <View style={{ flex: 1, justifyContent: 'center', gap: spacing.sm, paddingBottom: spacing.xl }}>
+      <View style={{ alignSelf: 'center' }}>
+        <MyMascot pose="empty" width={112} />
+      </View>
       <PosterText variant="display" color={canvas.ink} style={{ textAlign: 'center' }}>
         Nothing in {monthName}.
       </PosterText>

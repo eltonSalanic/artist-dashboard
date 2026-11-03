@@ -191,7 +191,7 @@ light and dark.
   and provided at the root layout, so it also shows on the signed-out screens.
   `useMascot()` reads and sets it.
 - The picker is the MASCOT section on the You tab.
-- They are ready but not placed on any screen yet. To place one:
+- The empty calendar month shows the `empty` pose above "Nothing in <month>.". To place one elsewhere:
 
   ```tsx
   import { MyMascot } from '@/components/mascot';
