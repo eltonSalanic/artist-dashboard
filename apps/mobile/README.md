@@ -192,7 +192,10 @@ light and dark.
   and provided at the root layout, so it also shows on the signed-out screens.
   `useMascot()` reads and sets it.
 - The picker is the MASCOT section on the You tab.
-- The empty calendar month shows "Nothing In <month>." over the `emptyBare` pose. To place one elsewhere:
+- The empty calendar month shows the `emptyBare` pose under "Nothing in <month>."
+  set by [`HandLettering`](src/components/hand-lettering.tsx): Architects Daughter
+  (loaded with the Figtree weights) jittering on the same 120ms boil, so words the
+  app fills in look like the drawings' own lettering. To place a mascot elsewhere:
 
   ```tsx
   import { MyMascot } from '@/components/mascot';

@@ -19,6 +19,7 @@ import {
 import { showStatusLabel } from '@/features/board/show-status';
 import { BoardFilter } from '@/components/board-filter';
 import { ChoiceChips } from '@/components/choice-chips';
+import { HandLettering } from '@/components/hand-lettering';
 import { Icon, type IconName } from '@/components/icon';
 import { ListState } from '@/components/list-state';
 import { MyMascot } from '@/components/mascot';
@@ -441,11 +442,8 @@ function EmptyMonth({
   return (
     // Fills the room under the month header and sits in its middle.
     <View style={{ flex: 1, justifyContent: 'center', gap: spacing.sm, paddingBottom: spacing.xl }}>
-      {/* The heading takes the place of the "no gigs yet" lettered into the
-          `empty` pose, so it names the month; the bare pose sits under it. */}
-      <PosterText variant="display" color={canvas.ink} style={{ textAlign: 'center' }}>
-        Nothing In {monthName}.
-      </PosterText>
+      {/* Lettered where the `empty` pose has "no gigs yet", so it can name the month. */}
+      <HandLettering color={canvas.ink}>{`Nothing in ${monthName}.`}</HandLettering>
       <View style={{ alignSelf: 'center' }}>
         <MyMascot pose="emptyBare" width={180} />
       </View>

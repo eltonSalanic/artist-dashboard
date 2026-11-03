@@ -4,6 +4,7 @@ import { Figtree_600SemiBold } from '@expo-google-fonts/figtree/600SemiBold';
 import { Figtree_700Bold } from '@expo-google-fonts/figtree/700Bold';
 import { Figtree_800ExtraBold } from '@expo-google-fonts/figtree/800ExtraBold';
 import { Figtree_900Black } from '@expo-google-fonts/figtree/900Black';
+import { ArchitectsDaughter_400Regular } from '@expo-google-fonts/architects-daughter/400Regular';
 import {
   WIDGET_META,
   resolveWidgetColor,
@@ -39,6 +40,8 @@ export const POSTER_FONTS = {
   Figtree_700Bold,
   Figtree_800ExtraBold,
   Figtree_900Black,
+  // The mascots' hand lettering, for words set beside them (see `HandLettering`).
+  ArchitectsDaughter_400Regular,
 };
 
 export const face = {
@@ -47,6 +50,7 @@ export const face = {
   bold: 'Figtree_700Bold',
   semi: 'Figtree_600SemiBold',
   medium: 'Figtree_500Medium',
+  hand: 'ArchitectsDaughter_400Regular',
 } as const;
 
 /**
