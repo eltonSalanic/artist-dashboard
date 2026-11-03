@@ -179,8 +179,8 @@ dez and bunz are drawn as SVGs in `assets/mascots/src` and converted to Lottie
 JSON in `assets/mascots/lottie` by `npm run mascots -w apps/mobile`
 (`scripts/svg-to-lottie.mjs`, no dependencies). That also regenerates
 `assets/mascots/lottie/index.ts`, the static `require` registry. Poses: `hero`,
-`celebrate`, `empty`, `nudge`, `icon` (head only), each with a white-outlined
-`…Outlined` twin that `Mascot` plays on the dark theme, plus logo lockups in
+`celebrate`, `empty`, `nudge`, `icon` (head only), each with a
+`…Dark` twin drawn in white that `Mascot` plays on the dark theme, plus logo lockups in
 light and dark.
 
 - [`src/components/mascot.tsx`](src/components/mascot.tsx): `Mascot` plays a

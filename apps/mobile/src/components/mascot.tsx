@@ -17,8 +17,8 @@ export type SharedPose = MascotPose<'dez'> & MascotPose<'bunz'>;
  * `npm run mascots`. Height follows the animation's own aspect ratio, so a
  * caller only sets the width. With Reduce Motion on, it holds the first frame.
  *
- * The ink is near-black, so on the dark theme a pose plays its white-outlined
- * twin (`heroOutlined` for `hero`) when it has one.
+ * The ink is near-black, so on the dark theme a pose plays its twin drawn in
+ * white (`heroDark` for `hero`) when it has one.
  */
 export function Mascot<N extends MascotName>({
   name,
@@ -37,8 +37,8 @@ export function Mascot<N extends MascotName>({
   accessibilityLabel?: string;
 }) {
   const poses = MASCOT_LOTTIE[name] as Record<string, AnimationObject>;
-  const outlined = useScheme() === 'dark' ? poses[`${String(pose)}Outlined`] : undefined;
-  const source = outlined ?? poses[pose as string];
+  const dark = useScheme() === 'dark' ? poses[`${String(pose)}Dark`] : undefined;
+  const source = dark ?? poses[pose as string];
   const ref = useRef<LottieView>(null);
   const reduceMotion = useReducedMotion();
   const animate = playing && !reduceMotion;
