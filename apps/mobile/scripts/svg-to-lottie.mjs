@@ -270,8 +270,10 @@ export function svgToLottie(svgText, name = 'mascot', viewBox, outline = null, i
   return { v: '5.7.4', fr: FPS, ip: 0, op: frames.length * HOLD, w: Math.round(vw), h: Math.round(vh), nm: name, ddd: 0, assets: [], layers };
 }
 
-// poses.svg holds three 400x400 cells side by side
-const POSES = [['celebrate', 0], ['empty', 400], ['nudge', 800]];
+// poses.svg holds three 400x400 cells side by side. `emptyBare` is the empty
+// cell cropped below its hand-lettered "no gigs yet" (which sits above y 100
+// in both characters), for screens that say what's empty in their own words.
+const POSES = [['celebrate', '0 0 400 400'], ['empty', '400 0 400 400'], ['emptyBare', '400 120 400 260'], ['nudge', '800 0 400 400']];
 
 if (process.argv[1] && fs.realpathSync(fileURLToPath(import.meta.url)) === fs.realpathSync(process.argv[1])) {
   const [SRC = 'assets/mascots/src', OUT = 'assets/mascots/lottie'] = process.argv.slice(2);
@@ -288,7 +290,7 @@ if (process.argv[1] && fs.realpathSync(fileURLToPath(import.meta.url)) === fs.re
     for (const [suffix, inkTo] of [['', null], ['-dark', '#FFFFFF']]) {
       total += write(`${name}/hero${suffix}.json`, svgToLottie(read('hero.svg'), `${name} hero`, undefined, null, inkTo)); count++;
       total += write(`${name}/icon${suffix}.json`, svgToLottie(read('small.svg'), `${name} icon`, undefined, null, inkTo)); count++;
-      for (const [pose, x] of POSES) { total += write(`${name}/${pose}${suffix}.json`, svgToLottie(read('poses.svg'), `${name} ${pose}`, `${x} 0 400 400`, null, inkTo)); count++; }
+      for (const [pose, view] of POSES) { total += write(`${name}/${pose}${suffix}.json`, svgToLottie(read('poses.svg'), `${name} ${pose}`, view, null, inkTo)); count++; }
     }
   }
   const lock = path.join(SRC, 'lockups');

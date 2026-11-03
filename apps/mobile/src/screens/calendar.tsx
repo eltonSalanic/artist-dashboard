@@ -441,12 +441,14 @@ function EmptyMonth({
   return (
     // Fills the room under the month header and sits in its middle.
     <View style={{ flex: 1, justifyContent: 'center', gap: spacing.sm, paddingBottom: spacing.xl }}>
-      <View style={{ alignSelf: 'center' }}>
-        <MyMascot pose="empty" width={112} />
-      </View>
+      {/* The heading takes the place of the "no gigs yet" lettered into the
+          `empty` pose, so it names the month; the bare pose sits under it. */}
       <PosterText variant="display" color={canvas.ink} style={{ textAlign: 'center' }}>
-        Nothing in {monthName}.
+        Nothing In {monthName}.
       </PosterText>
+      <View style={{ alignSelf: 'center' }}>
+        <MyMascot pose="emptyBare" width={180} />
+      </View>
       <PosterText variant="body" color={canvas.soft} style={{ textAlign: 'center' }}>
         {filtered
           ? 'Nothing of the kinds picked, anyway. Untick them to see everything.'
