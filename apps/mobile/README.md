@@ -193,7 +193,9 @@ light and dark.
   `useMascot()` reads and sets it.
 - The picker is the MASCOT section on the You tab.
 - `assets/mascots/src/app-icon/b-wall-{light,dark}.{svg,png}`: the b + wall mark with no
-  mascot, 1024 × 1024, for the app icon. Not wired into `app.json` yet.
+  mascot, 1024 × 1024. It is the app icon: `assets/expo.icon` (iOS Icon Composer, the b
+  and the wall as two layers on the paper colour), `assets/images/icon.png` and the
+  Android adaptive `android-icon-*.png`. A new icon needs a new native build.
 - The empty calendar month shows `MonthLettering` ("NOTHING IN <MONTH>." hand-lettered
   to match the `empty` pose's "NO GIGS YET.") over the `emptyBare` pose, and the
   empty Inbox does the same with `PhraseLettering` ("NOTHING FOR YOU."). The 12
