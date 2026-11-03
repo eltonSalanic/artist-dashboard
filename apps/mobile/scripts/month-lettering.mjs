@@ -56,6 +56,7 @@ const GLYPHS = {
   T: [18, [[[0, 0], [18, 0]], [[9, 0], [9, H]]]],
   U: [18, [[[0, 0], [0, 20], ...arc(9, 20, 9, 10, 180, 0, 10), [18, 0]]]],
   V: [20, [[[0, 0], [10, H], [20, 0]]]],
+  W: [28, [[[0, 0], [7, H], [14, 9], [21, H], [28, 0]]]],
   Y: [20, [[[0, 0], [10, 15], [20, 0]], [[10, 15], [10, H]]]],
   '.': [1, [[[0, H - 1], [0.6, H - 0.4]]]],
 };
@@ -171,7 +172,8 @@ const PHRASES = [
   ['nothing-to-remember', ['NOTHING TO', 'REMEMBER.'], 'nothingToRemember'],
   ['nothing-archived', ['NOTHING', 'ARCHIVED.'], 'nothingArchived'],
   ['nothing-to-attach', ['NOTHING TO', 'ATTACH.'], 'nothingToAttach'],
-  ['you-are-live', ['YOU ARE', 'LIVE.'], 'youAreLive'],
+  // In the slot "YOU ARE LIVE." had, so the lines after it keep their seeds.
+  ['bandwall-is-up', ['YOUR', 'BANDWALL', 'IS UP'], 'bandwallIsUp'],
   ['you-are-in', ['YOU ARE', 'IN.'], 'youAreIn'],
   ['something-broke', ['SOMETHING', 'BROKE.'], 'somethingBroke'],
 ];

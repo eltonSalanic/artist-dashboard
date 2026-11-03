@@ -218,7 +218,7 @@ light and dark.
   "." only): the 12 months ("NOTHING IN <MONTH>."), `nothingForYou`,
   `nothingHere`, `noGigsYet`, `noRehearsals`, `noMeetings`, `noGoals`,
   `allDone`, `nothingToRemember`, `nothingArchived`, `nothingToAttach`,
-  `youAreLive`, `youAreIn`, `somethingBroke`. Add one to `PHRASES` and run
+  `bandwallIsUp` ("YOUR BANDWALL IS UP"), `youAreIn`, `somethingBroke`. Add one to `PHRASES` and run
   `npm run mascots`.
 - **Where they are:**
   - Empty lists, lettering + `emptyBare`: Calendar month, Inbox, Shows ("NO GIGS

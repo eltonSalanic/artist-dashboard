@@ -60,15 +60,20 @@ export function BandLiveScreen({ boardId }: { boardId: string }) {
         ]}
       >
         <View style={styles.middle}>
-          {/* The mascot says "you're live" in its own hand, in place of the kicker,
+          {/* The mascot says the wall is up in its own hand, in place of the kicker,
               a little smaller than elsewhere so the invite fits without scrolling. */}
           <View style={styles.mascot}>
-            <PhraseLettering phrase="youAreLive" label="You're live" on={block.bg} scale={0.85} />
+            <PhraseLettering
+              phrase="bandwallIsUp"
+              label="Your Band Wall is up"
+              on={block.bg}
+              scale={0.85}
+            />
             <MyMascot pose="celebrateBare" width={150} on={block.bg} />
           </View>
           <View accessible accessibilityRole="header" style={{ gap: spacing.sm }}>
             <PosterText variant="display" color={block.ink} style={styles.centred}>
-              {`${band?.name ?? 'Your band'}.`}
+              {band?.name ?? 'Your band'}
             </PosterText>
             <PosterText variant="body" color={block.ink} style={styles.centred}>
               {freeUntil
@@ -79,7 +84,7 @@ export function BandLiveScreen({ boardId }: { boardId: string }) {
 
           <View style={[styles.inviteBlock, { backgroundColor: block.ink + '1A' }]}>
             <PosterText variant="label" color={block.soft}>
-              INVITE A BANDMATE
+              Invite your bandmate
             </PosterText>
             <TextInput
               accessibilityLabel="Bandmate's email"
@@ -113,7 +118,7 @@ export function BandLiveScreen({ boardId }: { boardId: string }) {
         </View>
 
         <InkButton
-          title="Go to my wall"
+          title="Go To My Wall"
           ink={block.ink}
           bg={block.bg}
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
