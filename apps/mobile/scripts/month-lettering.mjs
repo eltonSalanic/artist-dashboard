@@ -45,6 +45,7 @@ const GLYPHS = {
   H: [18, [[[0, 0], [0, H]], [[18, 0], [18, H]], [[0, 15], [18, 15]]]],
   I: [0, [[[0, 0], [0, H]]]],
   J: [14, [[[14, 0], [14, 21], ...arc(7, 21, 7, 9, 0, 180, 8)]]],
+  K: [16, [[[0, 0], [0, H]], [[16, 0], [1, 17]], [[6, 12], [16, H]]]],
   L: [14, [[[0, 0], [0, H], [14, H]]]],
   M: [24, [[[0, H], [0, 0], [12, 18], [24, 0], [24, H]]]],
   N: [18, [[[0, H], [0, 0], [18, H], [18, 0]]]],
@@ -159,7 +160,21 @@ const srcDir = path.join(SRC, 'lettering'), outDir = path.join(OUT, 'lettering')
 fs.mkdirSync(srcDir, { recursive: true });
 fs.mkdirSync(outDir, { recursive: true });
 // Other empty screens that say it in the mascots' hand: [file, lines, key].
-const PHRASES = [['nothing-for-you', ['NOTHING', 'FOR YOU.'], 'nothingForYou']];
+const PHRASES = [
+  ['nothing-for-you', ['NOTHING', 'FOR YOU.'], 'nothingForYou'],
+  ['nothing-here', ['NOTHING', 'HERE.'], 'nothingHere'],
+  ['no-gigs-yet', ['NO GIGS', 'YET.'], 'noGigsYet'],
+  ['no-rehearsals', ['NO REHEARSALS', 'YET.'], 'noRehearsals'],
+  ['no-meetings', ['NO MEETINGS', 'YET.'], 'noMeetings'],
+  ['no-goals', ['NO GOALS', 'YET.'], 'noGoals'],
+  ['all-done', ['ALL', 'DONE.'], 'allDone'],
+  ['nothing-to-remember', ['NOTHING TO', 'REMEMBER.'], 'nothingToRemember'],
+  ['nothing-archived', ['NOTHING', 'ARCHIVED.'], 'nothingArchived'],
+  ['nothing-to-attach', ['NOTHING TO', 'ATTACH.'], 'nothingToAttach'],
+  ['you-are-live', ['YOU ARE', 'LIVE.'], 'youAreLive'],
+  ['you-are-in', ['YOU ARE', 'IN.'], 'youAreIn'],
+  ['something-broke', ['SOMETHING', 'BROKE.'], 'somethingBroke'],
+];
 
 const write = (file, lines, seed) => {
   const svg = lettering(lines, seed);

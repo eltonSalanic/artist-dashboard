@@ -55,8 +55,12 @@ export function MascotProvider({ children }: { children: ReactNode }) {
   return <MascotContext.Provider value={{ mascot, setMascot }}>{children}</MascotContext.Provider>;
 }
 
+/**
+ * Outside the provider (the crash screen can render above it) this is dez,
+ * with nothing to set.
+ */
+const FALLBACK: MascotPreference = { mascot: DEFAULT, setMascot: () => {} };
+
 export function useMascot(): MascotPreference {
-  const value = use(MascotContext);
-  if (!value) throw new Error('useMascot() must be used inside MascotProvider');
-  return value;
+  return use(MascotContext) ?? FALLBACK;
 }

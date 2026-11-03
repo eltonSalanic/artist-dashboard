@@ -1,11 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 import LottieView, { type AnimationObject } from 'lottie-react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { MASCOT_LOTTIE, type MascotName, type MascotPose } from '../../assets/mascots/lottie';
 import { MONTH_LETTERING, PHRASE_LETTERING } from '../../assets/mascots/lottie/lettering';
 import { useMascot } from '@/features/mascot/mascot-preference';
-import { useScheme } from '@/theme';
+import { spacing, useScheme } from '@/theme';
+import { PosterText } from './poster-text';
 
 export type { MascotName, MascotPose };
 /** The poses both characters have, so a screen can ask for one without knowing who. */
@@ -52,6 +53,13 @@ export function Mascot<N extends MascotName>({
 
 /** Lettering is drawn to one size; this keeps it that size on every screen. */
 const LETTERING_SCALE = 0.9;
+/**
+ * The widest a line of lettering is shown: 1.4 times the mascot under it. Only
+ * the longest lines ("NO REHEARSALS YET.") are scaled down to fit.
+ */
+const LETTERING_MAX = 252;
+/** Every placement's mascot is this wide, so the figure is one size across screens. */
+export const MASCOT_WIDTH = 180;
 
 /**
  * "NOTHING IN <MONTH>." in the mascots' own hand lettering, drawn per month by
@@ -80,7 +88,7 @@ function Lettering({ pair, label }: { pair: readonly [unknown, unknown]; label: 
   return (
     <Boil
       source={source}
-      width={source.w * LETTERING_SCALE}
+      width={Math.min(source.w * LETTERING_SCALE, LETTERING_MAX)}
       accessibilityRole="header"
       accessibilityLabel={label}
     />
@@ -146,4 +154,44 @@ export function MyMascot({
 }: { pose: SharedPose } & Omit<Parameters<typeof Mascot>[0], 'name' | 'pose'>) {
   const { mascot } = useMascot();
   return <Mascot name={mascot} pose={pose} {...rest} />;
+}
+
+/**
+ * The mascot's block on a screen that has something to say: the line in its
+ * hand lettering, the phone's mascot under it, and a plain line below. Fills
+ * the room it's given and sits in the middle, the way the calendar's empty
+ * month does, so every placement has the same sizes and gaps.
+ */
+export function MascotMessage({
+  phrase,
+  label,
+  pose = 'emptyBare',
+  body,
+  color,
+  children,
+}: {
+  phrase: keyof typeof PHRASE_LETTERING;
+  /** What the lettering says, for the screen reader. */
+  label: string;
+  pose?: SharedPose;
+  body?: string;
+  /** The body line's colour. */
+  color: string;
+  /** Under the body line: a retry button, say. */
+  children?: ReactNode;
+}) {
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', gap: spacing.sm, paddingBottom: spacing.xl }}>
+      <View style={{ alignSelf: 'center', alignItems: 'center', gap: spacing.md }}>
+        <PhraseLettering phrase={phrase} label={label} />
+        <MyMascot pose={pose} width={MASCOT_WIDTH} />
+      </View>
+      {body !== undefined && (
+        <PosterText variant="body" color={color} style={{ textAlign: 'center' }}>
+          {body}
+        </PosterText>
+      )}
+      {children}
+    </View>
+  );
 }

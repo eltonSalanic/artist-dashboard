@@ -17,4 +17,16 @@ export const MONTH_LETTERING = [
 /** Other hand-lettered lines, by name: [light, dark]. */
 export const PHRASE_LETTERING = {
   nothingForYou: [require('./nothing-for-you.json'), require('./nothing-for-you-dark.json')],
+  nothingHere: [require('./nothing-here.json'), require('./nothing-here-dark.json')],
+  noGigsYet: [require('./no-gigs-yet.json'), require('./no-gigs-yet-dark.json')],
+  noRehearsals: [require('./no-rehearsals.json'), require('./no-rehearsals-dark.json')],
+  noMeetings: [require('./no-meetings.json'), require('./no-meetings-dark.json')],
+  noGoals: [require('./no-goals.json'), require('./no-goals-dark.json')],
+  allDone: [require('./all-done.json'), require('./all-done-dark.json')],
+  nothingToRemember: [require('./nothing-to-remember.json'), require('./nothing-to-remember-dark.json')],
+  nothingArchived: [require('./nothing-archived.json'), require('./nothing-archived-dark.json')],
+  nothingToAttach: [require('./nothing-to-attach.json'), require('./nothing-to-attach-dark.json')],
+  youAreLive: [require('./you-are-live.json'), require('./you-are-live-dark.json')],
+  youAreIn: [require('./you-are-in.json'), require('./you-are-in-dark.json')],
+  somethingBroke: [require('./something-broke.json'), require('./something-broke-dark.json')],
 } as const;
