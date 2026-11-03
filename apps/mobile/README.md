@@ -231,7 +231,11 @@ light and dark.
     draws both a little smaller (mascot 150, lettering at 0.85) so its invite
     box fits an iPhone 17 Pro without scrolling.
   - Finances: `nudgeBare` (120 wide) centred at the top of SHOWS STILL OWING.
-  - `hero`: sign-in (160, above the masthead), the paywall (140) and the no-band
+  - Sign-in opens with `MascotLockup lockup="leaningWordmark"` (the mascot leaning
+    on the band wall wordmark, as wide as the form up to 320) in place of the
+    small BAND WALL caps. The converter leaves out a lockup's full-size paper rect,
+    so the page's own colour shows through.
+  - `hero`: the paywall (140) and the no-band
     screen (120; any bigger and Continue goes under the tab bar).
   - Errors, `emptyBare`: the crash screen under "SOMETHING BROKE." (then just
     its one explanatory line), and the
