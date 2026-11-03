@@ -197,7 +197,12 @@ function walk(node, m, style, out) {
   if (node.tag === 'path') subs = parsePath(a.d || '');
   else if (node.tag === 'ellipse') subs = ellipseSubs(+a.cx || 0, +a.cy || 0, +a.rx, +a.ry);
   else if (node.tag === 'circle') subs = ellipseSubs(+a.cx || 0, +a.cy || 0, +a.r, +a.r);
-  else if (node.tag === 'rect') subs = rectSubs(+a.x || 0, +a.y || 0, +a.width, +a.height);
+  else if (node.tag === 'rect') {
+    // A rect the size of the whole drawing is its paper (the lockups have one);
+    // leave it out so the page's own background shows through.
+    if (VIEW && +a.width >= VIEW[0] && +a.height >= VIEW[1]) return;
+    subs = rectSubs(+a.x || 0, +a.y || 0, +a.width, +a.height);
+  }
   else return; // animate etc.
   if (!subs.length) return;
   const items = subs.map((s) => toLottieShape(s, mm));

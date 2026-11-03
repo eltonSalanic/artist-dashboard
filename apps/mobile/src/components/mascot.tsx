@@ -223,3 +223,28 @@ export function MascotMessage({
     </View>
   );
 }
+
+/** The logo lockups each character has, drawn for a light page and a dark one. */
+type Lockup = 'tagged' | 'leaningMark' | 'leaningWordmark';
+
+/**
+ * The Band Wall logo with the phone's mascot in it, like `leaningWordmark`
+ * (the mascot leaning on "band wall"). Takes the dark-page drawing on the dark
+ * theme, or on `on` when that colour wants white ink.
+ */
+export function MascotLockup({
+  lockup,
+  width,
+  on,
+  style,
+}: {
+  lockup: Lockup;
+  width: number;
+  on?: string;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const { mascot } = useMascot();
+  const lockups = MASCOT_LOTTIE[mascot] as Record<string, AnimationObject>;
+  const source = lockups[`${lockup}${useWhiteInk(on) ? 'Dark' : 'Light'}`];
+  return <Boil source={source} width={width} style={style} accessibilityLabel="Band Wall" />;
+}

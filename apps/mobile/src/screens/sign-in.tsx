@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { apiFetch, authErrorMessage, notify } from '@artist/api-client';
 import { Button } from '@/components/button';
-import { MyMascot } from '@/components/mascot';
+import { MascotLockup } from '@/components/mascot';
 import { PosterText } from '@/components/poster-text';
 import { TextField } from '@/components/text-field';
 import { ThemedText } from '@/components/themed-text';
@@ -46,11 +46,12 @@ const COPY: Record<Mode, { title: string; lead: string; submit: string }> = {
  * Reached from the welcome screen, which picks the mode: "Start a band" is
  * step 1 of 3 and asks for your name, "I've got an invite" takes the code.
  *
- * Opens with the widget page's masthead: the app's name in small caps over
- * the greeting set huge, so the first screen is already in the poster face.
+ * Opens with the Band Wall logo, the phone's mascot leaning on the wordmark,
+ * over the greeting set huge, so the first screen is already in the poster face.
  */
 export function SignInScreen() {
   const canvas = usePosterCanvas();
+  const { width } = useWindowDimensions();
   // The welcome screen's doors open this screen in their mode.
   const params = useLocalSearchParams<{ mode?: string }>();
   const [mode, setMode] = useState<Mode>(
@@ -187,11 +188,14 @@ export function SignInScreen() {
           </PosterText>
         </Pressable>
         {mode === 'signup' && <StepProgress step={1} of={3} />}
-        <MyMascot pose="hero" width={160} style={{ alignSelf: 'center' }} />
+        {/* The logo with the phone's mascot leaning on "band wall": it names the
+            app, so the masthead no longer needs its small BAND WALL caps. */}
+        <MascotLockup
+          lockup="leaningWordmark"
+          width={Math.min(width - spacing.lg * 2, LOCKUP_MAX)}
+          style={{ alignSelf: 'center' }}
+        />
         <View accessible accessibilityRole="header" style={styles.masthead}>
-          <PosterText variant="label" color={canvas.soft} style={styles.centred}>
-            BAND WALL
-          </PosterText>
           <PosterText variant="display" color={canvas.ink} style={styles.centred}>
             {copy.title}
           </PosterText>
@@ -332,6 +336,9 @@ export function SignInScreen() {
     </ScrollView>
   );
 }
+
+/** The lockup fills the form's width on a phone, up to this. */
+const LOCKUP_MAX = 320;
 
 const styles = StyleSheet.create({
   root: { flexGrow: 1, justifyContent: 'center' },
