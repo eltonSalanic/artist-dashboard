@@ -3,7 +3,6 @@ import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMe, useMySubscription, useSendInvite } from '@artist/api-client';
-import { MyMascot } from '@/components/mascot';
 import { PosterText } from '@/components/poster-text';
 import { TextInput } from '@/components/text-input';
 import { InkButton } from '@/features/onboarding/ink-button';
@@ -61,7 +60,6 @@ export function BandLiveScreen({ boardId }: { boardId: string }) {
       >
         <View style={styles.middle}>
           <View accessible accessibilityRole="header" style={{ gap: spacing.sm }}>
-            <MyMascot pose="celebrate" width={128} />
             <PosterText variant="label" color={block.soft}>
               {"YOU'RE LIVE"}
             </PosterText>

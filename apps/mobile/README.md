@@ -191,10 +191,16 @@ light and dark.
   and provided at the root layout, so it also shows on the signed-out screens.
   `useMascot()` reads and sets it.
 - The picker is the MASCOT section on the You tab.
-- Where they appear: `empty` (it has "no gigs yet" drawn in) on the empty
-  Shows spoke and the empty calendar month; `celebrate` on "You're live" and "You're
-  in"; `nudge` beside SHOWS STILL OWING in the Finances spoke; `hero` on the
-  sign-in masthead.
+- They are ready but not placed on any screen yet. To place one:
+
+  ```tsx
+  import { MyMascot } from '@/components/mascot';
+
+  <MyMascot pose="empty" width={112} />
+  ```
+
+  Mind the words drawn into some poses: `empty` says "no gigs yet",
+  `celebrate` says "BOOKED!" and `nudge` says "U OWE $20".
 
 Lottie is a native module, so pulling this in needs a new dev build
 (`npx expo run:ios`), not just a Metro reload.

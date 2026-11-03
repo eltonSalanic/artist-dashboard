@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
 import { Icon, type IconName } from './icon';
 import { Button } from './button';
-import { MyMascot } from './mascot';
 import { PosterText } from './poster-text';
 import { Skeleton } from './skeleton';
 import { spacing, useTokens } from '@/theme';
@@ -21,7 +20,6 @@ export function SpokeList({
   onRetry,
   empty,
   emptyIcon,
-  emptyMascot = false,
   emptyTitle,
   emptyBody,
   header,
@@ -32,11 +30,6 @@ export function SpokeList({
   onRetry?: () => void;
   empty: boolean;
   emptyIcon: IconName;
-  /**
-   * The mascot sitting it out in place of the icon. Only where nothing is
-   * booked: the pose has "no gigs yet" drawn into it.
-   */
-  emptyMascot?: boolean;
   emptyTitle: string;
   emptyBody?: string;
   /** Rendered above the rows, inside the same scroll view. */
@@ -81,11 +74,7 @@ export function SpokeList({
     if (empty) {
       return (
         <Centered>
-          {emptyMascot ? (
-            <MyMascot pose="empty" width={112} />
-          ) : (
-            <Icon name={emptyIcon} size={28} color={tokens.mutedForeground} />
-          )}
+          <Icon name={emptyIcon} size={28} color={tokens.mutedForeground} />
           <PosterText variant="title" color={tokens.foreground}>
             {emptyTitle}
           </PosterText>

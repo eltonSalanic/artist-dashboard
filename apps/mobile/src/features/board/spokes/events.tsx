@@ -32,7 +32,6 @@ export function makeEventsSpoke(type: EventType) {
         onRetry={() => void events.refetch()}
         empty={items.length === 0}
         emptyIcon={{ sf: 'calendar', md: 'event' }}
-        emptyMascot={type === 'SHOW'}
         emptyTitle={copy[type].empty}
         emptyBody={copy[type].body}
         header={

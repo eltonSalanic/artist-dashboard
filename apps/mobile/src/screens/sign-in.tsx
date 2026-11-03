@@ -3,7 +3,6 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { apiFetch, authErrorMessage, notify } from '@artist/api-client';
 import { Button } from '@/components/button';
-import { MyMascot } from '@/components/mascot';
 import { PosterText } from '@/components/poster-text';
 import { TextField } from '@/components/text-field';
 import { ThemedText } from '@/components/themed-text';
@@ -188,7 +187,6 @@ export function SignInScreen() {
         </Pressable>
         {mode === 'signup' && <StepProgress step={1} of={3} />}
         <View accessible accessibilityRole="header" style={styles.masthead}>
-          <MyMascot pose="hero" width={96} />
           <PosterText variant="label" color={canvas.soft}>
             BAND WALL
           </PosterText>
