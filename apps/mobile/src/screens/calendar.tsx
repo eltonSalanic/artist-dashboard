@@ -438,11 +438,12 @@ function EmptyMonth({
   canvas: PosterCanvas;
 }) {
   return (
-    <View style={{ paddingTop: spacing.xl, gap: spacing.sm }}>
-      <PosterText variant="display" color={canvas.ink}>
+    // Fills the room under the month header and sits in its middle.
+    <View style={{ flex: 1, justifyContent: 'center', gap: spacing.sm, paddingBottom: spacing.xl }}>
+      <PosterText variant="display" color={canvas.ink} style={{ textAlign: 'center' }}>
         Nothing in {monthName}.
       </PosterText>
-      <PosterText variant="body" color={canvas.soft}>
+      <PosterText variant="body" color={canvas.soft} style={{ textAlign: 'center' }}>
         {filtered
           ? 'Nothing of the kinds picked, anyway. Untick them to see everything.'
           : 'Shows, rehearsals, meetings, due tasks, goals and reminders all land here.'}
