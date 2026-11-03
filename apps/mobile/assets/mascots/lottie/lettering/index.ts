@@ -26,7 +26,7 @@ export const PHRASE_LETTERING = {
   nothingToRemember: [require('./nothing-to-remember.json'), require('./nothing-to-remember-dark.json')],
   nothingArchived: [require('./nothing-archived.json'), require('./nothing-archived-dark.json')],
   nothingToAttach: [require('./nothing-to-attach.json'), require('./nothing-to-attach-dark.json')],
-  bandwallIsUp: [require('./bandwall-is-up.json'), require('./bandwall-is-up-dark.json')],
+  wallIsUp: [require('./wall-is-up.json'), require('./wall-is-up-dark.json')],
   youreIn: [require('./youre-in.json'), require('./youre-in-dark.json')],
   somethingBroke: [require('./something-broke.json'), require('./something-broke-dark.json')],
 } as const;

@@ -174,7 +174,7 @@ const PHRASES = [
   ['nothing-archived', ['NOTHING', 'ARCHIVED.'], 'nothingArchived'],
   ['nothing-to-attach', ['NOTHING TO', 'ATTACH.'], 'nothingToAttach'],
   // In the slot "YOU ARE LIVE." had, so the lines after it keep their seeds.
-  ['bandwall-is-up', ['YOUR', 'BANDWALL', 'IS UP'], 'bandwallIsUp'],
+  ['wall-is-up', ['YOUR WALL', 'IS UP'], 'wallIsUp'],
   // In the slot "YOU ARE IN." had, so the lines after it keep their seeds.
   ['youre-in', ["YOU'RE IN"], 'youreIn'],
   ['something-broke', ['SOMETHING', 'BROKE.'], 'somethingBroke'],

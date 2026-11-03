@@ -16,6 +16,7 @@ export function InkButton({
   outline = false,
   loading = false,
   disabled = false,
+  radius = posterRadius.chip,
   onPress,
 }: {
   title: string;
@@ -26,6 +27,8 @@ export function InkButton({
   outline?: boolean;
   loading?: boolean;
   disabled?: boolean;
+  /** A capsule unless it sits in a card's corner and has to match it. */
+  radius?: number;
   onPress: () => void;
 }) {
   const inactive = disabled || loading;
@@ -39,7 +42,8 @@ export function InkButton({
       style={({ pressed }) => ({
         minHeight: INK_BUTTON_HEIGHT,
         paddingHorizontal: spacing.lg,
-        borderRadius: posterRadius.chip,
+        borderRadius: radius,
+        borderCurve: 'continuous',
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: outline ? 'transparent' : ink,
