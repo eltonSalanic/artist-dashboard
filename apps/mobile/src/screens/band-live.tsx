@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMe, useMySubscription, useSendInvite } from '@artist/api-client';
-import { MASCOT_WIDTH, MyMascot, PhraseLettering } from '@/components/mascot';
+import { MyMascot, PhraseLettering } from '@/components/mascot';
 import { PosterText } from '@/components/poster-text';
 import { TextInput } from '@/components/text-input';
 import { INK_BUTTON_HEIGHT, InkButton } from '@/features/onboarding/ink-button';
@@ -60,14 +60,15 @@ export function BandLiveScreen({ boardId }: { boardId: string }) {
         ]}
       >
         <View style={styles.middle}>
-          {/* The mascot says "you're live" in its own hand, in place of the kicker. */}
+          {/* The mascot says "you're live" in its own hand, in place of the kicker,
+              a little smaller than elsewhere so the invite fits without scrolling. */}
           <View style={styles.mascot}>
-            <PhraseLettering phrase="youAreLive" label="You're live" on={block.bg} />
-            <MyMascot pose="celebrateBare" width={MASCOT_WIDTH} on={block.bg} />
+            <PhraseLettering phrase="youAreLive" label="You're live" on={block.bg} scale={0.85} />
+            <MyMascot pose="celebrateBare" width={150} on={block.bg} />
           </View>
           <View accessible accessibilityRole="header" style={{ gap: spacing.sm }}>
             <PosterText variant="display" color={block.ink} style={styles.centred}>
-              {`${band?.name ?? 'Your band'}\nIs Open.`}
+              {`${band?.name ?? 'Your band'}.`}
             </PosterText>
             <PosterText variant="body" color={block.ink} style={styles.centred}>
               {freeUntil

@@ -33,7 +33,6 @@ export function CrashScreen({ error, retry }: ErrorBoundaryProps) {
         <PhraseLettering phrase="somethingBroke" label="Something broke" />
         <MyMascot pose="emptyBare" width={MASCOT_WIDTH} />
       </View>
-      <ThemedText variant="headline">Band Wall hit a problem</ThemedText>
       <ThemedText variant="subhead" tone="muted" style={{ textAlign: 'center' }}>
         Something broke while showing this screen. Try again, and if it keeps
         happening, close and reopen the app.

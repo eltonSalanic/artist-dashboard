@@ -110,11 +110,14 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
           </View>
 
           {data.unpaidShows.length > 0 && (
-            <Section
-              title="SHOWS STILL OWING"
-              // The mascot holding up the bill; the heading says what it's for.
-              action={<MyMascot pose="nudgeBare" width={96} accessibilityLabel="" />}
-            >
+            <Section title="SHOWS STILL OWING">
+              {/* The mascot holding up the bill over what's owed; the heading says what it's for. */}
+              <MyMascot
+                pose="nudgeBare"
+                width={120}
+                accessibilityLabel=""
+                style={{ alignSelf: 'center', marginBottom: spacing.sm }}
+              />
               {data.unpaidShows.map((show, index) => (
                 <Row
                   key={show.eventId}

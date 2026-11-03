@@ -87,31 +87,36 @@ export function PhraseLettering({
   phrase,
   label,
   on,
+  scale,
 }: {
   phrase: keyof typeof PHRASE_LETTERING;
   /** For the screen reader, which can't read the drawing. */
   label: string;
   /** The colour behind it, when that isn't the page's own. */
   on?: string;
+  /** Smaller than usual, for a screen that's short of room (1 is the usual size). */
+  scale?: number;
 }) {
-  return <Lettering pair={PHRASE_LETTERING[phrase]} label={label} on={on} />;
+  return <Lettering pair={PHRASE_LETTERING[phrase]} label={label} on={on} scale={scale} />;
 }
 
 function Lettering({
   pair,
   label,
   on,
+  scale = 1,
 }: {
   pair: readonly [unknown, unknown];
   label: string;
   on?: string;
+  scale?: number;
 }) {
   const [light, dark] = pair as unknown as [AnimationObject, AnimationObject];
   const source = useWhiteInk(on) ? dark : light;
   return (
     <Boil
       source={source}
-      width={Math.min(source.w * LETTERING_SCALE, LETTERING_MAX)}
+      width={Math.min(source.w * LETTERING_SCALE, LETTERING_MAX) * scale}
       accessibilityRole="header"
       accessibilityLabel={label}
     />

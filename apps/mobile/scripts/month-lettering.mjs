@@ -164,7 +164,7 @@ const PHRASES = [
   ['nothing-for-you', ['NOTHING', 'FOR YOU.'], 'nothingForYou'],
   ['nothing-here', ['NOTHING', 'HERE.'], 'nothingHere'],
   ['no-gigs-yet', ['NO GIGS', 'YET.'], 'noGigsYet'],
-  ['no-rehearsals', ['NO REHEARSALS', 'YET.'], 'noRehearsals'],
+  ['no-rehearsals', ['NO', 'REHEARSALS.'], 'noRehearsals'],
   ['no-meetings', ['NO MEETINGS', 'YET.'], 'noMeetings'],
   ['no-goals', ['NO GOALS', 'YET.'], 'noGoals'],
   ['all-done', ['ALL', 'DONE.'], 'allDone'],

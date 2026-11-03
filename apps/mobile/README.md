@@ -202,7 +202,7 @@ light and dark.
   hand-drawn by `scripts/month-lettering.mjs`), the phone's mascot at
   `MASCOT_WIDTH` (180) under it, then a centred body line, sitting in the middle
   of the room it's given. Lettering is shown at 0.9 of its drawn size and never
-  wider than 252, so only "NO REHEARSALS YET." and "NO MEETINGS YET." shrink.
+  wider than 252, so only "NO MEETINGS YET." shrinks, by a hair.
   A list that owns a `SpokeList` passes `mascot={{ phrase }}` and gets it on its
   empty state; anything else renders it directly:
 
@@ -226,12 +226,15 @@ light and dark.
     only when there are none at all; a filter or search that matches nothing stays
     in plain words), Archive (same rule), Attach.
   - Success, lettering + `celebrateBare`: "You're live" after starting a band
-    and "You're in" after joining one, replacing the small kicker; on "You're in"
-    the headline is just the band's name, so it doesn't say "you're in" twice.
-  - Finances: `nudgeBare` (96 wide) beside SHOWS STILL OWING.
+    and "You're in" after joining one, replacing the small kicker, and the
+    headline is just the band's name, so neither says it twice. "You're live"
+    draws both a little smaller (mascot 150, lettering at 0.85) so its invite
+    box fits an iPhone 17 Pro without scrolling.
+  - Finances: `nudgeBare` (120 wide) centred at the top of SHOWS STILL OWING.
   - `hero`: sign-in (160, above the masthead), the paywall (140) and the no-band
     screen (120; any bigger and Continue goes under the tab bar).
-  - Errors, `emptyBare`: the crash screen under "SOMETHING BROKE.", and the
+  - Errors, `emptyBare`: the crash screen under "SOMETHING BROKE." (then just
+    its one explanatory line), and the
     launch error (the lettering only when it's not just offline).
     `useMascot()` falls back to dez outside its provider, since the crash screen
     can render above it.
