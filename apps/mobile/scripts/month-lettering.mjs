@@ -59,6 +59,7 @@ const GLYPHS = {
   W: [28, [[[0, 0], [7, H], [14, 9], [21, H], [28, 0]]]],
   Y: [20, [[[0, 0], [10, 15], [20, 0]], [[10, 15], [10, H]]]],
   '.': [1, [[[0, H - 1], [0.6, H - 0.4]]]],
+  "'": [2, [[[2.2, 0.5], [0.4, 8]]]],
 };
 
 // ---------- a seeded hand: small, repeatable unsteadiness ----------
@@ -174,7 +175,8 @@ const PHRASES = [
   ['nothing-to-attach', ['NOTHING TO', 'ATTACH.'], 'nothingToAttach'],
   // In the slot "YOU ARE LIVE." had, so the lines after it keep their seeds.
   ['bandwall-is-up', ['YOUR', 'BANDWALL', 'IS UP'], 'bandwallIsUp'],
-  ['you-are-in', ['YOU ARE', 'IN.'], 'youAreIn'],
+  // In the slot "YOU ARE IN." had, so the lines after it keep their seeds.
+  ['youre-in', ["YOU'RE IN"], 'youreIn'],
   ['something-broke', ['SOMETHING', 'BROKE.'], 'somethingBroke'],
 ];
 

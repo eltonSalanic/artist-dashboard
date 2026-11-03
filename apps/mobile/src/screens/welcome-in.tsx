@@ -30,22 +30,22 @@ export function WelcomeInScreen() {
       <View style={styles.middle}>
         {/* The mascot cheers it in its own hand, so the headline is just the band. */}
         <View style={styles.mascot}>
-          <PhraseLettering phrase="youAreIn" label="You're in" on={block.bg} />
+          <PhraseLettering phrase="youreIn" label="You're in" on={block.bg} />
           <MyMascot pose="celebrateBare" width={MASCOT_WIDTH} on={block.bg} />
         </View>
         <View accessible accessibilityRole="header" style={{ gap: spacing.sm }}>
           <PosterText variant="display" color={block.ink} style={styles.centred}>
-            {`${board?.name ?? 'The Band'}.`}
+            {board?.name ?? 'The band'}
           </PosterText>
           <PosterText variant="body" color={block.ink} style={styles.centred}>
             {owner
-              ? `It's free for you: ${owner}'s subscription covers the whole band.`
-              : "It's free for you: the band's owner covers everyone in it."}
+              ? `${owner}'s subscription covers the whole band`
+              : "Your band owner's subscription covers the whole band"}
           </PosterText>
         </View>
       </View>
       <InkButton
-        title="See the wall"
+        title="See The Wall"
         ink={block.ink}
         bg={block.bg}
         onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}

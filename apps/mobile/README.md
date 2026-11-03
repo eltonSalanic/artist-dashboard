@@ -214,11 +214,11 @@ light and dark.
 
   On a colour that isn't the page's (a band's block), pass `on={block.bg}` to
   `MyMascot` / `PhraseLettering` and they draw in white when white reads better.
-- **Lettered lines** (`PHRASES` in `scripts/month-lettering.mjs`, capitals and
-  "." only): the 12 months ("NOTHING IN <MONTH>."), `nothingForYou`,
+- **Lettered lines** (`PHRASES` in `scripts/month-lettering.mjs`, capitals,
+  "." and "'"; no Q, X, Z or digits yet): the 12 months ("NOTHING IN <MONTH>."), `nothingForYou`,
   `nothingHere`, `noGigsYet`, `noRehearsals`, `noMeetings`, `noGoals`,
   `allDone`, `nothingToRemember`, `nothingArchived`, `nothingToAttach`,
-  `bandwallIsUp` ("YOUR BANDWALL IS UP"), `youAreIn`, `somethingBroke`. Add one to `PHRASES` and run
+  `bandwallIsUp` ("YOUR BANDWALL IS UP"), `youreIn` ("YOU'RE IN"), `somethingBroke`. Add one to `PHRASES` and run
   `npm run mascots`.
 - **Where they are:**
   - Empty lists, lettering + `emptyBare`: Calendar month, Inbox, Shows ("NO GIGS
