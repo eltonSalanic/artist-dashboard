@@ -173,6 +173,9 @@ function color(c) {
 const LC = { butt: 1, round: 2, square: 3 }, LJ = { miter: 1, round: 2, bevel: 3 };
 const TR = { ty: 'tr', p: { a: 0, k: [0, 0] }, a: { a: 0, k: [0, 0] }, s: { a: 0, k: [100, 100] }, r: { a: 0, k: 0 }, o: { a: 0, k: 100 }, sk: { a: 0, k: 0 }, sa: { a: 0, k: 0 } };
 let VIEW = null; // [w, h] of the canvas being converted
+// Dark-mode outline: when set, every shape also gets a wider copy in this colour in a layer
+// underneath, so dark ink reads on a dark background. { color: [r,g,b,1], w: extra width per side }
+let OUTLINE = null, OUTLINED = null;
 const INHERIT = ['fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'fill-rule'];
 
 // Walk one static frame's tree into Lottie groups (in SVG paint order).
@@ -209,6 +212,15 @@ function walk(node, m, style, out) {
   if (fillC) items.push({ ty: 'fl', c: { a: 0, k: fillC }, o: { a: 0, k: o }, r: st['fill-rule'] === 'evenodd' ? 2 : 1 });
   items.push(TR);
   out.push({ ty: 'gr', it: items });
+  if (OUTLINE) {
+    const base = strokeC ? parseFloat(st['stroke-width'] ?? 1) * scale : 0;
+    OUTLINED.push({ ty: 'gr', it: [
+      ...items.filter((it) => it.ty === 'sh'),
+      { ty: 'st', c: { a: 0, k: OUTLINE.color }, o: { a: 0, k: o }, w: { a: 0, k: R(base + 2 * OUTLINE.w) }, lc: 2, lj: 2, ml: 4 },
+      ...(fillC ? [{ ty: 'fl', c: { a: 0, k: OUTLINE.color }, o: { a: 0, k: o }, r: 1 }] : []),
+      TR,
+    ] });
+  }
 }
 
 // ---------- frame splitting (same logic as build-mascots.mjs) ----------
@@ -231,23 +243,26 @@ export function splitFrames(svg) {
   });
 }
 
-export function svgToLottie(svgText, name = 'mascot', viewBox) {
+export function svgToLottie(svgText, name = 'mascot', viewBox, outline = null) {
   const frames = splitFrames(svgText);
   let vb = (viewBox ?? parseXml(frames[0]).attrs.viewBox ?? '0 0 400 400').split(/[\s,]+/).map(Number);
   const [vx, vy, vw, vh] = vb;
   const base = [1, 0, 0, 1, -vx, -vy];
   VIEW = [vw, vh];
-  const layers = frames.map((f, idx) => {
+  // outline width scales with the canvas: 5 units on a 400 canvas, at least 2
+  OUTLINE = outline ? { color: color(outline), w: Math.max(2, (5 * Math.min(vw, vh)) / 400) } : null;
+  const KS = { o: { a: 0, k: 100 }, r: { a: 0, k: 0 }, p: { a: 0, k: [0, 0, 0] }, a: { a: 0, k: [0, 0, 0] }, s: { a: 0, k: [100, 100, 100] } };
+  const layers = [];
+  frames.forEach((f, idx) => {
     const svg = parseXml(f), shapes = [];
+    OUTLINED = [];
     for (const c of svg.children) walk(c, base, {}, shapes);
     shapes.reverse(); // Lottie: first item is drawn on top
-    return {
-      ddd: 0, ind: idx + 1, ty: 4, nm: `boil ${idx + 1}`, sr: 1, ao: 0, bm: 0, st: 0,
-      ip: idx * HOLD, op: (idx + 1) * HOLD,
-      ks: { o: { a: 0, k: 100 }, r: { a: 0, k: 0 }, p: { a: 0, k: [0, 0, 0] }, a: { a: 0, k: [0, 0, 0] }, s: { a: 0, k: [100, 100, 100] } },
-      shapes,
-    };
+    const common = { ddd: 0, ty: 4, sr: 1, ao: 0, bm: 0, st: 0, ip: idx * HOLD, op: (idx + 1) * HOLD, ks: KS };
+    layers.push({ ...common, ind: layers.length + 1, nm: `boil ${idx + 1}`, shapes });
+    if (OUTLINE) layers.push({ ...common, ind: layers.length + 1, nm: `boil ${idx + 1} outline`, shapes: OUTLINED.reverse() });
   });
+  OUTLINE = null;
   return { v: '5.7.4', fr: FPS, ip: 0, op: frames.length * HOLD, w: Math.round(vw), h: Math.round(vh), nm: name, ddd: 0, assets: [], layers };
 }
 
@@ -265,9 +280,12 @@ if (process.argv[1] && fs.realpathSync(fileURLToPath(import.meta.url)) === fs.re
     const dir = path.join(SRC, name);
     if (name === 'lockups' || !fs.statSync(dir).isDirectory()) continue;
     const read = (f) => fs.readFileSync(path.join(dir, f), 'utf8');
-    total += write(`${name}/hero.json`, svgToLottie(read('hero.svg'), `${name} hero`)); count++;
-    total += write(`${name}/icon.json`, svgToLottie(read('small.svg'), `${name} icon`)); count++;
-    for (const [pose, x] of POSES) { total += write(`${name}/${pose}.json`, svgToLottie(read('poses.svg'), `${name} ${pose}`, `${x} 0 400 400`)); count++; }
+    // each pose twice: as drawn (light backgrounds) and with a white outline (dark mode)
+    for (const [suffix, outline] of [['', null], ['-outlined', '#FFFFFF']]) {
+      total += write(`${name}/hero${suffix}.json`, svgToLottie(read('hero.svg'), `${name} hero`, undefined, outline)); count++;
+      total += write(`${name}/icon${suffix}.json`, svgToLottie(read('small.svg'), `${name} icon`, undefined, outline)); count++;
+      for (const [pose, x] of POSES) { total += write(`${name}/${pose}${suffix}.json`, svgToLottie(read('poses.svg'), `${name} ${pose}`, `${x} 0 400 400`, outline)); count++; }
+    }
   }
   const lock = path.join(SRC, 'lockups');
   if (fs.existsSync(lock)) for (const name of fs.readdirSync(lock)) for (const f of fs.readdirSync(path.join(lock, name)).filter((f) => f.endsWith('.svg'))) {
@@ -278,7 +296,7 @@ if (process.argv[1] && fs.realpathSync(fileURLToPath(import.meta.url)) === fs.re
   for (const name of fs.readdirSync(OUT)) {
     const dir = path.join(OUT, name);
     if (name === 'lockups' || !fs.statSync(dir).isDirectory()) continue;
-    entries[name] = fs.readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) => [f.replace('.json', ''), `./${name}/${f}`]);
+    entries[name] = fs.readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) => [f.replace('.json', '').replace(/-(\w)/g, (_, c) => c.toUpperCase()), `./${name}/${f}`]);
   }
   const lockOut = path.join(OUT, 'lockups');
   if (fs.existsSync(lockOut)) for (const name of fs.readdirSync(lockOut)) {

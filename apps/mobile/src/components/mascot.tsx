@@ -4,6 +4,7 @@ import LottieView, { type AnimationObject } from 'lottie-react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { MASCOT_LOTTIE, type MascotName, type MascotPose } from '../../assets/mascots/lottie';
 import { useMascot } from '@/features/mascot/mascot-preference';
+import { useScheme } from '@/theme';
 
 export type { MascotName, MascotPose };
 /** The poses both characters have, so a screen can ask for one without knowing who. */
@@ -15,6 +16,9 @@ export type SharedPose = MascotPose<'dez'> & MascotPose<'bunz'>;
  * The animations are generated from the SVGs in `assets/mascots/src` by
  * `npm run mascots`. Height follows the animation's own aspect ratio, so a
  * caller only sets the width. With Reduce Motion on, it holds the first frame.
+ *
+ * The ink is near-black, so on the dark theme a pose plays its white-outlined
+ * twin (`heroOutlined` for `hero`) when it has one.
  */
 export function Mascot<N extends MascotName>({
   name,
@@ -32,7 +36,9 @@ export function Mascot<N extends MascotName>({
   style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
 }) {
-  const source = MASCOT_LOTTIE[name][pose] as AnimationObject;
+  const poses = MASCOT_LOTTIE[name] as Record<string, AnimationObject>;
+  const outlined = useScheme() === 'dark' ? poses[`${String(pose)}Outlined`] : undefined;
+  const source = outlined ?? poses[pose as string];
   const ref = useRef<LottieView>(null);
   const reduceMotion = useReducedMotion();
   const animate = playing && !reduceMotion;
