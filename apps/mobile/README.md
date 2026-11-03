@@ -179,7 +179,8 @@ dez and bunz are drawn as SVGs in `assets/mascots/src` and converted to Lottie
 JSON in `assets/mascots/lottie` by `npm run mascots -w apps/mobile`
 (`scripts/svg-to-lottie.mjs`, no dependencies). That also regenerates
 `assets/mascots/lottie/index.ts`, the static `require` registry. Poses: `hero`,
-`celebrate`, `empty`, `nudge`, `icon` (head only), each with a
+`celebrate`, `empty` (lettered "no gigs yet"), `emptyBare` (the same pose
+cropped below its lettering), `nudge`, `icon` (head only), each with a
 `…Dark` twin drawn in white that `Mascot` plays on the dark theme, plus logo lockups in
 light and dark.
 
@@ -191,7 +192,7 @@ light and dark.
   and provided at the root layout, so it also shows on the signed-out screens.
   `useMascot()` reads and sets it.
 - The picker is the MASCOT section on the You tab.
-- The empty calendar month shows the `empty` pose above "Nothing in <month>.". To place one elsewhere:
+- The empty calendar month shows "Nothing In <month>." over the `emptyBare` pose. To place one elsewhere:
 
   ```tsx
   import { MyMascot } from '@/components/mascot';
