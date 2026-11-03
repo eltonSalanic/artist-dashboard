@@ -153,14 +153,14 @@ export function StartBandScreen() {
       >
         {signingUp && <StepProgress step={2} of={3} />}
         <MyMascot pose="hero" width={120} style={{ alignSelf: 'center' }} />
-        <View accessible accessibilityRole="header" style={{ gap: spacing.xs }}>
-          <PosterText variant="label" color={canvas.soft} style={styles.centred}>
-            {"NEW BAND · YOU'LL OWN IT"}
-          </PosterText>
-          <PosterText variant="display" color={canvas.ink} style={styles.centred}>
-            Name Your Band.
-          </PosterText>
-        </View>
+        <PosterText
+          variant="display"
+          color={canvas.ink}
+          accessibilityRole="header"
+          style={styles.centred}
+        >
+          Name Your Band.
+        </PosterText>
 
         <TextField
           label="Band name"
