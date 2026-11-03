@@ -60,13 +60,13 @@ export function BandLiveScreen({ boardId }: { boardId: string }) {
       >
         <View style={styles.middle}>
           <View accessible accessibilityRole="header" style={{ gap: spacing.sm }}>
-            <PosterText variant="label" color={block.soft}>
+            <PosterText variant="label" color={block.soft} style={styles.centred}>
               {"YOU'RE LIVE"}
             </PosterText>
-            <PosterText variant="display" color={block.ink}>
+            <PosterText variant="display" color={block.ink} style={styles.centred}>
               {`${band?.name ?? 'Your band'}\nIs Open.`}
             </PosterText>
-            <PosterText variant="body" color={block.ink}>
+            <PosterText variant="body" color={block.ink} style={styles.centred}>
               {freeUntil
                 ? `Free until ${freeUntil}. Bring the band in: they join free.`
                 : 'Bring the band in: they join free.'}
@@ -123,6 +123,7 @@ const styles = StyleSheet.create({
   content: { flexGrow: 1, paddingHorizontal: spacing.lg, gap: spacing.lg },
   // Fills the room above the button and sits the message and invite just above its middle.
   middle: { flex: 1, justifyContent: 'center', gap: spacing.lg, paddingBottom: spacing.xl },
+  centred: { textAlign: 'center' },
   inviteBlock: {
     borderRadius: posterRadius.block * 1.7,
     borderCurve: 'continuous',

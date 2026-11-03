@@ -27,13 +27,13 @@ export function WelcomeInScreen() {
       ]}
     >
       <View accessible accessibilityRole="header" style={styles.middle}>
-        <PosterText variant="label" color={block.soft}>
+        <PosterText variant="label" color={block.soft} style={styles.centred}>
           WELCOME IN
         </PosterText>
-        <PosterText variant="display" color={block.ink}>
+        <PosterText variant="display" color={block.ink} style={styles.centred}>
           {`You're In\n${board?.name ?? 'The Band'}.`}
         </PosterText>
-        <PosterText variant="body" color={block.ink}>
+        <PosterText variant="body" color={block.ink} style={styles.centred}>
           {owner
             ? `It's free for you: ${owner}'s subscription covers the whole band.`
             : "It's free for you: the band's owner covers everyone in it."}
@@ -53,4 +53,5 @@ const styles = StyleSheet.create({
   content: { flexGrow: 1, paddingHorizontal: spacing.lg, gap: spacing.lg },
   // Fills the room above the button and sits the message just above its middle.
   middle: { flex: 1, justifyContent: 'center', gap: spacing.sm, paddingBottom: spacing.xxl },
+  centred: { textAlign: 'center' },
 });

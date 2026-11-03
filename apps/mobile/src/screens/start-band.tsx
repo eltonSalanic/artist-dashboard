@@ -152,10 +152,10 @@ export function StartBandScreen() {
       >
         {signingUp && <StepProgress step={2} of={3} />}
         <View accessible accessibilityRole="header" style={{ gap: spacing.xs }}>
-          <PosterText variant="label" color={canvas.soft}>
+          <PosterText variant="label" color={canvas.soft} style={styles.centred}>
             {"NEW BAND · YOU'LL OWN IT"}
           </PosterText>
-          <PosterText variant="display" color={canvas.ink}>
+          <PosterText variant="display" color={canvas.ink} style={styles.centred}>
             Name Your Band.
           </PosterText>
         </View>
@@ -223,13 +223,13 @@ export function StartBandScreen() {
         </View>
 
         {awaiting && !stuck && (
-          <PosterText variant="body" color={canvas.soft}>
+          <PosterText variant="body" color={canvas.soft} style={styles.centred}>
             Confirming your free month…
           </PosterText>
         )}
         {stuck && (
           <View style={{ gap: spacing.sm }}>
-            <PosterText variant="body" color={canvas.soft}>
+            <PosterText variant="body" color={canvas.soft} style={styles.centred}>
               {"We can't confirm your purchase yet. If you bought it, you're covered, so there's no need to buy again."}
             </PosterText>
             <Button title="Try again" variant="secondary" onPress={confirm} />
@@ -243,7 +243,7 @@ export function StartBandScreen() {
           onPress={() => void next()}
         />
 
-        <PosterText variant="body" color={canvas.soft} style={{ textAlign: 'center' }}>
+        <PosterText variant="body" color={canvas.soft} style={styles.centred}>
           {`Joining a band instead? Ask one of its admins to invite ${me.data?.user.email ?? 'you'}.`}
         </PosterText>
       </ScrollView>
@@ -252,7 +252,9 @@ export function StartBandScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { flexGrow: 1, paddingHorizontal: spacing.lg, gap: spacing.lg },
+  // The form sits in the middle of a tall phone rather than under the status bar.
+  content: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: spacing.lg, gap: spacing.lg },
+  centred: { textAlign: 'center' },
   swatches: { flexDirection: 'row', gap: spacing.md - 4 },
   swatch: { width: 40, height: 40, borderRadius: 20 },
   preview: {

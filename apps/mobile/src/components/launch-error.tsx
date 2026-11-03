@@ -5,6 +5,8 @@ import { Button } from './button';
 import { Icon } from './icon';
 import { PosterText } from './poster-text';
 
+const centred = { textAlign: 'center' } as const;
+
 /**
  * The screen when the very first request after launch fails, so the app has
  * nothing to show yet. Set in the same poster voice as sign-in (small caps
@@ -36,7 +38,7 @@ export function LaunchError({
         backgroundColor: canvas.background,
       }}
     >
-      <View style={{ gap: spacing.md }}>
+      <View style={{ gap: spacing.md, alignItems: 'center' }}>
         <View
           style={{
             width: 64,
@@ -58,14 +60,14 @@ export function LaunchError({
           />
         </View>
         <View style={{ gap: spacing.xs }}>
-          <PosterText variant="label" color={canvas.soft}>
+          <PosterText variant="label" color={canvas.soft} style={centred}>
             BAND WALL
           </PosterText>
-          <PosterText variant="display" color={canvas.ink}>
+          <PosterText variant="display" color={canvas.ink} style={centred}>
             {offline ? "You're offline" : "Couldn't load your bands"}
           </PosterText>
         </View>
-        <PosterText variant="paragraph" color={canvas.soft}>
+        <PosterText variant="paragraph" color={canvas.soft} style={centred}>
           {offline
             ? "Band Wall can't reach the server. Check your Wi-Fi or mobile data, then try again."
             : toUserMessage(error)}

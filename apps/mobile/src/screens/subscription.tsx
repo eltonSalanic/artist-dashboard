@@ -27,6 +27,9 @@ import {
 import { reportError } from '@/lib/report-error';
 import { spacing, useThemeColors } from '@/theme';
 
+/** Headings and lines that stand on the screen itself, not in a section, are centred. */
+const centred = { textAlign: 'center' } as const;
+
 const STATUS_COPY: Record<NonNullable<BoardSubscriptionDto['status']>, string> = {
   ACTIVE: 'Active',
   GRACE: 'Payment problem: still on while the store retries',
@@ -85,10 +88,10 @@ function MemberView({ boardId, footer }: { boardId: string; footer?: ReactNode }
     >
       {/* Only a few lines, so they sit just above the middle rather than under the header. */}
       <View style={{ flex: 1, justifyContent: 'center', gap: spacing.sm, paddingBottom: spacing.xxl }}>
-        <ThemedText variant="title">
+        <ThemedText variant="title" style={centred}>
           {locked ? "This band's owner needs to renew" : `${name} is good to go`}
         </ThemedText>
-        <ThemedText variant="subhead" tone="muted">
+        <ThemedText variant="subhead" tone="muted" style={centred}>
           {locked
             ? `${name} is locked for now, and everything's safe. ${
                 owner ? `Give ${owner} a nudge and it'll open right back up.` : ''
@@ -186,7 +189,7 @@ function OwnerView({ boardId, footer }: { boardId?: string; footer?: ReactNode }
 
   const anyTrial = packages.data?.some((p) => p.freeTrial) ?? true;
   const trialNote = packages.data?.some((p) => p.freeTrial) && (
-    <ThemedText variant="footnote" tone="muted">
+    <ThemedText variant="footnote" tone="muted" style={centred}>
       {`First month's on us. After that it's ${packages.data
         .map(({ pkg }) => `${pkg.product.priceString} ${pkg.packageType === 'ANNUAL' ? 'a year' : 'a month'}`)
         .join(' or ')}. Cancel before it's up and you won't pay a thing.`}
@@ -197,10 +200,17 @@ function OwnerView({ boardId, footer }: { boardId?: string; footer?: ReactNode }
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={{ padding: spacing.md, gap: spacing.xl }}
+      // Short enough to sit in the middle; a longer plan list still scrolls from the top.
+      contentContainerStyle={{
+        flexGrow: 1,
+        justifyContent: 'center',
+        padding: spacing.md,
+        paddingBottom: spacing.xxl,
+        gap: spacing.xl,
+      }}
     >
       <View style={{ gap: spacing.sm }}>
-        <ThemedText variant="title">
+        <ThemedText variant="title" style={centred}>
           {!boardId
             ? isPro
               ? `You're subscribed to ${BAND_WALL_PLAN.name}`
@@ -209,7 +219,7 @@ function OwnerView({ boardId, footer }: { boardId?: string; footer?: ReactNode }
               ? `${name} has a ${BAND_WALL_PLAN.name} subscription`
               : `${name} needs a ${BAND_WALL_PLAN.name} subscription`}
         </ThemedText>
-        <ThemedText variant="subhead" tone="muted">
+        <ThemedText variant="subhead" tone="muted" style={centred}>
           {boardId
             ? 'You own this band, so your subscription keeps it open for everyone in it.'
             : `A ${BAND_WALL_PLAN.name} subscription lets you own a band, and it covers everyone in it. Joining a band is always free.`}
@@ -231,14 +241,14 @@ function OwnerView({ boardId, footer }: { boardId?: string; footer?: ReactNode }
       )}
 
       {awaiting && !stuck && (
-        <ThemedText variant="subhead" tone="muted">
+        <ThemedText variant="subhead" tone="muted" style={centred}>
           Confirming your purchase…
         </ThemedText>
       )}
 
       {stuck && (
         <View style={{ gap: spacing.sm }}>
-          <ThemedText variant="subhead" tone="muted">
+          <ThemedText variant="subhead" tone="muted" style={centred}>
             {"We can't confirm your purchase yet. If you bought it, you're covered, so there's no need to buy again."}
           </ThemedText>
           <Button title="Try again" onPress={confirm} />
@@ -291,7 +301,7 @@ function OwnerView({ boardId, footer }: { boardId?: string; footer?: ReactNode }
       )}
 
       {!isPro && !canBuy && (
-        <ThemedText variant="subhead" tone="muted">
+        <ThemedText variant="subhead" tone="muted" style={centred}>
           Subscribe from Band Wall on the web.
         </ThemedText>
       )}

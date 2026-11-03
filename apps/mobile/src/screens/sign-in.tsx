@@ -187,13 +187,13 @@ export function SignInScreen() {
         </Pressable>
         {mode === 'signup' && <StepProgress step={1} of={3} />}
         <View accessible accessibilityRole="header" style={styles.masthead}>
-          <PosterText variant="label" color={canvas.soft}>
+          <PosterText variant="label" color={canvas.soft} style={styles.centred}>
             BAND WALL
           </PosterText>
-          <PosterText variant="display" color={canvas.ink}>
+          <PosterText variant="display" color={canvas.ink} style={styles.centred}>
             {copy.title}
           </PosterText>
-          <PosterText variant="body" color={canvas.soft}>
+          <PosterText variant="body" color={canvas.soft} style={styles.centred}>
             {copy.lead}
           </PosterText>
         </View>
@@ -290,7 +290,7 @@ export function SignInScreen() {
         />
 
         {notice !== null && (
-          <ThemedText variant="footnote" tone="muted">
+          <ThemedText variant="footnote" tone="muted" style={styles.centred}>
             {notice}
           </ThemedText>
         )}
@@ -336,6 +336,7 @@ const styles = StyleSheet.create({
   back: { alignSelf: 'flex-start', paddingVertical: spacing.xs },
   form: { padding: spacing.lg, gap: spacing.md },
   masthead: { gap: spacing.xs, marginBottom: spacing.sm },
+  centred: { textAlign: 'center' },
   submit: { marginTop: spacing.sm },
   link: { alignItems: 'center', paddingVertical: spacing.sm },
   inviteLink: { alignItems: 'center', paddingBottom: spacing.sm },

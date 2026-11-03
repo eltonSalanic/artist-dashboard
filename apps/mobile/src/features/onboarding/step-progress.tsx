@@ -12,7 +12,7 @@ export function StepProgress({ step, of }: { step: number; of: number }) {
       accessibilityLabel={`Step ${step} of ${of}`}
       style={{ gap: spacing.sm }}
     >
-      <PosterText variant="label" color={canvas.soft}>
+      <PosterText variant="label" color={canvas.soft} style={{ textAlign: 'center' }}>
         {`STEP ${step} OF ${of}`}
       </PosterText>
       <View style={{ flexDirection: 'row', gap: 5 }}>
