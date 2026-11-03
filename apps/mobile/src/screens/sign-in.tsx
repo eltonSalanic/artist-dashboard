@@ -18,8 +18,9 @@ type Mode = 'signin' | 'signup' | 'invite';
 /** Web's rule for the password an invited bandmate sets. */
 const MIN_PASSWORD = 8;
 
-const COPY: Record<Mode, { title: string; lead: string; submit: string }> = {
-  signin: { title: 'Welcome back', lead: "Sign in to your band's dashboard.", submit: 'Sign in' },
+// Signing in needs no explaining, so it has no lead; the logo above already says where you are.
+const COPY: Record<Mode, { title: string; lead?: string; submit: string }> = {
+  signin: { title: 'Welcome back', submit: 'Sign in' },
   signup: {
     title: 'First, You.',
     lead: 'Your bandmates see this name on tasks and shows.',
@@ -199,9 +200,11 @@ export function SignInScreen() {
           <PosterText variant="display" color={canvas.ink} style={styles.centred}>
             {copy.title}
           </PosterText>
-          <PosterText variant="body" color={canvas.soft} style={styles.centred}>
-            {copy.lead}
-          </PosterText>
+          {copy.lead && (
+            <PosterText variant="body" color={canvas.soft} style={styles.centred}>
+              {copy.lead}
+            </PosterText>
+          )}
         </View>
 
         {mode === 'signup' && (

@@ -230,7 +230,6 @@ light and dark.
     headline is just the band's name, so neither says it twice. "You're live"
     draws both a little smaller (mascot 150, lettering at 0.85) so its invite
     box fits an iPhone 17 Pro without scrolling.
-  - Finances: `nudgeBare` (120 wide) centred at the top of SHOWS STILL OWING.
   - Sign-in opens with `MascotLockup lockup="leaningWordmark"` (the mascot leaning
     on the band wall wordmark, as wide as the form up to 320) in place of the
     small BAND WALL caps. The converter leaves out a lockup's full-size paper rect,

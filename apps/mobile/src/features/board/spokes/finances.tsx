@@ -17,7 +17,6 @@ import { PickOne } from '@/components/pick-one';
 import { ChoiceChips } from '@/components/choice-chips';
 import { MemberHistory } from '../../finances/member-history';
 import { FinanceAmount } from '../../finances/finance-amount';
-import { MyMascot } from '@/components/mascot';
 import { PosterText } from '@/components/poster-text';
 import { Row } from '@/components/row';
 import { Section } from '@/components/section';
@@ -111,13 +110,6 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
 
           {data.unpaidShows.length > 0 && (
             <Section title="SHOWS STILL OWING">
-              {/* The mascot holding up the bill over what's owed; the heading says what it's for. */}
-              <MyMascot
-                pose="nudgeBare"
-                width={120}
-                accessibilityLabel=""
-                style={{ alignSelf: 'center', marginBottom: spacing.sm }}
-              />
               {data.unpaidShows.map((show, index) => (
                 <Row
                   key={show.eventId}
