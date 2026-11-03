@@ -284,7 +284,8 @@ if (process.argv[1] && fs.realpathSync(fileURLToPath(import.meta.url)) === fs.re
   let total = 0, count = 0;
   for (const name of fs.readdirSync(SRC)) {
     const dir = path.join(SRC, name);
-    if (name === 'lockups' || !fs.statSync(dir).isDirectory()) continue;
+    // lettering/ is scripts/month-lettering.mjs's, with its own index
+    if (name === 'lockups' || name === 'lettering' || !fs.statSync(dir).isDirectory()) continue;
     const read = (f) => fs.readFileSync(path.join(dir, f), 'utf8');
     // each pose twice: as drawn (light backgrounds) and with the black ink drawn in white (dark mode)
     for (const [suffix, inkTo] of [['', null], ['-dark', '#FFFFFF']]) {
@@ -301,7 +302,8 @@ if (process.argv[1] && fs.realpathSync(fileURLToPath(import.meta.url)) === fs.re
   const entries = {};
   for (const name of fs.readdirSync(OUT)) {
     const dir = path.join(OUT, name);
-    if (name === 'lockups' || !fs.statSync(dir).isDirectory()) continue;
+    // lettering/ is scripts/month-lettering.mjs's, with its own index
+    if (name === 'lockups' || name === 'lettering' || !fs.statSync(dir).isDirectory()) continue;
     entries[name] = fs.readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) => [f.replace('.json', '').replace(/-(\w)/g, (_, c) => c.toUpperCase()), `./${name}/${f}`]);
   }
   const lockOut = path.join(OUT, 'lockups');

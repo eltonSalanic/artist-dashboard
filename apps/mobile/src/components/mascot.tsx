@@ -3,6 +3,7 @@ import { View, type StyleProp, type ViewStyle } from 'react-native';
 import LottieView, { type AnimationObject } from 'lottie-react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { MASCOT_LOTTIE, type MascotName, type MascotPose } from '../../assets/mascots/lottie';
+import { MONTH_LETTERING } from '../../assets/mascots/lottie/lettering';
 import { useMascot } from '@/features/mascot/mascot-preference';
 import { useScheme } from '@/theme';
 
@@ -38,7 +39,62 @@ export function Mascot<N extends MascotName>({
 }) {
   const poses = MASCOT_LOTTIE[name] as Record<string, AnimationObject>;
   const dark = useScheme() === 'dark' ? poses[`${String(pose)}Dark`] : undefined;
-  const source = dark ?? poses[pose as string];
+  return (
+    <Boil
+      source={dark ?? poses[pose as string]}
+      width={width}
+      playing={playing}
+      style={style}
+      accessibilityLabel={accessibilityLabel ?? `${name}, the Band Wall mascot`}
+    />
+  );
+}
+
+/**
+ * "NOTHING IN <MONTH>." in the mascots' own hand lettering, drawn per month by
+ * `npm run mascots` (`scripts/month-lettering.mjs`) to match the "NO GIGS YET."
+ * in the `empty` pose. `month` is 0 for January.
+ */
+export function MonthLettering({
+  month,
+  monthName,
+  width = 220,
+}: {
+  month: number;
+  /** For the screen reader, which can't read the drawing. */
+  monthName: string;
+  width?: number;
+}) {
+  const [light, dark] = MONTH_LETTERING[month] as unknown as [AnimationObject, AnimationObject];
+  return (
+    <Boil
+      source={useScheme() === 'dark' ? dark : light}
+      width={width}
+      accessibilityRole="header"
+      accessibilityLabel={`Nothing in ${monthName}.`}
+    />
+  );
+}
+
+/**
+ * Plays a boiling drawing on loop. Height follows the animation's own aspect
+ * ratio. With Reduce Motion on, or `playing` false, it holds the first frame.
+ */
+function Boil({
+  source,
+  width,
+  playing = true,
+  style,
+  accessibilityRole = 'image',
+  accessibilityLabel,
+}: {
+  source: AnimationObject;
+  width: number;
+  playing?: boolean;
+  style?: StyleProp<ViewStyle>;
+  accessibilityRole?: 'image' | 'header';
+  accessibilityLabel: string;
+}) {
   const ref = useRef<LottieView>(null);
   const reduceMotion = useReducedMotion();
   const animate = playing && !reduceMotion;
@@ -53,8 +109,8 @@ export function Mascot<N extends MascotName>({
   return (
     <View
       accessible
-      accessibilityRole="image"
-      accessibilityLabel={accessibilityLabel ?? `${name}, the Band Wall mascot`}
+      accessibilityRole={accessibilityRole}
+      accessibilityLabel={accessibilityLabel}
       style={[{ width, height }, style]}
     >
       <LottieView

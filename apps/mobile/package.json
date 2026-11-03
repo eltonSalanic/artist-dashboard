@@ -10,7 +10,7 @@
     "test": "tsc --noEmit && TZ=America/Los_Angeles jest",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
-    "mascots": "node scripts/svg-to-lottie.mjs assets/mascots/src assets/mascots/lottie"
+    "mascots": "node scripts/svg-to-lottie.mjs assets/mascots/src assets/mascots/lottie && node scripts/month-lettering.mjs assets/mascots/src assets/mascots/lottie"
   },
   "dependencies": {
     "@artist/api-client": "*",

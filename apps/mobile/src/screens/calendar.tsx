@@ -21,7 +21,7 @@ import { BoardFilter } from '@/components/board-filter';
 import { ChoiceChips } from '@/components/choice-chips';
 import { Icon, type IconName } from '@/components/icon';
 import { ListState } from '@/components/list-state';
-import { MyMascot } from '@/components/mascot';
+import { MonthLettering, MyMascot } from '@/components/mascot';
 import { PosterText } from '@/components/poster-text';
 import { useBoardScope } from '@/features/boards/use-board-scope';
 import { timeOfDay } from '@/features/board/format';
@@ -415,7 +415,7 @@ function Agenda({
             />
           </View>
         ) : (
-          <EmptyMonth monthName={monthName} filtered={types.length > 0} canvas={canvas} />
+          <EmptyMonth month={month} monthName={monthName} filtered={types.length > 0} canvas={canvas} />
         )
       }
     />
@@ -430,10 +430,13 @@ const isTodayDay = (parts: { year: number; month: number; day: number }) => {
 };
 
 function EmptyMonth({
+  month,
   monthName,
   filtered,
   canvas,
 }: {
+  /** 0 for January. */
+  month: number;
   monthName: string;
   filtered: boolean;
   canvas: PosterCanvas;
@@ -441,12 +444,10 @@ function EmptyMonth({
   return (
     // Fills the room under the month header and sits in its middle.
     <View style={{ flex: 1, justifyContent: 'center', gap: spacing.sm, paddingBottom: spacing.xl }}>
-      {/* The heading takes the place of the "no gigs yet" lettered into the
-          `empty` pose, so it names the month; the bare pose sits under it. */}
-      <PosterText variant="display" color={canvas.ink} style={{ textAlign: 'center' }}>
-        Nothing In {monthName}.
-      </PosterText>
-      <View style={{ alignSelf: 'center' }}>
+      {/* Lettered by hand like the "no gigs yet" in the `empty` pose, over that
+          pose with its own lettering cropped off. */}
+      <View style={{ alignSelf: 'center', alignItems: 'center', gap: spacing.md }}>
+        <MonthLettering month={month} monthName={monthName} />
         <MyMascot pose="emptyBare" width={180} />
       </View>
       <PosterText variant="body" color={canvas.soft} style={{ textAlign: 'center' }}>
