@@ -179,8 +179,10 @@ dez and bunz are drawn as SVGs in `assets/mascots/src` and converted to Lottie
 JSON in `assets/mascots/lottie` by `npm run mascots -w apps/mobile`
 (`scripts/svg-to-lottie.mjs`, then `scripts/month-lettering.mjs`; no dependencies). That also regenerates
 `assets/mascots/lottie/index.ts`, the static `require` registry. Poses: `hero`,
-`celebrate`, `empty` (lettered "no gigs yet"), `emptyBare` (the same pose
-cropped below its lettering), `nudge`, `icon` (head only), each with a
+`celebrate`, `empty` (lettered "no gigs yet"), `nudge`, `icon` (head only), and
+the bare poses with their drawn words left out: `emptyBare` (cropped below the
+lettering), `celebrateBare` (cut under the feet; strokes crossing the edge are
+dropped whole) and `nudgeBare` (each character's lettering boxed out). Each has a
 `…Dark` twin drawn in white that `Mascot` plays on the dark theme, plus logo lockups in
 light and dark.
 
@@ -196,21 +198,48 @@ light and dark.
   mascot, 1024 × 1024. It is the app icon: `assets/expo.icon` (iOS Icon Composer, the b
   and the wall as two layers on the paper colour), `assets/images/icon.png` and the
   Android adaptive `android-icon-*.png`. A new icon needs a new native build.
-- The empty calendar month shows `MonthLettering` ("NOTHING IN <MONTH>." hand-lettered
-  to match the `empty` pose's "NO GIGS YET.") over the `emptyBare` pose, and the
-  empty Inbox does the same with `PhraseLettering` ("NOTHING FOR YOU."). The 12
-  months and the phrases (`PHRASES` in the script) are drawn by `scripts/month-lettering.mjs` (also run by `npm run mascots`)
-  into `assets/mascots/src/lettering` and `assets/mascots/lottie/lettering`. To place
-  a mascot elsewhere:
+- **The placement block.** `MascotMessage` is lettering on top (`PhraseLettering`,
+  hand-drawn by `scripts/month-lettering.mjs`), the phone's mascot at
+  `MASCOT_WIDTH` (180) under it, then a centred body line, sitting in the middle
+  of the room it's given. Lettering is shown at 0.9 of its drawn size and never
+  wider than 252, so only "NO REHEARSALS YET." and "NO MEETINGS YET." shrink.
+  A list that owns a `SpokeList` passes `mascot={{ phrase }}` and gets it on its
+  empty state; anything else renders it directly:
 
   ```tsx
-  import { MyMascot } from '@/components/mascot';
+  import { MascotMessage } from '@/components/mascot';
 
-  <MyMascot pose="empty" width={112} />
+  <MascotMessage phrase="nothingHere" label="Nothing here" body="…" color={tokens.mutedForeground} />
   ```
 
-  Mind the words drawn into some poses: `empty` says "no gigs yet",
-  `celebrate` says "BOOKED!" and `nudge` says "U OWE $20".
+  On a colour that isn't the page's (a band's block), pass `on={block.bg}` to
+  `MyMascot` / `PhraseLettering` and they draw in white when white reads better.
+- **Lettered lines** (`PHRASES` in `scripts/month-lettering.mjs`, capitals and
+  "." only): the 12 months ("NOTHING IN <MONTH>."), `nothingForYou`,
+  `nothingHere`, `noGigsYet`, `noRehearsals`, `noMeetings`, `noGoals`,
+  `allDone`, `nothingToRemember`, `nothingArchived`, `nothingToAttach`,
+  `youAreLive`, `youAreIn`, `somethingBroke`. Add one to `PHRASES` and run
+  `npm run mascots`.
+- **Where they are:**
+  - Empty lists, lettering + `emptyBare`: Calendar month, Inbox, Shows ("NO GIGS
+    YET."), Rehearsals, Meetings, Goals, Reminders, To-Dos / My Tasks ("ALL DONE.",
+    only when there are none at all; a filter or search that matches nothing stays
+    in plain words), Archive (same rule), Attach.
+  - Success, lettering + `celebrateBare`: "You're live" after starting a band
+    and "You're in" after joining one, replacing the small kicker; on "You're in"
+    the headline is just the band's name, so it doesn't say "you're in" twice.
+  - Finances: `nudgeBare` (96 wide) beside SHOWS STILL OWING.
+  - `hero`: sign-in (160, above the masthead), the paywall (140) and the no-band
+    screen (120; any bigger and Continue goes under the tab bar).
+  - Errors, `emptyBare`: the crash screen under "SOMETHING BROKE.", and the
+    launch error (the lettering only when it's not just offline).
+    `useMascot()` falls back to dez outside its provider, since the crash screen
+    can render above it.
+  - The MASCOT picker on the You tab (`icon`).
+
+  Mind the words drawn into the full poses: `empty` says "no gigs yet",
+  `celebrate` says "BOOKED!" (bunz: "booked!") and `nudge` says "U OWE $20"
+  (bunz: "oi sam. $20."). Use the bare poses with lettering instead.
 
 Lottie is a native module, so pulling this in needs a new dev build
 (`npx expo run:ios`), not just a Metro reload.

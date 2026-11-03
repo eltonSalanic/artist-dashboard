@@ -152,7 +152,7 @@ export function StartBandScreen() {
         ]}
       >
         {signingUp && <StepProgress step={2} of={3} />}
-        <MyMascot pose="hero" width={200} style={{ alignSelf: 'center' }} />
+        <MyMascot pose="hero" width={120} style={{ alignSelf: 'center' }} />
         <View accessible accessibilityRole="header" style={{ gap: spacing.xs }}>
           <PosterText variant="label" color={canvas.soft} style={styles.centred}>
             {"NEW BAND · YOU'LL OWN IT"}
