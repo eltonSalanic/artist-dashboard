@@ -77,7 +77,6 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
       }}
       empty={!visible}
       emptyIcon={{ sf: 'dollarsign.circle', md: 'account-balance-wallet' }}
-      emptyMascot={false}
       emptyTitle="Only admins see the books"
       header={
         <SpokeHeader

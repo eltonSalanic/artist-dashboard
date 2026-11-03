@@ -12,7 +12,7 @@ import { toUserMessage } from '@artist/api-client';
  * The four states every list has, in one place: loading, error, empty, content.
  *
  * Empty means *resolved with nothing in it* — it is a designed state that says
- * why and what to do, not a blank area, with the mascot sitting it out. Loading shows rows in the shape of the
+ * why and what to do, not a blank area. Loading shows rows in the shape of the
  * eventual list so nothing jumps when data lands.
  */
 export function SpokeList({
@@ -21,7 +21,7 @@ export function SpokeList({
   onRetry,
   empty,
   emptyIcon,
-  emptyMascot = true,
+  emptyMascot = false,
   emptyTitle,
   emptyBody,
   header,
@@ -32,7 +32,10 @@ export function SpokeList({
   onRetry?: () => void;
   empty: boolean;
   emptyIcon: IconName;
-  /** The mascot sitting it out in place of the icon. Off for a gate that isn't really empty. */
+  /**
+   * The mascot sitting it out in place of the icon. Only where nothing is
+   * booked: the pose has "no gigs yet" drawn into it.
+   */
   emptyMascot?: boolean;
   emptyTitle: string;
   emptyBody?: string;

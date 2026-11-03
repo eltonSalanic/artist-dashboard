@@ -190,8 +190,8 @@ and dark.
   and provided at the root layout, so it also shows on the signed-out screens.
   `useMascot()` reads and sets it.
 - The picker is the MASCOT section on the You tab.
-- Where they appear: `empty` on every spoke list's empty state, the empty
-  calendar month and the empty inbox; `celebrate` on "You're live" and "You're
+- Where they appear: `empty` (it has "no gigs yet" drawn in) on the empty
+  Shows spoke and the empty calendar month; `celebrate` on "You're live" and "You're
   in"; `nudge` beside SHOWS STILL OWING in the Finances spoke; `hero` on the
   sign-in masthead.
 
