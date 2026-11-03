@@ -178,6 +178,10 @@ let VIEW = null; // [w, h] of the canvas being converted
 let OUTLINE = null, OUTLINED = null;
 // Dark mode: when set, near-black ink is redrawn in this colour (accent colours stay).
 let INK_TO = null;
+// Bare poses: TRIM drops any shape that runs past the canvas edge rather than
+// cutting it, and DROP lists boxes (canvas coords) whose shapes are left out,
+// so a pose's hand lettering goes without clipping the figure.
+let TRIM = false, DROP = [];
 const INHERIT = ['fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'fill-rule'];
 
 // Walk one static frame's tree into Lottie groups (in SVG paint order).
@@ -203,6 +207,9 @@ function walk(node, m, style, out) {
     const pts = items.flatMap((it) => it.ks.k.v);
     const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
     if (Math.max(...xs) < -pad || Math.min(...xs) > VIEW[0] + pad || Math.max(...ys) < -pad || Math.min(...ys) > VIEW[1] + pad) return;
+    const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+    if (TRIM && (x0 < 0 || y0 < 0 || x1 > VIEW[0] || y1 > VIEW[1])) return;
+    if (DROP.some(([a, b, c, d]) => x0 >= a && y0 >= b && x1 <= c && y1 <= d)) return;
   }
   const o = R(st.opacity * 100);
   const ink = (c) => (c && INK_TO && c[0] < 0.2 && c[1] < 0.2 && c[2] < 0.2 ? INK_TO : c);
@@ -246,12 +253,14 @@ export function splitFrames(svg) {
   });
 }
 
-export function svgToLottie(svgText, name = 'mascot', viewBox, outline = null, inkTo = null) {
+export function svgToLottie(svgText, name = 'mascot', viewBox, outline = null, inkTo = null, { trim = false, drop = [] } = {}) {
   const frames = splitFrames(svgText);
   let vb = (viewBox ?? parseXml(frames[0]).attrs.viewBox ?? '0 0 400 400').split(/[\s,]+/).map(Number);
   const [vx, vy, vw, vh] = vb;
   const base = [1, 0, 0, 1, -vx, -vy];
   VIEW = [vw, vh];
+  TRIM = trim;
+  DROP = drop.map(([x0, y0, x1, y1]) => [x0 - vx, y0 - vy, x1 - vx, y1 - vy]);
   // outline width scales with the canvas: 5 units on a 400 canvas, at least 2
   OUTLINE = outline ? { color: color(outline), w: Math.max(2, (5 * Math.min(vw, vh)) / 400) } : null;
   INK_TO = inkTo ? color(inkTo) : null;
@@ -266,14 +275,26 @@ export function svgToLottie(svgText, name = 'mascot', viewBox, outline = null, i
     layers.push({ ...common, ind: layers.length + 1, nm: `boil ${idx + 1}`, shapes });
     if (OUTLINE) layers.push({ ...common, ind: layers.length + 1, nm: `boil ${idx + 1} outline`, shapes: OUTLINED.reverse() });
   });
-  OUTLINE = null; INK_TO = null;
+  OUTLINE = null; INK_TO = null; TRIM = false; DROP = [];
   return { v: '5.7.4', fr: FPS, ip: 0, op: frames.length * HOLD, w: Math.round(vw), h: Math.round(vh), nm: name, ddd: 0, assets: [], layers };
 }
 
-// poses.svg holds three 400x400 cells side by side. `emptyBare` is the empty
-// cell cropped below its hand-lettered "no gigs yet" (which sits above y 100
-// in both characters), for screens that say what's empty in their own words.
-const POSES = [['celebrate', '0 0 400 400'], ['empty', '400 0 400 400'], ['emptyBare', '400 120 400 260'], ['nudge', '800 0 400 400']];
+// poses.svg holds three 400x400 cells side by side. The `...Bare` poses leave
+// out the cell's hand lettering, for screens that say it in their own words:
+// - emptyBare: cropped below "no gigs yet" (above y 100 in both characters).
+// - celebrateBare: "booked!" sits under the feet (figure ends by y 336, the
+//   lettering runs below 347), so the cell is cut at 345 and the strokes that
+//   cross it go whole.
+// - nudgeBare: the lettering sits beside dez's head and over bunz's, so each
+//   character's is boxed out (poses.svg coords) instead of cropped.
+const POSES = [
+  ['celebrate', '0 0 400 400'],
+  ['celebrateBare', '0 0 400 345', { trim: true }],
+  ['empty', '400 0 400 400'],
+  ['emptyBare', '400 120 400 260'],
+  ['nudge', '800 0 400 400'],
+  ['nudgeBare', '800 40 400 340', { drop: { dez: [[805, 165, 910, 205]], bunz: [[840, 0, 1165, 72]] } }],
+];
 
 if (process.argv[1] && fs.realpathSync(fileURLToPath(import.meta.url)) === fs.realpathSync(process.argv[1])) {
   const [SRC = 'assets/mascots/src', OUT = 'assets/mascots/lottie'] = process.argv.slice(2);
@@ -284,14 +305,18 @@ if (process.argv[1] && fs.realpathSync(fileURLToPath(import.meta.url)) === fs.re
   let total = 0, count = 0;
   for (const name of fs.readdirSync(SRC)) {
     const dir = path.join(SRC, name);
-    // lettering/ is scripts/month-lettering.mjs's, with its own index
-    if (name === 'lockups' || name === 'lettering' || !fs.statSync(dir).isDirectory()) continue;
+    // a character is a folder with its poses; lockups/, lettering/ (scripts/month-lettering.mjs's)
+    // and app-icon/ are not
+    if (name === 'lockups' || !fs.statSync(dir).isDirectory() || !fs.existsSync(path.join(dir, 'poses.svg'))) continue;
     const read = (f) => fs.readFileSync(path.join(dir, f), 'utf8');
     // each pose twice: as drawn (light backgrounds) and with the black ink drawn in white (dark mode)
     for (const [suffix, inkTo] of [['', null], ['-dark', '#FFFFFF']]) {
       total += write(`${name}/hero${suffix}.json`, svgToLottie(read('hero.svg'), `${name} hero`, undefined, null, inkTo)); count++;
       total += write(`${name}/icon${suffix}.json`, svgToLottie(read('small.svg'), `${name} icon`, undefined, null, inkTo)); count++;
-      for (const [pose, view] of POSES) { total += write(`${name}/${pose}${suffix}.json`, svgToLottie(read('poses.svg'), `${name} ${pose}`, view, null, inkTo)); count++; }
+      for (const [pose, view, { trim, drop } = {}] of POSES) {
+        total += write(`${name}/${pose}${suffix}.json`, svgToLottie(read('poses.svg'), `${name} ${pose}`, view, null, inkTo, { trim, drop: drop?.[name] }));
+        count++;
+      }
     }
   }
   const lock = path.join(SRC, 'lockups');
