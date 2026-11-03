@@ -193,8 +193,9 @@ light and dark.
   `useMascot()` reads and sets it.
 - The picker is the MASCOT section on the You tab.
 - The empty calendar month shows `MonthLettering` ("NOTHING IN <MONTH>." hand-lettered
-  to match the `empty` pose's "NO GIGS YET.") over the `emptyBare` pose. The 12
-  months are drawn by `scripts/month-lettering.mjs` (also run by `npm run mascots`)
+  to match the `empty` pose's "NO GIGS YET.") over the `emptyBare` pose, and the
+  empty Inbox does the same with `PhraseLettering` ("NOTHING FOR YOU."). The 12
+  months and the phrases (`PHRASES` in the script) are drawn by `scripts/month-lettering.mjs` (also run by `npm run mascots`)
   into `assets/mascots/src/lettering` and `assets/mascots/lottie/lettering`. To place
   a mascot elsewhere:
 

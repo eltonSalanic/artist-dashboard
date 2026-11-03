@@ -3,7 +3,7 @@ import { View, type StyleProp, type ViewStyle } from 'react-native';
 import LottieView, { type AnimationObject } from 'lottie-react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { MASCOT_LOTTIE, type MascotName, type MascotPose } from '../../assets/mascots/lottie';
-import { MONTH_LETTERING } from '../../assets/mascots/lottie/lettering';
+import { MONTH_LETTERING, PHRASE_LETTERING } from '../../assets/mascots/lottie/lettering';
 import { useMascot } from '@/features/mascot/mascot-preference';
 import { useScheme } from '@/theme';
 
@@ -50,28 +50,39 @@ export function Mascot<N extends MascotName>({
   );
 }
 
+/** Lettering is drawn to one size; this keeps it that size on every screen. */
+const LETTERING_SCALE = 0.9;
+
 /**
  * "NOTHING IN <MONTH>." in the mascots' own hand lettering, drawn per month by
  * `npm run mascots` (`scripts/month-lettering.mjs`) to match the "NO GIGS YET."
  * in the `empty` pose. `month` is 0 for January.
  */
-export function MonthLettering({
-  month,
-  monthName,
-  width = 220,
+export function MonthLettering({ month, monthName }: { month: number; monthName: string }) {
+  return <Lettering pair={MONTH_LETTERING[month]} label={`Nothing in ${monthName}.`} />;
+}
+
+/** One of the other lines `scripts/month-lettering.mjs` letters, like "NOTHING FOR YOU.". */
+export function PhraseLettering({
+  phrase,
+  label,
 }: {
-  month: number;
+  phrase: keyof typeof PHRASE_LETTERING;
   /** For the screen reader, which can't read the drawing. */
-  monthName: string;
-  width?: number;
+  label: string;
 }) {
-  const [light, dark] = MONTH_LETTERING[month] as unknown as [AnimationObject, AnimationObject];
+  return <Lettering pair={PHRASE_LETTERING[phrase]} label={label} />;
+}
+
+function Lettering({ pair, label }: { pair: readonly [unknown, unknown]; label: string }) {
+  const [light, dark] = pair as unknown as [AnimationObject, AnimationObject];
+  const source = useScheme() === 'dark' ? dark : light;
   return (
     <Boil
-      source={useScheme() === 'dark' ? dark : light}
-      width={width}
+      source={source}
+      width={source.w * LETTERING_SCALE}
       accessibilityRole="header"
-      accessibilityLabel={`Nothing in ${monthName}.`}
+      accessibilityLabel={label}
     />
   );
 }

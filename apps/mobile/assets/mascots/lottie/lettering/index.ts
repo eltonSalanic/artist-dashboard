@@ -14,3 +14,7 @@ export const MONTH_LETTERING = [
   [require('./november.json'), require('./november-dark.json')],
   [require('./december.json'), require('./december-dark.json')],
 ] as const;
+/** Other hand-lettered lines, by name: [light, dark]. */
+export const PHRASE_LETTERING = {
+  nothingForYou: [require('./nothing-for-you.json'), require('./nothing-for-you-dark.json')],
+} as const;
