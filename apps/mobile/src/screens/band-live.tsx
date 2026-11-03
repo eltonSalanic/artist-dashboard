@@ -56,19 +56,13 @@ export function BandLiveScreen({ boardId }: { boardId: string }) {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.md },
+          { paddingTop: insets.top + spacing.xxl, paddingBottom: insets.bottom + spacing.lg },
         ]}
       >
         <View style={styles.middle}>
-          {/* The mascot says the wall is up in its own hand, in place of the kicker,
-              a little smaller than elsewhere so the invite fits without scrolling. */}
+          {/* The mascot says you're in in its own hand, in place of the kicker. */}
           <View style={styles.mascot}>
-            <PhraseLettering
-              phrase="wallIsUp"
-              label="Your wall is up"
-              on={block.bg}
-              scale={0.85}
-            />
+            <PhraseLettering phrase="youreIn" label="You're in" on={block.bg} />
             <MyMascot pose="celebrateBare" width={150} on={block.bg} />
           </View>
           <View accessible accessibilityRole="header" style={{ gap: spacing.sm }}>
@@ -138,9 +132,9 @@ const INVITE_PADDING = spacing.sm;
 const INSET_RADIUS = radius.lg - INVITE_PADDING;
 
 const styles = StyleSheet.create({
-  content: { flexGrow: 1, paddingHorizontal: spacing.lg, gap: spacing.lg },
+  content: { flexGrow: 1, paddingHorizontal: spacing.xl, gap: spacing.xl },
   // Fills the room above the button and sits the message and invite just above its middle.
-  middle: { flex: 1, justifyContent: 'center', gap: spacing.lg, paddingBottom: spacing.xl },
+  middle: { flex: 1, justifyContent: 'center', gap: spacing.xl, paddingBottom: spacing.xl },
   mascot: { alignSelf: 'center', alignItems: 'center', gap: spacing.md },
   centred: { textAlign: 'center' },
   inviteBlock: {

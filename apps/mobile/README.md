@@ -218,18 +218,16 @@ light and dark.
   "." and "'"; no Q, X, Z or digits yet): the 12 months ("NOTHING IN <MONTH>."), `nothingForYou`,
   `nothingHere`, `noGigsYet`, `noRehearsals`, `noMeetings`, `noGoals`,
   `allDone`, `nothingToRemember`, `nothingArchived`, `nothingToAttach`,
-  `wallIsUp` ("YOUR WALL IS UP"), `youreIn` ("YOU'RE IN"), `somethingBroke`. Add one to `PHRASES` and run
+  `youreIn` ("YOU'RE IN"), `somethingBroke`. Add one to `PHRASES` and run
   `npm run mascots`.
 - **Where they are:**
   - Empty lists, lettering + `emptyBare`: Calendar month, Inbox, Shows ("NO GIGS
     YET."), Rehearsals, Meetings, Goals, Reminders, To-Dos / My Tasks ("ALL DONE.",
     only when there are none at all; a filter or search that matches nothing stays
     in plain words), Archive (same rule), Attach.
-  - Success, lettering + `celebrateBare`: "You're live" after starting a band
-    and "You're in" after joining one, replacing the small kicker, and the
-    headline is just the band's name, so neither says it twice. "You're live"
-    draws both a little smaller (mascot 150, lettering at 0.85) so its invite
-    box fits an iPhone 17 Pro without scrolling.
+  - Success, "YOU'RE IN" lettering + `celebrateBare`, then just the band's
+    name: after starting a band (`band-live`, mascot 150, with the invite box)
+    and after joining one (`welcome-in`).
   - Sign-in opens with `MascotLockup lockup="leaningWordmark"` (the mascot leaning
     on the band wall wordmark, as wide as the form up to 320) in place of the
     small BAND WALL caps. The converter leaves out a lockup's full-size paper rect,
