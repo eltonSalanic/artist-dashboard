@@ -17,6 +17,7 @@ import {
 } from '@artist/api-client';
 import { BOARD_PALETTES, BoardPalettes, type BoardPalette } from '@artist/shared';
 import { Button } from '@/components/button';
+import { MyMascot } from '@/components/mascot';
 import { PosterText } from '@/components/poster-text';
 import { TextField } from '@/components/text-field';
 import { useSelectedBoard } from '@/features/board/selected-board';
@@ -151,6 +152,7 @@ export function StartBandScreen() {
         ]}
       >
         {signingUp && <StepProgress step={2} of={3} />}
+        <MyMascot pose="hero" width={200} style={{ alignSelf: 'center' }} />
         <View accessible accessibilityRole="header" style={{ gap: spacing.xs }}>
           <PosterText variant="label" color={canvas.soft} style={styles.centred}>
             {"NEW BAND · YOU'LL OWN IT"}

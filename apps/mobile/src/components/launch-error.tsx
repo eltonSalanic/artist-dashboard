@@ -1,8 +1,8 @@
 import { View } from 'react-native';
 import { NetworkError, toUserMessage } from '@artist/api-client';
-import { radius, spacing, usePosterCanvas } from '@/theme';
+import { spacing, usePosterCanvas } from '@/theme';
 import { Button } from './button';
-import { Icon } from './icon';
+import { MASCOT_WIDTH, MyMascot, PhraseLettering } from './mascot';
 import { PosterText } from './poster-text';
 
 const centred = { textAlign: 'center' } as const;
@@ -39,26 +39,9 @@ export function LaunchError({
       }}
     >
       <View style={{ gap: spacing.md, alignItems: 'center' }}>
-        <View
-          style={{
-            width: 64,
-            height: 64,
-            borderRadius: radius.full,
-            backgroundColor: canvas.faint,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Icon
-            name={
-              offline
-                ? { sf: 'wifi.slash', md: 'wifi-off' }
-                : { sf: 'exclamationmark.triangle', md: 'warning' }
-            }
-            size={28}
-            color={canvas.ink}
-          />
-        </View>
+        {/* Offline isn't broken, so the mascot only says so when it is. */}
+        {!offline && <PhraseLettering phrase="somethingBroke" label="Something broke" />}
+        <MyMascot pose="emptyBare" width={MASCOT_WIDTH} />
         <View style={{ gap: spacing.xs }}>
           <PosterText variant="label" color={canvas.soft} style={centred}>
             BAND WALL

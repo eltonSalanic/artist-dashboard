@@ -5,12 +5,21 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { MASCOT_LOTTIE, type MascotName, type MascotPose } from '../../assets/mascots/lottie';
 import { MONTH_LETTERING, PHRASE_LETTERING } from '../../assets/mascots/lottie/lettering';
 import { useMascot } from '@/features/mascot/mascot-preference';
-import { spacing, useScheme } from '@/theme';
+import { contrast, spacing, useScheme } from '@/theme';
 import { PosterText } from './poster-text';
 
 export type { MascotName, MascotPose };
 /** The poses both characters have, so a screen can ask for one without knowing who. */
 export type SharedPose = MascotPose<'dez'> & MascotPose<'bunz'>;
+
+/**
+ * Whether to draw in white: on the dark theme, or on `on` (the colour behind
+ * the drawing, a band's colour block, say) when white reads better there.
+ */
+function useWhiteInk(on?: string): boolean {
+  const dark = useScheme() === 'dark';
+  return on ? contrast('#FFFFFF', on) > contrast('#080706', on) : dark;
+}
 
 /**
  * One of the Band Wall mascots, looping its hand-drawn boil.
@@ -29,6 +38,7 @@ export function Mascot<N extends MascotName>({
   playing = true,
   style,
   accessibilityLabel,
+  on,
 }: {
   name: N;
   pose?: MascotPose<N>;
@@ -37,9 +47,11 @@ export function Mascot<N extends MascotName>({
   playing?: boolean;
   style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
+  /** The colour behind it, when that isn't the page's own (see `useWhiteInk`). */
+  on?: string;
 }) {
   const poses = MASCOT_LOTTIE[name] as Record<string, AnimationObject>;
-  const dark = useScheme() === 'dark' ? poses[`${String(pose)}Dark`] : undefined;
+  const dark = useWhiteInk(on) ? poses[`${String(pose)}Dark`] : undefined;
   return (
     <Boil
       source={dark ?? poses[pose as string]}
@@ -74,17 +86,28 @@ export function MonthLettering({ month, monthName }: { month: number; monthName:
 export function PhraseLettering({
   phrase,
   label,
+  on,
 }: {
   phrase: keyof typeof PHRASE_LETTERING;
   /** For the screen reader, which can't read the drawing. */
   label: string;
+  /** The colour behind it, when that isn't the page's own. */
+  on?: string;
 }) {
-  return <Lettering pair={PHRASE_LETTERING[phrase]} label={label} />;
+  return <Lettering pair={PHRASE_LETTERING[phrase]} label={label} on={on} />;
 }
 
-function Lettering({ pair, label }: { pair: readonly [unknown, unknown]; label: string }) {
+function Lettering({
+  pair,
+  label,
+  on,
+}: {
+  pair: readonly [unknown, unknown];
+  label: string;
+  on?: string;
+}) {
   const [light, dark] = pair as unknown as [AnimationObject, AnimationObject];
-  const source = useScheme() === 'dark' ? dark : light;
+  const source = useWhiteInk(on) ? dark : light;
   return (
     <Boil
       source={source}

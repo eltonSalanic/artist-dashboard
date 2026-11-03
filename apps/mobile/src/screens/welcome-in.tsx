@@ -2,6 +2,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBoardSubscription } from '@artist/api-client';
+import { MASCOT_WIDTH, MyMascot, PhraseLettering } from '@/components/mascot';
 import { PosterText } from '@/components/poster-text';
 import { useSelectedBoard } from '@/features/board/selected-board';
 import { InkButton } from '@/features/onboarding/ink-button';
@@ -26,18 +27,22 @@ export function WelcomeInScreen() {
         { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.md },
       ]}
     >
-      <View accessible accessibilityRole="header" style={styles.middle}>
-        <PosterText variant="label" color={block.soft} style={styles.centred}>
-          WELCOME IN
-        </PosterText>
-        <PosterText variant="display" color={block.ink} style={styles.centred}>
-          {`You're In\n${board?.name ?? 'The Band'}.`}
-        </PosterText>
-        <PosterText variant="body" color={block.ink} style={styles.centred}>
-          {owner
-            ? `It's free for you: ${owner}'s subscription covers the whole band.`
-            : "It's free for you: the band's owner covers everyone in it."}
-        </PosterText>
+      <View style={styles.middle}>
+        {/* The mascot cheers it in its own hand, so the headline is just the band. */}
+        <View style={styles.mascot}>
+          <PhraseLettering phrase="youAreIn" label="You're in" on={block.bg} />
+          <MyMascot pose="celebrateBare" width={MASCOT_WIDTH} on={block.bg} />
+        </View>
+        <View accessible accessibilityRole="header" style={{ gap: spacing.sm }}>
+          <PosterText variant="display" color={block.ink} style={styles.centred}>
+            {`${board?.name ?? 'The Band'}.`}
+          </PosterText>
+          <PosterText variant="body" color={block.ink} style={styles.centred}>
+            {owner
+              ? `It's free for you: ${owner}'s subscription covers the whole band.`
+              : "It's free for you: the band's owner covers everyone in it."}
+          </PosterText>
+        </View>
       </View>
       <InkButton
         title="See the wall"
@@ -53,5 +58,6 @@ const styles = StyleSheet.create({
   content: { flexGrow: 1, paddingHorizontal: spacing.lg, gap: spacing.lg },
   // Fills the room above the button and sits the message just above its middle.
   middle: { flex: 1, justifyContent: 'center', gap: spacing.sm, paddingBottom: spacing.xxl },
+  mascot: { alignSelf: 'center', alignItems: 'center', gap: spacing.md },
   centred: { textAlign: 'center' },
 });

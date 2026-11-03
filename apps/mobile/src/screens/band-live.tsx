@@ -3,6 +3,7 @@ import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMe, useMySubscription, useSendInvite } from '@artist/api-client';
+import { MASCOT_WIDTH, MyMascot, PhraseLettering } from '@/components/mascot';
 import { PosterText } from '@/components/poster-text';
 import { TextInput } from '@/components/text-input';
 import { INK_BUTTON_HEIGHT, InkButton } from '@/features/onboarding/ink-button';
@@ -59,10 +60,12 @@ export function BandLiveScreen({ boardId }: { boardId: string }) {
         ]}
       >
         <View style={styles.middle}>
+          {/* The mascot says "you're live" in its own hand, in place of the kicker. */}
+          <View style={styles.mascot}>
+            <PhraseLettering phrase="youAreLive" label="You're live" on={block.bg} />
+            <MyMascot pose="celebrateBare" width={MASCOT_WIDTH} on={block.bg} />
+          </View>
           <View accessible accessibilityRole="header" style={{ gap: spacing.sm }}>
-            <PosterText variant="label" color={block.soft} style={styles.centred}>
-              {"YOU'RE LIVE"}
-            </PosterText>
             <PosterText variant="display" color={block.ink} style={styles.centred}>
               {`${band?.name ?? 'Your band'}\nIs Open.`}
             </PosterText>
@@ -123,6 +126,7 @@ const styles = StyleSheet.create({
   content: { flexGrow: 1, paddingHorizontal: spacing.lg, gap: spacing.lg },
   // Fills the room above the button and sits the message and invite just above its middle.
   middle: { flex: 1, justifyContent: 'center', gap: spacing.lg, paddingBottom: spacing.xl },
+  mascot: { alignSelf: 'center', alignItems: 'center', gap: spacing.md },
   centred: { textAlign: 'center' },
   inviteBlock: {
     // Concentric with the Send invite capsule sitting in its bottom corners.

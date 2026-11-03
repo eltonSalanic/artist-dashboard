@@ -110,14 +110,17 @@ function StatusDot({ task, boardId }: { task: TaskDto; boardId: string }) {
   );
 }
 
-/** What an empty list says: nothing at all, or nothing this filter lets through. */
+/**
+ * What an empty list says: nothing at all (the mascot's "ALL DONE."), or
+ * nothing this filter lets through (plain words; the tasks are still there).
+ */
 function emptyCopy(state: TaskViewState, title: string, body: string) {
   if (state.view.search !== '') {
     return { emptyTitle: 'No tasks match', emptyBody: 'No task title has those words.' };
   }
   return activeFilters(state.view) > 0
     ? { emptyTitle: 'No tasks match', emptyBody: 'Try another filter, or clear them.' }
-    : { emptyTitle: title, emptyBody: body };
+    : { emptyTitle: title, emptyBody: body, mascot: { phrase: 'allDone' as const } };
 }
 
 /**

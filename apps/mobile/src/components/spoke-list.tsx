@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
 import { Icon, type IconName } from './icon';
 import { Button } from './button';
+import { MascotMessage } from './mascot';
+import type { PHRASE_LETTERING } from '../../assets/mascots/lottie/lettering';
 import { PosterText } from './poster-text';
 import { Skeleton } from './skeleton';
 import { spacing, useTokens } from '@/theme';
@@ -22,6 +24,7 @@ export function SpokeList({
   emptyIcon,
   emptyTitle,
   emptyBody,
+  mascot,
   header,
   children,
 }: {
@@ -32,6 +35,11 @@ export function SpokeList({
   emptyIcon: IconName;
   emptyTitle: string;
   emptyBody?: string;
+  /**
+   * Empty, the mascot says it instead: `phrase` in its hand lettering over the
+   * phone's mascot, in place of the icon and `emptyTitle`.
+   */
+  mascot?: { phrase: keyof typeof PHRASE_LETTERING };
   /** Rendered above the rows, inside the same scroll view. */
   header?: ReactNode;
   children: ReactNode;
@@ -68,6 +76,17 @@ export function SpokeList({
           </PosterText>
           {onRetry && <Button title="Try again" variant="ghost" size="sm" onPress={onRetry} />}
         </Centered>
+      );
+    }
+
+    if (empty && mascot) {
+      return (
+        <MascotMessage
+          phrase={mascot.phrase}
+          label={emptyTitle}
+          body={emptyBody}
+          color={tokens.mutedForeground}
+        />
       );
     }
 

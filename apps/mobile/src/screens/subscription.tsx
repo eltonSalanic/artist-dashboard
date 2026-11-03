@@ -11,6 +11,7 @@ import {
   usePurchaseConfirmation,
   useRefreshSubscription,
 } from '@artist/api-client';
+import { MyMascot } from '@/components/mascot';
 import { Button } from '@/components/button';
 import { Row } from '@/components/row';
 import { Section } from '@/components/section';
@@ -210,6 +211,7 @@ function OwnerView({ boardId, footer }: { boardId?: string; footer?: ReactNode }
       }}
     >
       <View style={{ gap: spacing.sm }}>
+        <MyMascot pose="hero" width={140} style={{ alignSelf: 'center', marginBottom: spacing.sm }} />
         <ThemedText variant="title" style={centred}>
           {!boardId
             ? isPro

@@ -58,6 +58,7 @@ export function AttachTaskScreen({
       empty={candidates.length === 0}
       emptyIcon={{ sf: 'checklist', md: 'checklist' }}
       emptyTitle="Nothing to attach"
+      mascot={{ phrase: 'nothingToAttach' }}
       emptyBody="Every task on the board is already linked here."
     >
       {candidates.map((task, index) => (
