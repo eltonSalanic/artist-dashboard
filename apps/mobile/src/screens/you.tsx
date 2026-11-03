@@ -8,6 +8,7 @@ import { PosterText } from '@/components/poster-text';
 import { Section } from '@/components/section';
 import { Skeleton } from '@/components/skeleton';
 import { useSelectedBoard } from '@/features/board/selected-board';
+import { MascotSetting } from '@/features/mascot/mascot-setting';
 import { PushSetting } from '@/features/push/push-prompt';
 import { forgetThisDevice } from '@/features/push/push';
 import { auth } from '@/lib/auth';
@@ -142,6 +143,10 @@ export function YouScreen() {
 
       <Section title="THIS PHONE">
         <PushSetting />
+      </Section>
+
+      <Section title="MASCOT">
+        <MascotSetting />
       </Section>
 
       {/* Sentry's feedback form, linked to the errors just before it. Only

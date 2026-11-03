@@ -11,6 +11,7 @@ import type { BoardSummaryDto } from '@artist/shared';
 import { BoardFilter } from '@/components/board-filter';
 import { Icon } from '@/components/icon';
 import { ListState } from '@/components/list-state';
+import { MyMascot } from '@/components/mascot';
 import { PosterText } from '@/components/poster-text';
 import { useBoardScope } from '@/features/boards/use-board-scope';
 import { PushPrompt } from '@/features/push/push-prompt';
@@ -140,6 +141,7 @@ function Mentions({
             />
           ) : (
             <View style={{ paddingTop: spacing.lg, gap: spacing.sm }}>
+              <MyMascot pose="empty" width={112} />
               <PosterText variant="display" color={colors.foreground}>
                 Nothing for you.
               </PosterText>

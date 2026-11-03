@@ -165,8 +165,38 @@ Each would otherwise read as an oversight:
   the iOS pod `PurchasesHybridCommon` 20.1.0, which wasn't published to
   CocoaPods, so `pod install` failed. TODO: upgrade once it is; see
   [docs/billing.md](../../docs/billing.md).
+- **`lottie-react-native` is `^7.5.0`**, not the `~7.3.8` `expo install`
+  picks for SDK 57, per the repo's latest-versions rule (it peers
+  `react-native >=0.84`). It is in `expo.install.exclude` for that reason.
+  `@lottiefiles/dotlottie-react`, its optional web peer, isn't installed:
+  this app has no web target.
 - `react` and `jest` are listed in `expo.install.exclude` so `expo install --check` and
   `expo-doctor` stay green and a real mismatch is still visible.
+
+## Mascots
+
+dez and bunz are drawn as SVGs in `assets/mascots/src` and converted to Lottie
+JSON in `assets/mascots/lottie` by `npm run mascots -w apps/mobile`
+(`scripts/svg-to-lottie.mjs`, no dependencies). That also regenerates
+`assets/mascots/lottie/index.ts`, the static `require` registry. Poses: `hero`,
+`celebrate`, `empty`, `nudge`, `icon` (head only), plus logo lockups in light
+and dark.
+
+- [`src/components/mascot.tsx`](src/components/mascot.tsx): `Mascot` plays a
+  named character; `MyMascot` plays the one this phone picked. Screens use
+  `MyMascot`. Reduce Motion holds the first frame.
+- [`src/features/mascot/mascot-preference.tsx`](src/features/mascot/mascot-preference.tsx):
+  the choice (dez by default), kept in `AsyncStorage` under `artist.mascot`
+  and provided at the root layout, so it also shows on the signed-out screens.
+  `useMascot()` reads and sets it.
+- The picker is the MASCOT section on the You tab.
+- Where they appear: `empty` on every spoke list's empty state, the empty
+  calendar month and the empty inbox; `celebrate` on "You're live" and "You're
+  in"; `nudge` beside SHOWS STILL OWING in the Finances spoke; `hero` on the
+  sign-in masthead.
+
+Lottie is a native module, so pulling this in needs a new dev build
+(`npx expo run:ios`), not just a Metro reload.
 
 ## Tests
 

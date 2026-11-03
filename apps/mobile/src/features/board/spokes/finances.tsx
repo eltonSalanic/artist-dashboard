@@ -17,6 +17,7 @@ import { PickOne } from '@/components/pick-one';
 import { ChoiceChips } from '@/components/choice-chips';
 import { MemberHistory } from '../../finances/member-history';
 import { FinanceAmount } from '../../finances/finance-amount';
+import { MyMascot } from '@/components/mascot';
 import { PosterText } from '@/components/poster-text';
 import { Row } from '@/components/row';
 import { Section } from '@/components/section';
@@ -76,6 +77,7 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
       }}
       empty={!visible}
       emptyIcon={{ sf: 'dollarsign.circle', md: 'account-balance-wallet' }}
+      emptyMascot={false}
       emptyTitle="Only admins see the books"
       header={
         <SpokeHeader
@@ -109,7 +111,7 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
           </View>
 
           {data.unpaidShows.length > 0 && (
-            <Section title="SHOWS STILL OWING">
+            <Section title="SHOWS STILL OWING" action={<MyMascot pose="nudge" width={56} />}>
               {data.unpaidShows.map((show, index) => (
                 <Row
                   key={show.eventId}

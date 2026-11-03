@@ -22,6 +22,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { isSubscriptionRequired, useSession } from '@artist/api-client';
 import { reportError } from '@/lib/report-error';
 import { auth } from '@/lib/auth';
+import { MascotProvider } from '@/features/mascot/mascot-preference';
 import { POSTER_FONTS } from '@/theme/poster';
 
 void SplashScreen.preventAutoHideAsync();
@@ -102,21 +103,23 @@ function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
-          <StatusBar style="auto" />
-          <Stack>
-            <Stack.Protected guard={session !== null}>
-              {/* The tab group owns its own headers, one stack per tab. */}
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            </Stack.Protected>
-            <Stack.Protected guard={session === null}>
-              {/* First, so it's where signing out lands: what Band Wall is,
-                  then a door to start a band or join one. */}
-              <Stack.Screen name="welcome" options={{ headerShown: false }} />
-              {/* No bar: the screen's own masthead says what it is, and a
-                  white system bar over the cream page read as another app. */}
-              <Stack.Screen name="sign-in" options={{ title: 'Sign in', headerShown: false }} />
-            </Stack.Protected>
-          </Stack>
+          <MascotProvider>
+            <StatusBar style="auto" />
+            <Stack>
+              <Stack.Protected guard={session !== null}>
+                {/* The tab group owns its own headers, one stack per tab. */}
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              </Stack.Protected>
+              <Stack.Protected guard={session === null}>
+                {/* First, so it's where signing out lands: what Band Wall is,
+                    then a door to start a band or join one. */}
+                <Stack.Screen name="welcome" options={{ headerShown: false }} />
+                {/* No bar: the screen's own masthead says what it is, and a
+                    white system bar over the cream page read as another app. */}
+                <Stack.Screen name="sign-in" options={{ title: 'Sign in', headerShown: false }} />
+              </Stack.Protected>
+            </Stack>
+          </MascotProvider>
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

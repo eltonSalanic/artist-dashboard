@@ -2,6 +2,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBoardSubscription } from '@artist/api-client';
+import { MyMascot } from '@/components/mascot';
 import { PosterText } from '@/components/poster-text';
 import { useSelectedBoard } from '@/features/board/selected-board';
 import { InkButton } from '@/features/onboarding/ink-button';
@@ -27,6 +28,7 @@ export function WelcomeInScreen() {
       ]}
     >
       <View accessible accessibilityRole="header" style={styles.middle}>
+        <MyMascot pose="celebrate" width={128} />
         <PosterText variant="label" color={block.soft}>
           WELCOME IN
         </PosterText>

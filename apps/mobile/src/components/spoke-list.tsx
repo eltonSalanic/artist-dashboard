@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
 import { Icon, type IconName } from './icon';
 import { Button } from './button';
+import { MyMascot } from './mascot';
 import { PosterText } from './poster-text';
 import { Skeleton } from './skeleton';
 import { spacing, useTokens } from '@/theme';
@@ -11,7 +12,7 @@ import { toUserMessage } from '@artist/api-client';
  * The four states every list has, in one place: loading, error, empty, content.
  *
  * Empty means *resolved with nothing in it* — it is a designed state that says
- * why and what to do, not a blank area. Loading shows rows in the shape of the
+ * why and what to do, not a blank area, with the mascot sitting it out. Loading shows rows in the shape of the
  * eventual list so nothing jumps when data lands.
  */
 export function SpokeList({
@@ -20,6 +21,7 @@ export function SpokeList({
   onRetry,
   empty,
   emptyIcon,
+  emptyMascot = true,
   emptyTitle,
   emptyBody,
   header,
@@ -30,6 +32,8 @@ export function SpokeList({
   onRetry?: () => void;
   empty: boolean;
   emptyIcon: IconName;
+  /** The mascot sitting it out in place of the icon. Off for a gate that isn't really empty. */
+  emptyMascot?: boolean;
   emptyTitle: string;
   emptyBody?: string;
   /** Rendered above the rows, inside the same scroll view. */
@@ -74,7 +78,11 @@ export function SpokeList({
     if (empty) {
       return (
         <Centered>
-          <Icon name={emptyIcon} size={28} color={tokens.mutedForeground} />
+          {emptyMascot ? (
+            <MyMascot pose="empty" width={112} />
+          ) : (
+            <Icon name={emptyIcon} size={28} color={tokens.mutedForeground} />
+          )}
           <PosterText variant="title" color={tokens.foreground}>
             {emptyTitle}
           </PosterText>
