@@ -44,7 +44,7 @@ import {
 } from '@artist/api-client';
 import { router } from 'expo-router';
 import { Badge } from '@/components/badge';
-import { Button } from '@/components/button';
+import { BUTTON_HEIGHT, Button } from '@/components/button';
 import { ChoiceChips } from '@/components/choice-chips';
 import { Icon } from '@/components/icon';
 import { Dot, Row } from '@/components/row';
@@ -53,8 +53,8 @@ import { Skeleton } from '@/components/skeleton';
 import { TextField } from '@/components/text-field';
 import { ThemedText } from '@/components/themed-text';
 import {
+  concentric,
   paletteSwatches,
-  posterRadius,
   radius,
   spacing,
   useScheme,
@@ -418,7 +418,7 @@ function StatusEditor({
         gap: spacing.sm,
         padding: spacing.md,
         marginVertical: spacing.xs,
-        borderRadius: posterRadius.block,
+        borderRadius: EDITOR_RADIUS,
         borderCurve: 'continuous',
         backgroundColor: colors.card,
       }}
@@ -484,6 +484,12 @@ function StatusEditor({
     </View>
   );
 }
+
+/**
+ * A status editor's corners hold its Delete and Done capsules, so the card's
+ * corners are concentric with theirs.
+ */
+const EDITOR_RADIUS = concentric(BUTTON_HEIGHT / 2, spacing.md);
 
 const CATEGORY_CHOICES: { value: ShowStatusCategory; label: string }[] =
   ShowStatusCategories.map((value) => ({
@@ -606,7 +612,7 @@ function ShowStatusEditor({
         gap: spacing.sm,
         padding: spacing.md,
         marginVertical: spacing.xs,
-        borderRadius: posterRadius.block,
+        borderRadius: EDITOR_RADIUS,
         borderCurve: 'continuous',
         backgroundColor: colors.card,
       }}

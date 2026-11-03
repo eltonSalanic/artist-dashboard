@@ -30,7 +30,7 @@ import {
 } from '@/features/onboarding/onboarding-state';
 import { StepProgress } from '@/features/onboarding/step-progress';
 import { reportError } from '@/lib/report-error';
-import { posterRadius, posterSlot, spacing, usePosterCanvas, useScheme } from '@/theme';
+import { concentric, posterRadius, posterSlot, spacing, usePosterCanvas, useScheme } from '@/theme';
 
 /**
  * Step 2 of 3 for someone starting a band, and what anyone in no band sees:
@@ -251,6 +251,9 @@ export function StartBandScreen() {
   );
 }
 
+/** The preview's cards: a hub card's corner, scaled down with the card. */
+const CARD_RADIUS = posterRadius.block - 4;
+
 const styles = StyleSheet.create({
   // The form sits in the middle of a tall phone rather than under the status bar.
   content: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: spacing.lg, gap: spacing.lg },
@@ -258,7 +261,8 @@ const styles = StyleSheet.create({
   swatches: { flexDirection: 'row', gap: spacing.md - 4 },
   swatch: { width: 40, height: 40, borderRadius: 20 },
   preview: {
-    borderRadius: posterRadius.block * 1.7,
+    // Concentric with the little cards sitting in its bottom corners.
+    borderRadius: concentric(CARD_RADIUS, spacing.md),
     borderCurve: 'continuous',
     padding: spacing.md,
     gap: spacing.xs,
@@ -268,7 +272,7 @@ const styles = StyleSheet.create({
     width: '48%',
     flexGrow: 1,
     height: 40,
-    borderRadius: posterRadius.block - 4,
+    borderRadius: CARD_RADIUS,
     borderCurve: 'continuous',
   },
 });

@@ -17,3 +17,16 @@ export const radius = {
   /** Capsules: pills, avatars, chips. */
   full: 9999,
 } as const;
+
+/**
+ * Corner concentricity, from Apple's iOS 26 guidelines: a rounded shape
+ * sitting in another's corner shares that corner's centre, so the gap between
+ * the two curves stays even instead of pinching. The container's radius is
+ * the child's plus the padding between them. A capsule child's radius is half
+ * its height.
+ *
+ * Use it for a padded block whose corner holds a field, a button or a card.
+ */
+export function concentric(childRadius: number, padding: number): number {
+  return childRadius + padding;
+}

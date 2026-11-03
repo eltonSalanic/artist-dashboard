@@ -2,6 +2,9 @@ import { ActivityIndicator, Pressable } from 'react-native';
 import { PosterText } from '@/components/poster-text';
 import { posterRadius, spacing } from '@/theme';
 
+/** A capsule, so its corner radius is half of this. */
+export const INK_BUTTON_HEIGHT = 52;
+
 /**
  * A capsule button for a screen painted in a band's colour, where the app's
  * own `Button` tokens don't apply: filled in the block's ink, or outlined.
@@ -34,7 +37,7 @@ export function InkButton({
       disabled={inactive}
       onPress={onPress}
       style={({ pressed }) => ({
-        minHeight: 52,
+        minHeight: INK_BUTTON_HEIGHT,
         paddingHorizontal: spacing.lg,
         borderRadius: posterRadius.chip,
         alignItems: 'center',

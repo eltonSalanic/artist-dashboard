@@ -5,8 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMe, useMySubscription, useSendInvite } from '@artist/api-client';
 import { PosterText } from '@/components/poster-text';
 import { TextInput } from '@/components/text-input';
-import { InkButton } from '@/features/onboarding/ink-button';
-import { posterInput, posterRadius, posterSlot, spacing, useScheme } from '@/theme';
+import { INK_BUTTON_HEIGHT, InkButton } from '@/features/onboarding/ink-button';
+import { concentric, posterInput, posterRadius, posterSlot, spacing, useScheme } from '@/theme';
 
 /**
  * "You're live": the moment a new band opens, painted in its own colour. Says
@@ -125,7 +125,8 @@ const styles = StyleSheet.create({
   middle: { flex: 1, justifyContent: 'center', gap: spacing.lg, paddingBottom: spacing.xl },
   centred: { textAlign: 'center' },
   inviteBlock: {
-    borderRadius: posterRadius.block * 1.7,
+    // Concentric with the Send invite capsule sitting in its bottom corners.
+    borderRadius: concentric(INK_BUTTON_HEIGHT / 2, spacing.md),
     borderCurve: 'continuous',
     padding: spacing.md,
     gap: spacing.sm,
