@@ -179,7 +179,8 @@ dez and bunz are drawn as SVGs in `assets/mascots/src` and converted to Lottie
 JSON in `assets/mascots/lottie` by `npm run mascots -w apps/mobile`
 (`scripts/svg-to-lottie.mjs`, then `scripts/month-lettering.mjs`; no dependencies). That also regenerates
 `assets/mascots/lottie/index.ts`, the static `require` registry. Poses: `hero`,
-`celebrate`, `empty` (lettered "no gigs yet"), `nudge`, `icon` (head only), and
+`celebrate`, `empty` (lettered "no gigs yet"), `nudge`, `sad` (its own `sad.svg`,
+head hung, a tear), `icon` (head only), and
 the bare poses with their drawn words left out: `emptyBare` (cropped below the
 lettering), `celebrateBare` (cut under the feet; strokes crossing the edge are
 dropped whole) and `nudgeBare` (each character's lettering boxed out). Each has a
@@ -237,6 +238,8 @@ light and dark.
     so the page's own colour shows through.
   - `hero`: the paywall (140) and the no-band
     screen (120; any bigger and Continue goes under the tab bar).
+  - `sad`: the locked band's gate, drawn in the hub where its widgets would be
+    (`src/features/billing/subscription-gate.tsx`, `MASCOT_WIDTH`).
   - Errors, `emptyBare`: the crash screen under "SOMETHING BROKE." (then just
     its one explanatory line), and the
     launch error (the lettering only when it's not just offline).

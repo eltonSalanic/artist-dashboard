@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Stack, router } from 'expo-router';
-import { Alert, Pressable, RefreshControl, View } from 'react-native';
+import { Alert, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import Animated, {
   Easing,
@@ -47,7 +47,7 @@ import { useRefetchOnFocus } from '@/lib/refetch-on-focus';
 import { SetupChecklist } from '@/features/board/setup-checklist';
 import { takeOnboardingIntent } from '@/features/onboarding/onboarding-state';
 import { StartBandScreen } from '@/screens/start-band';
-import { SubscriptionScreen } from '@/screens/subscription';
+import { SubscriptionGate } from '@/features/billing/subscription-gate';
 import { radius, spacing, usePosterCanvas, useThemeColors } from '@/theme';
 
 /**
@@ -63,23 +63,29 @@ import { radius, spacing, usePosterCanvas, useThemeColors } from '@/theme';
  * colours are the band's, so Done saves those for everyone, web included.
  */
 export function BoardHubScreen() {
+  const colors = useThemeColors();
   const { board, boards, loading } = useSelectedBoard();
 
-  // With billing enforced, an unpaid band's routes all answer 402: it lands on
-  // the subscription screen instead of a wall of failed cards. Someone in several bands can
-  // still switch to another.
+  // With billing enforced, an unpaid band's routes all answer 402: the gate
+  // takes the widgets' place under the masthead, so the band is still named
+  // and switched the way it always is, instead of a wall of failed cards.
   if (board?.subscriptionRequired) {
     return (
-      <SubscriptionScreen
+      <ScrollView
         key={board.id}
-        boardId={board.id}
-        // Inside the scroll view, so the floating tab bar never covers it.
-        footer={
-          boards.length > 1 ? (
-            <Button title="Switch band" variant="secondary" onPress={() => router.push('/boards')} />
-          ) : null
-        }
-      />
+        style={{ flex: 1, backgroundColor: colors.background }}
+        contentInsetAdjustmentBehavior="automatic"
+        // The tab bar floats over the bottom, so the content keeps clear of it.
+        contentContainerStyle={{
+          flexGrow: 1,
+          padding: spacing.md,
+          paddingBottom: spacing.xxl + spacing.lg,
+          gap: spacing.md,
+        }}
+      >
+        <Masthead name={board.name} />
+        <SubscriptionGate boardId={board.id} name={board.name} />
+      </ScrollView>
     );
   }
 

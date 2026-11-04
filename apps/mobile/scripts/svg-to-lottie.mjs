@@ -5,7 +5,7 @@
 //   node scripts/svg-to-lottie.mjs <src dir> <out dir>
 //
 // <src dir> layout (same as before):
-//   <name>/{hero,poses,small}.svg             -> <name>/{hero,celebrate,empty,nudge,icon}.json
+//   <name>/{hero,poses,small,sad}.svg         -> <name>/{hero,celebrate,empty,nudge,icon,sad}.json
 //   lockups/<name>/<lockup>-<light|dark>.svg  -> lockups/<name>/<lockup>-<light|dark>.json
 import fs from 'node:fs';
 import path from 'node:path';
@@ -318,6 +318,8 @@ if (process.argv[1] && fs.realpathSync(fileURLToPath(import.meta.url)) === fs.re
     for (const [suffix, inkTo] of [['', null], ['-dark', '#FFFFFF']]) {
       total += write(`${name}/hero${suffix}.json`, svgToLottie(read('hero.svg'), `${name} hero`, undefined, null, inkTo)); count++;
       total += write(`${name}/icon${suffix}.json`, svgToLottie(read('small.svg'), `${name} icon`, undefined, null, inkTo)); count++;
+      // sad: the locked-band gate's pose, drawn on its own 400x400 canvas like hero
+      if (fs.existsSync(path.join(dir, 'sad.svg'))) { total += write(`${name}/sad${suffix}.json`, svgToLottie(read('sad.svg'), `${name} sad`, undefined, null, inkTo)); count++; }
       for (const [pose, view, { trim, drop } = {}] of POSES) {
         total += write(`${name}/${pose}${suffix}.json`, svgToLottie(read('poses.svg'), `${name} ${pose}`, view, null, inkTo, { trim, drop: drop?.[name] }));
         count++;
