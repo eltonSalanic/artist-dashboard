@@ -1132,6 +1132,12 @@ optimistic tick holds until fresh data lands, as the task hooks already did.
   `expo-router/react-navigation`), which catches the iOS swipe, Android's back
   button and Cancel alike. Saving, archiving and deleting leave through
   `useLeaveForm`, which skips the prompt.
+- **Required fields are marked, and Save leads to them** (2026-11-03). A new
+  item opens with the cursor in its title. Required fields carry a red
+  asterisk; Save stays tappable and, with one empty, scrolls to the first,
+  focuses it and says what it needs (`useRequiredFields`, checked by
+  `FormScreen` before `onSave`). `canSave` is left for "nothing to save", an
+  edit with no changes. A field joins by passing its ref, a name and a message.
 - **Dates use each platform's own picker** (`@react-native-community/datetimepicker`,
   which ships in Expo Go): the compact inline pill on iOS; on Android, which has
   no inline picker and no date-time mode, the date dialog then the time dialog.
