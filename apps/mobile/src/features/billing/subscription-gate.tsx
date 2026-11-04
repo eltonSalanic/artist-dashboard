@@ -32,7 +32,7 @@ const centred = { textAlign: 'center' } as const;
  * management while a payment is being retried). Switch band sits under it when
  * there is another band to switch to, and the small print (restore purchases,
  * privacy, terms) runs along one line below. Everyone else is told it's the
- * owner's call.
+ * owner's call: their info is still here, but the owner needs to renew.
  *
  * Buying is confirmed the way the subscription screen does it: the store
  * answers before RevenueCat's webhook reaches the API, so after a purchase this
@@ -226,10 +226,8 @@ function MemberGate({
 }) {
   return (
     <Gate
-      title={`${name}'s owner needs to renew`}
-      body={`Everything's safe, just locked for now.${
-        owner ? ` Give ${owner} a nudge and it'll open right back up.` : ''
-      }`}
+      title="Your info is still here"
+      body={`But ${owner ?? `${name}'s owner`} needs to renew their subscription.`}
     >
       {switchBand && <Button title="Switch band" variant="secondary" onPress={switchBand} />}
     </Gate>
