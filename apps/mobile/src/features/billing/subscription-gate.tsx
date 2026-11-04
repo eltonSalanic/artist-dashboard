@@ -227,7 +227,7 @@ function MemberGate({
   return (
     <Gate
       title="This band's subscription has ended"
-      body={`The owner of this band wall${owner ? ` (${owner})` : ''} needs to renew their subscription.`}
+      body={`The owner of this Band Wall${owner ? ` (${owner})` : ''} needs to renew their subscription.`}
     >
       {switchBand && <Button title="Switch band" variant="secondary" onPress={switchBand} />}
     </Gate>
