@@ -165,8 +165,87 @@ Each would otherwise read as an oversight:
   the iOS pod `PurchasesHybridCommon` 20.1.0, which wasn't published to
   CocoaPods, so `pod install` failed. TODO: upgrade once it is; see
   [docs/billing.md](../../docs/billing.md).
+- **`lottie-react-native` is `^7.5.0`**, not the `~7.3.8` `expo install`
+  picks for SDK 57, per the repo's latest-versions rule (it peers
+  `react-native >=0.84`). It is in `expo.install.exclude` for that reason.
+  `@lottiefiles/dotlottie-react`, its optional web peer, isn't installed:
+  this app has no web target.
 - `react` and `jest` are listed in `expo.install.exclude` so `expo install --check` and
   `expo-doctor` stay green and a real mismatch is still visible.
+
+## Mascots
+
+dez and bunz are drawn as SVGs in `assets/mascots/src` and converted to Lottie
+JSON in `assets/mascots/lottie` by `npm run mascots -w apps/mobile`
+(`scripts/svg-to-lottie.mjs`, then `scripts/month-lettering.mjs`; no dependencies). That also regenerates
+`assets/mascots/lottie/index.ts`, the static `require` registry. Poses: `hero`,
+`celebrate`, `empty` (lettered "no gigs yet"), `nudge`, `icon` (head only), and
+the bare poses with their drawn words left out: `emptyBare` (cropped below the
+lettering), `celebrateBare` (cut under the feet; strokes crossing the edge are
+dropped whole) and `nudgeBare` (each character's lettering boxed out). Each has a
+`…Dark` twin drawn in white that `Mascot` plays on the dark theme, plus logo lockups in
+light and dark.
+
+- [`src/components/mascot.tsx`](src/components/mascot.tsx): `Mascot` plays a
+  named character; `MyMascot` plays the one this phone picked. Screens use
+  `MyMascot`. Reduce Motion holds the first frame.
+- [`src/features/mascot/mascot-preference.tsx`](src/features/mascot/mascot-preference.tsx):
+  the choice (dez by default), kept in `AsyncStorage` under `artist.mascot`
+  and provided at the root layout, so it also shows on the signed-out screens.
+  `useMascot()` reads and sets it.
+- The picker is the MASCOT section on the You tab.
+- `assets/mascots/src/app-icon/b-wall-{light,dark}.{svg,png}`: the b + wall mark with no
+  mascot, 1024 × 1024. It is the app icon: `assets/expo.icon` (iOS Icon Composer, the b
+  and the wall as two layers on the paper colour), `assets/images/icon.png` and the
+  Android adaptive `android-icon-*.png`. A new icon needs a new native build.
+- **The placement block.** `MascotMessage` is lettering on top (`PhraseLettering`,
+  hand-drawn by `scripts/month-lettering.mjs`), the phone's mascot at
+  `MASCOT_WIDTH` (180) under it, then a centred body line, sitting in the middle
+  of the room it's given. Lettering is shown at 0.9 of its drawn size and never
+  wider than 252, so only "NO MEETINGS YET." shrinks, by a hair.
+  A list that owns a `SpokeList` passes `mascot={{ phrase }}` and gets it on its
+  empty state; anything else renders it directly:
+
+  ```tsx
+  import { MascotMessage } from '@/components/mascot';
+
+  <MascotMessage phrase="nothingHere" label="Nothing here" body="…" color={tokens.mutedForeground} />
+  ```
+
+  On a colour that isn't the page's (a band's block), pass `on={block.bg}` to
+  `MyMascot` / `PhraseLettering` and they draw in white when white reads better.
+- **Lettered lines** (`PHRASES` in `scripts/month-lettering.mjs`, capitals,
+  "." and "'"; no Q, X, Z or digits yet): the 12 months ("NOTHING IN <MONTH>."), `nothingForYou`,
+  `nothingHere`, `noGigsYet`, `noRehearsals`, `noMeetings`, `noGoals`,
+  `allDone`, `nothingToRemember`, `nothingArchived`, `nothingToAttach`,
+  `youreIn` ("YOU'RE IN"), `somethingBroke`. Add one to `PHRASES` and run
+  `npm run mascots`.
+- **Where they are:**
+  - Empty lists, lettering + `emptyBare`: Calendar month, Inbox, Shows ("NO GIGS
+    YET."), Rehearsals, Meetings, Goals, Reminders, To-Dos / My Tasks ("ALL DONE.",
+    only when there are none at all; a filter or search that matches nothing stays
+    in plain words), Archive (same rule), Attach.
+  - Success, "YOU'RE IN" lettering + `celebrateBare`, then just the band's
+    name: after starting a band (`band-live`, mascot 150, with the invite box)
+    and after joining one (`welcome-in`).
+  - Sign-in opens with `MascotLockup lockup="leaningMark"` (the mascot leaning
+    on the app icon's b and wall, 200 wide) in place of the small BAND WALL caps. The converter leaves out a lockup's full-size paper rect,
+    so the page's own colour shows through.
+  - `hero`: the paywall (140) and the no-band
+    screen (120; any bigger and Continue goes under the tab bar).
+  - Errors, `emptyBare`: the crash screen under "SOMETHING BROKE." (then just
+    its one explanatory line), and the
+    launch error (the lettering only when it's not just offline).
+    `useMascot()` falls back to dez outside its provider, since the crash screen
+    can render above it.
+  - The MASCOT picker on the You tab (`icon`).
+
+  Mind the words drawn into the full poses: `empty` says "no gigs yet",
+  `celebrate` says "BOOKED!" (bunz: "booked!") and `nudge` says "U OWE $20"
+  (bunz: "oi sam. $20."). Use the bare poses with lettering instead.
+
+Lottie is a native module, so pulling this in needs a new dev build
+(`npx expo run:ios`), not just a Metro reload.
 
 ## Tests
 

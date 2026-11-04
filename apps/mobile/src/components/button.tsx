@@ -10,6 +10,9 @@ import { PosterText } from './poster-text';
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive';
 export type ButtonSize = 'sm' | 'md';
 
+/** Every size's height: a capsule, so its corner radius is half of this. */
+export const BUTTON_HEIGHT = 48;
+
 /**
  * Variants resolve against the nearest token set, so a primary button is
  * legible on the canvas and on any palette slot — on a coloured card `primary`
@@ -74,7 +77,7 @@ export function Button({
           alignItems: 'center',
           justifyContent: 'center',
           // 44pt is the smallest comfortable touch target.
-          minHeight: 48,
+          minHeight: BUTTON_HEIGHT,
           opacity: disabled ? 0.4 : pressed ? 0.75 : 1,
           ...sizes[size],
         },

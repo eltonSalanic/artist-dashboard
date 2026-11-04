@@ -3,10 +3,11 @@ import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMe, useMySubscription, useSendInvite } from '@artist/api-client';
+import { MyMascot, PhraseLettering } from '@/components/mascot';
 import { PosterText } from '@/components/poster-text';
 import { TextInput } from '@/components/text-input';
 import { InkButton } from '@/features/onboarding/ink-button';
-import { posterInput, posterRadius, posterSlot, spacing, useScheme } from '@/theme';
+import { concentric, posterInput, posterSlot, radius, spacing, useScheme } from '@/theme';
 
 /**
  * "You're live": the moment a new band opens, painted in its own colour. Says
@@ -55,27 +56,29 @@ export function BandLiveScreen({ boardId }: { boardId: string }) {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.md },
+          { paddingTop: insets.top + spacing.xxl, paddingBottom: insets.bottom + spacing.lg },
         ]}
       >
         <View style={styles.middle}>
+          {/* The mascot says you're in in its own hand, in place of the kicker. */}
+          <View style={styles.mascot}>
+            <PhraseLettering phrase="youreIn" label="You're in" on={block.bg} />
+            <MyMascot pose="celebrateBare" width={150} on={block.bg} />
+          </View>
           <View accessible accessibilityRole="header" style={{ gap: spacing.sm }}>
-            <PosterText variant="label" color={block.soft}>
-              {"YOU'RE LIVE"}
+            <PosterText variant="display" color={block.ink} style={styles.centred}>
+              {band?.name ?? 'Your band'}
             </PosterText>
-            <PosterText variant="display" color={block.ink}>
-              {`${band?.name ?? 'Your band'}\nIs Open.`}
-            </PosterText>
-            <PosterText variant="body" color={block.ink}>
-              {freeUntil
-                ? `Free until ${freeUntil}. Bring the band in: they join free.`
-                : 'Bring the band in: they join free.'}
-            </PosterText>
+            {freeUntil && (
+              <PosterText variant="body" color={block.ink} style={styles.centred}>
+                {`Free until ${freeUntil}.`}
+              </PosterText>
+            )}
           </View>
 
           <View style={[styles.inviteBlock, { backgroundColor: block.ink + '1A' }]}>
             <PosterText variant="label" color={block.soft}>
-              INVITE A BANDMATE
+              Invite your bandmate
             </PosterText>
             <TextInput
               accessibilityLabel="Bandmate's email"
@@ -96,6 +99,7 @@ export function BandLiveScreen({ boardId }: { boardId: string }) {
               ink={block.ink}
               bg={block.bg}
               outline
+              radius={INSET_RADIUS}
               loading={invite.isPending}
               disabled={!email.trim()}
               onPress={send}
@@ -109,7 +113,7 @@ export function BandLiveScreen({ boardId }: { boardId: string }) {
         </View>
 
         <InkButton
-          title="Go to my wall"
+          title="Go To My Wall"
           ink={block.ink}
           bg={block.bg}
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
@@ -119,19 +123,30 @@ export function BandLiveScreen({ boardId }: { boardId: string }) {
   );
 }
 
+/**
+ * The invite box has the corner every card has (radius.lg); the field and the
+ * Send invite button inside it share its corners' centre, so they take that
+ * radius less the padding instead of being capsules.
+ */
+const INVITE_PADDING = spacing.sm;
+const INSET_RADIUS = radius.lg - INVITE_PADDING;
+
 const styles = StyleSheet.create({
-  content: { flexGrow: 1, paddingHorizontal: spacing.lg, gap: spacing.lg },
+  content: { flexGrow: 1, paddingHorizontal: spacing.xl, gap: spacing.xl },
   // Fills the room above the button and sits the message and invite just above its middle.
-  middle: { flex: 1, justifyContent: 'center', gap: spacing.lg, paddingBottom: spacing.xl },
+  middle: { flex: 1, justifyContent: 'center', gap: spacing.xl, paddingBottom: spacing.xl },
+  mascot: { alignSelf: 'center', alignItems: 'center', gap: spacing.md },
+  centred: { textAlign: 'center' },
   inviteBlock: {
-    borderRadius: posterRadius.block * 1.7,
+    // The app's card corner, with the field and button inside it concentric.
+    borderRadius: concentric(INSET_RADIUS, INVITE_PADDING),
     borderCurve: 'continuous',
-    padding: spacing.md,
+    padding: INVITE_PADDING,
     gap: spacing.sm,
   },
   input: {
     borderWidth: 1.5,
-    borderRadius: posterRadius.block,
+    borderRadius: INSET_RADIUS,
     borderCurve: 'continuous',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 4,

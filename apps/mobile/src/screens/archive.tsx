@@ -74,6 +74,8 @@ export function ArchiveScreen({ boardId }: { boardId: string }) {
       empty={visible.length === 0}
       emptyIcon={{ sf: 'archivebox', md: 'archive' }}
       emptyTitle={items.length === 0 ? 'Nothing archived yet' : 'No matches'}
+      // Only when there's truly nothing; "No matches" stays in plain words.
+      mascot={items.length === 0 ? { phrase: 'nothingArchived' } : undefined}
       emptyBody={
         items.length === 0
           ? 'Archive a task, goal, show or reminder to clear it off the dashboard without losing it.'

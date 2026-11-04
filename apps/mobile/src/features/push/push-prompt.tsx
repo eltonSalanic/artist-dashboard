@@ -83,23 +83,26 @@ export function PushSetting() {
   const on = permission === 'granted';
 
   return (
-    <View style={{ flexDirection: 'row', gap: spacing.md, paddingVertical: spacing.xs }}>
-      <Icon
-        name={
-          on
-            ? { sf: 'bell.fill', md: 'notifications' }
-            : { sf: 'bell.slash', md: 'notifications-off' }
-        }
-        size={20}
-        color={ink.ink}
-      />
-      <View style={{ flex: 1, gap: spacing.xs }}>
-        <PosterText variant="rowTitle" color={ink.ink}>
+    // The bell sits beside the title only; the line under it starts at the left edge.
+    <View style={{ gap: spacing.xs, paddingVertical: spacing.xs }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+        <Icon
+          name={
+            on
+              ? { sf: 'bell.fill', md: 'notifications' }
+              : { sf: 'bell.slash', md: 'notifications-off' }
+          }
+          size={20}
+          color={ink.ink}
+        />
+        <PosterText variant="rowTitle" color={ink.ink} style={{ flex: 1 }}>
           {on ? 'Notifications are on' : 'Notifications are off'}
         </PosterText>
+      </View>
+      <View style={{ gap: spacing.xs }}>
         <PosterText variant="cardMeta" color={ink.soft}>
           {on
-            ? `This phone hears about ${WHAT}. Each band's Settings decides which.`
+            ? 'You will receive push notifications for mentions, tasks assigned to you, schedule changes, and reminders.'
             : permission === 'denied'
               ? 'They were turned off for this app. Switch them back on in Settings.'
               : `Turn them on to hear about ${WHAT}.`}

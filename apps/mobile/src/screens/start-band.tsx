@@ -17,6 +17,7 @@ import {
 } from '@artist/api-client';
 import { BOARD_PALETTES, BoardPalettes, type BoardPalette } from '@artist/shared';
 import { Button } from '@/components/button';
+import { MyMascot } from '@/components/mascot';
 import { PosterText } from '@/components/poster-text';
 import { TextField } from '@/components/text-field';
 import { useSelectedBoard } from '@/features/board/selected-board';
@@ -30,7 +31,7 @@ import {
 } from '@/features/onboarding/onboarding-state';
 import { StepProgress } from '@/features/onboarding/step-progress';
 import { reportError } from '@/lib/report-error';
-import { posterRadius, posterSlot, spacing, usePosterCanvas, useScheme } from '@/theme';
+import { concentric, posterRadius, posterSlot, spacing, usePosterCanvas, useScheme } from '@/theme';
 
 /**
  * Step 2 of 3 for someone starting a band, and what anyone in no band sees:
@@ -151,14 +152,15 @@ export function StartBandScreen() {
         ]}
       >
         {signingUp && <StepProgress step={2} of={3} />}
-        <View accessible accessibilityRole="header" style={{ gap: spacing.xs }}>
-          <PosterText variant="label" color={canvas.soft}>
-            {"NEW BAND · YOU'LL OWN IT"}
-          </PosterText>
-          <PosterText variant="display" color={canvas.ink}>
-            Name Your Band.
-          </PosterText>
-        </View>
+        <MyMascot pose="hero" width={120} style={{ alignSelf: 'center' }} />
+        <PosterText
+          variant="display"
+          color={canvas.ink}
+          accessibilityRole="header"
+          style={styles.centred}
+        >
+          Name Your Band.
+        </PosterText>
 
         <TextField
           label="Band name"
@@ -223,13 +225,13 @@ export function StartBandScreen() {
         </View>
 
         {awaiting && !stuck && (
-          <PosterText variant="body" color={canvas.soft}>
+          <PosterText variant="body" color={canvas.soft} style={styles.centred}>
             Confirming your free month…
           </PosterText>
         )}
         {stuck && (
           <View style={{ gap: spacing.sm }}>
-            <PosterText variant="body" color={canvas.soft}>
+            <PosterText variant="body" color={canvas.soft} style={styles.centred}>
               {"We can't confirm your purchase yet. If you bought it, you're covered, so there's no need to buy again."}
             </PosterText>
             <Button title="Try again" variant="secondary" onPress={confirm} />
@@ -243,7 +245,7 @@ export function StartBandScreen() {
           onPress={() => void next()}
         />
 
-        <PosterText variant="body" color={canvas.soft} style={{ textAlign: 'center' }}>
+        <PosterText variant="body" color={canvas.soft} style={styles.centred}>
           {`Joining a band instead? Ask one of its admins to invite ${me.data?.user.email ?? 'you'}.`}
         </PosterText>
       </ScrollView>
@@ -251,12 +253,18 @@ export function StartBandScreen() {
   );
 }
 
+/** The preview's cards: a hub card's corner, scaled down with the card. */
+const CARD_RADIUS = posterRadius.block - 4;
+
 const styles = StyleSheet.create({
-  content: { flexGrow: 1, paddingHorizontal: spacing.lg, gap: spacing.lg },
+  // The form sits in the middle of a tall phone rather than under the status bar.
+  content: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: spacing.lg, gap: spacing.lg },
+  centred: { textAlign: 'center' },
   swatches: { flexDirection: 'row', gap: spacing.md - 4 },
   swatch: { width: 40, height: 40, borderRadius: 20 },
   preview: {
-    borderRadius: posterRadius.block * 1.7,
+    // Concentric with the little cards sitting in its bottom corners.
+    borderRadius: concentric(CARD_RADIUS, spacing.md),
     borderCurve: 'continuous',
     padding: spacing.md,
     gap: spacing.xs,
@@ -266,7 +274,7 @@ const styles = StyleSheet.create({
     width: '48%',
     flexGrow: 1,
     height: 40,
-    borderRadius: posterRadius.block - 4,
+    borderRadius: CARD_RADIUS,
     borderCurve: 'continuous',
   },
 });

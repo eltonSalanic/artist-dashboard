@@ -8,10 +8,13 @@ import { SpokeList } from '@/components/spoke-list';
 import { shortDate } from '../format';
 import { EVENT_WIDGET, SpokeHeader } from '../spoke-header';
 
-const copy: Record<EventType, { empty: string; body: string }> = {
-  SHOW: { empty: 'No shows booked', body: 'Upcoming shows appear here.' },
-  REHEARSAL: { empty: 'No rehearsals booked', body: 'Upcoming rehearsals appear here.' },
-  MEETING: { empty: 'No meetings booked', body: 'Upcoming meetings appear here.' },
+const copy: Record<
+  EventType,
+  { empty: string; body: string; phrase: 'noGigsYet' | 'noRehearsals' | 'noMeetings' }
+> = {
+  SHOW: { empty: 'No shows booked', body: 'Upcoming shows appear here.', phrase: 'noGigsYet' },
+  REHEARSAL: { empty: 'No rehearsals booked', body: 'Upcoming rehearsals appear here.', phrase: 'noRehearsals' },
+  MEETING: { empty: 'No meetings booked', body: 'Upcoming meetings appear here.', phrase: 'noMeetings' },
 };
 
 /**
@@ -34,6 +37,7 @@ export function makeEventsSpoke(type: EventType) {
         emptyIcon={{ sf: 'calendar', md: 'event' }}
         emptyTitle={copy[type].empty}
         emptyBody={copy[type].body}
+        mascot={{ phrase: copy[type].phrase }}
         header={
           <SpokeHeader
             boardId={boardId}

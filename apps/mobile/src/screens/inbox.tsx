@@ -11,6 +11,7 @@ import type { BoardSummaryDto } from '@artist/shared';
 import { BoardFilter } from '@/components/board-filter';
 import { Icon } from '@/components/icon';
 import { ListState } from '@/components/list-state';
+import { MyMascot, PhraseLettering } from '@/components/mascot';
 import { PosterText } from '@/components/poster-text';
 import { useBoardScope } from '@/features/boards/use-board-scope';
 import { PushPrompt } from '@/features/push/push-prompt';
@@ -139,11 +140,17 @@ function Mentions({
               title=""
             />
           ) : (
-            <View style={{ paddingTop: spacing.lg, gap: spacing.sm }}>
-              <PosterText variant="display" color={colors.foreground}>
-                Nothing for you.
-              </PosterText>
-              <PosterText variant="body" color={colors.mutedForeground}>
+            // Fills the room under the header, like the calendar's empty month.
+            <View style={{ flex: 1, justifyContent: 'center', gap: spacing.sm, paddingBottom: spacing.xl }}>
+              <View style={{ alignSelf: 'center', alignItems: 'center', gap: spacing.md }}>
+                <PhraseLettering phrase="nothingForYou" label="Nothing for you." />
+                <MyMascot pose="emptyBare" width={180} />
+              </View>
+              <PosterText
+                variant="body"
+                color={colors.mutedForeground}
+                style={{ textAlign: 'center' }}
+              >
                 {filteredTo === undefined
                   ? 'When someone @mentions you in a comment, it lands here.'
                   : `No one has mentioned you in ${filteredTo}.`}

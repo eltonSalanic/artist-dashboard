@@ -8,6 +8,7 @@ import { PosterText } from '@/components/poster-text';
 import { Section } from '@/components/section';
 import { Skeleton } from '@/components/skeleton';
 import { useSelectedBoard } from '@/features/board/selected-board';
+import { MascotSetting } from '@/features/mascot/mascot-setting';
 import { PushSetting } from '@/features/push/push-prompt';
 import { forgetThisDevice } from '@/features/push/push';
 import { auth } from '@/lib/auth';
@@ -20,6 +21,8 @@ import {
   useScheme,
   useShadows,
 } from '@/theme';
+
+const centred = { textAlign: 'center' } as const;
 
 /**
  * The account tab: who you are signed in as, which band the app is currently
@@ -50,17 +53,17 @@ export function YouScreen() {
       contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl, gap: spacing.xl }}
     >
       {me.isPending ? (
-        <View style={{ gap: spacing.md }}>
-          <Skeleton width={88} height={88} style={{ borderRadius: 44 }} />
+        <View style={{ gap: spacing.md, alignItems: 'center' }}>
+          <Skeleton width={88} height={88} style={{ borderRadius: 44, alignSelf: 'center' }} />
           <Skeleton width="60%" height={36} />
           <Skeleton width="45%" height={14} />
         </View>
       ) : me.isError ? (
-        <View style={{ gap: spacing.sm }}>
-          <PosterText variant="title" color={canvas.ink}>
+        <View style={{ gap: spacing.sm, alignItems: 'center' }}>
+          <PosterText variant="title" color={canvas.ink} style={centred}>
             Could not load your account
           </PosterText>
-          <PosterText variant="body" color={canvas.soft}>
+          <PosterText variant="body" color={canvas.soft} style={centred}>
             {toUserMessage(me.error)}
           </PosterText>
           <Button
@@ -68,11 +71,11 @@ export function YouScreen() {
             variant="ghost"
             size="sm"
             onPress={() => void me.refetch()}
-            style={{ alignSelf: 'flex-start', paddingHorizontal: 0 }}
+            style={{ paddingHorizontal: 0 }}
           />
         </View>
       ) : (
-        <View accessible accessibilityRole="header" style={{ gap: spacing.md }}>
+        <View accessible accessibilityRole="header" style={{ gap: spacing.md, alignItems: 'center' }}>
           <View
             style={{
               width: 88,
@@ -88,17 +91,18 @@ export function YouScreen() {
               {me.data.user.displayName.trim().charAt(0).toUpperCase() || '?'}
             </PosterText>
           </View>
-          <View style={{ gap: 2 }}>
+          <View style={{ gap: 2, alignSelf: 'stretch' }}>
             <PosterText
               variant="display"
               color={canvas.ink}
+              style={centred}
               numberOfLines={2}
               adjustsFontSizeToFit
               minimumFontScale={0.6}
             >
               {me.data.user.displayName}
             </PosterText>
-            <PosterText variant="body" color={canvas.soft} numberOfLines={1}>
+            <PosterText variant="body" color={canvas.soft} numberOfLines={1} style={centred}>
               {me.data.user.email}
             </PosterText>
           </View>
@@ -142,6 +146,10 @@ export function YouScreen() {
 
       <Section title="THIS PHONE">
         <PushSetting />
+      </Section>
+
+      <Section title="MASCOT">
+        <MascotSetting />
       </Section>
 
       {/* Sentry's feedback form, linked to the errors just before it. Only

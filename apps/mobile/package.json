@@ -9,7 +9,8 @@
     "ios": "expo run:ios",
     "test": "tsc --noEmit && TZ=America/Los_Angeles jest",
     "typecheck": "tsc --noEmit",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "mascots": "node scripts/svg-to-lottie.mjs assets/mascots/src assets/mascots/lottie && node scripts/month-lettering.mjs assets/mascots/src assets/mascots/lottie"
   },
   "dependencies": {
     "@artist/api-client": "*",
@@ -41,6 +42,7 @@
     "expo-system-ui": "~57.0.4",
     "expo-video-thumbnails": "~57.0.2",
     "expo-web-browser": "~57.0.3",
+    "lottie-react-native": "^7.5.0",
     "react": "19.2.4",
     "react-native": "0.86.3",
     "react-native-gesture-handler": "~2.32.0",
@@ -90,7 +92,8 @@
         "react",
         "jest",
         "@types/jest",
-        "react-native-screens"
+        "react-native-screens",
+        "lottie-react-native"
       ]
     }
   }

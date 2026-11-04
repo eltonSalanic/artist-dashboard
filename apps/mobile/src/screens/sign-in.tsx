@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiFetch, authErrorMessage, notify } from '@artist/api-client';
 import { Button } from '@/components/button';
+import { MascotLockup } from '@/components/mascot';
 import { PosterText } from '@/components/poster-text';
 import { TextField } from '@/components/text-field';
 import { ThemedText } from '@/components/themed-text';
@@ -17,8 +19,9 @@ type Mode = 'signin' | 'signup' | 'invite';
 /** Web's rule for the password an invited bandmate sets. */
 const MIN_PASSWORD = 8;
 
-const COPY: Record<Mode, { title: string; lead: string; submit: string }> = {
-  signin: { title: 'Welcome back', lead: "Sign in to your band's dashboard.", submit: 'Sign in' },
+// Signing in needs no explaining, so it has no lead; the logo above already says where you are.
+const COPY: Record<Mode, { title: string; lead?: string; submit: string }> = {
+  signin: { title: 'Welcome back', submit: 'Sign in' },
   signup: {
     title: 'First, You.',
     lead: 'Your bandmates see this name on tasks and shows.',
@@ -45,11 +48,12 @@ const COPY: Record<Mode, { title: string; lead: string; submit: string }> = {
  * Reached from the welcome screen, which picks the mode: "Start a band" is
  * step 1 of 3 and asks for your name, "I've got an invite" takes the code.
  *
- * Opens with the widget page's masthead: the app's name in small caps over
- * the greeting set huge, so the first screen is already in the poster face.
+ * Opens with the Band Wall logo, the phone's mascot leaning on the b and wall,
+ * over the greeting set huge, so the first screen is already in the poster face.
  */
 export function SignInScreen() {
   const canvas = usePosterCanvas();
+  const insets = useSafeAreaInsets();
   // The welcome screen's doors open this screen in their mode.
   const params = useLocalSearchParams<{ mode?: string }>();
   const [mode, setMode] = useState<Mode>(
@@ -162,180 +166,190 @@ export function SignInScreen() {
     // each time, so it shook. An inset leaves the form still, scrolls only to
     // keep the focused field in view, and lets Join's taller form scroll
     // rather than run under the status bar.
-    <ScrollView
-      style={{ backgroundColor: canvas.background }}
-      contentContainerStyle={styles.root}
-      // Centred on the whole screen, as before: the form fits it, so only
-      // the keyboard's inset ever scrolls it.
-      contentInsetAdjustmentBehavior="never"
-      automaticallyAdjustKeyboardInsets
-      keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="interactive"
-    >
-      <View style={styles.form}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          hitSlop={12}
-          disabled={pending}
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/welcome'))}
-          style={styles.back}
-        >
-          <PosterText variant="chip" color={canvas.soft}>
-            ‹ Back
-          </PosterText>
-        </Pressable>
-        {mode === 'signup' && <StepProgress step={1} of={3} />}
-        <View accessible accessibilityRole="header" style={styles.masthead}>
-          <PosterText variant="label" color={canvas.soft}>
-            BAND WALL
-          </PosterText>
-          <PosterText variant="display" color={canvas.ink}>
-            {copy.title}
-          </PosterText>
-          <PosterText variant="body" color={canvas.soft}>
-            {copy.lead}
-          </PosterText>
-        </View>
+    <View style={{ flex: 1, backgroundColor: canvas.background }}>
+      <ScrollView
+        style={{ backgroundColor: canvas.background }}
+        contentContainerStyle={styles.root}
+        // Centred on the whole screen, as before: the form fits it, so only
+        // the keyboard's inset ever scrolls it.
+        contentInsetAdjustmentBehavior="never"
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+      >
+        <View style={styles.form}>
+          {mode === 'signup' && <StepProgress step={1} of={3} />}
+          {/* The logo: the phone's mascot leaning on the app icon's b and wall, so
+              the screen echoes the icon that opened it. */}
+          <MascotLockup lockup="leaningMark" width={LOCKUP_WIDTH} style={{ alignSelf: 'center' }} />
+          <View accessible accessibilityRole="header" style={styles.masthead}>
+            <PosterText variant="display" color={canvas.ink} style={styles.centred}>
+              {copy.title}
+            </PosterText>
+            {copy.lead && (
+              <PosterText variant="body" color={canvas.soft} style={styles.centred}>
+                {copy.lead}
+              </PosterText>
+            )}
+          </View>
 
-        {mode === 'signup' && (
+          {mode === 'signup' && (
+            <TextField
+              label="Your name"
+              value={name}
+              onChangeText={setName}
+              editable={!pending}
+              autoCapitalize="words"
+              autoComplete="name"
+              textContentType="name"
+              placeholder="Jess Ortega"
+              maxLength={60}
+              doneBar={false}
+            />
+          )}
+
           <TextField
-            label="Your name"
-            value={name}
-            onChangeText={setName}
+            label="Email"
+            value={email}
+            onChangeText={setEmail}
             editable={!pending}
-            autoCapitalize="words"
-            autoComplete="name"
-            textContentType="name"
-            placeholder="Jess Ortega"
-            maxLength={60}
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="email"
+            keyboardType="email-address"
+            textContentType="emailAddress"
+            placeholder="you@band.com"
+            // No Done bar on this form: Return closes these keyboards, and the
+            // bar reloaded the keyboard on each letter, which shook the centred
+            // form (see `TextInput`).
             doneBar={false}
           />
-        )}
 
-        <TextField
-          label="Email"
-          value={email}
-          onChangeText={setEmail}
-          editable={!pending}
-          autoCapitalize="none"
-          autoCorrect={false}
-          autoComplete="email"
-          keyboardType="email-address"
-          textContentType="emailAddress"
-          placeholder="you@band.com"
-          // No Done bar on this form: Return closes these keyboards, and the
-          // bar reloaded the keyboard on each letter, which shook the centred
-          // form (see `TextInput`).
-          doneBar={false}
-        />
+          {mode === 'invite' && (
+            <TextField
+              label="Invite code"
+              value={code}
+              onChangeText={(text) => setCode(text.replace(/\D/g, '').slice(0, 6))}
+              editable={!pending}
+              keyboardType="number-pad"
+              doneBar={false}
+              // The number pad has no Return key; this makes React Native add
+              // its own Done toolbar, which does not reload as you type.
+              returnKeyType="done"
+              // iOS offers the code from Mail above the keyboard.
+              textContentType="oneTimeCode"
+              autoComplete="one-time-code"
+              placeholder="123456"
+              maxLength={6}
+              // What fails in this mode is the code, so the outline goes here.
+              error={error}
+            />
+          )}
 
-        {mode === 'invite' && (
+          {mode === 'invite' && (
+            <TextField
+              label="Your name"
+              value={name}
+              onChangeText={setName}
+              editable={!pending}
+              autoCapitalize="words"
+              autoComplete="name"
+              textContentType="name"
+              placeholder="What your bandmates call you"
+              maxLength={60}
+              doneBar={false}
+            />
+          )}
+
           <TextField
-            label="Invite code"
-            value={code}
-            onChangeText={(text) => setCode(text.replace(/\D/g, '').slice(0, 6))}
+            label={mode === 'invite' ? 'Choose a password' : 'Password'}
+            placeholder={mode === 'invite' ? `At least ${MIN_PASSWORD} characters` : undefined}
+            value={password}
+            onChangeText={setPassword}
             editable={!pending}
-            keyboardType="number-pad"
+            secureTextEntry
+            autoCapitalize="none"
+            // A plain password field in every mode. `newPassword` made iOS lay its
+            // yellow strong-password overlay over the field on Create account,
+            // which kept only the first typed letter and then stuck when you
+            // switched back to Sign in. With no associated domain a generated
+            // password could not reach the web sign-in anyway.
+            autoComplete="current-password"
+            textContentType="password"
             doneBar={false}
-            // The number pad has no Return key; this makes React Native add
-            // its own Done toolbar, which does not reload as you type.
-            returnKeyType="done"
-            // iOS offers the code from Mail above the keyboard.
-            textContentType="oneTimeCode"
-            autoComplete="one-time-code"
-            placeholder="123456"
-            maxLength={6}
-            // What fails in this mode is the code, so the outline goes here.
-            error={error}
+            returnKeyType="go"
+            onSubmitEditing={() => {
+              if (canSubmit) void submit();
+            }}
+            error={mode === 'invite' ? null : error}
           />
-        )}
 
-        {mode === 'invite' && (
-          <TextField
-            label="Your name"
-            value={name}
-            onChangeText={setName}
-            editable={!pending}
-            autoCapitalize="words"
-            autoComplete="name"
-            textContentType="name"
-            placeholder="What your bandmates call you"
-            maxLength={60}
-            doneBar={false}
+          {notice !== null && (
+            <ThemedText variant="footnote" tone="muted" style={styles.centred}>
+              {notice}
+            </ThemedText>
+          )}
+
+          <Button
+            title={copy.submit}
+            loading={pending}
+            disabled={!canSubmit}
+            onPress={() => void submit()}
+            style={styles.submit}
           />
-        )}
 
-        <TextField
-          label={mode === 'invite' ? 'Choose a password' : 'Password'}
-          placeholder={mode === 'invite' ? `At least ${MIN_PASSWORD} characters` : undefined}
-          value={password}
-          onChangeText={setPassword}
-          editable={!pending}
-          secureTextEntry
-          autoCapitalize="none"
-          // A plain password field in every mode. `newPassword` made iOS lay its
-          // yellow strong-password overlay over the field on Create account,
-          // which kept only the first typed letter and then stuck when you
-          // switched back to Sign in. With no associated domain a generated
-          // password could not reach the web sign-in anyway.
-          autoComplete="current-password"
-          textContentType="password"
-          doneBar={false}
-          returnKeyType="go"
-          onSubmitEditing={() => {
-            if (canSubmit) void submit();
-          }}
-          error={mode === 'invite' ? null : error}
-        />
-
-        {notice !== null && (
-          <ThemedText variant="footnote" tone="muted">
-            {notice}
-          </ThemedText>
-        )}
-
-        <Button
-          title={copy.submit}
-          loading={pending}
-          disabled={!canSubmit}
-          onPress={() => void submit()}
-          style={styles.submit}
-        />
-
-        <Pressable
-          accessibilityRole="button"
-          disabled={pending}
-          onPress={() => switchTo(mode === 'signin' ? 'signup' : 'signin')}
-          style={styles.link}
-        >
-          <ThemedText variant="subhead" tone="accent">
-            {mode === 'signin' ? 'New here? Start a band' : 'Already have an account? Sign in'}
-          </ThemedText>
-        </Pressable>
-
-        {mode === 'signin' && (
           <Pressable
             accessibilityRole="button"
             disabled={pending}
-            onPress={() => switchTo('invite')}
-            style={styles.inviteLink}
+            onPress={() => switchTo(mode === 'signin' ? 'signup' : 'signin')}
+            style={styles.link}
           >
             <ThemedText variant="subhead" tone="accent">
-              Invited to a band? Join with your code
+              {mode === 'signin' ? 'New here? Start a band' : 'Already have an account? Sign in'}
             </ThemedText>
           </Pressable>
-        )}
-      </View>
-    </ScrollView>
+
+          {mode === 'signin' && (
+            <Pressable
+              accessibilityRole="button"
+              disabled={pending}
+              onPress={() => switchTo('invite')}
+              style={styles.inviteLink}
+            >
+              <ThemedText variant="subhead" tone="accent">
+                Invited to a band? Join with your code
+              </ThemedText>
+            </Pressable>
+          )}
+        </View>
+      </ScrollView>
+      {/* Pinned to the screen's top-left corner, over the centred form, where a
+          back button is expected. */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Back"
+        hitSlop={12}
+        disabled={pending}
+        onPress={() => (router.canGoBack() ? router.back() : router.replace('/welcome'))}
+        style={[styles.back, { top: insets.top + spacing.sm }]}
+      >
+        <PosterText variant="chip" color={canvas.soft}>
+          ‹ Back
+        </PosterText>
+      </Pressable>
+    </View>
   );
 }
 
+/** The b-and-wall lockup, at a size that leaves the form room above the keyboard. */
+const LOCKUP_WIDTH = 200;
+
 const styles = StyleSheet.create({
   root: { flexGrow: 1, justifyContent: 'center' },
-  back: { alignSelf: 'flex-start', paddingVertical: spacing.xs },
+  back: { position: 'absolute', left: spacing.lg, paddingVertical: spacing.xs },
   form: { padding: spacing.lg, gap: spacing.md },
   masthead: { gap: spacing.xs, marginBottom: spacing.sm },
+  centred: { textAlign: 'center' },
   submit: { marginTop: spacing.sm },
   link: { alignItems: 'center', paddingVertical: spacing.sm },
   inviteLink: { alignItems: 'center', paddingBottom: spacing.sm },

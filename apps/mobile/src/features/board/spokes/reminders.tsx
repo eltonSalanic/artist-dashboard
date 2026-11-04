@@ -33,6 +33,7 @@ export function RemindersSpoke({ boardId }: { boardId: string }) {
       empty={items.length === 0}
       emptyIcon={{ sf: 'bell', md: 'notifications-none' }}
       emptyTitle="Nothing to remember"
+      mascot={{ phrase: 'nothingToRemember' }}
       emptyBody="Reminders are board-wide, so everyone sees the same list."
       header={
         <SpokeHeader
