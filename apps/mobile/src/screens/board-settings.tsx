@@ -48,7 +48,7 @@ import { BUTTON_HEIGHT, Button } from '@/components/button';
 import { ChoiceChips } from '@/components/choice-chips';
 import { Icon } from '@/components/icon';
 import { Dot, Row } from '@/components/row';
-import { Section } from '@/components/section';
+import { SectionCard } from '@/components/section-card';
 import { Skeleton } from '@/components/skeleton';
 import { TextField } from '@/components/text-field';
 import { ThemedText } from '@/components/themed-text';
@@ -103,7 +103,7 @@ export function BoardSettingsScreen({
       contentInsetAdjustmentBehavior="automatic"
       automaticallyAdjustKeyboardInsets
       keyboardShouldPersistTaps="handled"
-      contentContainerStyle={{ padding: spacing.md, gap: spacing.xl }}
+      contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}
     >
       <SubscriptionSection boardId={boardId} />
       <NotificationsSection boardId={boardId} />
@@ -127,10 +127,10 @@ function NotificationsSection({ boardId }: { boardId: string }) {
   const save = useSaveNotificationPreference(boardId);
 
   return (
-    <Section title="NOTIFICATIONS">
-      <ThemedText variant="footnote" tone="muted">
-        What this band may tell you about, by email and on your phone. Everything else stays in the activity feed.
-      </ThemedText>
+    <SectionCard
+      title="Notifications"
+      description="What this band may tell you about, by email and on your phone. Everything else stays in the activity feed."
+    >
       {!preferences.data ? (
         <Skeleton width="100%" height={120} />
       ) : (
@@ -159,7 +159,7 @@ function NotificationsSection({ boardId }: { boardId: string }) {
           );
         })
       )}
-    </Section>
+    </SectionCard>
   );
 }
 
@@ -181,7 +181,10 @@ function MembersSection({ boardId }: { boardId: string }) {
     );
 
   return (
-    <Section title={members.length > 0 ? `MEMBERS · ${members.length}` : 'MEMBERS'}>
+    <SectionCard
+      title="Members"
+      caption={members.length > 0 ? `${members.length} in the band` : null}
+    >
       {board.isPending && <Skeleton width="100%" height={96} />}
       {members.map((member, index) => (
         <Row
@@ -214,7 +217,7 @@ function MembersSection({ boardId }: { boardId: string }) {
           }
         />
       ))}
-    </Section>
+    </SectionCard>
   );
 }
 
@@ -256,7 +259,7 @@ function InviteSection({ boardId }: { boardId: string }) {
   const pending = (invites.data ?? []).filter((i) => i.status === 'PENDING');
 
   return (
-    <Section title="INVITE SOMEONE">
+    <SectionCard title="Invite someone">
       <TextField
         label="Email"
         value={email}
@@ -316,7 +319,7 @@ function InviteSection({ boardId }: { boardId: string }) {
           ))}
         </View>
       )}
-    </Section>
+    </SectionCard>
   );
 }
 
@@ -345,10 +348,10 @@ function StatusesSection({ boardId }: { boardId: string }) {
     create.mutate({ name: name.trim(), color }, { onSuccess: () => setName('') });
 
   return (
-    <Section title="TASK STATUSES">
-      <ThemedText variant="footnote" tone="muted">
-        The steps tasks move through. Tap one to rename, recolour or remove it.
-      </ThemedText>
+    <SectionCard
+      title="Task statuses"
+      description="The steps tasks move through. Tap one to rename, recolour or remove it."
+    >
       {statuses.isPending && <Skeleton width="100%" height={96} />}
       {(statuses.data ?? []).map((status, index) =>
         open === status.id ? (
@@ -387,7 +390,7 @@ function StatusesSection({ boardId }: { boardId: string }) {
           onPress={add}
         />
       </View>
-    </Section>
+    </SectionCard>
   );
 }
 
@@ -420,7 +423,8 @@ function StatusEditor({
         marginVertical: spacing.xs,
         borderRadius: EDITOR_RADIUS,
         borderCurve: 'continuous',
-        backgroundColor: colors.card,
+        // The section is a card now, so the editor is a well cut into it.
+        backgroundColor: colors.background,
       }}
     >
       <TextField
@@ -521,11 +525,10 @@ function ShowStatusesSection({ boardId }: { boardId: string }) {
     );
 
   return (
-    <Section title="SHOW STATUSES">
-      <ThemedText variant="footnote" tone="muted">
-        Where a show stands. Holds look tentative, booked shows count, cancelled
-        ones drop out of lists. Past shows read as played on their own.
-      </ThemedText>
+    <SectionCard
+      title="Show statuses"
+      description="Where a show stands. Holds look tentative, booked shows count, cancelled ones drop out of lists. Past shows read as played on their own."
+    >
       {statuses.isPending && <Skeleton width="100%" height={96} />}
       {list.map((status, index) =>
         open === status.id ? (
@@ -572,7 +575,7 @@ function ShowStatusesSection({ boardId }: { boardId: string }) {
           onPress={add}
         />
       </View>
-    </Section>
+    </SectionCard>
   );
 }
 
@@ -614,7 +617,8 @@ function ShowStatusEditor({
         marginVertical: spacing.xs,
         borderRadius: EDITOR_RADIUS,
         borderCurve: 'continuous',
-        backgroundColor: colors.card,
+        // The section is a card now, so the editor is a well cut into it.
+        backgroundColor: colors.background,
       }}
     >
       <TextField
@@ -740,10 +744,10 @@ function PaletteSection({ boardId }: { boardId: string }) {
   const current = save.isPending ? (save.variables?.palette ?? theme.palette) : theme.palette;
 
   return (
-    <Section title="PALETTE">
-      <ThemedText variant="footnote" tone="muted">
-        The card colours everyone in this band sees, on web and on phones.
-      </ThemedText>
+    <SectionCard
+      title="Palette"
+      description="The card colours everyone in this band sees, on web and on phones."
+    >
       {board.isPending && <Skeleton width="100%" height={160} />}
       {board.data &&
         BOARD_PALETTES.map((palette, index) => (
@@ -765,7 +769,7 @@ function PaletteSection({ boardId }: { boardId: string }) {
                         backgroundColor: hex,
                         marginLeft: i === 0 ? 0 : -4,
                         borderWidth: 1.5,
-                        borderColor: colors.background,
+                        borderColor: colors.card,
                         // Each palette's deepest colour is darker than the dark page.
                         boxShadow: shadows.edge,
                       }}
@@ -785,7 +789,7 @@ function PaletteSection({ boardId }: { boardId: string }) {
             }
           />
         ))}
-    </Section>
+    </SectionCard>
   );
 }
 
@@ -798,7 +802,7 @@ function SubscriptionSection({ boardId }: { boardId: string }) {
   const sub = subscription.data;
   if (!sub) return null;
   return (
-    <Section title="SUBSCRIPTION">
+    <SectionCard title="Subscription">
       {sub.isOwner ? (
         <Row
           first
@@ -813,7 +817,7 @@ function SubscriptionSection({ boardId }: { boardId: string }) {
           meta="Their subscription covers everyone in it"
         />
       )}
-    </Section>
+    </SectionCard>
   );
 }
 
@@ -854,7 +858,7 @@ function OwnerSection({ boardId }: { boardId: string }) {
     );
 
   return (
-    <Section title="BAND OWNER">
+    <SectionCard title="Band owner" danger>
       {others.map((member, index) => (
         <Row
           key={member.userId}
@@ -880,6 +884,6 @@ function OwnerSection({ boardId }: { boardId: string }) {
         loading={remove.isPending}
         onPress={() => void deleteBand()}
       />
-    </Section>
+    </SectionCard>
   );
 }
