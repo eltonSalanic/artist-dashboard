@@ -1,4 +1,4 @@
-import { createContext, use, useRef, type ReactNode } from 'react';
+import { createContext, use, useRef, type ReactNode, type RefObject } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -8,10 +8,12 @@ import {
   View,
 } from 'react-native';
 import { router, Stack, useNavigation } from 'expo-router';
-import { usePreventRemove } from 'expo-router/react-navigation';
+import { useHeaderHeight, usePreventRemove } from 'expo-router/react-navigation';
 import { PosterText } from '@/components/poster-text';
 import { LIQUID_GLASS } from '@/lib/liquid-glass';
+import type { TextInput } from '@/components/text-input';
 import { face, spacing, usePosterCanvas, useThemeColors } from '@/theme';
+import type { RequiredFields } from './required-fields';
 
 /**
  * Leaves the form on purpose — after a save, an archive or a delete — without
@@ -34,6 +36,10 @@ export const useLeaveForm = () => use(LeaveContext);
  *
  * `onSave` resolves once saved and rejects on failure (the hook has already
  * shown why); the form closes only on success, so nothing typed is lost.
+ *
+ * `required` is checked before `onSave`: with a field missing, Save scrolls to
+ * the first one, focuses it and shows what it needs, and nothing is sent.
+ * `canSave` is for the rest — an edit with no changes has nothing to save.
  */
 export function FormScreen({
   title,
@@ -43,6 +49,7 @@ export function FormScreen({
   onSave,
   scrollable = true,
   postered = false,
+  required,
   children,
 }: {
   title: string;
@@ -62,11 +69,15 @@ export function FormScreen({
    * reorderable list cannot sit inside a ScrollView.
    */
   scrollable?: boolean;
+  required?: RequiredFields;
   children: ReactNode;
 }) {
   const canvas = usePosterCanvas();
   const navigation = useNavigation();
+  const headerHeight = useHeaderHeight();
   const leaving = useRef(false);
+  const scroller = useRef<ScrollView>(null);
+  const content = useRef<View>(null);
 
   usePreventRemove(dirty || saving, ({ data }) => {
     if (leaving.current) return navigation.dispatch(data.action);
@@ -87,8 +98,28 @@ export function FormScreen({
     navigate();
   };
 
-  const save = () =>
-    onSave(leave).then(
+  // Scrolls the field to just under the header, then focuses it. The content
+  // sits under the header (automatic insets), so its top is `headerHeight` in.
+  const reveal = (field: TextInput) => {
+    const inner = content.current;
+    if (!scrollable || !inner) return field.focus();
+    field.measureLayout(
+      inner,
+      (_x, y) => {
+        scroller.current?.scrollTo({
+          y: Math.max(0, y - spacing.lg) - headerHeight,
+          animated: true,
+        });
+        field.focus();
+      },
+      () => field.focus(),
+    );
+  };
+
+  const save = () => {
+    const missing = required?.check();
+    if (missing) return reveal(missing);
+    return onSave(leave).then(
       () => {
         // Some saves deliberately navigate to a newly created detail record
         // instead of closing the form. In that case the save handler already
@@ -97,6 +128,7 @@ export function FormScreen({
       },
       () => undefined,
     );
+  };
 
   return (
     <LeaveContext value={leave}>
@@ -114,6 +146,9 @@ export function FormScreen({
         />
         {scrollable ? (
           <ScrollView
+            ref={scroller}
+            // Typed as never-null, though React sets it to null on unmount.
+            innerViewRef={content as RefObject<View>}
             style={{ flex: 1 }}
             contentInsetAdjustmentBehavior="automatic"
             automaticallyAdjustKeyboardInsets

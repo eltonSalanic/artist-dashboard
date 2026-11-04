@@ -92,7 +92,7 @@ export function NameSheet({
         )}
 
         <View style={{ gap: spacing.xs + 2 }}>
-          <FieldLabel>Name</FieldLabel>
+          <FieldLabel required>Name</FieldLabel>
           {/* The form's flat filled field, with the extension inside it at
               the right, where it cannot be typed over. */}
           <View

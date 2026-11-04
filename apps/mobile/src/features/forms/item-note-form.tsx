@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Alert } from 'react-native';
 import { router } from 'expo-router';
 import { NOTE_EDIT_ACTION, type NoteDto, type NoteParentKind } from '@artist/shared';
 import { useNotes, usePermissions } from '@artist/api-client';
 import { Button } from '@/components/button';
 import { TextField } from '@/components/text-field';
+import type { TextInput } from '@/components/text-input';
 import { FormGate } from './form-gate';
 import { FormScreen, useLeaveForm } from './form-screen';
+import { useRequiredFields } from './required-fields';
 
 /**
  * One titled note on a task, event, goal or reminder: a title and plain text.
@@ -51,6 +53,10 @@ function NoteFields({
   const [title, setTitle] = useState(note?.title ?? '');
   const [body, setBody] = useState(note?.body ?? '');
   const dirty = title !== (note?.title ?? '') || body !== (note?.body ?? '');
+  const titleInput = useRef<TextInput>(null);
+  const required = useRequiredFields([
+    { name: 'title', ref: titleInput, missing: title.trim().length === 0, message: 'Add a title' },
+  ]);
 
   const save = async () => {
     if (!note) {
@@ -86,12 +92,16 @@ function NoteFields({
     <FormScreen
       title={note ? 'Edit note' : 'New note'}
       dirty={dirty}
-      canSave={title.trim().length > 0 && (dirty || !note)}
+      canSave={dirty || !note}
+      required={required}
       saving={notes.add.isPending || notes.update.isPending}
       onSave={save}
     >
       <TextField
         label="Title"
+        ref={titleInput}
+        required
+        error={required.error('title')}
         placeholder="Setlist, gear, load-in…"
         value={title}
         onChangeText={setTitle}

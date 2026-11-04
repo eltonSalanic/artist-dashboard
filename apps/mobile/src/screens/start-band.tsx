@@ -20,6 +20,8 @@ import { Button } from '@/components/button';
 import { MyMascot } from '@/components/mascot';
 import { PosterText } from '@/components/poster-text';
 import { TextField } from '@/components/text-field';
+import type { TextInput } from '@/components/text-input';
+import { useRequiredFields } from '@/features/forms/required-fields';
 import { useSelectedBoard } from '@/features/board/selected-board';
 import { billingAvailable, showPaywall } from '@/features/billing/purchases';
 import {
@@ -72,6 +74,10 @@ export function StartBandScreen() {
 
   const block = posterSlot(palette, scheme, 'c1');
   const trimmed = name.trim();
+  const nameInput = useRef<TextInput>(null);
+  const required = useRequiredFields([
+    { name: 'name', ref: nameInput, missing: !trimmed, message: 'Name your band' },
+  ]);
 
   const make = async () => {
     try {
@@ -97,7 +103,9 @@ export function StartBandScreen() {
   }, [creating, isPro]);
 
   const next = async () => {
-    if (!trimmed || busy) return;
+    if (busy) return;
+    const missing = required.check();
+    if (missing) return missing.focus();
     saveBandDraft({ name: trimmed, palette });
     const createBlock = subscription.data?.createBlock ?? null;
 
@@ -164,6 +172,10 @@ export function StartBandScreen() {
 
         <TextField
           label="Band name"
+          ref={nameInput}
+          autoFocus
+          required
+          error={required.error('name')}
           value={name}
           onChangeText={setName}
           editable={!working}
@@ -241,7 +253,7 @@ export function StartBandScreen() {
         <Button
           title="Continue"
           loading={working && !stuck}
-          disabled={!trimmed || working}
+          disabled={working}
           onPress={() => void next()}
         />
 

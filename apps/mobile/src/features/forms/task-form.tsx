@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import {
   dueDateFromLocalDay,
@@ -24,6 +24,8 @@ import { ChoiceChips } from '@/components/choice-chips';
 import { DateField } from '@/components/date-field';
 import { PickOne, type PickOption } from '@/components/pick-one';
 import { FormScreen } from './form-screen';
+import { useRequiredFields } from './required-fields';
+import type { TextInput } from '@/components/text-input';
 import { useWidgetInk } from '@/features/board/spoke-header';
 import { FormPoster } from './form-poster';
 import { FormGate } from './form-gate';
@@ -136,6 +138,11 @@ function TaskFields({
   const saving = create.isPending || update.isPending || setAssignees.isPending;
   const label = task?.parentTaskId || parentTaskId ? 'subtask' : 'task';
 
+  const titleInput = useRef<TextInput>(null);
+  const required = useRequiredFields([
+    { name: 'title', ref: titleInput, missing: title.trim().length === 0, message: 'Add a title' },
+  ]);
+
   // Resolves once saved; rejects (already reported by the hook) to keep the
   // form open. FormScreen closes it.
   const save = async () => {
@@ -175,10 +182,11 @@ function TaskFields({
     <FormScreen
       title={task ? `Edit ${label}` : `New ${label}`}
       dirty={dirty}
-      canSave={title.trim().length > 0 && (dirty || !task)}
+      canSave={dirty || !task}
       saving={saving}
       onSave={save}
       postered
+      required={required}
     >
       <FormPoster
         boardId={boardId}
@@ -189,6 +197,9 @@ function TaskFields({
         value={title}
         onChangeText={setTitle}
         autoFocus={!task}
+        ref={titleInput}
+        required
+        error={required.error('title')}
         maxLength={200}
       />
       <ChoiceChips

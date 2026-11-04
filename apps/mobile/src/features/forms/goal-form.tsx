@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { router } from 'expo-router';
 import {
   dueDateFromLocalDay,
@@ -18,6 +18,8 @@ import { ChoiceChips } from '@/components/choice-chips';
 import { DateField } from '@/components/date-field';
 import { FormGate } from './form-gate';
 import { FormScreen } from './form-screen';
+import { useRequiredFields } from './required-fields';
+import type { TextInput } from '@/components/text-input';
 import { useWidgetInk } from '@/features/board/spoke-header';
 import { FormPoster } from './form-poster';
 import { ItemActions } from './item-actions';
@@ -70,6 +72,11 @@ function GoalFields({ boardId, goal }: { boardId: string; goal: GoalDto | null }
     period !== initial.period ||
     day(due) !== day(initial.due);
 
+  const titleInput = useRef<TextInput>(null);
+  const required = useRequiredFields([
+    { name: 'title', ref: titleInput, missing: title.trim().length === 0, message: 'Add the goal' },
+  ]);
+
   const save = async () => {
     if (!goal) {
       await create.mutateAsync({
@@ -95,10 +102,11 @@ function GoalFields({ boardId, goal }: { boardId: string; goal: GoalDto | null }
     <FormScreen
       title={goal ? 'Edit goal' : 'New goal'}
       dirty={dirty}
-      canSave={title.trim().length > 0 && (dirty || !goal)}
+      canSave={dirty || !goal}
       saving={create.isPending || update.isPending}
       onSave={save}
       postered
+      required={required}
     >
       <FormPoster
         boardId={boardId}
@@ -109,6 +117,9 @@ function GoalFields({ boardId, goal }: { boardId: string; goal: GoalDto | null }
         value={title}
         onChangeText={setTitle}
         autoFocus={!goal}
+        ref={titleInput}
+        required
+        error={required.error('title')}
         maxLength={200}
       />
       <ChoiceChips

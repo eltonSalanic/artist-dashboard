@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { router } from 'expo-router';
 import {
   useCreateReminder,
@@ -11,6 +11,8 @@ import {
 import { DateField } from '@/components/date-field';
 import { FormGate } from './form-gate';
 import { FormScreen } from './form-screen';
+import { useRequiredFields } from './required-fields';
+import type { TextInput } from '@/components/text-input';
 import { useWidgetInk } from '@/features/board/spoke-header';
 import { FormPoster } from './form-poster';
 import { ItemActions } from './item-actions';
@@ -53,6 +55,16 @@ function ReminderFields({ boardId, reminder }: { boardId: string; reminder: Remi
     title !== initial.title ||
     iso(remindAt) !== iso(initial.remindAt);
 
+  const titleInput = useRef<TextInput>(null);
+  const required = useRequiredFields([
+    {
+      name: 'title',
+      ref: titleInput,
+      missing: title.trim().length === 0,
+      message: 'Add what to remember',
+    },
+  ]);
+
   const save = async () => {
     if (!reminder) {
       await create.mutateAsync({
@@ -76,10 +88,11 @@ function ReminderFields({ boardId, reminder }: { boardId: string; reminder: Remi
     <FormScreen
       title={reminder ? 'Edit reminder' : 'New reminder'}
       dirty={dirty}
-      canSave={title.trim().length > 0 && (dirty || !reminder)}
+      canSave={dirty || !reminder}
       saving={create.isPending || update.isPending}
       onSave={save}
       postered
+      required={required}
     >
       <FormPoster
         boardId={boardId}
@@ -90,6 +103,9 @@ function ReminderFields({ boardId, reminder }: { boardId: string; reminder: Remi
         value={title}
         onChangeText={setTitle}
         autoFocus={!reminder}
+        ref={titleInput}
+        required
+        error={required.error('title')}
         maxLength={300}
       />
       <DateField

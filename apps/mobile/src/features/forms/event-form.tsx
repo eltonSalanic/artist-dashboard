@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { router } from 'expo-router';
 import { EventTypes, type EventType } from '@artist/shared';
 import {
@@ -15,6 +15,8 @@ import { TextField } from '@/components/text-field';
 import { PosterText } from '@/components/poster-text';
 import { FormGate } from './form-gate';
 import { FormScreen } from './form-screen';
+import { useRequiredFields } from './required-fields';
+import type { TextInput } from '@/components/text-input';
 import { EVENT_WIDGET, useWidgetInk } from '@/features/board/spoke-header';
 import { FormPoster } from './form-poster';
 import { useThemeColors } from '@/theme';
@@ -99,6 +101,11 @@ function EventFields({
   const endsBeforeStart = !!startsAt && !!endsAt && endsAt < startsAt;
   const label = TYPE_LABEL[type].toLowerCase();
 
+  const titleInput = useRef<TextInput>(null);
+  const required = useRequiredFields([
+    { name: 'title', ref: titleInput, missing: title.trim().length === 0, message: 'Add a title' },
+  ]);
+
   const save = async () => {
     if (!startsAt) return;
     if (!event) {
@@ -132,12 +139,11 @@ function EventFields({
     <FormScreen
       title={event ? `Edit ${label}` : `New ${label}`}
       dirty={dirty}
-      canSave={
-        title.trim().length > 0 && !!startsAt && !endsBeforeStart && (dirty || !event)
-      }
+      canSave={!!startsAt && !endsBeforeStart && (dirty || !event)}
       saving={create.isPending || update.isPending}
       onSave={save}
       postered
+      required={required}
     >
       <FormPoster
         boardId={boardId}
@@ -148,6 +154,9 @@ function EventFields({
         value={title}
         onChangeText={setTitle}
         autoFocus={!event}
+        ref={titleInput}
+        required
+        error={required.error('title')}
         maxLength={200}
       />
       <ChoiceChips
@@ -162,6 +171,7 @@ function EventFields({
         value={startsAt}
         onChange={setStartsAt}
         clearable={false}
+        required
       />
       <DateField label="Ends" mode="datetime" value={endsAt} onChange={setEndsAt} />
       {endsBeforeStart && (

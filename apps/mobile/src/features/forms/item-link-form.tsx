@@ -7,6 +7,7 @@ import { TextField } from '@/components/text-field';
 import { useTokens } from '@/theme';
 import { FormGate } from './form-gate';
 import { FormScreen } from './form-screen';
+import { useRequiredFields } from './required-fields';
 
 export function ItemLinkForm({
   boardId,
@@ -25,6 +26,9 @@ export function ItemLinkForm({
   const [error, setError] = useState('');
   const [urlError, setUrlError] = useState('');
   const urlInput = useRef<TextInput>(null);
+  const required = useRequiredFields([
+    { name: 'url', ref: urlInput, missing: url.trim().length === 0, message: 'Add the link' },
+  ]);
 
   const save = async () => {
     const parsed = itemLinkInputSchema.safeParse({ title, url });
@@ -54,6 +58,7 @@ export function ItemLinkForm({
         title="Add a link"
         dirty={!!(title || url)}
         canSave
+        required={required}
         saving={links.add.isPending}
         onSave={save}
       >
@@ -69,8 +74,9 @@ export function ItemLinkForm({
           onSubmitEditing={() => urlInput.current?.focus()}
         />
         <TextField
-          label="URL (required)"
+          label="URL"
           ref={urlInput}
+          required
           maxLength={2048}
           keyboardType="url"
           autoCapitalize="none"
@@ -84,7 +90,7 @@ export function ItemLinkForm({
             setUrlError('');
           }}
           editable={!links.add.isPending}
-          error={urlError}
+          error={required.error('url') ?? urlError}
         />
         <PosterText variant="cardMeta" color={tokens.mutedForeground}>
           Your band can open this link. Access is controlled by the site you

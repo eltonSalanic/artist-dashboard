@@ -1,6 +1,7 @@
 import { Pressable, View } from 'react-native';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { posterRadius, spacing, useTokens } from '@/theme';
+import { RequiredMark } from './field-label';
 import { Icon } from './icon';
 import { PosterText } from './poster-text';
 
@@ -22,6 +23,7 @@ export function DateField({
   mode = 'date',
   clearable = true,
   emptyLabel = 'None',
+  required,
 }: {
   label: string;
   value: Date | null;
@@ -30,6 +32,8 @@ export function DateField({
   /** Offer a way back to no date. Off for a required field. */
   clearable?: boolean;
   emptyLabel?: string;
+  /** A red asterisk after the label. */
+  required?: boolean;
 }) {
   const tokens = useTokens();
 
@@ -92,6 +96,7 @@ export function DateField({
     >
       <PosterText variant="rowTitle" color={tokens.foreground} style={{ flex: 1 }}>
         {label}
+        {required && <RequiredMark color={tokens.destructive} variant="rowTitle" />}
       </PosterText>
 
       {process.env.EXPO_OS === 'ios' && value ? (

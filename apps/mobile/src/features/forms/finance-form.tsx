@@ -27,6 +27,7 @@ import { DateField } from '@/components/date-field';
 import { PickOne } from '@/components/pick-one';
 import { PosterText } from '@/components/poster-text';
 import { TextField } from '@/components/text-field';
+import type { TextInput } from '@/components/text-input';
 import { TaskAttachments } from '@/features/attachments/task-attachments';
 import { DraftReceipt } from '@/features/attachments/draft-receipt';
 import type { PickedUpload } from '@/features/attachments/pick';
@@ -35,6 +36,7 @@ import { spacing, useThemeColors } from '@/theme';
 import { FormGate } from './form-gate';
 import { FormPoster } from './form-poster';
 import { FormScreen, useLeaveForm } from './form-screen';
+import { useRequiredFields } from './required-fields';
 import { saveFinanceDraft, type FinanceDraftProgress } from './save-finance-draft';
 
 const BAND = '__band__';
@@ -151,6 +153,16 @@ function FinanceFields({
     handledById !== initial.handledById ||
     expected !== initial.expected;
 
+  const amountInput = useRef<TextInput>(null);
+  const required = useRequiredFields([
+    {
+      name: 'amount',
+      ref: amountInput,
+      missing: cents === null || cents <= 0,
+      message: amount.trim() === '' ? 'Add an amount' : 'Enter an amount like 12.50',
+    },
+  ]);
+
   const switchKind = (next: FinanceKind) => {
     setKind(next);
     setCategory(categoriesFor(next)[0].key);
@@ -216,7 +228,8 @@ function FinanceFields({
     <FormScreen
       title={title}
       dirty={editable && dirty}
-      canSave={editable && cents !== null && cents > 0 && (dirty || !entry)}
+      canSave={editable && (dirty || !entry)}
+      required={editable ? required : undefined}
       saving={saving}
       onSave={save}
       postered
@@ -267,10 +280,15 @@ function FinanceFields({
           <TextField
             label={`Amount (${board.data?.currency ?? 'USD'})`}
             value={amount}
+            ref={amountInput}
+            required
             onChangeText={setAmount}
             keyboardType="decimal-pad"
             placeholder="0.00"
-            error={amount !== '' && cents === null ? 'Enter an amount like 12.50' : null}
+            error={
+              required.error('amount') ??
+              (amount !== '' && cents === null ? 'Enter an amount like 12.50' : null)
+            }
           />
 
           <PickOne
