@@ -228,9 +228,8 @@ light and dark.
   - Success, "YOU'RE IN" lettering + `celebrateBare`, then just the band's
     name: after starting a band (`band-live`, mascot 150, with the invite box)
     and after joining one (`welcome-in`).
-  - Sign-in opens with `MascotLockup lockup="leaningWordmark"` (the mascot leaning
-    on the band wall wordmark, as wide as the form up to 320) in place of the
-    small BAND WALL caps. The converter leaves out a lockup's full-size paper rect,
+  - Sign-in opens with `MascotLockup lockup="leaningMark"` (the mascot leaning
+    on the app icon's b and wall, 200 wide) in place of the small BAND WALL caps. The converter leaves out a lockup's full-size paper rect,
     so the page's own colour shows through.
   - `hero`: the paywall (140) and the no-band
     screen (120; any bigger and Continue goes under the tab bar).
