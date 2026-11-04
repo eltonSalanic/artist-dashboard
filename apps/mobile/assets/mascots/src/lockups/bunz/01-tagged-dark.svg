@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
 <rect width="600" height="600" fill="#1A1815"/>
-<g transform="translate(38 388) scale(3.5)"><path fill="#ECE8E1" d="M0,-72h13v72h-13ZM0,-25a26,26 0 1,1 52,0a26,26 0 1,1 -52,0ZM13,-25a13,13 0 1,0 26,0a13,13 0 1,0 -26,0Z"/><path fill="#C9EC4C" d="M59,-72h13v21.25h-13ZM59,-45.25h13v18.5h-13ZM59,-21.25h13v21.25h-13ZM77.5,-72h13v9.25h-13ZM77.5,-57.25h13v18.5h-13ZM77.5,-33.25h13v18.5h-13ZM77.5,-9.25h13v9.25h-13Z"/></g>
+<g transform="translate(38 388) scale(3.5)"><path fill="#ECE8E1" d="M0,-72h13v72h-13ZM0,-25a26,26 0 1,1 52,0a26,26 0 1,1 -52,0ZM13,-25a13,13 0 1,0 26,0a13,13 0 1,0 -26,0Z"/><path fill="#FF5E42" d="M59,-72h13v21.25h-13ZM59,-45.25h13v18.5h-13ZM59,-21.25h13v21.25h-13ZM77.5,-72h13v9.25h-13ZM77.5,-57.25h13v18.5h-13ZM77.5,-33.25h13v18.5h-13ZM77.5,-9.25h13v9.25h-13Z"/></g>
 <g visibility="visible"><animate attributeName="visibility" values="visible;hidden;hidden" dur="0.36s" repeatCount="indefinite" calcMode="discrete"/><g transform="translate(256 138) scale(1.12)">
 <path d="M201.6 185.9 Q200.1 198.1 200.9 203.9 Q201.6 209.6 201.0 216.0 Q200.5 222.4 199.0 232.8 Q197.6 243.2 200.6 253.0 Q203.7 262.8 203.6 271.9 L203.4 280.9" fill="none" stroke="#ECE8E1" stroke-width="9.00" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M193.5 267.4 L210.6 269.6 L227.2 292.3 L220.6 285.1 L210.0 292.3 L204.0 287.2 L193.8 293.7 L186.4 286.9 L176.7 290.8Z" fill="#ECE8E1" stroke="#ECE8E1" stroke-width="5.40" stroke-linejoin="round"/>

@@ -1723,9 +1723,9 @@ not touched.
   iOS dims a form sheet's bar title in the dark whatever colour it is given
   (pure red came out dark red), so the three sheets' titles are drawn in
   React. The settings switches' white thumb vanished into the near-white
-  track; it is now the ink's opposite. Not changed: the launch splash is
+  track; it is now the ink's opposite. Not changed: the launch splash was
   still Expo's template (blue, Expo mark) in both schemes, which needs a
-  logo and a native build.
+  logo and a native build (branded since 2026-11-03, see apps/mobile/README.md).
 - **Done 2026-10-19.** Every step's checks ticked on the Trello card (the one
   open item, Step 4's first-run notification prompt, has its own Backlog
   reminder) and `feat/mobile-redesign` merged into `feat/mobile-app`. The

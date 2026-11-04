@@ -2,7 +2,7 @@
 <title>bandwall - bunz leaning on the end of the wordmark</title>
 <rect x="-1600" width="2180" height="470" fill="#1A1815"/>
 <g transform="translate(-1556.00 415.00) scale(5.0)"><path fill="#ECE8E1" d="M0,-72h13v72h-13ZM0,-25a26,26 0 1,1 52,0a26,26 0 1,1 -52,0ZM13,-25a13,13 0 1,0 26,0a13,13 0 1,0 -26,0ZM56,-25a26,26 0 1,1 52,0a26,26 0 1,1 -52,0ZM69,-25a13,13 0 1,0 26,0a13,13 0 1,0 -26,0ZM95,-50h13v50h-13ZM116,-50h13v50h-13ZM116,0V-28A23,23 0 0,1 162,-28V0h-13V-28A10,10 0 0,0 129,-28V0ZM168,-25a26,26 0 1,1 52,0a26,26 0 1,1 -52,0ZM181,-25a13,13 0 1,0 26,0a13,13 0 1,0 -26,0ZM207,-72h13v72h-13ZM223,-50 236.6,-50 243.4,-25 250.2,-50 263.8,-50 270.6,-25 277.4,-50 291,-50 277.4,0 263.8,0 257,-25 250.2,0 236.6,0ZM292,-25a26,26 0 1,1 52,0a26,26 0 1,1 -52,0ZM305,-25a13,13 0 1,0 26,0a13,13 0 1,0 -26,0ZM331,-50h13v50h-13Z"/></g>
-<g transform="translate(-1556.00 415.00) scale(5.0)"><path fill="#C9EC4C" d="M351,-72h13v21.75h-13ZM351,-45.75h13v19.5h-13ZM351,-21.75h13v21.75h-13ZM369,-72h13v9.75h-13ZM369,-57.75h13v19.5h-13ZM369,-33.75h13v19.5h-13ZM369,-9.75h13v9.75h-13Z"/></g>
+<g transform="translate(-1556.00 415.00) scale(5.0)"><path fill="#FF5E42" d="M351,-72h13v21.75h-13ZM351,-45.75h13v19.5h-13ZM351,-21.75h13v21.75h-13ZM369,-72h13v9.75h-13ZM369,-57.75h13v19.5h-13ZM369,-33.75h13v19.5h-13ZM369,-9.75h13v9.75h-13Z"/></g>
 <g transform="translate(198 36)">
 <g visibility="visible"><animate attributeName="visibility" values="visible;hidden;hidden" dur="0.36s" repeatCount="indefinite" calcMode="discrete"/><path d="M-41.8 379.7 C9.1 378.0 80.4 380.1 139.9 380.0 C199.3 377.2 259.5 379.2 330.0 379.5" fill="none" stroke="#ECE8E1" stroke-width="4.64" stroke-linecap="round" stroke-linejoin="round"/>
 <g transform="rotate(-3 240 375)">

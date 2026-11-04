@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-140 0 720 470" width="720" height="470">
 <title>bandwall - bunz leaning on the b mark</title>
 <rect x="-140" width="720" height="470" fill="#1A1815"/>
-<g transform="translate(-96 415) scale(5)"><path fill="#ECE8E1" d="M0,-72h13v72h-13ZM0,-25a26,26 0 1,1 52,0a26,26 0 1,1 -52,0ZM13,-25a13,13 0 1,0 26,0a13,13 0 1,0 -26,0Z"/><path fill="#C9EC4C" d="M59,-72h13v21.25h-13ZM59,-45.25h13v18.5h-13ZM59,-21.25h13v21.25h-13ZM77.5,-72h13v9.25h-13ZM77.5,-57.25h13v18.5h-13ZM77.5,-33.25h13v18.5h-13ZM77.5,-9.25h13v9.25h-13Z"/></g>
+<g transform="translate(-96 415) scale(5)"><path fill="#ECE8E1" d="M0,-72h13v72h-13ZM0,-25a26,26 0 1,1 52,0a26,26 0 1,1 -52,0ZM13,-25a13,13 0 1,0 26,0a13,13 0 1,0 -26,0Z"/><path fill="#FF5E42" d="M59,-72h13v21.25h-13ZM59,-45.25h13v18.5h-13ZM59,-21.25h13v21.25h-13ZM77.5,-72h13v9.25h-13ZM77.5,-57.25h13v18.5h-13ZM77.5,-33.25h13v18.5h-13ZM77.5,-9.25h13v9.25h-13Z"/></g>
 <g transform="translate(198 36)">
 <g visibility="visible"><animate attributeName="visibility" values="visible;hidden;hidden" dur="0.36s" repeatCount="indefinite" calcMode="discrete"/><path d="M-41.8 379.7 C9.1 378.0 80.4 380.1 139.9 380.0 C199.3 377.2 259.5 379.2 330.0 379.5" fill="none" stroke="#ECE8E1" stroke-width="4.64" stroke-linecap="round" stroke-linejoin="round"/>
 <g transform="rotate(-3 240 375)">

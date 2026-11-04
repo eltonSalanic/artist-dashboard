@@ -198,6 +198,10 @@ light and dark.
   mascot, 1024 × 1024. It is the app icon: `assets/expo.icon` (iOS Icon Composer, the b
   and the wall as two layers on the paper colour), `assets/images/icon.png` and the
   Android adaptive `android-icon-*.png`. A new icon needs a new native build.
+- The wall is coral (`#FF5E42`) in both schemes; only the b flips (ink on light, paper on
+  dark). The launch splash is the leaning-mark lockup, `assets/images/splash-icon.png` and
+  `splash-icon-dark.png` (1024 × 1024, transparent), set in `app.json`'s
+  `expo-splash-screen` plugin. A new splash needs a new native build.
 - **The placement block.** `MascotMessage` is lettering on top (`PhraseLettering`,
   hand-drawn by `scripts/month-lettering.mjs`), the phone's mascot at
   `MASCOT_WIDTH` (180) under it, then a centred body line, sitting in the middle
