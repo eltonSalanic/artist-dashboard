@@ -42,7 +42,7 @@ import { useOnHubEditRequest } from '@/features/board/hub-edit';
 import { MastheadTitle } from '@/features/board/masthead';
 import { useSelectedBoard } from '@/features/board/selected-board';
 import { useHubCards } from '@/features/board/use-hub-cards';
-import { HeaderText } from '@/features/forms/form-screen';
+import { ConfirmHeader } from '@/features/forms/form-screen';
 import { useRefetchOnFocus } from '@/lib/refetch-on-focus';
 import { SetupChecklist } from '@/features/board/setup-checklist';
 import { takeOnboardingIntent } from '@/features/onboarding/onboarding-state';
@@ -447,19 +447,18 @@ function BoardHub({
       <Stack.Screen
         options={{
           headerTitle: () => <FadingTitle name={name} offset={offset} min={minOffset} />,
-          headerLeft: editing ? () => <HeaderText title="Cancel" onPress={cancel} /> : undefined,
-          headerRight: editing
-            ? () => (
-                <HeaderText
-                  title="Done"
-                  bold
-                  disabled={save.isPending || saveTheme.isPending || shown === 0}
-                  onPress={() => void done()}
-                />
-              )
-            : () => <BoardMenuButton />,
+          headerLeft: undefined,
+          headerRight: editing ? undefined : () => <BoardMenuButton />,
         }}
       />
+      {editing && (
+        <ConfirmHeader
+          confirm="Done"
+          confirmDisabled={save.isPending || saveTheme.isPending || shown === 0}
+          onCancel={cancel}
+          onConfirm={() => void done()}
+        />
+      )}
     </>
   );
 }

@@ -1731,6 +1731,38 @@ not touched.
   reminder) and `feat/mobile-redesign` merged into `feat/mobile-app`. The
   branded splash and icon are a follow-up, not part of P17.
 
+### Liquid Glass pass (2026-11-03)
+
+A review of the app against Apple's Liquid Glass guidance for iOS 26. Apple
+keeps glass to the **navigation layer** (tab bar, bar buttons, sheets, menus)
+and asks for content to stay solid, so the wall's cards and lists are untouched
+and `expo-glass-effect` is not installed: glass drawn into content is the thing
+the guidance warns against, and every place the app wants glass is one the
+system already draws. What changed, all gated on `LIQUID_GLASS`
+(`src/lib/liquid-glass.ts`, iOS 26+):
+
+- **Tab bar:** already `NativeTabs` with `minimizeBehavior`, so it was glass;
+  the selected tab now takes the page ink (`tintColor`) instead of the system
+  blue, matching every other chosen thing in the app. All platforms.
+- **Cancel / Save / Done** in the form modals and the hub's edit mode are now
+  the system's own bar buttons (`ConfirmHeader` in `forms/form-screen.tsx`,
+  built on `Stack.Toolbar`): an ✕ in plain glass and a ✓ in prominent glass
+  filled with the ink, as Apple's apps set them. iOS flips the tick to dark on
+  the near-white ink in dark mode. Before iOS 26 and on Android the words stay,
+  through the same component.
+- **Form sheets** (band switcher, `⋯` menu, Status, Show status) let the
+  system's glass pane through, tinted with the page colour at 80%
+  (`sheetBackground`). Clear glass was tried first and rejected: a coral or
+  lime card under the sheet fought the rows' grey second lines.
+
+Left as they were, with the reason: the stack bars stay cream rather than
+transparent with a scroll-edge effect (each screen would need its content
+moved under the bar, for a bar that already matches the page); single icon
+buttons (`+`, Edit, `⋯`) already sat in the system's glass capsule; the
+inbox's "Clear all" stays a word, as the guidance keeps text for actions with
+no standard symbol; the in-sheet header of the attachment name sheet is drawn
+in content, not a bar.
+
 ### P18 — Join links
 
 Chosen 2026-10-20, replacing the email-invite code flow (P10c invites, the

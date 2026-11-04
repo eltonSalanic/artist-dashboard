@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router/stack';
 import { ThemedText } from '@/components/themed-text';
+import { LIQUID_GLASS } from '@/lib/liquid-glass';
 import { face, useThemeColors } from '@/theme';
 
 /**
@@ -12,6 +13,7 @@ import { face, useThemeColors } from '@/theme';
 function sheetTitle(title: string) {
   return {
     title,
+    ...glassSheet,
     headerTitle: () => (
       <ThemedText variant="headline" accessibilityRole="header">
         {title}
@@ -19,6 +21,19 @@ function sheetTitle(title: string) {
     ),
   };
 }
+
+/**
+ * On iOS 26 a sheet is a pane of Liquid Glass, inset from the screen's edges,
+ * that clears as it grows. An opaque content or bar colour paints over that
+ * glass, so the sheets leave both see-through there and their screens do the
+ * same (`sheetBackground`). Before iOS 26 they keep the cream page.
+ */
+const glassSheet = LIQUID_GLASS
+  ? {
+      contentStyle: { backgroundColor: 'transparent' },
+      headerStyle: { backgroundColor: 'transparent' },
+    }
+  : {};
 
 /**
  * One stack definition, instantiated once per tab.

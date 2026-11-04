@@ -14,6 +14,7 @@ import { PosterText } from '@/components/poster-text';
 import { Dot } from '@/components/row';
 import { Skeleton } from '@/components/skeleton';
 import { face, posterRadius, spacing, usePosterCanvas } from '@/theme';
+import { sheetBackground } from '@/lib/liquid-glass';
 
 /**
  * Pick a task's status. A sheet rather than a picker wheel or a menu: statuses
@@ -98,7 +99,7 @@ export function StatusSheet({
     // (react-native#43546) — it lit up on touch and the release was dropped.
     <View
       style={{
-        backgroundColor: canvas.background,
+        backgroundColor: sheetBackground(canvas.background),
         padding: spacing.md,
         paddingTop: headerHeight + spacing.sm,
         paddingBottom: spacing.md + insets.bottom,

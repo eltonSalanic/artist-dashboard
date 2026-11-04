@@ -78,9 +78,13 @@ export default function TabsLayout() {
 function TabBar() {
   const inbox = useInbox();
   const waiting = inbox.data?.length ?? 0;
+  const colors = useThemeColors();
 
   return (
-    <NativeTabs minimizeBehavior="onScrollDown">
+    // The selected tab in the page ink, as every other chosen thing in the app
+    // is (a picked chip, the spoke you are on), not the system's blue: the one
+    // place on the glass bar that carries colour should be ours.
+    <NativeTabs minimizeBehavior="onScrollDown" tintColor={colors.primary}>
       <NativeTabs.Trigger name="(index)">
         <NativeTabs.Trigger.Icon
           sf={{ default: 'square.grid.2x2', selected: 'square.grid.2x2.fill' }}

@@ -5,10 +5,12 @@ import {
   KeyboardAvoidingView,
   Pressable,
   ScrollView,
+  View,
 } from 'react-native';
 import { router, Stack, useNavigation } from 'expo-router';
 import { usePreventRemove } from 'expo-router/react-navigation';
 import { PosterText } from '@/components/poster-text';
+import { LIQUID_GLASS } from '@/lib/liquid-glass';
 import { face, spacing, usePosterCanvas, useThemeColors } from '@/theme';
 
 /**
@@ -102,20 +104,13 @@ export function FormScreen({
         style={{ flex: 1, backgroundColor: canvas.background }}
         behavior={process.env.EXPO_OS === 'android' ? 'padding' : undefined}
       >
-        <Stack.Screen
-          options={{
-            title,
-            headerTitle: postered ? '' : undefined,
-            headerLeft: () => (
-              <HeaderText title="Cancel" disabled={saving} onPress={() => router.back()} />
-            ),
-            headerRight: () =>
-              saving ? (
-                <ActivityIndicator />
-              ) : (
-                <HeaderText title="Save" bold disabled={!canSave} onPress={() => void save()} />
-              ),
-          }}
+        <Stack.Screen options={{ title, headerTitle: postered ? '' : undefined }} />
+        <ConfirmHeader
+          confirm="Save"
+          pending={saving}
+          confirmDisabled={!canSave}
+          onCancel={() => router.back()}
+          onConfirm={() => void save()}
         />
         {scrollable ? (
           <ScrollView
@@ -133,6 +128,77 @@ export function FormScreen({
         )}
       </KeyboardAvoidingView>
     </LeaveContext>
+  );
+}
+
+/**
+ * Cancel and a confirm (Save, Done) in a native header.
+ *
+ * On iOS 26 these are the system's own bar buttons, set as Apple's apps set
+ * them in Liquid Glass: an ✕ in plain glass, and a ✓ in prominent glass filled
+ * with the page ink, so the way forward is the one tinted thing in the bar.
+ * Elsewhere, and before iOS 26, the words — as iOS 18 and Material set them.
+ */
+export function ConfirmHeader({
+  confirm,
+  pending,
+  confirmDisabled,
+  onCancel,
+  onConfirm,
+}: {
+  confirm: string;
+  pending?: boolean;
+  confirmDisabled?: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const colors = useThemeColors();
+
+  if (LIQUID_GLASS) {
+    return (
+      <>
+        <Stack.Toolbar placement="left">
+          <Stack.Toolbar.Button
+            icon="xmark"
+            accessibilityLabel="Cancel"
+            disabled={pending}
+            onPress={onCancel}
+          />
+        </Stack.Toolbar>
+        <Stack.Toolbar placement="right">
+          {pending ? (
+            <Stack.Toolbar.View>
+              <View style={{ width: 36, height: 36, justifyContent: 'center' }}>
+                <ActivityIndicator />
+              </View>
+            </Stack.Toolbar.View>
+          ) : (
+            <Stack.Toolbar.Button
+              icon="checkmark"
+              variant="prominent"
+              tintColor={colors.primary}
+              accessibilityLabel={confirm}
+              disabled={confirmDisabled}
+              onPress={onConfirm}
+            />
+          )}
+        </Stack.Toolbar>
+      </>
+    );
+  }
+
+  return (
+    <Stack.Screen
+      options={{
+        headerLeft: () => <HeaderText title="Cancel" disabled={pending} onPress={onCancel} />,
+        headerRight: () =>
+          pending ? (
+            <ActivityIndicator />
+          ) : (
+            <HeaderText title={confirm} bold disabled={confirmDisabled} onPress={onConfirm} />
+          ),
+      }}
+    />
   );
 }
 

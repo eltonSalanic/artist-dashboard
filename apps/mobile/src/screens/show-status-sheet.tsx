@@ -15,6 +15,7 @@ import { PosterText } from '@/components/poster-text';
 import { Dot } from '@/components/row';
 import { Skeleton } from '@/components/skeleton';
 import { face, posterRadius, spacing, usePosterCanvas } from '@/theme';
+import { sheetBackground } from '@/lib/liquid-glass';
 
 /**
  * Pick a show's status: the task status sheet's twin, over the board's show
@@ -69,7 +70,7 @@ export function ShowStatusSheet({
     // A plain View, not a ScrollView: see StatusSheet for why.
     <View
       style={{
-        backgroundColor: canvas.background,
+        backgroundColor: sheetBackground(canvas.background),
         padding: spacing.md,
         paddingTop: headerHeight + spacing.sm,
         paddingBottom: spacing.md + insets.bottom,

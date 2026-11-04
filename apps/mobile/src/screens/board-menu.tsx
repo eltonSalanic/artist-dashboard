@@ -8,6 +8,7 @@ import { PosterText } from '@/components/poster-text';
 import { requestHubEdit } from '@/features/board/hub-edit';
 import { useSelectedBoard } from '@/features/board/selected-board';
 import { boardAccent, posterRadius, spacing, usePosterCanvas, useScheme } from '@/theme';
+import { sheetBackground } from '@/lib/liquid-glass';
 
 /**
  * The hub's `⋯`: the things that are not widgets. A sheet rather than an iOS
@@ -71,7 +72,7 @@ export function BoardMenuSheet() {
     // without it the first row sat under the title.
     <View
       style={{
-        backgroundColor: canvas.background,
+        backgroundColor: sheetBackground(canvas.background),
         padding: spacing.md,
         paddingTop: headerHeight + spacing.sm,
         paddingBottom: spacing.md + insets.bottom,

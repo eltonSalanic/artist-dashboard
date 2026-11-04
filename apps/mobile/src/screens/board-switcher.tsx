@@ -8,6 +8,7 @@ import { TextInput } from '@/components/text-input';
 import { Icon } from '@/components/icon';
 import { PosterText } from '@/components/poster-text';
 import { useSelectedBoard } from '@/features/board/selected-board';
+import { sheetBackground } from '@/lib/liquid-glass';
 import {
   boardAccent,
   posterInput,
@@ -52,7 +53,7 @@ export function BoardSwitcherSheet() {
     // thought was outside it was dropped, so most taps never switched band.
     <View
       style={{
-        backgroundColor: canvas.background,
+        backgroundColor: sheetBackground(canvas.background),
         padding: spacing.md,
         paddingTop: headerHeight + spacing.sm,
         paddingBottom: spacing.md + insets.bottom,
