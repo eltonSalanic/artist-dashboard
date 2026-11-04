@@ -11,9 +11,8 @@ import { router, Stack, useNavigation } from 'expo-router';
 import { useHeaderHeight, usePreventRemove } from 'expo-router/react-navigation';
 import { PosterText } from '@/components/poster-text';
 import { LIQUID_GLASS } from '@/lib/liquid-glass';
-import type { TextInput } from '@/components/text-input';
 import { face, spacing, usePosterCanvas, useThemeColors } from '@/theme';
-import type { RequiredFields } from './required-fields';
+import type { Focusable, RequiredFields } from './required-fields';
 
 /**
  * Leaves the form on purpose — after a save, an archive or a delete — without
@@ -100,7 +99,7 @@ export function FormScreen({
 
   // Scrolls the field to just under the header, then focuses it. The content
   // sits under the header (automatic insets), so its top is `headerHeight` in.
-  const reveal = (field: TextInput) => {
+  const reveal = (field: Focusable) => {
     const inner = content.current;
     if (!scrollable || !inner) return field.focus();
     field.measureLayout(

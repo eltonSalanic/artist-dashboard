@@ -2,7 +2,13 @@ import { useState, type RefObject } from 'react';
 import type { TextInput } from '@/components/text-input';
 import { firstMissing, missingMessage, type Checked } from './missing-fields';
 
-export type RequiredField = Checked<RefObject<TextInput | null>>;
+/**
+ * What Save can take you to: a text field, which it focuses, or a row such as
+ * a `DateField`, which it scrolls to (focusing a plain view does nothing).
+ */
+export type Focusable = Pick<TextInput, 'focus' | 'measureLayout'>;
+
+export type RequiredField = Checked<RefObject<Focusable | null>>;
 
 export type RequiredFields = {
   /**
@@ -16,7 +22,7 @@ export type RequiredFields = {
    * bottom), and from now on show every missing field's message. Null when
    * nothing is missing.
    */
-  check: () => TextInput | null;
+  check: () => Focusable | null;
 };
 
 /**

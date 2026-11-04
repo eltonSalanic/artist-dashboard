@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import type { View } from 'react-native';
 import { router } from 'expo-router';
 import { EventTypes, type EventType } from '@artist/shared';
 import {
@@ -102,8 +103,10 @@ function EventFields({
   const label = TYPE_LABEL[type].toLowerCase();
 
   const titleInput = useRef<TextInput>(null);
+  const startsRow = useRef<View>(null);
   const required = useRequiredFields([
     { name: 'title', ref: titleInput, missing: title.trim().length === 0, message: 'Add a title' },
+    { name: 'starts', ref: startsRow, missing: !startsAt, message: 'Pick when it starts' },
   ]);
 
   const save = async () => {
@@ -139,7 +142,7 @@ function EventFields({
     <FormScreen
       title={event ? `Edit ${label}` : `New ${label}`}
       dirty={dirty}
-      canSave={!!startsAt && !endsBeforeStart && (dirty || !event)}
+      canSave={!endsBeforeStart && (dirty || !event)}
       saving={create.isPending || update.isPending}
       onSave={save}
       postered
@@ -172,6 +175,8 @@ function EventFields({
         onChange={setStartsAt}
         clearable={false}
         required
+        ref={startsRow}
+        error={required.error('starts')}
       />
       <DateField label="Ends" mode="datetime" value={endsAt} onChange={setEndsAt} />
       {endsBeforeStart && (

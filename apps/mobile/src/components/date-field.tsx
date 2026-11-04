@@ -1,3 +1,4 @@
+import type { Ref } from 'react';
 import { Pressable, View } from 'react-native';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { posterRadius, spacing, useTokens } from '@/theme';
@@ -24,6 +25,8 @@ export function DateField({
   clearable = true,
   emptyLabel = 'None',
   required,
+  error,
+  ref,
 }: {
   label: string;
   value: Date | null;
@@ -34,8 +37,12 @@ export function DateField({
   emptyLabel?: string;
   /** A red asterisk after the label. */
   required?: boolean;
+  /** Shown under the row, which takes a red outline, as a `TextField` does. */
+  error?: string | null;
+  ref?: Ref<View>;
 }) {
   const tokens = useTokens();
+  const failed = error != null && error !== '';
 
   // Where a picker opens when there is no value yet: today, at the next hour
   // for a date-time — a show is never at the current minute.
@@ -82,61 +89,71 @@ export function DateField({
     : emptyLabel;
 
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.sm,
-        minHeight: 48,
-        paddingHorizontal: spacing.md,
-        borderRadius: posterRadius.block,
-        borderCurve: 'continuous',
-        backgroundColor: tokens.muted,
-      }}
-    >
-      <PosterText variant="rowTitle" color={tokens.foreground} style={{ flex: 1 }}>
-        {label}
-        {required && <RequiredMark color={tokens.destructive} variant="rowTitle" />}
-      </PosterText>
+    <View style={{ gap: spacing.xs + 2 }}>
+      <View
+        ref={ref}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
+          minHeight: 48,
+          paddingHorizontal: spacing.md,
+          borderRadius: posterRadius.block,
+          borderCurve: 'continuous',
+          backgroundColor: tokens.muted,
+          borderWidth: 1.5,
+          borderColor: failed ? tokens.destructive : 'transparent',
+        }}
+      >
+        <PosterText variant="rowTitle" color={tokens.foreground} style={{ flex: 1 }}>
+          {label}
+          {required && <RequiredMark color={tokens.destructive} variant="rowTitle" />}
+        </PosterText>
 
-      {process.env.EXPO_OS === 'ios' && value ? (
-        <DateTimePicker
-          value={value}
-          mode={mode}
-          display="compact"
-          onValueChange={(_event, date) => onChange(date)}
-        />
-      ) : (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${label}: ${formatted}`}
-          accessibilityHint="Opens a date picker"
-          hitSlop={8}
-          onPress={() =>
-            process.env.EXPO_OS === 'ios' ? onChange(seed()) : openAndroid()
-          }
-        >
-          {/* Empty, the action is set a weight up so it reads as tappable
-              without borrowing the app's blue onto the poster screens. */}
-          <PosterText variant={value ? 'field' : 'rowTitle'} color={tokens.foreground}>
-            {value ? formatted : `Add ${mode === 'date' ? 'date' : 'time'}`}
-          </PosterText>
-        </Pressable>
-      )}
-
-      {clearable && value && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Clear ${label.toLowerCase()}`}
-          hitSlop={10}
-          onPress={() => onChange(null)}
-        >
-          <Icon
-            name={{ sf: 'xmark.circle.fill', md: 'cancel' }}
-            size={18}
-            color={tokens.mutedForeground}
+        {process.env.EXPO_OS === 'ios' && value ? (
+          <DateTimePicker
+            value={value}
+            mode={mode}
+            display="compact"
+            onValueChange={(_event, date) => onChange(date)}
           />
-        </Pressable>
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${label}: ${formatted}`}
+            accessibilityHint="Opens a date picker"
+            hitSlop={8}
+            onPress={() =>
+              process.env.EXPO_OS === 'ios' ? onChange(seed()) : openAndroid()
+            }
+          >
+            {/* Empty, the action is set a weight up so it reads as tappable
+                without borrowing the app's blue onto the poster screens. */}
+            <PosterText variant={value ? 'field' : 'rowTitle'} color={tokens.foreground}>
+              {value ? formatted : `Add ${mode === 'date' ? 'date' : 'time'}`}
+            </PosterText>
+          </Pressable>
+        )}
+
+        {clearable && value && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Clear ${label.toLowerCase()}`}
+            hitSlop={10}
+            onPress={() => onChange(null)}
+          >
+            <Icon
+              name={{ sf: 'xmark.circle.fill', md: 'cancel' }}
+              size={18}
+              color={tokens.mutedForeground}
+            />
+          </Pressable>
+        )}
+      </View>
+      {failed && (
+        <PosterText variant="meta" color={tokens.destructive}>
+          {error}
+        </PosterText>
       )}
     </View>
   );
