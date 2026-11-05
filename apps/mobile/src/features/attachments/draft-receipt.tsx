@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Image } from 'expo-image';
-import { MAX_ATTACHMENT_BYTES } from '@artist/shared';
+import { attachmentSizeError } from '@artist/shared';
 import { notify } from '@artist/api-client';
 import { reportError } from '@/lib/report-error';
 import { Button } from '@/components/button';
@@ -31,8 +31,12 @@ export function DraftReceipt({
       if (!from) return;
       const next = await pickUpload(from);
       if (!next) return;
-      if (next.source.size > MAX_ATTACHMENT_BYTES) {
-        notify.error('File is larger than the 50MB limit');
+      const tooBig = attachmentSizeError(
+        next.source.contentType || 'application/octet-stream',
+        next.source.size,
+      );
+      if (tooBig) {
+        notify.error(tooBig);
         return;
       }
       setPicked(next);

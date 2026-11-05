@@ -32,7 +32,7 @@ Prisma skills are installed under `apps/api/.claude/skills/` and are **scoped to
 - **`nestjs-best-practices`** — modules, DI, guards, validation. Use when adding or refactoring API modules.
 
 ### Database / platform — Supabase & Postgres
-- **`supabase`** — anything touching Supabase: Storage (the private `attachments` bucket), RLS, the CLI/local stack, or a schema change on the Supabase side. Sign-in is **not** Supabase any more: it is Better Auth inside the API (see the Auth convention below).
+- **`supabase`** — anything touching Supabase: Storage (the private `attachments` bucket, which is the local-dev provider; staging and prod store files on Cloudflare R2 behind `apps/api/src/storage/`, see [docs/storage.md](docs/storage.md)), RLS, the CLI/local stack, or a schema change on the Supabase side. Sign-in is **not** Supabase any more: it is Better Auth inside the API (see the Auth convention below).
 - **`supabase-postgres-best-practices`** — indexing/query/schema review on the Postgres layer.
 
 ### Frontend — `apps/web` (Next.js 16, client-only)

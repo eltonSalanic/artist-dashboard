@@ -201,7 +201,7 @@ counterpart written before the abstraction can be designed honestly:
   `PUT` body, and RN's `fetch` cannot stream a `file://` URI that way. Needs
   `expo-file-system`'s `uploadAsync` or a `{ uri, name, type }` FormData. Also
   `File` as the mutation input type and `window.open` in `downloadAttachment`.
-  The three-step signed-URL flow and `MAX_ATTACHMENT_BYTES` guard are sound and
+  The three-step signed-URL flow and the size-cap guard (`attachmentSizeError`, per file type) are sound and
   stay; only the byte-transfer primitive and URL-opener get injected.
 - `use-session.ts` → **P5.** The body (getSession + onAuthStateChange +
   unsubscribe) is already platform-agnostic; it just imports the web Supabase

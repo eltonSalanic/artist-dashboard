@@ -1,12 +1,14 @@
 import { Module } from '@nestjs/common';
+import { StorageModule } from '../storage/storage.module';
 import { AttachmentsController } from './attachments.controller';
 import { AttachmentsService } from './attachments.service';
-import { StorageService } from './storage.service';
 
 @Module({
+  imports: [StorageModule],
   controllers: [AttachmentsController],
-  providers: [AttachmentsService, StorageService],
-  // CommentsModule purges a deleted comment's objects through this.
-  exports: [StorageService],
+  providers: [AttachmentsService],
+  // Boards, tasks, events and comments purge deleted objects through
+  // StorageService, which they get by importing this module.
+  exports: [StorageModule],
 })
 export class AttachmentsModule {}

@@ -28,7 +28,11 @@ describe('uploadAttachment', () => {
   it('signs, puts, then persists — with the path the API minted', async () => {
     fetchMock
       .mockResolvedValueOnce(
-        ok({ path: 'b1/uuid/mix.wav', token: 't', signedUrl: 'https://s/up' }),
+        ok({
+          path: 'b1/uuid/mix.wav',
+          signedUrl: 'https://s/up',
+          headers: { 'Content-Type': 'audio/wav', 'Cache-Control': 'immutable' },
+        }),
       )
       .mockResolvedValueOnce(ok({ id: 'a1' }));
     const file = source();
@@ -40,7 +44,11 @@ describe('uploadAttachment', () => {
     expect(fetchMock.mock.calls[0][0]).toBe(
       'https://api.test/boards/b1/attachments/upload-url',
     );
-    expect(file.put).toHaveBeenCalledWith('https://s/up', 'audio/wav');
+    // The provider's signed headers go through untouched.
+    expect(file.put).toHaveBeenCalledWith('https://s/up', {
+      'Content-Type': 'audio/wav',
+      'Cache-Control': 'immutable',
+    });
     expect(fetchMock.mock.calls[1][0]).toBe(
       'https://api.test/boards/b1/attachments',
     );
@@ -57,13 +65,15 @@ describe('uploadAttachment', () => {
   // string Storage was told — the row and the object would disagree otherwise.
   it('sends octet-stream when the platform could not tell the type', async () => {
     fetchMock
-      .mockResolvedValueOnce(ok({ path: 'b1/u/x', token: 't', signedUrl: 'u' }))
+      .mockResolvedValueOnce(ok({ path: 'b1/u/x', signedUrl: 'u' }))
       .mockResolvedValueOnce(ok({ id: 'a1' }));
     const file = source({ contentType: '' });
 
     await uploadAttachment('b1', { commentId: 'c1' }, file);
 
-    expect(file.put).toHaveBeenCalledWith('u', 'application/octet-stream');
+    expect(file.put).toHaveBeenCalledWith('u', {
+      'Content-Type': 'application/octet-stream',
+    });
     expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toMatchObject({
       mimeType: 'application/octet-stream',
       commentId: 'c1',
@@ -73,17 +83,29 @@ describe('uploadAttachment', () => {
   it('refuses an oversized file before asking for a URL', async () => {
     const file = source({ size: MAX_ATTACHMENT_BYTES + 1 });
     await expect(uploadAttachment('b1', { taskId: 't1' }, file)).rejects.toThrow(
-      '50MB',
+      'can be up to',
     );
     expect(fetchMock).not.toHaveBeenCalled();
     expect(file.put).not.toHaveBeenCalled();
+  });
+
+  it('applies the cap for the file\'s type, not just the overall one', async () => {
+    const photo = source({
+      fileName: 'gig.jpg',
+      contentType: 'image/jpeg',
+      size: 11 * 1024 * 1024,
+    });
+    await expect(uploadAttachment('b1', { taskId: 't1' }, photo)).rejects.toThrow(
+      'Images can be up to 10 MB',
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   // A row pointing at an object that never arrived would list a file that
   // 404s on every tap.
   it('persists nothing when Storage rejects the bytes', async () => {
     fetchMock.mockResolvedValueOnce(
-      ok({ path: 'b1/u/x', token: 't', signedUrl: 'u' }),
+      ok({ path: 'b1/u/x', signedUrl: 'u' }),
     );
     const file = source({
       put: jest.fn().mockRejectedValue(new Error('Storage rejected')),

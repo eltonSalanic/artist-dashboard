@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  MAX_ATTACHMENT_BYTES,
+  attachmentSizeError,
   type CreateAttachmentDto,
   type RenameAttachmentDto,
   type UploadUrlDto,
@@ -16,8 +16,9 @@ const showError = (error: unknown) =>
 
 interface UploadUrlResponse {
   path: string;
-  token: string;
   signedUrl: string;
+  /** What the PUT must carry for the signature to match. */
+  headers?: Record<string, string>;
 }
 
 /** An attachment belongs to exactly one task, comment, event or ledger entry. */
@@ -42,8 +43,12 @@ export interface UploadSource {
   /** Empty when the platform could not tell; sent as octet-stream then. */
   contentType: string;
   size: number;
-  /** PUTs the bytes to the signed URL, throwing if Storage refuses them. */
-  put: (signedUrl: string, contentType: string) => Promise<void>;
+  /**
+   * PUTs the bytes to the signed URL with exactly these headers (the content
+   * type, and whatever else the storage provider signed), throwing if storage
+   * refuses them.
+   */
+  put: (signedUrl: string, headers: Record<string, string>) => Promise<void>;
 }
 
 const parentQuery = (parent: AttachmentParent) =>
@@ -84,20 +89,20 @@ export async function uploadAttachment(
   parent: AttachmentParent,
   source: UploadSource,
 ): Promise<AttachmentDto> {
-  if (source.size > MAX_ATTACHMENT_BYTES) {
-    throw new ApiError(400, "File is larger than the 50MB limit");
-  }
+  const contentType = source.contentType || "application/octet-stream";
+  const tooBig = attachmentSizeError(contentType, source.size);
+  if (tooBig) throw new ApiError(400, tooBig);
   const dto: UploadUrlDto = {
     fileName: source.fileName,
-    contentType: source.contentType || "application/octet-stream",
+    contentType,
     size: source.size,
   };
-  const { path, signedUrl } = await apiFetch<UploadUrlResponse>(
+  const { path, signedUrl, headers } = await apiFetch<UploadUrlResponse>(
     `/boards/${boardId}/attachments/upload-url`,
     { method: "POST", body: dto },
   );
 
-  await source.put(signedUrl, dto.contentType);
+  await source.put(signedUrl, headers ?? { "Content-Type": contentType });
 
   const create: CreateAttachmentDto = {
     storagePath: path,

@@ -31,6 +31,7 @@ for build conventions and skills read [CLAUDE.md](../CLAUDE.md). Those describe
 | [Error handling and logging](error-handling.md) — error shape, user-facing copy, dev vs staging/prod logs, Sentry | Built; Sentry off until DSNs are set |
 | [Onboarding](onboarding.md) — the first run on phone and web: welcome, account, naming the band, the paywall, "You're live", the setup checklist, joining with an invite | Merged into `main` (2026-11-02) |
 | [Billing — subscriptions](billing.md) — subscriptions through RevenueCat (a person's subscription lets them own a band), the 402 rule, webhook mapping, env vars, account setup | In `main`, not live: no hosting, store products or `BILLING_ENFORCED` yet; manual testing on Trello |
+| [File storage](storage.md) — where attachments live, the `ObjectStorage` interface, Supabase and R2 providers, size caps per file type, R2 setup | Interface and caps on `feat/storage-interface-r2`; R2 buckets and migration not done |
 | Permissions — the `can()` map, role matrix, and where each action is enforced | Not yet written |
 | Tasks — statuses, subtasks, assignees, checklists, ordering | Not yet written |
 | Planning — goals, events, reminders, focus pins, calendar | Not yet written |

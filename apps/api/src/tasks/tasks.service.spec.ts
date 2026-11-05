@@ -2,7 +2,7 @@ import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
-import { StorageService } from '../attachments/storage.service';
+import { StorageService } from '../storage/storage.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
 describe('TasksService', () => {

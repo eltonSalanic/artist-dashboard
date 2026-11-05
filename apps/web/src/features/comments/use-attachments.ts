@@ -20,10 +20,10 @@ export function fromFile(file: File): UploadSource {
     fileName: file.name,
     contentType: file.type,
     size: file.size,
-    put: async (signedUrl, contentType) => {
+    put: async (signedUrl, headers) => {
       const put = await fetch(signedUrl, {
         method: "PUT",
-        headers: { "Content-Type": contentType },
+        headers,
         body: file,
       });
       if (!put.ok)

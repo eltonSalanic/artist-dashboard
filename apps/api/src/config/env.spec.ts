@@ -16,6 +16,25 @@ describe('validateEnv', () => {
     expect(() => validateEnv({})).toThrow(/DATABASE_URL[\s\S]*SUPABASE_URL/);
   });
 
+  it("requires only the chosen storage provider's variables", () => {
+    const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ...noSupabase } = minimal;
+    void SUPABASE_URL;
+    void SUPABASE_SERVICE_ROLE_KEY;
+    expect(() =>
+      validateEnv({ ...noSupabase, STORAGE_PROVIDER: 'r2' }),
+    ).toThrow(/R2_ACCOUNT_ID[\s\S]*R2_BUCKET/);
+    expect(() =>
+      validateEnv({
+        ...noSupabase,
+        STORAGE_PROVIDER: 'r2',
+        R2_ACCOUNT_ID: 'acct',
+        R2_ACCESS_KEY_ID: 'id',
+        R2_SECRET_ACCESS_KEY: 'secret',
+        R2_BUCKET: 'bandwall-attachments-dev',
+      }),
+    ).not.toThrow();
+  });
+
   it('requires public URLs on staging and production', () => {
     expect(() => validateEnv({ ...minimal, APP_ENV: 'staging' })).toThrow(
       /WEB_URL[\s\S]*API_URL/,

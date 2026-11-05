@@ -8,7 +8,7 @@ import { BoardsService } from './boards.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
 import type { BillingService } from '../billing/billing.service';
-import type { StorageService } from '../attachments/storage.service';
+import type { StorageService } from '../storage/storage.service';
 
 /** Billing not enforced, as in dev: every board summary reads as open. */
 const storageStub = {

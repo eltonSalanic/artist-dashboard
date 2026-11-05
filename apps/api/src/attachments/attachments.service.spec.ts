@@ -6,7 +6,7 @@ import {
 import { AttachmentsService } from './attachments.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
-import { StorageService } from './storage.service';
+import { StorageService } from '../storage/storage.service';
 
 describe('AttachmentsService', () => {
   const prisma = {
@@ -30,6 +30,7 @@ describe('AttachmentsService', () => {
     createUploadUrl: jest.fn(),
     createDownloadUrl: jest.fn(),
     createViewUrl: jest.fn(),
+    stat: jest.fn(),
     remove: jest.fn(),
   };
   const service = new AttachmentsService(
@@ -57,9 +58,37 @@ describe('AttachmentsService', () => {
     uploadedBy: { id: 'u1', displayName: 'sam' },
   };
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    storage.stat.mockResolvedValue({ size: 1024, contentType: 'audio/wav' });
+  });
 
   describe('create', () => {
+    it('refuses a row when the object never reached storage', async () => {
+      prisma.task.findFirst.mockResolvedValue({ title: 'Mix' });
+      storage.stat.mockResolvedValue(null);
+
+      await expect(service.create('b1', 'u1', dto)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(prisma.attachment.create).not.toHaveBeenCalled();
+    });
+
+    it('records the size storage reports, not the one the client sent', async () => {
+      prisma.task.findFirst.mockResolvedValue({ title: 'Mix' });
+      prisma.attachment.create.mockResolvedValue(stored);
+      storage.stat.mockResolvedValue({ size: 2048, contentType: 'audio/wav' });
+
+      await service.create('b1', 'u1', { ...dto, size: 1 });
+
+      expect(storage.stat).toHaveBeenCalledWith('b1/abc/mix.wav');
+      expect(prisma.attachment.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ size: 2048 }),
+        }),
+      );
+    });
+
     it('records the row and logs FILE_UPLOADED together', async () => {
       prisma.task.findFirst.mockResolvedValue({ title: 'Mix' });
       prisma.attachment.create.mockResolvedValue(stored);

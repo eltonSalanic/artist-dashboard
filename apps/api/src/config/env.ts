@@ -19,8 +19,15 @@ const base = z
     APP_ENV: z.enum(['development', 'staging', 'production']).optional(),
     LOG_LEVEL: z.enum(LOG_LEVELS).optional(),
     DATABASE_URL: z.string().min(1),
-    SUPABASE_URL: z.url(),
-    SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+    // Where attachments live (docs/storage.md). Supabase is the default and
+    // what local dev runs on; r2 needs the four R2_* variables below.
+    STORAGE_PROVIDER: z.enum(['supabase', 'r2']).optional(),
+    SUPABASE_URL: z.url().optional(),
+    SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
+    R2_ACCOUNT_ID: z.string().min(1).optional(),
+    R2_ACCESS_KEY_ID: z.string().min(1).optional(),
+    R2_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+    R2_BUCKET: z.string().min(1).optional(),
     // Signs Better Auth's session tokens and codes. Rotating it signs everyone out.
     BETTER_AUTH_SECRET: z.string().min(32),
     WEB_URL: z.url().optional(),
@@ -46,6 +53,24 @@ export function validateEnv(raw: Record<string, unknown>) {
   if (parseAppEnv(cleaned.APP_ENV as string | undefined) !== 'development') {
     for (const key of ['WEB_URL', 'API_URL'] as const) {
       if (!cleaned[key]) problems.push(`${key}: required when APP_ENV is set`);
+    }
+  }
+
+  // Only the chosen storage provider's variables are required.
+  const storageKeys =
+    cleaned.STORAGE_PROVIDER === 'r2'
+      ? ([
+          'R2_ACCOUNT_ID',
+          'R2_ACCESS_KEY_ID',
+          'R2_SECRET_ACCESS_KEY',
+          'R2_BUCKET',
+        ] as const)
+      : (['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'] as const);
+  for (const key of storageKeys) {
+    if (!cleaned[key]) {
+      problems.push(
+        `${key}: required when STORAGE_PROVIDER is ${(cleaned.STORAGE_PROVIDER as string) ?? 'supabase'}`,
+      );
     }
   }
 

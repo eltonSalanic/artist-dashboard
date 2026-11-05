@@ -121,14 +121,14 @@ function fromUri(
     fileName,
     contentType: mimeType ?? '',
     size: size ?? file.size,
-    put: async (signedUrl, contentType) => {
+    put: async (signedUrl, headers) => {
       // Uploaded natively from disk: a 40MB video never passes through JS.
       const result = await file.upload(
         reachableStorageUrl(signedUrl, env.supabaseUrl),
         {
           httpMethod: 'PUT',
           uploadType: UploadType.BINARY_CONTENT,
-          headers: { 'Content-Type': contentType },
+          headers,
           // The flow awaits this and then persists the row, so the transfer
           // has to finish while the JS that is waiting for it is alive.
           sessionType: 'foreground',

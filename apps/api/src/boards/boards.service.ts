@@ -22,7 +22,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { SUMMARY_OWNER_SELECT, toBoardSummary } from './board-summary';
 import { BillingService } from '../billing/billing.service';
-import { StorageService } from '../attachments/storage.service';
+import { StorageService } from '../storage/storage.service';
 import { newBoardData } from './new-board';
 import { ActivityService } from '../activity/activity.service';
 

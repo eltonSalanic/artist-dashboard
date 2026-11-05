@@ -14,7 +14,7 @@ import type {
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
-import { StorageService } from './storage.service';
+import { StorageService } from '../storage/storage.service';
 
 const attachmentInclude = {
   uploadedBy: { select: { id: true, displayName: true } },
@@ -56,7 +56,7 @@ export class AttachmentsService {
   }
 
   createUploadUrl(boardId: string, dto: UploadUrlDto) {
-    return this.storage.createUploadUrl(boardId, dto.fileName);
+    return this.storage.createUploadUrl(boardId, dto);
   }
 
   async create(boardId: string, userId: string, dto: CreateAttachmentDto) {
@@ -82,6 +82,13 @@ export class AttachmentsService {
       await this.assertFinanceEntryInBoard(boardId, dto.financeEntryId);
     }
 
+    // Trust the bucket, not the client: the object has to be there, and its
+    // real size is what gets recorded.
+    const stored = await this.storage.stat(dto.storagePath);
+    if (!stored) {
+      throw new BadRequestException('The upload did not finish. Try again.');
+    }
+
     return this.prisma.$transaction(async (tx) => {
       const attachment = await tx.attachment.create({
         data: {
@@ -89,7 +96,7 @@ export class AttachmentsService {
           storagePath: dto.storagePath,
           fileName: dto.fileName,
           mimeType: dto.mimeType,
-          size: dto.size,
+          size: stored.size,
           taskId: dto.taskId ?? null,
           commentId: dto.commentId ?? null,
           eventId: dto.eventId ?? null,

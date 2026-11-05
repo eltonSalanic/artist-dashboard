@@ -1,13 +1,73 @@
 import { z } from 'zod';
 
-/** Mirrors the 50MiB cap configured for the Supabase storage bucket. */
-export const MAX_ATTACHMENT_BYTES = 50 * 1024 * 1024;
+const MB = 1024 * 1024;
 
-export const uploadUrlSchema = z.object({
-  fileName: z.string().trim().min(1).max(255),
-  contentType: z.string().trim().min(1).max(200),
-  size: z.number().int().positive().max(MAX_ATTACHMENT_BYTES),
-});
+/** How big a file may be, by what kind of file it is. */
+export type AttachmentSizeClass = 'image' | 'pdf' | 'audio' | 'video' | 'other';
+
+/**
+ * Sized to what a normal file of each kind weighs. A compressed photo is under
+ * 1 MB; a scanned rider is up to ~20 MB; a 3-minute 24-bit WAV is ~50 MB.
+ * Longer video belongs on YouTube or Drive, linked rather than uploaded.
+ */
+export const ATTACHMENT_SIZE_LIMITS: Record<AttachmentSizeClass, number> = {
+  image: 10 * MB,
+  pdf: 25 * MB,
+  audio: 100 * MB,
+  video: 100 * MB,
+  other: 25 * MB,
+};
+
+/**
+ * The largest of the per-type caps. The Supabase bucket's `file_size_limit`
+ * (supabase/config.toml) mirrors it so local dev refuses nothing prod accepts.
+ */
+export const MAX_ATTACHMENT_BYTES = Math.max(
+  ...Object.values(ATTACHMENT_SIZE_LIMITS),
+);
+
+const SIZE_CLASS_LABEL: Record<AttachmentSizeClass, string> = {
+  image: 'Images',
+  pdf: 'PDFs',
+  audio: 'Audio files',
+  video: 'Videos',
+  other: 'Files of this type',
+};
+
+export function attachmentSizeClass(mimeType: string): AttachmentSizeClass {
+  const type = mimeType.toLowerCase();
+  if (type === 'application/pdf') return 'pdf';
+  if (type.startsWith('image/')) return 'image';
+  if (type.startsWith('audio/')) return 'audio';
+  if (type.startsWith('video/')) return 'video';
+  return 'other';
+}
+
+export function maxAttachmentBytes(mimeType: string): number {
+  return ATTACHMENT_SIZE_LIMITS[attachmentSizeClass(mimeType)];
+}
+
+/** Null when the file fits its type's cap; otherwise what to tell the person. */
+export function attachmentSizeError(
+  mimeType: string,
+  size: number,
+): string | null {
+  const sizeClass = attachmentSizeClass(mimeType);
+  const limit = ATTACHMENT_SIZE_LIMITS[sizeClass];
+  if (size <= limit) return null;
+  return `${SIZE_CLASS_LABEL[sizeClass]} can be up to ${limit / MB} MB`;
+}
+
+export const uploadUrlSchema = z
+  .object({
+    fileName: z.string().trim().min(1).max(255),
+    contentType: z.string().trim().min(1).max(200),
+    size: z.number().int().positive().max(MAX_ATTACHMENT_BYTES),
+  })
+  .superRefine((dto, ctx) => {
+    const message = attachmentSizeError(dto.contentType, dto.size);
+    if (message) ctx.addIssue({ code: 'custom', message, path: ['size'] });
+  });
 export type UploadUrlDto = z.infer<typeof uploadUrlSchema>;
 
 export const createAttachmentSchema = z
