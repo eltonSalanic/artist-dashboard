@@ -1,6 +1,6 @@
 # Move file storage to Cloudflare R2
 
-> **State:** In progress
+> **State:** Done (STO-004 and STO-005 wait until a hosted environment has files)
 > **Updated:** 2026-11-05
 > **Task ID prefix:** `STO`
 > **Source:** Imported from Claude: "Plan: move image storage to Cloudflare" (https://claude.ai/artifact/Wb6SoyxDMM7rHXZvvjxG1N)
@@ -33,10 +33,10 @@ var. Downloads stop costing money as bands grow.
 | ID | Task | State | Trello card |
 |---|---|---|---|
 | STO-001 | `ObjectStorage` interface, Supabase and R2 providers, `STORAGE_PROVIDER` | Testing | [STO-001/002](https://trello.com/c/qh1mFKP5) |
-| STO-002 | Per-type size caps in shared, the apps and the API; `head()` check on save | Testing | [STO-001/002](https://trello.com/c/qh1mFKP5) |
-| STO-003 | Create R2 buckets (dev, staging, prod) and scoped tokens; a CORS policy on each bucket for its web origin | In progress: buckets and env done, CORS to add | — |
-| STO-004 | Copy existing files with `rclone`, verify, switch, catch-up sync | Planned | — |
-| STO-005 | Empty the old bucket 30 days after the switch | Planned | — |
+| STO-002 | Per-type size caps in shared, the apps and the API; `head()` check on save | Done | [STO-001/002](https://trello.com/c/qh1mFKP5) |
+| STO-003 | Create R2 buckets (dev, staging, prod) and scoped tokens; a CORS policy on each bucket for its web origin | Done | — |
+| STO-004 | Copy existing files with `rclone`, verify, switch, catch-up sync | Not needed yet: no hosted environment has files | — |
+| STO-005 | Empty the old bucket 30 days after the switch | Not needed yet: comes after STO-004 | — |
 
 ## Migration steps (STO-004)
 
