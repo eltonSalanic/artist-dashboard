@@ -74,7 +74,6 @@ export const BOARD_CURRENCIES = [
   'CHF',
   'JPY',
 ] as const;
-export type BoardCurrency = (typeof BOARD_CURRENCIES)[number];
 
 /** `-1234` in USD → `-$12.34`. Falls back to a plain number for an odd code. */
 export function formatMoney(cents: number, currency = 'USD'): string {

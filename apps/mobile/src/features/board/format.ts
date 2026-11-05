@@ -88,26 +88,6 @@ export function timeOfDay(iso: string): string {
 }
 
 /**
- * A day as an agenda section heading: "Today · Sat 14 Mar".
- *
- * The relative word never replaces the date. Scanning a month, a heading that
- * says only "Tomorrow" forces you to count forwards from it to place everything
- * below; with both, the list stays readable wherever you entered it.
- */
-export function dayHeading(date: Date, now = new Date()): string {
-  const absolute = date.toLocaleDateString(undefined, {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-  });
-  const days = daysFromToday(date.toISOString(), now);
-  if (days === 0) return `Today · ${absolute}`;
-  if (days === 1) return `Tomorrow · ${absolute}`;
-  if (days === -1) return `Yesterday · ${absolute}`;
-  return absolute;
-}
-
-/**
  * How far a day is from today, in words: "Today", "Tomorrow", "In 4 days",
  * "Yesterday", "4 days ago". For a detail screen's corner, where the date
  * itself is already set large and this only has to say whether it has passed.

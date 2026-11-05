@@ -1,6 +1,5 @@
 import {
   count,
-  dayHeading,
   daysAway,
   dueDay,
   fileSize,
@@ -78,30 +77,6 @@ describe('timeOfDay', () => {
     // than the punctuation: 24-hour locales render the same instant as "20:30".
     const printed = timeOfDay(new Date(2026, 2, 14, 20, 30).toISOString());
     expect(printed).toMatch(/8:30|20:30/);
-  });
-});
-
-describe('dayHeading', () => {
-  const now = new Date(2026, 2, 14, 9, 0);
-
-  // The relative word never replaces the date — scanning a month, "Tomorrow"
-  // alone forces you to count forwards from it to place everything below.
-  it('keeps the date alongside the relative word', () => {
-    const heading = dayHeading(new Date(2026, 2, 14), now);
-    expect(heading).toContain('Today · ');
-    expect(heading).toContain('14');
-    expect(heading).toContain('Sat');
-  });
-
-  it('names tomorrow and yesterday', () => {
-    expect(dayHeading(new Date(2026, 2, 15), now)).toContain('Tomorrow · ');
-    expect(dayHeading(new Date(2026, 2, 13), now)).toContain('Yesterday · ');
-  });
-
-  it('gives a plain date beyond that', () => {
-    const heading = dayHeading(new Date(2026, 2, 20), now);
-    expect(heading).not.toContain('·');
-    expect(heading).toContain('20');
   });
 });
 

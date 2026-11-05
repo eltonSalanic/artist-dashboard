@@ -67,11 +67,6 @@ export function configureAuthClient(next: AuthClient): void {
   client = next;
 }
 
-/** Test seam — lets a suite start from a known-unconfigured state. */
-export function resetAuthClient(): void {
-  client = null;
-}
-
 export function getAuthClient(): AuthClient {
   if (!client) {
     throw new Error("configureAuthClient() must be called before auth is used");

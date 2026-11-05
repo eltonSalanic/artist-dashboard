@@ -76,7 +76,6 @@ export function posterCanvas(scheme: ColorScheme): PosterCanvas {
 
 /** The palette slots in reading order. */
 export const POSTER_SLOTS = ['c1', 'c2', 'c3', 'c4'] as const;
-export type PosterSlot = (typeof POSTER_SLOTS)[number];
 
 const cache = new Map<string, PosterColor>();
 

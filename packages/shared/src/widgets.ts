@@ -1,4 +1,4 @@
-import { WidgetTypes, type WidgetType } from './enums';
+import type { WidgetType } from './enums';
 import type { WidgetColor } from './theme';
 
 /**
@@ -39,8 +39,3 @@ export const WIDGET_META: Record<WidgetType, WidgetMeta> = {
   // stays exhaustive over `WidgetType` and a new widget cannot be forgotten.
   CALENDAR: { title: 'Calendar' },
 };
-
-/** Widget types that render as a card. `CALENDAR` is a page, not a widget. */
-export const CARD_WIDGET_TYPES: readonly WidgetType[] = WidgetTypes.filter(
-  (type) => type !== 'CALENDAR',
-);

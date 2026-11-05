@@ -17,9 +17,6 @@ export interface RenderedNotification {
   push?: { title: string; body: string };
 }
 
-/** @deprecated Kept so the name change doesn't ripple; use RenderedNotification. */
-export type RenderedMail = RenderedNotification;
-
 export interface TemplateContext {
   boardName: string;
   webUrl: string;

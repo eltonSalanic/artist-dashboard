@@ -142,9 +142,6 @@ export const posterRadius = {
   chip: 9999,
 } as const;
 
-/** Generous: blocks are posters on a wall, they need air between them. */
-export const posterGap = 12;
-
 /** The page behind the posters, for this scheme. */
 export function usePosterCanvas(): PosterCanvas {
   return posterCanvas(useScheme());

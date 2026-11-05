@@ -60,11 +60,6 @@ export async function prepareImage(file: File): Promise<PreparedImage> {
   }
 }
 
-/** Only the shrunk photo; kept for callers that need no preview. */
-export async function compressImage(file: File): Promise<File> {
-  return (await prepareImage(file)).file;
-}
-
 async function drawJpeg(
   bitmap: ImageBitmap,
   maxEdge: number | undefined,

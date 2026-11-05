@@ -43,10 +43,6 @@ export function attachmentSizeClass(mimeType: string): AttachmentSizeClass {
   return "other";
 }
 
-export function maxAttachmentBytes(mimeType: string): number {
-  return ATTACHMENT_SIZE_LIMITS[attachmentSizeClass(mimeType)];
-}
-
 /** Null when the file fits its type's cap; otherwise what to tell the person. */
 export function attachmentSizeError(
   mimeType: string,

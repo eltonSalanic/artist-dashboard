@@ -1,6 +1,6 @@
 import { WidgetTypes } from './enums';
 import { WidgetColors } from './theme';
-import { CARD_WIDGET_TYPES, WIDGET_META } from './widgets';
+import { WIDGET_META } from './widgets';
 
 describe('WIDGET_META', () => {
   it('names every widget type, so a new one cannot ship untitled', () => {
@@ -27,10 +27,5 @@ describe('WIDGET_META', () => {
       .map((m) => m.defaultColor)
       .filter((c): c is NonNullable<typeof c> => c !== undefined);
     expect(new Set(used).size).toBe(used.length);
-  });
-
-  it('leaves CALENDAR out of the card widgets — it is a page', () => {
-    expect(CARD_WIDGET_TYPES).not.toContain('CALENDAR');
-    expect(CARD_WIDGET_TYPES).toHaveLength(WidgetTypes.length - 1);
   });
 });
