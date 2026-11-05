@@ -21,8 +21,12 @@ export interface SecurityHeaderOptions {
   dev: boolean;
 }
 
-/** Signed file links (previews, downloads, uploads) point at Supabase Storage. */
-const STORAGE = ["https://*.supabase.co"];
+/**
+ * Signed file links (previews, downloads, uploads) point at the storage
+ * provider: Supabase Storage, or Cloudflare R2, whose presigned URLs are on the
+ * account's `<bucket>.<account>.r2.cloudflarestorage.com` host.
+ */
+const STORAGE = ["https://*.supabase.co", "https://*.r2.cloudflarestorage.com"];
 const LOCAL_STORAGE = ["http://127.0.0.1:54321", "http://localhost:54321"];
 
 /**

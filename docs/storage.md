@@ -112,7 +112,9 @@ apply them before upload.
    ```
 
    The dev bucket uses `http://localhost:3000` (plus your LAN address if you
-   open the web app on it); staging uses its own web URL.
+   open the web app on it); staging uses its own web URL. The web app's
+   Content Security Policy (`apps/web/security-headers.ts`) already allows
+   `https://*.r2.cloudflarestorage.com`, where presigned R2 URLs point.
 4. Set `STORAGE_PROVIDER=r2` and deploy the API. The order on staging and prod
    is in [release-workflow.md](release-workflow.md#shipping-a-change).
 

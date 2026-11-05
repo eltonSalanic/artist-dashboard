@@ -19,6 +19,13 @@ describe("contentSecurityPolicy", () => {
     expect(connect).not.toContain("ws:");
   });
 
+  it("lets signed R2 links upload, show and preview files", () => {
+    const r2 = "https://*.r2.cloudflarestorage.com";
+    for (const name of ["connect-src", "img-src", "media-src", "frame-src"]) {
+      expect(directive(prod, name)).toContain(r2);
+    }
+  });
+
   it("refuses framing, plugins and foreign form posts", () => {
     expect(directive(prod, "frame-ancestors")).toBe("frame-ancestors 'none'");
     expect(directive(prod, "object-src")).toBe("object-src 'none'");
