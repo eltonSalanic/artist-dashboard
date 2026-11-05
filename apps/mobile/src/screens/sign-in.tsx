@@ -38,11 +38,10 @@ const COPY: Record<Mode, { title: string; lead?: string; submit: string }> = {
  * Email + password, matching `apps/web/src/features/auth/login-page.tsx`.
  *
  * Deliberately not magic links: password sign-in is the only way in. The one
- * email link the product sends is a Supabase *invite*, whose link opens the
- * web's `/auth/callback`. The same email carries a 6-digit code
- * (`supabase/templates/invite.html`), and "Join with an invite code" takes it
- * here — verified as an `invite` OTP, then the password is set in the same
- * step, as web's callback page asks for one. So a bandmate can join from the
+ * email link the product sends is the API's *invite*, whose link opens the
+ * web's `/auth/callback`. The same email carries a 6-digit code, and "Join
+ * with an invite code" takes it here — verified as an email code, then the
+ * password is set in the same step, as web's callback page asks for one. So a bandmate can join from the
  * phone without ever opening the web.
  *
  * Reached from the welcome screen, which picks the mode: "Start a band" is
@@ -101,8 +100,8 @@ export function SignInScreen() {
         );
         return;
       }
-      // Local Supabase has email confirmation off, so this is the
-      // deployed-project path.
+      // Sign-up came back without a session, so the account still needs
+      // its email confirmed.
       if ('needsConfirmation' in result && result.needsConfirmation) {
         setNotice('Check your email to confirm your account, then sign in.');
         setMode('signin');

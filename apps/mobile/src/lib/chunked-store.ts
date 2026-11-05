@@ -3,16 +3,16 @@
  *
  * `expo-secure-store` documents a **2048-byte limit per value** (Android's
  * KeyStore), and it encrypts before storing, so the usable plaintext budget is
- * smaller still. A Supabase session is a JSON blob holding two JWTs plus the
- * user record and routinely runs past 3 KB — meaning the obvious
- * `storage: SecureStore` wiring works right up until a token gets long enough,
- * and then fails as a mysterious "signed out on relaunch".
+ * smaller still. A stored session can grow past that, and the obvious
+ * `SecureStore` wiring works right up until a value gets long enough, then
+ * fails as a mysterious "signed out on relaunch". (Written for the Supabase
+ * session, which ran past 3 KB; the Better Auth session is stored the same way.)
  *
  * So values are split across `key.0`, `key.1`, … with a manifest at `key`
  * recording how many parts there are and how long the whole value was. The
  * length is what makes a torn write detectable: if the app dies between
  * writing part 0 and the manifest, reassembly would otherwise splice a new
- * first part onto an old second one and hand Supabase a plausible-looking but
+ * first part onto an old second one and hand auth a plausible-looking but
  * corrupt string.
  *
  * The backend is injected, so all of this is testable without a device.
@@ -25,7 +25,7 @@ export interface SecureStoreBackend {
   deleteItemAsync(key: string): Promise<void>;
 }
 
-/** Matches Supabase's `SupportedStorage`, which allows sync or async. */
+/** An async key/value store, the shape `src/lib/auth.ts` reads and writes. */
 export interface AsyncStore {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
@@ -118,7 +118,7 @@ export function createChunkedStore(
       const value = parts.join('');
       // Torn write: a stale part survived under a fresh manifest, or the
       // reverse. Reporting "nothing stored" costs a sign-in; reporting a
-      // half-session costs a confusing crash inside Supabase.
+      // half-session costs a confusing failure inside auth.
       return value.length === manifest.length ? value : null;
     },
 

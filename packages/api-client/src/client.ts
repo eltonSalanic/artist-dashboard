@@ -1,11 +1,9 @@
 /**
  * Platform-agnostic API client.
  *
- * The web app read its token straight off the browser Supabase client and its
- * base URL off `process.env.NEXT_PUBLIC_API_URL`. Neither exists on React
- * Native, so both are injected here instead: web passes its browser client,
- * mobile passes one backed by `expo-secure-store` and a URL from
- * `expo-constants`.
+ * The token source and base URL differ per platform (`process.env` on web,
+ * `expo-secure-store` and `expo-constants` on the phone), so each app
+ * injects both here at startup instead of this package reading them.
  *
  * Configuration is module-level rather than a React context so the ~19 query
  * hooks can keep importing `apiFetch` directly — that kept the extraction a

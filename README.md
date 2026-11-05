@@ -73,8 +73,6 @@ npx prisma studio                             # browse data
 
 `npx prisma generate` regenerates the client into `apps/api/generated/prisma` (gitignored) — rerun it after pulling schema changes.
 
-On macOS, double-clicking [`run-db-reset.command`](run-db-reset.command) runs `prisma migrate deploy` and then the demo seed.
-
 ### Demo data
 
 ```bash
@@ -98,7 +96,7 @@ npm test -w apps/web
 npm test -w apps/mobile   # typecheck + Jest units
 ```
 
-Lint with `npm run lint -w apps/api` / `-w apps/web` / `-w apps/mobile`. What a person has to click through per phase and feature lives on its Testing card on the [Band Board](https://trello.com/b/xsGE7BMR/band-board) in Trello; `phase_testing/` holds the older sign-off checklists for phases 4 and 5 of the web app.
+Lint with `npm run lint -w apps/api` / `-w apps/web` / `-w apps/mobile`. What a person has to click through per phase and feature lives on its Testing card on the [Band Board](https://trello.com/b/xsGE7BMR/band-board) in Trello.
 
 ## Troubleshooting
 
