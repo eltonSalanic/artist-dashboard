@@ -115,6 +115,13 @@ Only the literal strings `true` and `false` are accepted; anything else fails at
 
 Stores map `APP_STORE`/`MAC_APP_STORE` → `APP_STORE`, `PLAY_STORE` → `PLAY_STORE`, `STRIPE` and `RC_BILLING` (Web Billing) → `STRIPE`, and `PROMOTIONAL` (and anything unknown, such as the Test Store) → `PROMOTIONAL`.
 
+**Access depends on the webhook.** Between events, the API only knows what the last one told it: a renewal moves `currentPeriodEnd` on, an expiration marks the row `EXPIRED`. Stores usually renew a little before the period ends, so the date moves on in time. If an event never arrives, the row goes stale. RevenueCat retries a failed delivery several times over a few hours, so a lost event takes a long API outage or a misconfigured webhook. Then:
+
+- A paid band locks once its saved end date passes, and stays locked until the owner opens the paywall or restores. Both check RevenueCat and save the renewal.
+- An ended subscription still has status `ACTIVE`, so the subscription screen says "Active" under "needs a subscription". The band itself is correctly locked.
+
+So every environment that enforces billing needs its webhook (see [Account setup](#4-revenuecat), step 8). A safeguard that asks RevenueCat whenever a saved date has passed is designed but not built ([write-up](https://claude.ai/artifact/XqXFd8r1uQ1QstMrtm2sZx)); it's a follow-up below.
+
 **Not handled yet:** out-of-order delivery. An older event arriving after a newer one overwrites it. RevenueCat rarely does this, but if it shows up, store `event_timestamp_ms` on the row and skip older events.
 
 ## Bands and owners
@@ -216,6 +223,7 @@ Nothing is hosted yet ([release-workflow.md](release-workflow.md)). When the API
   - Publish `bandwall.app/terms` and `bandwall.app/privacy` before store submission.
   - Gate the notification jobs for locked bands (see *Not gated* above).
   - Skip out-of-order webhook events (see *Not handled yet* above).
+  - Ask RevenueCat when a saved end date has passed, and show "Expired" once it has, so a lost webhook event can't lock a paid band (see *Access depends on the webhook* above).
   - The phone's band switcher doesn't mark locked bands the way the web's does.
   - Deleting an account, and a way back for a band whose owner is gone (see *Bands and owners*).
 
@@ -224,4 +232,8 @@ Nothing is hosted yet ([release-workflow.md](release-workflow.md)). When the API
 1. Put the Test Store key in `apps/web/.env.local` (`NEXT_PUBLIC_REVENUECAT_WEB_KEY`) and `apps/mobile/.env` (both `EXPO_PUBLIC_REVENUECAT_*_KEY`). Restart the dev servers.
 2. Set `BILLING_ENFORCED=true` in `apps/api/.env` and restart the API: every band whose owner isn't subscribed locks. With it off (the default), neither app shows a paywall: Continue on "Name Your Band." creates the band straight away.
 3. For the purchase to unlock the band, the API has to hear about it. The easy way is `REVENUECAT_SECRET_API_KEY` in `apps/api/.env`: in RevenueCat, Project settings → API keys → new secret key, API version V1. The other is the webhook: expose your API (e.g. ngrok), add a dev webhook in RevenueCat with an Authorization value, and set the same value as `REVENUECAT_WEBHOOK_AUTH`. With neither, the purchase succeeds in RevenueCat, the apps wait on "Confirming your purchase…", and after 20 seconds they say so and offer Try again. `npm run billing:grant -w apps/api -- <owner's email>` unlocks a band by hand.
-4. Turn `BILLING_ENFORCED` back off afterwards, or grant your local boards.
+4. **Test Store time runs fast.** The one-month trial lasts about 5 minutes and each period (monthly or yearly) about an hour. After the trial and 3 renewals, about 4 hours after buying, the subscription expires in RevenueCat. Without a local webhook the API never hears about the renewals or the expiry (see *Access depends on the webhook*), so:
+   - after the trial or a period ends, the band locks on the next reopen even though RevenueCat renewed it. Opening the paywall checks RevenueCat and unlocks it;
+   - after it expires, the screen says "Active" under "needs a subscription", and Restore says there's nothing to restore. That's right: buy again.
+   Compare RevenueCat's customer page with the `UserSubscription` row before calling it a bug.
+5. Turn `BILLING_ENFORCED` back off afterwards, or grant your local boards.
