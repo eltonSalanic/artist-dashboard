@@ -13,8 +13,9 @@ export type StorageProvider = 'supabase' | 'r2';
  * provider, so adding one is a class here and a case in the factory.
  */
 export function createObjectStorage(config: ConfigService): ObjectStorage {
-  const provider =
-    config.get<StorageProvider>('STORAGE_PROVIDER') ?? 'supabase';
+  const provider = (
+    config.get<string>('STORAGE_PROVIDER') ?? 'supabase'
+  ).toLowerCase() as StorageProvider;
   return provider === 'r2'
     ? new R2ObjectStorage(config)
     : new SupabaseObjectStorage(config);

@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { compressImage } from "@/lib/compress-image";
 import { fromFile } from "./use-attachments";
 
 /**
@@ -106,9 +107,13 @@ export function useNamedUpload(upload: (source: UploadSource) => void) {
   // Bumped per pick, so the dialog mounts fresh with the new file's name.
   const [round, setRound] = useState(0);
 
+  // Photos are shrunk before the dialog opens, so the name it shows is the
+  // name that gets stored (a HEIC becomes a .jpg).
   const pick = (file: File) => {
-    setPicked(file);
-    setRound((n) => n + 1);
+    void compressImage(file).then((ready) => {
+      setPicked(ready);
+      setRound((n) => n + 1);
+    });
   };
 
   const dialog = picked ? (

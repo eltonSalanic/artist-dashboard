@@ -1,7 +1,14 @@
 import { ActionSheetIOS, Alert, Linking, Platform } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { File, UploadType } from 'expo-file-system';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
+import {
+  compressedImageName,
+  fitWithin,
+  IMAGE_JPEG_QUALITY,
+  isCompressibleImage,
+} from '@artist/shared';
 import { ApiError, type UploadSource } from '@artist/api-client';
 import { env } from '@/lib/env';
 import { reachableStorageUrl } from '@/lib/storage-url';
@@ -84,8 +91,9 @@ export async function pickUpload(from: PickFrom): Promise<PickedUpload | null> {
   const options: ImagePicker.ImagePickerOptions = {
     mediaTypes: from === 'camera' ? ['images'] : ['images', 'videos'],
     // Re-encodes to JPEG. An iPhone's HEIC original is unreadable in most
-    // browsers, and the bandmate opening it is likely on web.
-    quality: 0.85,
+    // browsers, and the bandmate opening it is likely on web. Photos are then
+    // shrunk by compressPhoto, so this pass only needs to be good, not small.
+    quality: 0.9,
     preferredAssetRepresentationMode:
       ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
   };
@@ -98,6 +106,16 @@ export async function pickUpload(from: PickFrom): Promise<PickedUpload | null> {
   const asset = result.assets[0];
   const mimeType =
     asset.mimeType ?? (asset.type === 'video' ? 'video/mp4' : 'image/jpeg');
+  if (asset.type !== 'video' && isCompressibleImage(mimeType)) {
+    const photo = await compressPhoto(asset);
+    if (photo) {
+      const fileName = compressedImageName(asset.fileName ?? defaultName('image/jpeg'));
+      return {
+        source: fromUri(photo.uri, fileName, 'image/jpeg', undefined),
+        preview: photo.uri,
+      };
+    }
+  }
   return {
     source: fromUri(
       asset.uri,
@@ -108,6 +126,31 @@ export async function pickUpload(from: PickFrom): Promise<PickedUpload | null> {
     ),
     preview: asset.type === 'video' ? undefined : asset.uri,
   };
+}
+
+/**
+ * Shrinks a photo to the shared cap (2048 px on the long edge) and re-encodes
+ * it as JPEG, which also drops EXIF data such as where it was taken. Null if
+ * the phone can't decode it, in which case the picker's own JPEG goes up as is.
+ */
+async function compressPhoto(
+  asset: ImagePicker.ImagePickerAsset,
+): Promise<{ uri: string } | null> {
+  try {
+    const context = ImageManipulator.manipulate(asset.uri);
+    const target = fitWithin(asset.width, asset.height);
+    if (target.width !== asset.width || target.height !== asset.height) {
+      context.resize({ width: target.width, height: target.height });
+    }
+    const image = await context.renderAsync();
+    const saved = await image.saveAsync({
+      compress: IMAGE_JPEG_QUALITY,
+      format: SaveFormat.JPEG,
+    });
+    return { uri: saved.uri };
+  } catch {
+    return null;
+  }
 }
 
 function fromUri(

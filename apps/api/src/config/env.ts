@@ -45,6 +45,10 @@ export function validateEnv(raw: Record<string, unknown>) {
   const cleaned = Object.fromEntries(
     Object.entries(raw).filter(([, value]) => value !== ''),
   );
+  // `R2` and `r2` mean the same provider.
+  if (typeof cleaned.STORAGE_PROVIDER === 'string') {
+    cleaned.STORAGE_PROVIDER = cleaned.STORAGE_PROVIDER.toLowerCase();
+  }
   const result = base.safeParse(cleaned);
   const problems = result.success
     ? []

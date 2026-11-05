@@ -21,7 +21,7 @@ describe('validateEnv', () => {
     void SUPABASE_URL;
     void SUPABASE_SERVICE_ROLE_KEY;
     expect(() =>
-      validateEnv({ ...noSupabase, STORAGE_PROVIDER: 'r2' }),
+      validateEnv({ ...noSupabase, STORAGE_PROVIDER: 'R2' }),
     ).toThrow(/R2_ACCOUNT_ID[\s\S]*R2_BUCKET/);
     expect(() =>
       validateEnv({

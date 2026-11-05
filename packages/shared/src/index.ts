@@ -11,6 +11,7 @@ export * from './calendar';
 export * from './mentions';
 export * from './note-markdown';
 export * from './file-name';
+export * from './image-compression';
 export * from './statuses';
 export * from './finance';
 export * from './billing';
