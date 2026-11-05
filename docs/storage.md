@@ -2,8 +2,9 @@
 
 > **Status:** Done and on `main`: the storage interface, both providers, the
 > per-type caps, photo compression and thumbnails. Local dev runs on Supabase
-> Storage; R2 buckets and tokens are set up. Copying existing files over waits
-> until a hosted environment has files.
+> Storage; R2 buckets and tokens are set up, and the dev bucket has its CORS
+> policy. CORS on the staging and prod buckets is still to add, and copying
+> existing files over waits until a hosted environment has files.
 
 Attachments (task and comment files, show files, receipts) live in one private
 bucket. The apps never hold storage credentials: they ask the API for a signed
