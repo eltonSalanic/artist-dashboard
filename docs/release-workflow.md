@@ -100,6 +100,16 @@ Nothing to install: share the prod URL.
    - **The first time billing goes out**, follow [billing.md → Deploying it](billing.md#deploying-it):
      grant existing band owners with `billing:grant --all` before setting
      `BILLING_ENFORCED=true`, or every band locks.
+   - **The first time file storage moves to R2**, follow [storage.md → Setting up R2](storage.md#setting-up-r2)
+     on staging first, then prod:
+     - Each bucket needs a **CORS policy** listing that environment's web
+       origin exactly (staging's web URL, `https://bandwall.app` for prod), or
+       uploads from the web app fail. The phone doesn't use CORS, so a phone
+       test won't catch it: always test a web upload.
+     - Ship the app update that sends the signed upload headers (`eas update`
+       is enough) **before** setting `STORAGE_PROVIDER=r2`. Older builds don't
+       send `Cache-Control`, so their uploads to R2 would be refused.
+     - Copy existing files across before switching ([plans/storage-r2.md](plans/storage-r2.md), STO-004).
 5. **Phone app to the beta.** Pick by what changed:
 
    | What changed | How it ships | Review / wait |

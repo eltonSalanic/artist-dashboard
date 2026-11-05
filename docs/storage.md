@@ -69,7 +69,11 @@ refuses a file prod would take.
 2. Create an R2 API token per bucket with Object Read & Write on that bucket
    only. Put its key pair, the account ID and the bucket name in the API's env.
 3. Add a CORS policy so the web app can upload from the browser (the phone's
-   native upload doesn't need one):
+   native upload doesn't need one). Each bucket gets its own, listing only its
+   environment's web origin, matched exactly: scheme, host and port, no
+   trailing slash. In the dashboard: R2 Object Storage → the bucket →
+   **Settings** → **CORS Policy** → **Add CORS policy**, paste the JSON, save.
+   The two headers are the ones the API signs into each upload. For prod:
 
    ```json
    [
@@ -82,7 +86,10 @@ refuses a file prod would take.
    ]
    ```
 
-4. Set `STORAGE_PROVIDER=r2` and deploy the API.
+   The dev bucket uses `http://localhost:3000` (plus your LAN address if you
+   open the web app on it); staging uses its own web URL.
+4. Set `STORAGE_PROVIDER=r2` and deploy the API. The order on staging and prod
+   is in [release-workflow.md](release-workflow.md#shipping-a-change).
 
 To try R2 from your Mac, point a local API at a separate dev bucket (add
 `http://localhost:3000` to its CORS origins). It needs internet; Cloudflare's

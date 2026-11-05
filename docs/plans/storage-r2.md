@@ -33,7 +33,7 @@ var. Downloads stop costing money as bands grow.
 |---|---|---|---|
 | STO-001 | `ObjectStorage` interface, Supabase and R2 providers, `STORAGE_PROVIDER` | Testing | [STO-001/002](https://trello.com/c/qh1mFKP5) |
 | STO-002 | Per-type size caps in shared, the apps and the API; `head()` check on save | Testing | [STO-001/002](https://trello.com/c/qh1mFKP5) |
-| STO-003 | Create R2 buckets, scoped tokens and CORS for staging and prod | Planned | — |
+| STO-003 | Create R2 buckets (dev, staging, prod) and scoped tokens; a CORS policy on each bucket for its web origin | In progress: buckets and env done, CORS to add | — |
 | STO-004 | Copy existing files with `rclone`, verify, switch, catch-up sync | Planned | — |
 | STO-005 | Empty the old bucket 30 days after the switch | Planned | — |
 
