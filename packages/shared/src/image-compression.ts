@@ -1,4 +1,4 @@
-import { splitFileName } from './file-name';
+import { splitFileName } from "./file-name";
 
 /**
  * Photos are shrunk on the device before upload. Band Wall holds working files
@@ -16,16 +16,31 @@ export const IMAGE_MAX_EDGE = 2048;
 export const IMAGE_JPEG_QUALITY = 0.8;
 
 const COMPRESSIBLE = new Set([
-  'image/jpeg',
-  'image/jpg',
-  'image/pjpeg',
-  'image/webp',
-  'image/heic',
-  'image/heif',
+  "image/jpeg",
+  "image/jpg",
+  "image/pjpeg",
+  "image/webp",
+  "image/heic",
+  "image/heif",
 ]);
 
 export function isCompressibleImage(mimeType: string): boolean {
   return COMPRESSIBLE.has(mimeType.toLowerCase());
+}
+
+/**
+ * Alongside the upload, the device also makes a small JPEG preview so the
+ * attachment grid loads tens of KB per tile instead of the full photo. PNGs
+ * get one too: the original is left alone, only the preview is a JPEG.
+ * GIFs and SVGs do not; their tiles load the original.
+ */
+export const THUMBNAIL_MAX_EDGE = 400;
+export const THUMBNAIL_JPEG_QUALITY = 0.7;
+
+export function canThumbnail(mimeType: string): boolean {
+  return (
+    isCompressibleImage(mimeType) || mimeType.toLowerCase() === "image/png"
+  );
 }
 
 /** The size to draw at: the same shape, no edge over `maxEdge`, never enlarged. */
@@ -46,5 +61,5 @@ export function fitWithin(
 /** "IMG_0042.HEIC" → "IMG_0042.jpg": the name matches what was re-encoded. */
 export function compressedImageName(fileName: string): string {
   const { base } = splitFileName(fileName);
-  return `${base || 'photo'}.jpg`;
+  return `${base || "photo"}.jpg`;
 }

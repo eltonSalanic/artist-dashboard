@@ -24,8 +24,13 @@ const ICON: Record<AttachmentKind, IconName> = {
  * fetched for what can be drawn: a PDF tile is an icon, and signing it would
  * be a request for nothing.
  */
-export function useViewUrl(boardId: string, attachment: AttachmentDto, enabled = true) {
-  const url = useAttachmentUrl(boardId, attachment.id, 'view', enabled);
+export function useViewUrl(
+  boardId: string,
+  attachment: AttachmentDto,
+  enabled = true,
+  kind: 'view' | 'thumb' = 'view',
+) {
+  const url = useAttachmentUrl(boardId, attachment.id, kind, enabled);
   return url.data ? reachableStorageUrl(url.data.url, env.supabaseUrl) : undefined;
 }
 
@@ -33,8 +38,11 @@ export function useViewUrl(boardId: string, attachment: AttachmentDto, enabled =
  * A picture of an attachment: the image itself, a frame of a video, or the
  * file type's icon with its extension for anything else.
  *
- * Images cache under the attachment's id rather than the URL, because the URL
- * is re-signed every minute and would otherwise never hit the cache.
+ * A fixed-size tile loads the image's small preview (the API serves the
+ * original when there is none); the gallery, which fills the screen, loads
+ * the full image. Images cache under the attachment's id rather than the URL,
+ * because the URL is re-signed every minute and would otherwise never hit the
+ * cache.
  */
 export function AttachmentThumb({
   boardId,
@@ -51,7 +59,9 @@ export function AttachmentThumb({
   const colors = useThemeColors();
   const kind = attachmentKind(attachment.mimeType);
   const drawable = kind === 'image' || kind === 'video';
-  const url = useViewUrl(boardId, attachment, drawable);
+  // Videos need the real file to pull a frame from.
+  const tile = size !== undefined && kind === 'image';
+  const url = useViewUrl(boardId, attachment, drawable, tile ? 'thumb' : 'view');
 
   // A frame from a little way in: the very first is often black.
   const frame = useQuery({
@@ -67,7 +77,7 @@ export function AttachmentThumb({
   const box = size === undefined ? { flex: 1, alignSelf: 'stretch' as const } : { width: size, height: size };
   const picture =
     kind === 'image' && url
-      ? { uri: url, cacheKey: `attachment-${attachment.id}` }
+      ? { uri: url, cacheKey: `attachment-${tile ? 'thumb-' : ''}${attachment.id}` }
       : kind === 'video' && frame.data
         ? { uri: frame.data.uri }
         : null;

@@ -383,6 +383,9 @@ model Attachment {
   boardId        String        @db.Uuid
   /// Object key inside the private `attachments` bucket.
   storagePath    String        @unique
+  /// A ~400 px JPEG beside an uploaded photo, for lists. Null for anything
+  /// else, and for photos uploaded before thumbnails or whose thumbnail failed.
+  thumbnailPath  String?       @unique
   fileName       String
   mimeType       String
   size           Int

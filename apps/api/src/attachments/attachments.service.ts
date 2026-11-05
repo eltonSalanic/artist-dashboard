@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import type {
   AttachmentQueryDto,
+  AttachmentViewQueryDto,
   BoardRole,
   CreateAttachmentDto,
   RenameAttachmentDto,
@@ -14,7 +15,11 @@ import type {
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
-import { StorageService } from '../storage/storage.service';
+import {
+  attachmentObjectPaths,
+  StorageService,
+  thumbnailPathFor,
+} from '../storage/storage.service';
 
 const attachmentInclude = {
   uploadedBy: { select: { id: true, displayName: true } },
@@ -89,11 +94,23 @@ export class AttachmentsService {
       throw new BadRequestException('The upload did not finish. Try again.');
     }
 
+    // Thumbnails are best-effort: one that is not where upload-url put it, or
+    // that never landed, is simply not recorded and the original is used.
+    let thumbnailPath: string | null = null;
+    if (
+      dto.thumbnailPath &&
+      dto.thumbnailPath === thumbnailPathFor(dto.storagePath) &&
+      (await this.storage.stat(dto.thumbnailPath))
+    ) {
+      thumbnailPath = dto.thumbnailPath;
+    }
+
     return this.prisma.$transaction(async (tx) => {
       const attachment = await tx.attachment.create({
         data: {
           boardId,
           storagePath: dto.storagePath,
+          thumbnailPath,
           fileName: dto.fileName,
           mimeType: dto.mimeType,
           size: stored.size,
@@ -131,13 +148,22 @@ export class AttachmentsService {
     );
   }
 
-  async viewUrl(boardId: string, attachmentId: string) {
+  async viewUrl(
+    boardId: string,
+    attachmentId: string,
+    query: AttachmentViewQueryDto = {},
+  ) {
     const attachment = await this.getOwned(boardId, attachmentId);
+    const thumb = query.size === 'thumb' && attachment.thumbnailPath;
     const { url, expiresIn } = await this.storage.createViewUrl(
-      attachment.storagePath,
+      thumb ? attachment.thumbnailPath! : attachment.storagePath,
     );
     // The client renders by type, so it needs the stored content-type back.
-    return { url, expiresIn, mimeType: attachment.mimeType };
+    return {
+      url,
+      expiresIn,
+      mimeType: thumb ? 'image/jpeg' : attachment.mimeType,
+    };
   }
 
   /**
@@ -175,7 +201,7 @@ export class AttachmentsService {
       throw new ForbiddenException('You can only delete your own uploads');
     }
     await this.prisma.attachment.delete({ where: { id: attachmentId } });
-    await this.storage.remove([attachment.storagePath]);
+    await this.storage.remove(attachmentObjectPaths([attachment]));
     return { deleted: true };
   }
 

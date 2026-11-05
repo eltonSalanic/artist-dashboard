@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import { attachmentSizeError, type UploadUrlDto } from '@artist/shared';
+import {
+  attachmentSizeError,
+  THUMBNAIL_CONTENT_TYPE,
+  type UploadUrlDto,
+} from '@artist/shared';
 import { OBJECT_STORAGE, type ObjectStorage } from './object-storage';
 
 /**
@@ -27,12 +31,30 @@ export class StorageService {
     const tooBig = attachmentSizeError(dto.contentType, dto.size);
     if (tooBig) throw new BadRequestException(tooBig);
 
-    const path = `${boardId}/${randomUUID()}/${sanitize(dto.fileName)}`;
+    const folder = `${boardId}/${randomUUID()}`;
+    const path = `${folder}/${sanitize(dto.fileName)}`;
     const { url, headers, expiresIn } = await this.objects.createUploadUrl(
       path,
       { contentType: dto.contentType, size: dto.size },
     );
-    return { path, signedUrl: url, headers, expiresIn };
+    if (!dto.thumbnail) return { path, signedUrl: url, headers, expiresIn };
+
+    const thumbPath = thumbnailPathFor(path);
+    const thumb = await this.objects.createUploadUrl(thumbPath, {
+      contentType: THUMBNAIL_CONTENT_TYPE,
+      size: dto.thumbnail.size,
+    });
+    return {
+      path,
+      signedUrl: url,
+      headers,
+      expiresIn,
+      thumbnail: {
+        path: thumbPath,
+        signedUrl: thumb.url,
+        headers: thumb.headers,
+      },
+    };
   }
 
   createDownloadUrl(storagePath: string, fileName: string) {
@@ -52,6 +74,26 @@ export class StorageService {
   remove(storagePaths: string[]) {
     return this.objects.remove(storagePaths);
   }
+}
+
+/**
+ * Where an upload's thumbnail lives: beside the original, under its own
+ * `thumb/` folder so it can never collide with a file named "thumb.jpg".
+ */
+export function thumbnailPathFor(storagePath: string): string {
+  const folder = storagePath.slice(0, storagePath.lastIndexOf('/'));
+  return `${folder}/thumb/400.jpg`;
+}
+
+/** Every object a set of attachment rows owns: originals and thumbnails. */
+export function attachmentObjectPaths(
+  rows: { storagePath: string; thumbnailPath?: string | null }[],
+): string[] {
+  return rows.flatMap((row) =>
+    row.thumbnailPath
+      ? [row.storagePath, row.thumbnailPath]
+      : [row.storagePath],
+  );
 }
 
 /** Keeps object keys to characters every provider is happy addressing. */

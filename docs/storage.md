@@ -61,6 +61,31 @@ before upload, by the upload-URL schema and again by `StorageService`.
 `file_size_limit` in `supabase/config.toml` matches it, so local dev never
 refuses a file prod would take.
 
+## Photos and thumbnails
+
+The rules live in `packages/shared/src/image-compression.ts`; the phone
+(`expo-image-manipulator`, in `features/attachments/pick.ts`) and the browser
+(`createImageBitmap` and a canvas, in `apps/web/src/lib/compress-image.ts`) each
+apply them before upload.
+
+- **Photos are shrunk.** JPEG, WebP, HEIC and HEIF go up as a JPEG at most
+  2048 px on the long edge, quality 0.8. That turns a 3 to 8 MB phone photo into
+  well under 1 MB, turns HEIC into something every browser opens, and drops EXIF
+  data such as GPS. PNG, GIF, audio, video and PDFs go up untouched. A photo the
+  device can't decode goes up as it is.
+- **Photos and PNGs get a thumbnail:** a 400 px JPEG at quality 0.7, stored at
+  `<boardId>/<uuid>/thumb/400.jpg` beside the original (the `thumb/` folder
+  means it can't collide with a file called `thumb.jpg`). The client asks for it
+  with `thumbnail: { size }` on the upload-URL call and sends `thumbnailPath`
+  when saving. The API only records a path it would have minted itself, and only
+  if `stat()` finds the object.
+- **Thumbnails are best effort.** If one fails to upload, the attachment is saved
+  without it. `GET …/view-url?size=thumb` falls back to the original when there
+  is no thumbnail, so files uploaded before this, and GIFs, still show.
+- The phone's attachment grid asks for `thumb`; the full-screen gallery and the
+  web viewer ask for the original. Deleting an attachment (or its task, comment,
+  event or board) removes the thumbnail too.
+
 ## Setting up R2
 
 1. In the Cloudflare dashboard, create one private bucket per environment, e.g.

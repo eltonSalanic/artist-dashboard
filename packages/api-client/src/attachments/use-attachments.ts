@@ -19,6 +19,12 @@ interface UploadUrlResponse {
   signedUrl: string;
   /** What the PUT must carry for the signature to match. */
   headers?: Record<string, string>;
+  /** Present when a thumbnail was asked for. */
+  thumbnail?: {
+    path: string;
+    signedUrl: string;
+    headers?: Record<string, string>;
+  };
 }
 
 /** An attachment belongs to exactly one task, comment, event or ledger entry. */
@@ -49,6 +55,14 @@ export interface UploadSource {
    * refuses them.
    */
   put: (signedUrl: string, headers: Record<string, string>) => Promise<void>;
+  /**
+   * A small JPEG preview the client made (photos only). Uploaded after the
+   * file itself; if it fails, the upload still succeeds without one.
+   */
+  thumbnail?: {
+    size: number;
+    put: (signedUrl: string, headers: Record<string, string>) => Promise<void>;
+  };
 }
 
 const parentQuery = (parent: AttachmentParent) =>
@@ -96,19 +110,36 @@ export async function uploadAttachment(
     fileName: source.fileName,
     contentType,
     size: source.size,
+    ...(source.thumbnail ? { thumbnail: { size: source.thumbnail.size } } : {}),
   };
-  const { path, signedUrl, headers } = await apiFetch<UploadUrlResponse>(
-    `/boards/${boardId}/attachments/upload-url`,
-    { method: "POST", body: dto },
-  );
+  const { path, signedUrl, headers, thumbnail } =
+    await apiFetch<UploadUrlResponse>(
+      `/boards/${boardId}/attachments/upload-url`,
+      { method: "POST", body: dto },
+    );
 
   await source.put(signedUrl, headers ?? { "Content-Type": contentType });
+
+  // Best-effort: a missing preview just means the full file is shown.
+  let thumbnailPath: string | undefined;
+  if (thumbnail && source.thumbnail) {
+    try {
+      await source.thumbnail.put(
+        thumbnail.signedUrl,
+        thumbnail.headers ?? { "Content-Type": "image/jpeg" },
+      );
+      thumbnailPath = thumbnail.path;
+    } catch {
+      thumbnailPath = undefined;
+    }
+  }
 
   const create: CreateAttachmentDto = {
     storagePath: path,
     fileName: source.fileName,
     mimeType: dto.contentType,
     size: source.size,
+    ...(thumbnailPath ? { thumbnailPath } : {}),
     ...parent,
   };
   return apiFetch<AttachmentDto>(`/boards/${boardId}/attachments`, {
@@ -191,11 +222,15 @@ export function useRenameAttachment(boardId: string, parent: AttachmentParent) {
           : []),
       ]),
     onError: (error: unknown) =>
-      notify.error(
-        toUserMessage(error, "Could not rename the file"),
-      ),
+      notify.error(toUserMessage(error, "Could not rename the file")),
   });
 }
+
+/**
+ * `view` shows the file inline; `thumb` shows its small preview (the API
+ * falls back to the file when there is none); `download` saves it.
+ */
+export type AttachmentUrlKind = "view" | "thumb" | "download";
 
 /** Signed links live a minute; refetch a little before that. */
 const SIGNED_URL_FRESH_MS = 45_000;
@@ -208,7 +243,7 @@ const SIGNED_URL_FRESH_MS = 45_000;
 export function useAttachmentUrl(
   boardId: string,
   attachmentId: string,
-  kind: "view" | "download",
+  kind: AttachmentUrlKind,
   enabled = true,
 ) {
   return useQuery({
@@ -222,15 +257,17 @@ export function useAttachmentUrl(
 
 /**
  * A fresh short-lived signed URL for one attachment. `view` serves inline
- * under the stored content-type; `download` carries a save-as disposition.
- * Fetched at the moment of use — they expire in a minute.
+ * under the stored content-type; `thumb` the same for its preview;
+ * `download` carries a save-as disposition. Fetched at the moment of use —
+ * they expire in a minute.
  */
 export function fetchAttachmentUrl(
   boardId: string,
   attachmentId: string,
-  kind: "view" | "download",
+  kind: AttachmentUrlKind,
 ) {
+  const route = kind === "thumb" ? "view-url?size=thumb" : `${kind}-url`;
   return apiFetch<{ url: string; expiresIn: number }>(
-    `/boards/${boardId}/attachments/${attachmentId}/${kind}-url`,
+    `/boards/${boardId}/attachments/${attachmentId}/${route}`,
   );
 }

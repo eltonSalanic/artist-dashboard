@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { compressImage } from "@/lib/compress-image";
+import { prepareImage, type PreparedImage } from "@/lib/compress-image";
 import { fromFile } from "./use-attachments";
 
 /**
@@ -103,14 +103,14 @@ export function FileNameDialog({
  * for the file input's change handler and the dialog to render beside it.
  */
 export function useNamedUpload(upload: (source: UploadSource) => void) {
-  const [picked, setPicked] = useState<File | null>(null);
+  const [picked, setPicked] = useState<PreparedImage | null>(null);
   // Bumped per pick, so the dialog mounts fresh with the new file's name.
   const [round, setRound] = useState(0);
 
   // Photos are shrunk before the dialog opens, so the name it shows is the
   // name that gets stored (a HEIC becomes a .jpg).
   const pick = (file: File) => {
-    void compressImage(file).then((ready) => {
+    void prepareImage(file).then((ready) => {
       setPicked(ready);
       setRound((n) => n + 1);
     });
@@ -122,10 +122,10 @@ export function useNamedUpload(upload: (source: UploadSource) => void) {
       open
       onOpenChange={(open) => !open && setPicked(null)}
       title="Name this file"
-      fileName={picked.name}
+      fileName={picked.file.name}
       confirmLabel="Upload"
       onConfirm={(fileName) => {
-        upload({ ...fromFile(picked), fileName });
+        upload({ ...fromFile(picked.file, picked.thumbnail), fileName });
         setPicked(null);
       }}
     />

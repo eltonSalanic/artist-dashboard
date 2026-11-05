@@ -19,7 +19,10 @@ import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TasksService } from '../tasks/tasks.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { StorageService } from '../storage/storage.service';
+import {
+  attachmentObjectPaths,
+  StorageService,
+} from '../storage/storage.service';
 import { ActivityService } from '../activity/activity.service';
 
 const eventInclude = {
@@ -290,10 +293,10 @@ export class EventsService {
     // stored objects don't, so the paths are collected before the rows go.
     const files = await this.prisma.attachment.findMany({
       where: { boardId, eventId },
-      select: { storagePath: true },
+      select: { storagePath: true, thumbnailPath: true },
     });
     await this.prisma.event.delete({ where: { id: eventId } });
-    await this.storage.remove(files.map((file) => file.storagePath));
+    await this.storage.remove(attachmentObjectPaths(files));
     return { deleted: true };
   }
 

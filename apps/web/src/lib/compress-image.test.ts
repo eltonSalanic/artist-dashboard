@@ -1,4 +1,4 @@
-import { compressImage } from "./compress-image";
+import { compressImage, prepareImage } from "./compress-image";
 
 describe("compressImage", () => {
   it("leaves anything that isn't a photo untouched", async () => {
@@ -6,6 +6,11 @@ describe("compressImage", () => {
     const pdf = new File(["x"], "rider.pdf", { type: "application/pdf" });
     await expect(compressImage(png)).resolves.toBe(png);
     await expect(compressImage(pdf)).resolves.toBe(pdf);
+  });
+
+  it("makes no preview for a file it can't draw", async () => {
+    const pdf = new File(["x"], "rider.pdf", { type: "application/pdf" });
+    await expect(prepareImage(pdf)).resolves.toEqual({ file: pdf });
   });
 
   it("uploads the original when the browser can't decode the photo", async () => {

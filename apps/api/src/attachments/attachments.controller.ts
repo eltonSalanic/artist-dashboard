@@ -11,10 +11,12 @@ import {
 } from '@nestjs/common';
 import {
   attachmentQuerySchema,
+  attachmentViewQuerySchema,
   createAttachmentSchema,
   renameAttachmentSchema,
   uploadUrlSchema,
   type AttachmentQueryDto,
+  type AttachmentViewQueryDto,
   type BoardRole,
   type CreateAttachmentDto,
   type RenameAttachmentDto,
@@ -74,8 +76,10 @@ export class AttachmentsController {
   viewUrl(
     @Param('boardId') boardId: string,
     @Param('attachmentId') attachmentId: string,
+    @Query(new ZodValidationPipe(attachmentViewQuerySchema))
+    query: AttachmentViewQueryDto,
   ) {
-    return this.attachments.viewUrl(boardId, attachmentId);
+    return this.attachments.viewUrl(boardId, attachmentId, query);
   }
 
   @Patch(':attachmentId')

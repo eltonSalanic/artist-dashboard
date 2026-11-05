@@ -12,7 +12,10 @@ import type {
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
-import { StorageService } from '../storage/storage.service';
+import {
+  attachmentObjectPaths,
+  StorageService,
+} from '../storage/storage.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
 const commentInclude = {
@@ -180,10 +183,10 @@ export class CommentsService {
     // are collected before the delete and purged after it.
     const attachments = await this.prisma.attachment.findMany({
       where: { commentId },
-      select: { storagePath: true },
+      select: { storagePath: true, thumbnailPath: true },
     });
     await this.prisma.comment.delete({ where: { id: commentId } });
-    await this.storage.remove(attachments.map((a) => a.storagePath));
+    await this.storage.remove(attachmentObjectPaths(attachments));
     return { deleted: true };
   }
 

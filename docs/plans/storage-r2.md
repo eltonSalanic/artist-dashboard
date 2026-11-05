@@ -15,8 +15,9 @@ var. Downloads stop costing money as bands grow.
 
 - In scope: the storage interface, Supabase and R2 providers, per-type size
   caps, checking the bucket on save, setting up R2, copying existing files.
-- Out of scope: compressing images and thumbnails (the
-  [compression card](https://trello.com/c/6odIAnyS)), which builds on this.
+- Compressing images and thumbnails was the follow-up
+  [compression card](https://trello.com/c/6odIAnyS), now done: see "Photos and
+  thumbnails" in [storage.md](../storage.md).
 - Decisions:
   - R2, not Cloudflare Images, because the bucket holds PDFs, audio and video.
   - Local dev stays on Supabase Storage (free, offline). R2 locally is possible

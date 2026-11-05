@@ -89,6 +89,61 @@ describe('AttachmentsService', () => {
       );
     });
 
+    it('records a thumbnail that landed where upload-url put it', async () => {
+      prisma.task.findFirst.mockResolvedValue({ title: 'Mix' });
+      prisma.attachment.create.mockResolvedValue(stored);
+
+      await service.create('b1', 'u1', {
+        ...dto,
+        thumbnailPath: 'b1/abc/thumb/400.jpg',
+      });
+
+      expect(storage.stat).toHaveBeenCalledWith('b1/abc/thumb/400.jpg');
+      expect(prisma.attachment.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            thumbnailPath: 'b1/abc/thumb/400.jpg',
+          }),
+        }),
+      );
+    });
+
+    it('drops a thumbnail that never landed but keeps the upload', async () => {
+      prisma.task.findFirst.mockResolvedValue({ title: 'Mix' });
+      prisma.attachment.create.mockResolvedValue(stored);
+      storage.stat
+        .mockResolvedValueOnce({ size: 1024, contentType: 'audio/wav' })
+        .mockResolvedValueOnce(null);
+
+      await service.create('b1', 'u1', {
+        ...dto,
+        thumbnailPath: 'b1/abc/thumb/400.jpg',
+      });
+
+      expect(prisma.attachment.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ thumbnailPath: null }),
+        }),
+      );
+    });
+
+    it('ignores a thumbnail path that points anywhere else', async () => {
+      prisma.task.findFirst.mockResolvedValue({ title: 'Mix' });
+      prisma.attachment.create.mockResolvedValue(stored);
+
+      await service.create('b1', 'u1', {
+        ...dto,
+        thumbnailPath: 'b1/other/thumb/400.jpg',
+      });
+
+      expect(storage.stat).not.toHaveBeenCalledWith('b1/other/thumb/400.jpg');
+      expect(prisma.attachment.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ thumbnailPath: null }),
+        }),
+      );
+    });
+
     it('records the row and logs FILE_UPLOADED together', async () => {
       prisma.task.findFirst.mockResolvedValue({ title: 'Mix' });
       prisma.attachment.create.mockResolvedValue(stored);
@@ -179,6 +234,22 @@ describe('AttachmentsService', () => {
       expect(storage.remove).toHaveBeenCalledWith(['b1/abc/mix.wav']);
     });
 
+    it('removes the thumbnail along with the original', async () => {
+      prisma.attachment.findFirst.mockResolvedValue({
+        id: 'a1',
+        uploadedById: 'u1',
+        storagePath: 'b1/abc/photo.jpg',
+        thumbnailPath: 'b1/abc/thumb/400.jpg',
+      });
+
+      await service.remove('b1', 'a1', 'u1', 'USER');
+
+      expect(storage.remove).toHaveBeenCalledWith([
+        'b1/abc/photo.jpg',
+        'b1/abc/thumb/400.jpg',
+      ]);
+    });
+
     it("blocks a member from deleting someone else's upload", async () => {
       prisma.attachment.findFirst.mockResolvedValue({
         id: 'a1',
@@ -226,6 +297,38 @@ describe('AttachmentsService', () => {
         expiresIn: 60,
         mimeType: 'audio/wav',
       });
+    });
+
+    it('serves the thumbnail when asked and there is one', async () => {
+      prisma.attachment.findFirst.mockResolvedValue({
+        id: 'a1',
+        storagePath: 'b1/abc/photo.webp',
+        thumbnailPath: 'b1/abc/thumb/400.jpg',
+        mimeType: 'image/webp',
+      });
+      storage.createViewUrl.mockResolvedValue({ url: 'u', expiresIn: 60 });
+
+      const result = await service.viewUrl('b1', 'a1', { size: 'thumb' });
+
+      expect(storage.createViewUrl).toHaveBeenCalledWith(
+        'b1/abc/thumb/400.jpg',
+      );
+      expect(result.mimeType).toBe('image/jpeg');
+    });
+
+    it('falls back to the original when there is no thumbnail', async () => {
+      prisma.attachment.findFirst.mockResolvedValue({
+        id: 'a1',
+        storagePath: 'b1/abc/old.png',
+        thumbnailPath: null,
+        mimeType: 'image/png',
+      });
+      storage.createViewUrl.mockResolvedValue({ url: 'u', expiresIn: 60 });
+
+      const result = await service.viewUrl('b1', 'a1', { size: 'thumb' });
+
+      expect(storage.createViewUrl).toHaveBeenCalledWith('b1/abc/old.png');
+      expect(result.mimeType).toBe('image/png');
     });
 
     it('404s for an attachment on another board', async () => {

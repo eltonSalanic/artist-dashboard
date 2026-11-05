@@ -31,7 +31,10 @@ describe('uploadAttachment', () => {
         ok({
           path: 'b1/uuid/mix.wav',
           signedUrl: 'https://s/up',
-          headers: { 'Content-Type': 'audio/wav', 'Cache-Control': 'immutable' },
+          headers: {
+            'Content-Type': 'audio/wav',
+            'Cache-Control': 'immutable',
+          },
         }),
       )
       .mockResolvedValueOnce(ok({ id: 'a1' }));
@@ -82,38 +85,87 @@ describe('uploadAttachment', () => {
 
   it('refuses an oversized file before asking for a URL', async () => {
     const file = source({ size: MAX_ATTACHMENT_BYTES + 1 });
-    await expect(uploadAttachment('b1', { taskId: 't1' }, file)).rejects.toThrow(
-      'can be up to',
-    );
+    await expect(
+      uploadAttachment('b1', { taskId: 't1' }, file),
+    ).rejects.toThrow('can be up to');
     expect(fetchMock).not.toHaveBeenCalled();
     expect(file.put).not.toHaveBeenCalled();
   });
 
-  it('applies the cap for the file\'s type, not just the overall one', async () => {
+  it("applies the cap for the file's type, not just the overall one", async () => {
     const photo = source({
       fileName: 'gig.jpg',
       contentType: 'image/jpeg',
       size: 11 * 1024 * 1024,
     });
-    await expect(uploadAttachment('b1', { taskId: 't1' }, photo)).rejects.toThrow(
-      'Images can be up to 10 MB',
-    );
+    await expect(
+      uploadAttachment('b1', { taskId: 't1' }, photo),
+    ).rejects.toThrow('Images can be up to 10 MB');
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   // A row pointing at an object that never arrived would list a file that
   // 404s on every tap.
   it('persists nothing when Storage rejects the bytes', async () => {
-    fetchMock.mockResolvedValueOnce(
-      ok({ path: 'b1/u/x', signedUrl: 'u' }),
-    );
+    fetchMock.mockResolvedValueOnce(ok({ path: 'b1/u/x', signedUrl: 'u' }));
     const file = source({
       put: jest.fn().mockRejectedValue(new Error('Storage rejected')),
     });
 
-    await expect(uploadAttachment('b1', { taskId: 't1' }, file)).rejects.toThrow(
-      'Storage rejected',
-    );
+    await expect(
+      uploadAttachment('b1', { taskId: 't1' }, file),
+    ).rejects.toThrow('Storage rejected');
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  describe('thumbnails', () => {
+    const withThumb = (put = jest.fn().mockResolvedValue(undefined)) =>
+      source({
+        fileName: 'photo.jpg',
+        contentType: 'image/jpeg',
+        thumbnail: { size: 30_000, put },
+      });
+    const signed = {
+      path: 'b1/u/photo.jpg',
+      signedUrl: 'https://s/up',
+      thumbnail: {
+        path: 'b1/u/thumb/400.jpg',
+        signedUrl: 'https://s/thumb',
+        headers: { 'Content-Type': 'image/jpeg' },
+      },
+    };
+
+    it('asks for a thumbnail URL, puts it, and records its path', async () => {
+      fetchMock
+        .mockResolvedValueOnce(ok(signed))
+        .mockResolvedValueOnce(ok({ id: 'a1' }));
+      const file = withThumb();
+
+      await uploadAttachment('b1', { taskId: 't1' }, file);
+
+      expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({
+        thumbnail: { size: 30_000 },
+      });
+      expect(file.thumbnail?.put).toHaveBeenCalledWith('https://s/thumb', {
+        'Content-Type': 'image/jpeg',
+      });
+      expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toMatchObject({
+        thumbnailPath: 'b1/u/thumb/400.jpg',
+      });
+    });
+
+    it('still saves the upload when the thumbnail PUT fails', async () => {
+      fetchMock
+        .mockResolvedValueOnce(ok(signed))
+        .mockResolvedValueOnce(ok({ id: 'a1' }));
+      const file = withThumb(jest.fn().mockRejectedValue(new Error('nope')));
+
+      await expect(
+        uploadAttachment('b1', { taskId: 't1' }, file),
+      ).resolves.toEqual({ id: 'a1' });
+      expect(JSON.parse(fetchMock.mock.calls[1][1].body)).not.toHaveProperty(
+        'thumbnailPath',
+      );
+    });
   });
 });

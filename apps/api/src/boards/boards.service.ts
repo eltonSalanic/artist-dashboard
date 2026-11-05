@@ -22,7 +22,10 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { SUMMARY_OWNER_SELECT, toBoardSummary } from './board-summary';
 import { BillingService } from '../billing/billing.service';
-import { StorageService } from '../storage/storage.service';
+import {
+  attachmentObjectPaths,
+  StorageService,
+} from '../storage/storage.service';
 import { newBoardData } from './new-board';
 import { ActivityService } from '../activity/activity.service';
 
@@ -192,7 +195,7 @@ export class BoardsService {
 
     const attachments = await this.prisma.attachment.findMany({
       where: { boardId },
-      select: { storagePath: true },
+      select: { storagePath: true, thumbnailPath: true },
     });
     await this.prisma.$transaction(async (tx) => {
       await tx.event.deleteMany({ where: { boardId } });
@@ -201,7 +204,7 @@ export class BoardsService {
 
     if (attachments.length > 0) {
       try {
-        await this.storage.remove(attachments.map((a) => a.storagePath));
+        await this.storage.remove(attachmentObjectPaths(attachments));
       } catch (error) {
         this.logger.warn(
           `Band ${boardId} deleted, but its files were not: ${String(error)}`,

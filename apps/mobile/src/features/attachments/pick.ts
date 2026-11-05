@@ -4,10 +4,13 @@ import { File, UploadType } from 'expo-file-system';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import {
+  canThumbnail,
   compressedImageName,
   fitWithin,
   IMAGE_JPEG_QUALITY,
   isCompressibleImage,
+  THUMBNAIL_JPEG_QUALITY,
+  THUMBNAIL_MAX_EDGE,
 } from '@artist/shared';
 import { ApiError, type UploadSource } from '@artist/api-client';
 import { env } from '@/lib/env';
@@ -106,23 +109,33 @@ export async function pickUpload(from: PickFrom): Promise<PickedUpload | null> {
   const asset = result.assets[0];
   const mimeType =
     asset.mimeType ?? (asset.type === 'video' ? 'video/mp4' : 'image/jpeg');
+  const thumbnail =
+    asset.type !== 'video' && canThumbnail(mimeType)
+      ? await makeThumbnail(asset)
+      : null;
   if (asset.type !== 'video' && isCompressibleImage(mimeType)) {
     const photo = await compressPhoto(asset);
     if (photo) {
       const fileName = compressedImageName(asset.fileName ?? defaultName('image/jpeg'));
       return {
-        source: fromUri(photo.uri, fileName, 'image/jpeg', undefined),
+        source: withThumbnail(
+          fromUri(photo.uri, fileName, 'image/jpeg', undefined),
+          thumbnail,
+        ),
         preview: photo.uri,
       };
     }
   }
   return {
-    source: fromUri(
-      asset.uri,
-      // The camera hands back no name at all; a dated one beats "image".
-      asset.fileName ?? defaultName(mimeType),
-      mimeType,
-      asset.fileSize,
+    source: withThumbnail(
+      fromUri(
+        asset.uri,
+        // The camera hands back no name at all; a dated one beats "image".
+        asset.fileName ?? defaultName(mimeType),
+        mimeType,
+        asset.fileSize,
+      ),
+      thumbnail,
     ),
     preview: asset.type === 'video' ? undefined : asset.uri,
   };
@@ -151,6 +164,35 @@ async function compressPhoto(
   } catch {
     return null;
   }
+}
+
+/**
+ * A 400 px JPEG preview for the attachment grid, so a tile loads tens of KB
+ * instead of the whole photo. Null if it can't be made; the grid then draws
+ * the original.
+ */
+async function makeThumbnail(
+  asset: ImagePicker.ImagePickerAsset,
+): Promise<string | null> {
+  try {
+    const context = ImageManipulator.manipulate(asset.uri);
+    const target = fitWithin(asset.width, asset.height, THUMBNAIL_MAX_EDGE);
+    context.resize({ width: target.width, height: target.height });
+    const image = await context.renderAsync();
+    const saved = await image.saveAsync({
+      compress: THUMBNAIL_JPEG_QUALITY,
+      format: SaveFormat.JPEG,
+    });
+    return saved.uri;
+  } catch {
+    return null;
+  }
+}
+
+function withThumbnail(source: UploadSource, thumbnailUri: string | null): UploadSource {
+  if (!thumbnailUri) return source;
+  const thumb = fromUri(thumbnailUri, 'thumb.jpg', 'image/jpeg', undefined);
+  return { ...source, thumbnail: { size: thumb.size, put: thumb.put } };
 }
 
 function fromUri(

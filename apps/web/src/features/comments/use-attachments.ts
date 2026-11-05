@@ -15,22 +15,24 @@ const showError = (error: unknown) =>
  * The browser's half of an upload: a `File` is already a fetch body. The rest
  * of the flow lives in `@artist/api-client`'s `useUploadAttachment`.
  */
-export function fromFile(file: File): UploadSource {
+export function fromFile(file: File, thumbnail?: Blob): UploadSource {
   return {
     fileName: file.name,
     contentType: file.type,
     size: file.size,
-    put: async (signedUrl, headers) => {
-      const put = await fetch(signedUrl, {
-        method: "PUT",
-        headers,
-        body: file,
-      });
-      if (!put.ok)
-        throw new ApiError(put.status, "Storage rejected the upload");
-    },
+    put: putBody(file),
+    ...(thumbnail
+      ? { thumbnail: { size: thumbnail.size, put: putBody(thumbnail) } }
+      : {}),
   };
 }
+
+const putBody =
+  (body: Blob) =>
+  async (signedUrl: string, headers: Record<string, string>) => {
+    const put = await fetch(signedUrl, { method: "PUT", headers, body });
+    if (!put.ok) throw new ApiError(put.status, "Storage rejected the upload");
+  };
 
 /** Fetches a fresh short-lived signed URL, then triggers the browser download. */
 export async function downloadAttachment(

@@ -208,17 +208,22 @@ describe('EventsService notifications', () => {
     it("purges the event's stored files along with it", async () => {
       prisma.event.findFirst.mockResolvedValue(stored);
       prisma.attachment.findMany.mockResolvedValue([
-        { storagePath: 'b1/x/rider.pdf' },
+        { storagePath: 'b1/x/rider.pdf', thumbnailPath: null },
+        { storagePath: 'b1/y/flyer.jpg', thumbnailPath: 'b1/y/thumb/400.jpg' },
       ]);
 
       await service.remove('b1', 'e1');
 
       expect(prisma.attachment.findMany).toHaveBeenCalledWith({
         where: { boardId: 'b1', eventId: 'e1' },
-        select: { storagePath: true },
+        select: { storagePath: true, thumbnailPath: true },
       });
       expect(prisma.event.delete).toHaveBeenCalledWith({ where: { id: 'e1' } });
-      expect(storage.remove).toHaveBeenCalledWith(['b1/x/rider.pdf']);
+      expect(storage.remove).toHaveBeenCalledWith([
+        'b1/x/rider.pdf',
+        'b1/y/flyer.jpg',
+        'b1/y/thumb/400.jpg',
+      ]);
     });
   });
 

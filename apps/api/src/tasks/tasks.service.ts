@@ -18,7 +18,10 @@ import { can } from '@artist/shared';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
-import { StorageService } from '../storage/storage.service';
+import {
+  attachmentObjectPaths,
+  StorageService,
+} from '../storage/storage.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { countOpen } from './open-subtasks';
 
@@ -431,13 +434,13 @@ export class TasksService {
           { comment: { taskId: { in: taskIds } } },
         ],
       },
-      select: { storagePath: true },
+      select: { storagePath: true, thumbnailPath: true },
     });
 
     await this.prisma.task.deleteMany({
       where: { id: { in: rootTaskIds }, boardId },
     });
-    await this.storage.remove(attachments.map((a) => a.storagePath));
+    await this.storage.remove(attachmentObjectPaths(attachments));
   }
 
   /** The task plus its descendants — nesting is capped at two levels. */
