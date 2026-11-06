@@ -15,6 +15,7 @@ import {
   createPayoutSchema,
   financeEntryQuerySchema,
   financeSummaryQuerySchema,
+  rejectFinanceEntrySchema,
   updateFinanceEntrySchema,
   updateSplitSchema,
   type BoardRole,
@@ -22,6 +23,7 @@ import {
   type CreatePayoutDto,
   type FinanceEntryQueryDto,
   type FinanceSummaryQueryDto,
+  type RejectFinanceEntryDto,
   type UpdateFinanceEntryDto,
   type UpdateSplitDto,
 } from '@artist/shared';
@@ -111,6 +113,18 @@ export class FinancesController {
     @Req() req: RequestWithMembership,
   ) {
     return this.finances.approve(boardId, actorOf(user, req), entryId);
+  }
+
+  @Post('entries/:entryId/reject')
+  reject(
+    @Param('boardId') boardId: string,
+    @Param('entryId') entryId: string,
+    @CurrentUser() user: AuthUser,
+    @Req() req: RequestWithMembership,
+    @Body(new ZodValidationPipe(rejectFinanceEntrySchema))
+    dto: RejectFinanceEntryDto,
+  ) {
+    return this.finances.reject(boardId, actorOf(user, req), entryId, dto);
   }
 
   @Post('entries/:entryId/void')

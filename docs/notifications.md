@@ -47,6 +47,8 @@ These are the rules the trigger table follows. New triggers should too.
 | 4 | **Show, rehearsal, or meeting added** | All board members, minus the actor | Immediate | `EventsService.create` | ☑ |
 | 5 | **Show, rehearsal, or meeting moved** | All board members, minus the actor | Immediate | `EventsService.update` (diff on `startsAt` / `endsAt`) | ☑ |
 | 6 | **Reminder due** | All board members | At `Reminder.remindAt` | `ReminderDueJob` (cron) | ☑ |
+| 7 | **Expense needs approval** | Board admins, minus the member who logged it | Immediate, when an entry lands `PENDING` (new, or resubmitted after a send-back) | `FinancesService.create` / `update` (`askForApproval`) | ☑ |
+| 8 | **Expense approved or sent back** | The member who logged it | Immediate | `FinancesService.approve` / `reject` (`decide`) | ☑ |
 
 Two further triggers were specified and then deliberately dropped — see
 [Considered and dropped](#considered-and-dropped).
@@ -257,6 +259,7 @@ inbox. Categories are coarser than triggers on purpose:
 | `assignments` | 2, 3 |
 | `schedule` | 4, 5 |
 | `reminders` | 6 |
+| `approvals` | 7, 8 |
 
 All default to on. Unsubscribe links carry a signed token identifying
 `(userId, boardId, category)` so one click turns off exactly one category

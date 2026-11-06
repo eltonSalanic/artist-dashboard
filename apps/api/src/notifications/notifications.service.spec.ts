@@ -92,6 +92,7 @@ describe('NotificationsService preferences', () => {
       ASSIGNMENTS: true,
       SCHEDULE: true,
       REMINDERS: true,
+      APPROVALS: true,
     });
   });
 
@@ -115,6 +116,7 @@ describe('NotificationsService preferences', () => {
       ASSIGNMENTS: true,
       SCHEDULE: true,
       REMINDERS: true,
+      APPROVALS: true,
     });
   });
 

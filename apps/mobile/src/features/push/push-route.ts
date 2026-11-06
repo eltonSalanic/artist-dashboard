@@ -6,9 +6,11 @@
  * plus whichever of `taskId` / `eventId` the trigger was about.
  *
  * Decided by the ids present rather than by template name, so a trigger added
- * later still opens its entity without this file learning its name. The one
- * template that needs naming is the reminder, which carries no id — reminders
- * have no detail screen, so it opens the band's Reminders spoke.
+ * later still opens its entity without this file learning its name. Two
+ * templates need naming: the reminder, which carries no id — reminders have no
+ * detail screen, so it opens the band's Reminders spoke — and the expense
+ * approval ones, which open Finances, where approving happens, rather than the
+ * entry itself.
  *
  * The payload arrives from outside the app, so nothing about it is trusted: a
  * missing or non-string board id means there is nowhere to go, and ids are
@@ -44,8 +46,12 @@ export function pushDestination(data: unknown): PushDestination | null {
     return { boardId, href: `${board}/event/${encodeURIComponent(eventId)}` };
   }
 
-  if (field(payload, 'template') === 'reminder-due') {
+  const template = field(payload, 'template') ?? '';
+  if (template === 'reminder-due') {
     return { boardId, href: `${board}/w/REMINDERS` };
+  }
+  if (template.startsWith('expense-')) {
+    return { boardId, href: `${board}/w/FINANCES` };
   }
 
   return { boardId, href: null };

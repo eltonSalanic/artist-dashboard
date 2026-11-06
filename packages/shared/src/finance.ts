@@ -356,7 +356,9 @@ export function ledgerTotals(entries: LedgerEntry[]): LedgerTotals {
   const byMonth = new Map<string, MonthTotal>();
 
   for (const entry of entries) {
-    if (entry.state === 'VOID') continue;
+    // Neither counts: void is gone for good, rejected until the member fixes
+    // it and an admin approves.
+    if (entry.state === 'VOID' || entry.state === 'REJECTED') continue;
     if (entry.state === 'EXPECTED') {
       if (entry.kind === 'INCOME') expectedCents += entry.amountCents;
       continue;
@@ -419,6 +421,7 @@ const STATE_LABELS: Record<FinanceState, string> = {
   SETTLED: 'Settled',
   EXPECTED: 'Expected',
   PENDING: 'Pending approval',
+  REJECTED: 'Sent back',
   VOID: 'Void',
 };
 

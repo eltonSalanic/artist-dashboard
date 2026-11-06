@@ -66,7 +66,7 @@ export type FinanceKind = (typeof FinanceKinds)[number];
  * approve it: until then the band doesn't owe them for it. VOID replaces delete:
  * a ledger that quietly loses rows can't be trusted.
  */
-export const FinanceStates = ['EXPECTED', 'PENDING', 'SETTLED', 'VOID'] as const;
+export const FinanceStates = ['EXPECTED', 'PENDING', 'SETTLED', 'REJECTED', 'VOID'] as const;
 export type FinanceState = (typeof FinanceStates)[number];
 
 /**

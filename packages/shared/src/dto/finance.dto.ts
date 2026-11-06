@@ -99,6 +99,16 @@ export const financeSummaryQuerySchema = z.object({
 });
 export type FinanceSummaryQueryDto = z.infer<typeof financeSummaryQuerySchema>;
 
+/**
+ * An admin sends a member's out-of-pocket expense back. The note is what the
+ * member reads to know what to fix, so it's worth writing, but a bare "no" is
+ * still a decision.
+ */
+export const rejectFinanceEntrySchema = z.object({
+  note: z.string().trim().max(500).default(''),
+});
+export type RejectFinanceEntryDto = z.infer<typeof rejectFinanceEntrySchema>;
+
 export const updateSplitSchema = z.object({ shares: splitSchema });
 export type UpdateSplitDto = z.infer<typeof updateSplitSchema>;
 
@@ -157,6 +167,8 @@ export interface FinanceEntryDto {
   /** The admin who approved a member's out-of-pocket expense, and when. */
   approvedById: string | null;
   approvedAt: string | null;
+  /** Why an admin sent it back; `''` unless `state` is REJECTED. */
+  decisionNote: string;
   splits: SplitShare[];
   receiptCount: number;
   createdAt: string;
@@ -188,6 +200,11 @@ export interface FinanceSummaryDto {
   members: FinanceMemberRef[];
   /** Members' out-of-pocket expenses waiting for an admin, all time, newest first. */
   pending: FinanceEntryDto[];
+  /**
+   * Expenses an admin sent back that the caller logged, newest first — the
+   * member's to-do list. Admins see every sent-back entry.
+   */
+  sentBack: FinanceEntryDto[];
   /** Shows with promised income still outstanding. */
   unpaidShows: { eventId: string; title: string; startsAt: string; expectedCents: number }[];
 }

@@ -3,7 +3,12 @@ import { PrismaService } from '../prisma/prisma.service';
 
 export interface MentionNotificationDto {
   id: string;
-  taskId: string;
+  /** What the row is about; decides what it says and where a tap goes. */
+  kind: 'MENTION' | 'APPROVAL' | 'DECISION';
+  /** The task a MENTION lives on; null for the finance kinds. */
+  taskId: string | null;
+  /** The ledger entry an APPROVAL or DECISION is about; null for a mention. */
+  entryId: string | null;
   /**
    * Which board the mention happened on. Needed to open the task — every
    * click-through is board-scoped — and to label the row when the inbox is
@@ -12,6 +17,7 @@ export interface MentionNotificationDto {
   boardId: string;
   boardName: string;
   actorName: string;
+  /** The task's title, or the entry's label and amount. */
   taskTitle: string;
   excerpt: string;
   createdAt: Date;
@@ -57,7 +63,9 @@ export class MentionsService {
     });
     return rows.map((row) => ({
       id: row.id,
+      kind: row.kind,
       taskId: row.taskId,
+      entryId: row.entryId,
       boardId: row.boardId,
       boardName: row.board.name,
       actorName: row.actorName,

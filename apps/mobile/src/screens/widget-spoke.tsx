@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Pressable, ScrollView, View, useWindowDimensions, type ViewToken } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { WIDGET_META, type WidgetType } from '@artist/shared';
-import { usePermissions } from '@artist/api-client';
+import { useFinanceSummary, usePermissions } from '@artist/api-client';
 import { Icon } from '@/components/icon';
 import { PosterText } from '@/components/poster-text';
 import { ThemedText } from '@/components/themed-text';
@@ -142,6 +142,9 @@ export function WidgetSpokeScreen({
  * the colour of the card you tapped and of the cover under it, or with ink
  * when the widget is uncoloured.
  */
+/** One object, so the summary's query key is stable across renders. */
+const EMPTY_RANGE = {};
+
 function PositionStrip({
   boardId,
   pages,
@@ -156,6 +159,18 @@ function PositionStrip({
   const colors = useThemeColors();
   const shadows = useShadows();
   const ink = useWidgetInk(boardId, pages[index] ?? pages[0]);
+  const { can } = usePermissions();
+  // Finances is the one spoke with a to-do count: expenses waiting on an
+  // admin, or — for the member — ones sent back to fix. Shown on its chip so
+  // it is seen from any other spoke, like the inbox's tab badge.
+  const finances = useFinanceSummary(
+    boardId,
+    EMPTY_RANGE,
+    pages.includes('FINANCES') && can('finance.view'),
+  );
+  const financeCount = can('finance.manage')
+    ? (finances.data?.pending.length ?? 0)
+    : (finances.data?.sentBack.length ?? 0);
 
   const stripRef = useRef<ScrollView>(null);
   const stripWidth = useRef(0);
@@ -234,6 +249,9 @@ function PositionStrip({
             accessibilityState={{ selected: active }}
             onPress={() => onSelect(i)}
             style={({ pressed }) => ({
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing.xs,
               paddingHorizontal: spacing.md - 2,
               paddingVertical: spacing.xs + 3,
               borderRadius: radius.full,
@@ -249,6 +267,31 @@ function PositionStrip({
             <PosterText variant="chip" numberOfLines={1} color={active ? label : colors.foreground}>
               {WIDGET_META[type].title}
             </PosterText>
+            {type === 'FINANCES' && financeCount > 0 && (
+              <View
+                accessibilityLabel={`${financeCount} waiting`}
+                style={{
+                  minWidth: 18,
+                  height: 18,
+                  paddingHorizontal: 5,
+                  borderRadius: radius.full,
+                  backgroundColor: active ? label : colors.primary,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <ThemedText
+                  style={{
+                    fontSize: 11,
+                    lineHeight: 14,
+                    fontWeight: '700',
+                    color: active ? fill : colors.primaryForeground,
+                  }}
+                >
+                  {financeCount > 9 ? '9+' : financeCount}
+                </ThemedText>
+              </View>
+            )}
           </Pressable>
         );
       })}

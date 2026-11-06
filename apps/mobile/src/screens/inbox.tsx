@@ -118,6 +118,7 @@ function Mentions({
             {items.length > 0 && (
               <Headline
                 count={items.length}
+                noun={items.every((item) => item.kind === 'MENTION') ? 'mention' : 'notification'}
                 where={filteredTo ?? (namesBoards ? 'Every band' : undefined)}
               />
             )}
@@ -198,7 +199,16 @@ function Mentions({
 }
 
 /** "3 mentions", set as the calendar sets its month, with where in small caps. */
-function Headline({ count, where }: { count: number; where: string | undefined }) {
+function Headline({
+  count,
+  noun,
+  where,
+}: {
+  count: number;
+  /** "mention" when that is all there is; "notification" once approvals mix in. */
+  noun: string;
+  where: string | undefined;
+}) {
   const canvas = usePosterCanvas();
   return (
     <View
@@ -217,7 +227,7 @@ function Headline({ count, where }: { count: number; where: string | undefined }
         adjustsFontSizeToFit
         minimumFontScale={0.5}
       >
-        {`${count} ${count === 1 ? 'mention' : 'mentions'}`}
+        {`${count} ${noun}${count === 1 ? '' : 's'}`}
       </PosterText>
     </View>
   );
@@ -248,18 +258,33 @@ function MentionRow({
     .filter((part): part is string => part != null && part !== '')
     .join(' · ');
   // The sentence, not just the task: "Dana mentioned you in Mix notes" is
-  // what the notification said, and the row should read the same way.
-  const title = `${item.actorName} mentioned you in “${item.taskTitle}”`;
+  // what the notification said, and the row should read the same way. For
+  // money the server already wrote the headline ("Sent back: Tire · $50.00").
+  const title =
+    item.kind === 'MENTION'
+      ? `${item.actorName} mentioned you in “${item.taskTitle}”`
+      : item.kind === 'APPROVAL'
+        ? `${item.actorName} paid ${item.taskTitle}`
+        : item.taskTitle;
+  const detail =
+    item.kind === 'APPROVAL'
+      ? [item.excerpt, 'Waiting for your approval'].filter(Boolean).join(' · ')
+      : item.excerpt;
   const initial = item.actorName.trim().charAt(0).toUpperCase() || '@';
+  // Approving happens on the Finances spoke, so that is where a tap lands.
+  const href =
+    item.kind === 'MENTION' && item.taskId
+      ? `/board/${item.boardId}/task/${item.taskId}`
+      : `/board/${item.boardId}/w/FINANCES`;
 
   return (
     <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs }}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={[title, item.excerpt, meta].filter(Boolean).join('. ')}
+        accessibilityLabel={[title, detail, meta].filter(Boolean).join('. ')}
         // Opening leaves the row in place, matching web: it clears when the
         // person clears it, so a glance at the task does not lose the reminder.
-        onPress={() => router.push(`/board/${item.boardId}/task/${item.taskId}`)}
+        onPress={() => router.push(href)}
         style={({ pressed }) => ({
           flex: 1,
           flexDirection: 'row',
@@ -288,9 +313,9 @@ function MentionRow({
           <PosterText variant="rowTitle" color={colors.foreground} numberOfLines={2}>
             {title}
           </PosterText>
-          {item.excerpt !== '' && (
+          {detail !== '' && (
             <PosterText variant="paragraph" color={colors.mutedForeground} numberOfLines={2}>
-              {item.excerpt}
+              {detail}
             </PosterText>
           )}
           <PosterText variant="cardMeta" color={colors.mutedForeground} numberOfLines={1}>
@@ -300,7 +325,11 @@ function MentionRow({
       </Pressable>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Dismiss mention from ${item.actorName}`}
+        accessibilityLabel={
+          item.kind === 'MENTION'
+            ? `Dismiss mention from ${item.actorName}`
+            : `Dismiss ${item.kind === 'APPROVAL' ? 'approval request' : 'decision'} from ${item.actorName}`
+        }
         hitSlop={10}
         onPress={onDismiss}
         style={({ pressed }) => ({

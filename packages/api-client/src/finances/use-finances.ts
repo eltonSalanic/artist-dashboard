@@ -42,6 +42,9 @@ function useInvalidateFinances(boardId: string) {
     Promise.all([
       queryClient.invalidateQueries({ queryKey: ["finances", boardId] }),
       queryClient.invalidateQueries({ queryKey: ["activity", boardId] }),
+      // Approval requests and decisions live in the inbox.
+      queryClient.invalidateQueries({ queryKey: ["inbox"] }),
+      queryClient.invalidateQueries({ queryKey: ["mentions"] }),
     ]);
 }
 
@@ -142,6 +145,23 @@ export function useApproveFinanceEntry(boardId: string) {
     mutationFn: (entryId: string) =>
       apiFetch<FinanceEntryDto>(`${base(boardId)}/entries/${entryId}/approve`, {
         method: "POST",
+      }),
+    onSuccess: invalidate,
+    onError: showError,
+  });
+}
+
+/**
+ * An admin sends a member's expense back with a note. It stops counting until
+ * the member fixes it and saves, which asks for approval again.
+ */
+export function useRejectFinanceEntry(boardId: string) {
+  const invalidate = useInvalidateFinances(boardId);
+  return useMutation({
+    mutationFn: ({ entryId, note }: { entryId: string; note: string }) =>
+      apiFetch<FinanceEntryDto>(`${base(boardId)}/entries/${entryId}/reject`, {
+        method: "POST",
+        body: { note },
       }),
     onSuccess: invalidate,
     onError: showError,

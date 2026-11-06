@@ -36,7 +36,7 @@ function firstLine(text: string): string {
  * and can hold a comment excerpt or a task title, none of which belongs in a
  * push payload that the OS logs.
  */
-const DEEP_LINK_KEYS = ['taskId', 'eventId'] as const;
+const DEEP_LINK_KEYS = ['taskId', 'eventId', 'entryId'] as const;
 
 function deepLinkData(row: NotificationDelivery): Record<string, string> {
   const payload = (row.payload ?? {}) as Record<string, unknown>;

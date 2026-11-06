@@ -30,6 +30,16 @@ describe('pushDestination', () => {
   });
 
   // Keyed on ids, so a trigger added later still lands on its entity.
+  it('opens Finances for an expense approval or decision', () => {
+    expect(
+      pushDestination({ boardId: 'b1', template: 'expense-approval', entryId: 'f1' }),
+    ).toEqual({ boardId: 'b1', href: '/board/b1/w/FINANCES' });
+    expect(pushDestination({ boardId: 'b1', template: 'expense-decided' })).toEqual({
+      boardId: 'b1',
+      href: '/board/b1/w/FINANCES',
+    });
+  });
+
   it('follows the id for a template it has never heard of', () => {
     expect(pushDestination({ boardId, template: 'task-renamed', taskId: 't-9' })).toEqual({
       boardId,

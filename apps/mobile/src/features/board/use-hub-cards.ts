@@ -270,14 +270,31 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
       const mine =
         data.balances.members.find((m) => m.userId === me.data?.user.id)?.balanceCents ?? 0;
       const touched = data.totals.incomeCents > 0 || data.totals.expenseCents > 0;
+      // What needs a hand: an admin's approvals, or a member's sent-back entries.
+      const waiting = can('finance.manage') ? data.pending.length : 0;
+      const sentBack = data.sentBack.length;
       return {
         primary: touched ? money(data.totals.netCents) : null,
         primaryTone:
           data.totals.netCents > 0 ? 'positive' : data.totals.netCents < 0 ? 'negative' : undefined,
-        qualifier: mine > 0 ? `${money(mine)} owed to you` : touched ? 'net this month' : null,
-        urgent: data.unpaidShows.length > 0,
+        qualifier:
+          waiting > 0
+            ? `${waiting} waiting for your approval`
+            : sentBack > 0
+              ? `${sentBack} sent back to you`
+              : mine > 0
+                ? `${money(mine)} owed to you`
+                : touched
+                  ? 'net this month'
+                  : null,
+        urgent: data.unpaidShows.length > 0 || waiting > 0 || sentBack > 0,
         loading: false,
         lines: [
+          ...(can('finance.manage') ? data.pending : data.sentBack).map((entry) => ({
+            key: entry.id,
+            text: `${entry.description || categoryLabel(entry.category)} · ${money(entry.amountCents)}`,
+            meta: can('finance.manage') ? 'needs approval' : 'sent back',
+          })),
           ...data.unpaidShows.map((show) => ({
             key: show.eventId,
             text: `${show.title} owes ${money(show.expectedCents)}`,

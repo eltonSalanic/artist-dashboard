@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Ban, Check } from "lucide-react";
+import { Ban, Check, Undo2 } from "lucide-react";
 import {
   categoriesFor,
   formatMoney,
@@ -17,6 +17,7 @@ import {
   useEvents,
   usePermissions,
   useUpdateFinanceEntry,
+  useRejectFinanceEntry,
   useVoidFinanceEntry,
 } from "@artist/api-client";
 import { useMe } from "@/lib/use-me";
@@ -109,6 +110,10 @@ function EntryForm({
   const update = useUpdateFinanceEntry(boardId);
   const voidEntry = useVoidFinanceEntry(boardId);
   const approve = useApproveFinanceEntry(boardId);
+  const reject = useRejectFinanceEntry(boardId);
+  // Sending back is a two-step: the button opens a note field in the footer.
+  const [rejecting, setRejecting] = useState(false);
+  const [rejectNote, setRejectNote] = useState("");
 
   // Once a new entry is saved the form edits it, receipts and all.
   const [saved, setSaved] = useState<FinanceEntryDto | undefined>(entry);
@@ -136,6 +141,7 @@ function EntryForm({
       (manages || saved.createdById === myId) &&
       !isLockedFor(saved, manages));
   const awaitsApproval = saved?.state === "PENDING";
+  const sentBack = saved?.state === "REJECTED";
   const cents = parseMoneyToCents(amount);
   const valid = cents !== null && cents > 0 && /^\d{4}-\d{2}-\d{2}$/.test(occurredOn);
   const pending = create.isPending || update.isPending;
@@ -214,8 +220,12 @@ function EntryForm({
               ? "This entry was voided. It stays in the history but no longer counts."
               : awaitsApproval
                 ? manages
-                  ? "Paid out of a member's pocket. Approve it and the band owes them this back."
+                  ? "Paid out of a member's pocket. Approve it and the band owes them this back, or send it back with a note."
                   : "Waiting for an admin to approve it. Until then it doesn't count toward what you're owed."
+                : sentBack
+                  ? manages
+                    ? "Sent back. It doesn't count; approve it if you've changed your mind."
+                    : "An admin sent this back. It doesn't count right now — fix it and save to ask again."
                 : saved && isLockedFor(saved, manages)
                   ? "An admin approved this, so only an admin can change it now."
                   : "Amounts are split between members by the band's split."}
@@ -375,8 +385,29 @@ function EntryForm({
         </>
       )}
 
+      {sentBack && saved && saved.decisionNote !== "" && (
+        <blockquote className="rounded-md border-l-2 border-destructive bg-muted px-3 py-2 text-sm">
+          “{saved.decisionNote}”
+        </blockquote>
+      )}
+
+      {rejecting && saved && (
+        <Field>
+          <FieldLabel htmlFor="entry-reject-note">Note to them</FieldLabel>
+          <Textarea
+            id="entry-reject-note"
+            autoFocus
+            rows={3}
+            maxLength={500}
+            placeholder="What should they fix? “Add the receipt”, “Was this the band’s?”…"
+            value={rejectNote}
+            onChange={(e) => setRejectNote(e.target.value)}
+          />
+        </Field>
+      )}
+
       <DialogFooter className="items-center">
-        {saved && !justCreated && editable && (
+        {saved && !justCreated && editable && !rejecting && (
           <Button
             type="button"
             variant="ghost"
@@ -385,10 +416,28 @@ function EntryForm({
             onClick={() => voidEntry.mutate(saved.id, { onSuccess: onClose })}
           >
             <Ban data-icon="inline-start" />
-            {awaitsApproval && manages ? "Reject" : "Void"}
+            Void
           </Button>
         )}
         {saved && !justCreated && awaitsApproval && manages && (
+          <Button
+            type="button"
+            variant={rejecting ? "default" : "outline"}
+            disabled={reject.isPending}
+            onClick={() =>
+              rejecting
+                ? reject.mutate(
+                    { entryId: saved.id, note: rejectNote.trim() },
+                    { onSuccess: onClose },
+                  )
+                : setRejecting(true)
+            }
+          >
+            <Undo2 data-icon="inline-start" />
+            Send back
+          </Button>
+        )}
+        {saved && !justCreated && (awaitsApproval || sentBack) && manages && !rejecting && (
           <Button
             type="button"
             variant="outline"

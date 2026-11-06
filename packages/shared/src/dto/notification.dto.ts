@@ -11,6 +11,7 @@ export const NotificationCategories = [
   'ASSIGNMENTS',
   'SCHEDULE',
   'REMINDERS',
+  'APPROVALS',
 ] as const;
 export type NotificationCategory = (typeof NotificationCategories)[number];
 
@@ -35,6 +36,11 @@ export const NOTIFICATION_CATEGORY_COPY: Record<
   REMINDERS: {
     label: 'Reminders',
     description: 'When a reminder the band set comes due.',
+  },
+  APPROVALS: {
+    label: 'Approvals',
+    description:
+      'When a bandmate’s expense needs your approval, or yours is approved or sent back.',
   },
 };
 

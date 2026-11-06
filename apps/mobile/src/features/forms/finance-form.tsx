@@ -147,6 +147,7 @@ function FinanceFields({
       (manages || entry.createdById === myId) &&
       !isLockedFor(entry, manages));
   const awaitsApproval = entry?.state === 'PENDING';
+  const sentBack = entry?.state === 'REJECTED';
   const cents = parseMoneyToCents(amount);
   const dirty =
     receipt !== null ||
@@ -274,9 +275,35 @@ function FinanceFields({
         {awaitsApproval && (
           <PosterText variant="cardMeta" color={colors.mutedForeground}>
             {manages
-              ? 'Paid out of a member’s pocket. Approve it and the band owes them this back.'
+              ? 'Paid out of a member’s pocket. Approve it and the band owes them this back, or send it back with a note.'
               : 'Waiting for an admin to approve it. Until then it doesn’t count toward what you’re owed.'}
           </PosterText>
+        )}
+        {sentBack && entry && (
+          <View
+            accessibilityRole="summary"
+            style={{
+              gap: 2,
+              padding: spacing.sm + 2,
+              borderRadius: 10,
+              borderCurve: 'continuous',
+              backgroundColor: colors.muted,
+            }}
+          >
+            <PosterText variant="rowTitle" color={colors.destructive}>
+              Sent back
+            </PosterText>
+            {entry.decisionNote !== '' && (
+              <PosterText variant="paragraph" color={colors.foreground}>
+                {`“${entry.decisionNote}”`}
+              </PosterText>
+            )}
+            <PosterText variant="cardMeta" color={colors.mutedForeground}>
+              {manages
+                ? 'It doesn’t count. Approve it if you’ve changed your mind; otherwise it waits for them.'
+                : 'It doesn’t count right now. Fix it and save to send it back for approval.'}
+            </PosterText>
+          </View>
         )}
         {entry && entry.state !== 'PENDING' && isLockedFor(entry, manages) && (
           <PosterText variant="cardMeta" color={colors.mutedForeground}>
@@ -401,15 +428,22 @@ function FinanceFields({
           </PosterText>
         )}
 
-        {entry && awaitsApproval && manages && (
+        {entry && (awaitsApproval || sentBack) && manages && (
           <ApproveEntryButton
             disabled={approve.isPending}
             onApprove={() => approve.mutateAsync(entry.id)}
           />
         )}
+        {entry && awaitsApproval && manages && (
+          <Button
+            title="Send back"
+            variant="secondary"
+            size="sm"
+            onPress={() => router.push(`/board/${boardId}/form/reject?id=${entry.id}`)}
+          />
+        )}
         {entry && editable && (
           <VoidEntryButton
-            title={awaitsApproval && manages ? 'Reject' : 'Void entry'}
             disabled={voidEntry.isPending}
             onVoid={() => voidEntry.mutateAsync(entry.id)}
           />
@@ -439,18 +473,16 @@ function ApproveEntryButton({
 }
 
 function VoidEntryButton({
-  title,
   disabled,
   onVoid,
 }: {
-  title: string;
   disabled: boolean;
   onVoid: () => Promise<unknown>;
 }) {
   const leave = useLeaveForm();
   return (
     <Button
-      title={title}
+      title="Void entry"
       variant="destructive"
       size="sm"
       disabled={disabled}

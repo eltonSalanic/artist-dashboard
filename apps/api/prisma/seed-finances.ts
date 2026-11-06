@@ -241,9 +241,11 @@ async function main() {
     /** Whose own money it went through. Omitted: the band account. */
     handledBy?: Person;
     by?: Person;
-    state?: 'EXPECTED' | 'PENDING' | 'SETTLED' | 'VOID';
+    state?: 'EXPECTED' | 'PENDING' | 'SETTLED' | 'REJECTED' | 'VOID';
     approvedBy?: Person;
     note?: string;
+    /** REJECTED only: what the admin wrote when sending it back. */
+    decisionNote?: string;
   };
   const ledger: Line[] = [
     // ── About 2½ months ago: teaser show and recording ───────────────────
@@ -490,6 +492,19 @@ async function main() {
       by: 'jamie',
       state: 'PENDING',
     },
+    // Sent back by Riley: Avery's to fix (log in as avery to see the note).
+    {
+      kind: 'EXPENSE',
+      category: 'OTHER_EXPENSE',
+      amountCents: 6_480,
+      on: -4,
+      description: 'Dinner before load-in',
+      handledBy: 'avery',
+      by: 'avery',
+      state: 'REJECTED',
+      decisionNote:
+        'Was this just you two, or the whole band? Add who ate and I’ll approve it.',
+    },
 
     // ── Coming up ────────────────────────────────────────────────────────
     {
@@ -525,10 +540,43 @@ async function main() {
         createdById: P(by),
         approvedById: P(line.approvedBy),
         approvedAt: line.approvedBy ? days(Math.min(line.on, 0) + 1) : null,
+        decisionNote: line.decisionNote ?? '',
         createdAt: created,
         splits: { create: split },
       },
     });
+    // The inbox rows the live app would have written: admins asked to
+    // approve, the member told what was decided.
+    const headline = `${entry.description} · ${formatMoney(entry.amountCents, 'USD')}`;
+    if (line.state === 'PENDING') {
+      await prisma.mentionNotification.createMany({
+        data: (['riley', 'casey'] as Person[])
+          .filter((admin) => admin !== by)
+          .map((admin) => ({
+            boardId: BOARD_ID,
+            userId: PEOPLE[admin].id,
+            kind: 'APPROVAL' as const,
+            entryId: entry.id,
+            actorName: PEOPLE[by].displayName,
+            taskTitle: headline,
+            excerpt: entry.note,
+            createdAt: created,
+          })),
+      });
+    } else if (line.state === 'REJECTED') {
+      await prisma.mentionNotification.create({
+        data: {
+          boardId: BOARD_ID,
+          userId: PEOPLE[by].id,
+          kind: 'DECISION',
+          entryId: entry.id,
+          actorName: PEOPLE.riley.displayName,
+          taskTitle: `Sent back: ${headline}`,
+          excerpt: line.decisionNote ?? '',
+          createdAt: days(Math.min(line.on, 0) + 1),
+        },
+      });
+    }
     if (line.state !== 'VOID') {
       feed.push({
         boardId: BOARD_ID,

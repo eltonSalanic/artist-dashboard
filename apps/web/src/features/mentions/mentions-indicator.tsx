@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { AtSign, X } from "lucide-react";
+import type { MentionNotificationDto } from "@artist/api-client";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -14,8 +15,9 @@ import { useMe } from "@/lib/use-me";
 
 /**
  * A "you were mentioned" bell that only appears once you actually have an
- * unseen mention. Opening it lists every place you were mentioned; each can be
- * opened (which dismisses it) or removed outright.
+ * unseen mention — or an expense waiting for your approval, or a decision on
+ * one of yours, which share the inbox. Opening it lists them; each can be
+ * opened or removed outright.
  */
 export function MentionsIndicator({ boardId }: { boardId: string }) {
   const router = useRouter();
@@ -27,10 +29,13 @@ export function MentionsIndicator({ boardId }: { boardId: string }) {
   // The indicator only "comes up" once there's something to show.
   if (items.length === 0) return null;
 
-  // Opening the task leaves the notification in place — it stays until the user
-  // clears it with the X or "Clear all".
-  const open = (taskId: string) => {
-    router.push(`/?task=${taskId}`);
+  // Opening leaves the notification in place — it stays until the user clears
+  // it with the X or "Clear all". Money rows land on Finances, where approving
+  // happens.
+  const open = (item: MentionNotificationDto) => {
+    router.push(
+      item.kind === "MENTION" && item.taskId ? `/?task=${item.taskId}` : "/finances",
+    );
   };
 
   return (
@@ -39,7 +44,7 @@ export function MentionsIndicator({ boardId }: { boardId: string }) {
         render={
           <button
             type="button"
-            aria-label={`${items.length} new mention${items.length > 1 ? "s" : ""}`}
+            aria-label={`${items.length} new notification${items.length > 1 ? "s" : ""}`}
             className="relative rounded-full p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
           />
         }
@@ -51,7 +56,7 @@ export function MentionsIndicator({ boardId }: { boardId: string }) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80 p-0">
         <div className="flex items-center justify-between border-b px-3 py-2">
-          <span className="text-sm font-medium">Mentions</span>
+          <span className="text-sm font-medium">For you</span>
           <Button
             variant="ghost"
             size="sm"
@@ -71,14 +76,27 @@ export function MentionsIndicator({ boardId }: { boardId: string }) {
               <button
                 type="button"
                 className="min-w-0 flex-1 text-left"
-                onClick={() => open(item.taskId)}
+                onClick={() => open(item)}
               >
                 <p className="text-sm">
-                  <span className="font-medium">{item.actorName}</span> mentioned
-                  you in <span className="font-medium">{item.taskTitle}</span>
+                  {item.kind === "MENTION" ? (
+                    <>
+                      <span className="font-medium">{item.actorName}</span> mentioned
+                      you in <span className="font-medium">{item.taskTitle}</span>
+                    </>
+                  ) : item.kind === "APPROVAL" ? (
+                    <>
+                      <span className="font-medium">{item.actorName}</span> paid{" "}
+                      <span className="font-medium">{item.taskTitle}</span>
+                    </>
+                  ) : (
+                    <span className="font-medium">{item.taskTitle}</span>
+                  )}
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
-                  {item.excerpt}
+                  {item.kind === "APPROVAL"
+                    ? [item.excerpt, "Waiting for your approval"].filter(Boolean).join(" · ")
+                    : item.excerpt}
                 </p>
                 <p className="text-[11px] text-muted-foreground">
                   {relativeTime(item.createdAt)}
@@ -87,7 +105,7 @@ export function MentionsIndicator({ boardId }: { boardId: string }) {
               <Button
                 variant="ghost"
                 size="icon-sm"
-                aria-label="Dismiss mention"
+                aria-label="Dismiss notification"
                 onClick={() => dismiss.mutate(item.id)}
               >
                 <X />

@@ -29,6 +29,7 @@ import {
   type FinanceSummaryQueryDto,
   type LedgerEntry,
   type PayoutDto,
+  type RejectFinanceEntryDto,
   type ShowSettlementDto,
   type SplitShare,
   type UpdateFinanceEntryDto,
@@ -37,6 +38,7 @@ import {
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const entryInclude = {
   splits: { select: { userId: true, shareBps: true } },
@@ -61,6 +63,7 @@ export class FinancesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly activity: ActivityService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   // ---- Entries ----
@@ -138,6 +141,9 @@ export class FinancesService {
         include: entryInclude,
       });
       await this.logEntry(tx, boardId, actor.userId, created);
+      if (created.state === 'PENDING') {
+        await this.askForApproval(tx, created, actor.userId, true);
+      }
       return created;
     });
     return toEntryDto(entry);
@@ -177,12 +183,16 @@ export class FinancesService {
       if (dto.splits) {
         await tx.financeSplit.deleteMany({ where: { entryId } });
       }
-      return tx.financeEntry.update({
+      const updated = await tx.financeEntry.update({
         where: { id: entryId },
         data: {
           kind,
           category,
           state,
+          // Resubmitting clears the admin's note: the member has acted on it.
+          ...(before.state === 'REJECTED' && state !== 'REJECTED'
+            ? { decisionNote: '' }
+            : {}),
           ...(dto.amountCents !== undefined
             ? { amountCents: dto.amountCents }
             : {}),
@@ -202,6 +212,20 @@ export class FinancesService {
         },
         include: entryInclude,
       });
+      if (updated.state === 'PENDING') {
+        // Admins' inbox rows restate the entry, so an edit refreshes them. A
+        // push only goes out when the request is new (or resubmitted) — a
+        // member fixing a typo shouldn't buzz every admin's phone again.
+        await this.askForApproval(
+          tx,
+          updated,
+          actor.userId,
+          before.state !== 'PENDING',
+        );
+      } else if (before.state === 'PENDING') {
+        await this.dropApprovalRows(tx, entryId);
+      }
+      return updated;
     });
     return toEntryDto(entry);
   }
@@ -209,22 +233,54 @@ export class FinancesService {
   /**
    * An admin accepts a member's out-of-pocket expense: from now on it counts,
    * the band owes the member for it, and the member can't change it any more.
-   * To turn one down, void it.
+   * A sent-back entry can be approved too, when the admin comes around.
    */
   async approve(boardId: string, actor: FinanceActor, entryId: string) {
+    this.require(actor, 'finance.manage');
+    const before = await this.getEntry(boardId, entryId);
+    if (before.state !== 'PENDING' && before.state !== 'REJECTED') {
+      throw new BadRequestException('That entry isn’t waiting for approval');
+    }
+    const entry = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.financeEntry.update({
+        where: { id: entryId },
+        data: {
+          state: 'SETTLED',
+          approvedById: actor.userId,
+          approvedAt: new Date(),
+          decisionNote: '',
+        },
+        include: entryInclude,
+      });
+      await this.decide(tx, updated, actor.userId, 'APPROVED', '');
+      return updated;
+    });
+    return toEntryDto(entry);
+  }
+
+  /**
+   * An admin sends a member's expense back with a note. It stops counting, and
+   * the member — who still owns it — can fix it and save, which asks again.
+   */
+  async reject(
+    boardId: string,
+    actor: FinanceActor,
+    entryId: string,
+    dto: RejectFinanceEntryDto,
+  ) {
     this.require(actor, 'finance.manage');
     const before = await this.getEntry(boardId, entryId);
     if (before.state !== 'PENDING') {
       throw new BadRequestException('That entry isn’t waiting for approval');
     }
-    const entry = await this.prisma.financeEntry.update({
-      where: { id: entryId },
-      data: {
-        state: 'SETTLED',
-        approvedById: actor.userId,
-        approvedAt: new Date(),
-      },
-      include: entryInclude,
+    const entry = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.financeEntry.update({
+        where: { id: entryId },
+        data: { state: 'REJECTED', decisionNote: dto.note },
+        include: entryInclude,
+      });
+      await this.decide(tx, updated, actor.userId, 'REJECTED', dto.note);
+      return updated;
     });
     return toEntryDto(entry);
   }
@@ -233,10 +289,15 @@ export class FinancesService {
   async void(boardId: string, actor: FinanceActor, entryId: string) {
     const before = await this.getEntry(boardId, entryId);
     this.assertMayEdit(actor, before);
-    const entry = await this.prisma.financeEntry.update({
-      where: { id: entryId },
-      data: { state: 'VOID' },
-      include: entryInclude,
+    const entry = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.financeEntry.update({
+        where: { id: entryId },
+        data: { state: 'VOID' },
+        include: entryInclude,
+      });
+      // Nothing left to approve.
+      await this.dropApprovalRows(tx, entryId);
+      return updated;
     });
     return toEntryDto(entry);
   }
@@ -373,6 +434,15 @@ export class FinancesService {
         .filter((row) => row.state === 'PENDING')
         .map(toEntryDto)
         .sort((a, b) => b.occurredOn.localeCompare(a.occurredOn)),
+      sentBack: rows
+        .filter(
+          (row) =>
+            row.state === 'REJECTED' &&
+            (can(actor.role, 'finance.manage') ||
+              row.createdById === actor.userId),
+        )
+        .map(toEntryDto)
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
       unpaidShows: shows.map((show) => ({
         eventId: show.id,
         title: show.title,
@@ -472,9 +542,10 @@ export class FinancesService {
   /**
    * The state an edited entry ends up in. A member's own out-of-pocket expense
    * stays (or becomes) PENDING until an admin approves it; editing never
-   * approves anything, that has its own route. Anything else takes the state
-   * asked for, and a pending entry that no longer needs approval (an admin
-   * moved it to the band's account) counts as settled.
+   * approves anything, that has its own route. A sent-back entry goes back to
+   * PENDING the same way. Anything else takes the state asked for, and a
+   * pending entry that no longer needs approval (an admin moved it to the
+   * band's account) counts as settled.
    */
   private nextState(
     actor: FinanceActor,
@@ -486,11 +557,13 @@ export class FinancesService {
       !before.approvedAt &&
       before.createdById !== null &&
       needsApproval(after, before.createdById, false);
-    if (fronted && (before.state === 'PENDING' || !can(actor.role, 'finance.manage'))) {
+    const awaiting = before.state === 'PENDING' || before.state === 'REJECTED';
+    // A member saving a sent-back entry is resubmitting it.
+    if (fronted && (awaiting || !can(actor.role, 'finance.manage'))) {
       return 'PENDING';
     }
     if (dto.state) return dto.state;
-    return before.state === 'PENDING' ? 'SETTLED' : before.state;
+    return awaiting ? 'SETTLED' : before.state;
   }
 
   private async getEntry(boardId: string, entryId: string) {
@@ -574,6 +647,132 @@ export class FinancesService {
     if (!event) throw new NotFoundException('Event not found');
   }
 
+  /**
+   * Puts a member's expense in front of every admin: an inbox row each, and —
+   * when `fresh` — a push and email. Rows are rewritten rather than updated so
+   * they always restate the entry as it stands.
+   */
+  private async askForApproval(
+    tx: Prisma.TransactionClient,
+    entry: EntryRow,
+    actorId: string,
+    fresh: boolean,
+  ) {
+    const [admins, actor, board] = await Promise.all([
+      tx.membership.findMany({
+        where: { boardId: entry.boardId, role: 'ADMIN' },
+        select: { userId: true },
+      }),
+      tx.user.findUnique({
+        where: { id: actorId },
+        select: { displayName: true },
+      }),
+      tx.board.findUnique({
+        where: { id: entry.boardId },
+        select: { currency: true },
+      }),
+    ]);
+    const recipients = admins
+      .map((m) => m.userId)
+      .filter((id) => id !== actorId);
+    await this.dropApprovalRows(tx, entry.id);
+    if (recipients.length === 0) return;
+
+    const actorName = actor?.displayName ?? 'A bandmate';
+    const label = entry.description || categoryLabel(entry.category);
+    const amount = formatMoney(entry.amountCents, board?.currency ?? 'USD');
+    await tx.mentionNotification.createMany({
+      data: recipients.map((userId) => ({
+        boardId: entry.boardId,
+        userId,
+        kind: 'APPROVAL' as const,
+        entryId: entry.id,
+        actorName,
+        taskTitle: `${label} · ${amount}`,
+        excerpt: entry.note,
+      })),
+    });
+    if (!fresh) return;
+
+    // Keyed on the resubmission, not the entry: sending it back and getting
+    // it again is two requests, and the admin should hear about both.
+    const stamp = entry.updatedAt.getTime();
+    await this.notifications.queue(
+      tx,
+      recipients.map((userId) => ({
+        boardId: entry.boardId,
+        userId,
+        category: 'APPROVALS' as const,
+        template: 'expense-approval',
+        dedupeKey: `approval:${entry.id}:${stamp}:${userId}`,
+        payload: {
+          entryId: entry.id,
+          actorName,
+          label,
+          amount,
+          note: entry.note,
+          eventTitle: entry.event?.title ?? '',
+        },
+      })),
+    );
+  }
+
+  /**
+   * Tells the member who logged the expense what the admin decided. The
+   * admins' own request rows go, since there is nothing left to decide.
+   */
+  private async decide(
+    tx: Prisma.TransactionClient,
+    entry: EntryRow,
+    actorId: string,
+    decision: 'APPROVED' | 'REJECTED',
+    note: string,
+  ) {
+    await this.dropApprovalRows(tx, entry.id);
+    const recipient = entry.createdById;
+    if (!recipient || recipient === actorId) return;
+
+    const [actor, board] = await Promise.all([
+      tx.user.findUnique({
+        where: { id: actorId },
+        select: { displayName: true },
+      }),
+      tx.board.findUnique({
+        where: { id: entry.boardId },
+        select: { currency: true },
+      }),
+    ]);
+    const actorName = actor?.displayName ?? 'An admin';
+    const label = entry.description || categoryLabel(entry.category);
+    const amount = formatMoney(entry.amountCents, board?.currency ?? 'USD');
+    await tx.mentionNotification.create({
+      data: {
+        boardId: entry.boardId,
+        userId: recipient,
+        kind: 'DECISION',
+        entryId: entry.id,
+        actorName,
+        // The headline is written here so every client shows the same one.
+        taskTitle: `${decision === 'APPROVED' ? 'Approved' : 'Sent back'}: ${label} · ${amount}`,
+        excerpt: decision === 'APPROVED' ? 'The band owes you for it now.' : note,
+      },
+    });
+    await this.notifications.queue(tx, {
+      boardId: entry.boardId,
+      userId: recipient,
+      category: 'APPROVALS',
+      template: 'expense-decided',
+      dedupeKey: `decision:${entry.id}:${entry.updatedAt.getTime()}`,
+      payload: { entryId: entry.id, actorName, label, amount, decision, note },
+    });
+  }
+
+  private async dropApprovalRows(tx: Prisma.TransactionClient, entryId: string) {
+    await tx.mentionNotification.deleteMany({
+      where: { entryId, kind: 'APPROVAL' },
+    });
+  }
+
   private async logEntry(
     tx: Prisma.TransactionClient,
     boardId: string,
@@ -629,6 +828,7 @@ function toEntryDto(row: EntryRow): FinanceEntryDto {
     createdById: row.createdById,
     approvedById: row.approvedById,
     approvedAt: row.approvedAt?.toISOString() ?? null,
+    decisionNote: row.decisionNote,
     splits: row.splits,
     receiptCount: row._count.receipts,
     createdAt: row.createdAt.toISOString(),

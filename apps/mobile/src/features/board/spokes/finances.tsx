@@ -1,6 +1,7 @@
 import { View } from 'react-native';
 import { router } from 'expo-router';
 import {
+  useApproveFinanceEntry,
   useFinanceEntries,
   useFinanceSplit,
   useFinanceSummary,
@@ -21,6 +22,7 @@ import { useMemo, useState } from 'react';
 import { Button } from '@/components/button';
 import { PickOne } from '@/components/pick-one';
 import { ChoiceChips } from '@/components/choice-chips';
+import { ApprovalRow } from '../../finances/approval-row';
 import { MemberHistory } from '../../finances/member-history';
 import { FinanceAmount } from '../../finances/finance-amount';
 import { shareFinanceCsv } from '../../finances/export-csv';
@@ -60,6 +62,7 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
   const summary = useFinanceSummary(boardId, range, visible);
   const entries = useFinanceEntries(boardId, range);
   const split = useFinanceSplit(boardId);
+  const approve = useApproveFinanceEntry(boardId);
   const manages = can('finance.manage');
   const data = summary.data;
   const money = (cents: number) => formatMoney(cents, data?.currency ?? 'USD');
@@ -119,14 +122,44 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
           </View>
 
           {data.pending.length > 0 && (
-            <Section title="WAITING FOR APPROVAL">
+            <Section title={`WAITING FOR APPROVAL · ${data.pending.length}`}>
+              {/* Admins decide here; members only watch their own wait. */}
+              {manages && (
+                <PosterText variant="cardMeta" color={canvas.soft}>
+                  Swipe right to approve, left to send back with a note.
+                </PosterText>
+              )}
               {data.pending.map((entry, index) => (
+                <ApprovalRow
+                  key={entry.id}
+                  entry={entry}
+                  currency={data.currency}
+                  first={index === 0}
+                  who={entry.handledById ? name(entry.handledById) : 'Band'}
+                  canDecide={manages}
+                  onOpen={() => router.push(`/board/${boardId}/form/finance?id=${entry.id}`)}
+                  onApprove={() => approve.mutate(entry.id)}
+                  onSendBack={() => router.push(`/board/${boardId}/form/reject?id=${entry.id}`)}
+                />
+              ))}
+            </Section>
+          )}
+
+          {data.sentBack.length > 0 && (
+            <Section title="SENT BACK">
+              {data.sentBack.map((entry, index) => (
                 <Row
                   key={entry.id}
                   first={index === 0}
                   title={entry.description || categoryLabel(entry.category)}
-                  meta={`${entry.handledById ? name(entry.handledById) : 'Band'} paid · ${shortDate(`${entry.occurredOn}T12:00:00`)}`}
-                  trailing={money(-entry.amountCents)}
+                  meta={
+                    entry.decisionNote
+                      ? `“${entry.decisionNote}”`
+                      : manages
+                        ? `${entry.handledById ? name(entry.handledById) : 'Band'} paid · ${shortDate(`${entry.occurredOn}T12:00:00`)}`
+                        : 'Fix it and save to ask again'
+                  }
+                  trailing={money(entry.amountCents)}
                   onPress={() => router.push(`/board/${boardId}/form/finance?id=${entry.id}`)}
                 />
               ))}
@@ -288,6 +321,7 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
                     { value: 'SETTLED', label: 'Settled' },
                     { value: 'EXPECTED', label: 'Expected' },
                     { value: 'PENDING', label: 'Waiting for approval' },
+                    { value: 'REJECTED', label: 'Sent back' },
                   ]}
                   onChange={(value) => setFilters({ ...filters, state: value ?? 'all' })}
                 />
@@ -337,6 +371,7 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
                     shortDate(`${entry.occurredOn}T12:00:00`),
                     entry.state === 'EXPECTED' ? 'owed' : null,
                     entry.state === 'PENDING' ? 'needs approval' : null,
+                    entry.state === 'REJECTED' ? 'sent back' : null,
                     entry.handledById ? name(entry.handledById) : null,
                     entry.receiptCount > 0 ? 'receipt' : null,
                   ]

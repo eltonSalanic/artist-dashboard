@@ -455,21 +455,30 @@ model CustomWidgetContent {
 /// A "you were mentioned" notification for a single recipient. Fields are a
 /// denormalized snapshot (like Activity) so the list never joins and outlives
 /// the comment that spawned it.
+/// One row in a member's inbox. Named for the mentions it started with; an
+/// approval request or decision is the same shape with a `kind`.
 model MentionNotification {
-  id        String   @id @default(uuid()) @db.Uuid
-  boardId   String   @db.Uuid
-  /// Recipient — the mentioned user.
-  userId    String   @db.Uuid
-  /// Task the mentioning comment lives on, for navigation.
-  taskId    String   @db.Uuid
+  id        String        @id @default(uuid()) @db.Uuid
+  boardId   String        @db.Uuid
+  /// Recipient.
+  userId    String        @db.Uuid
+  kind      InboxKind     @default(MENTION)
+  /// Task the mentioning comment lives on, for navigation. MENTION only.
+  taskId    String?       @db.Uuid
+  /// The ledger entry an APPROVAL or DECISION row is about. Cascade: rows
+  /// about an entry go with it.
+  entryId   String?       @db.Uuid
   actorName String
+  /// What the row is about: the task's title, or the entry's label and amount.
   taskTitle String
   excerpt   String
-  createdAt DateTime @default(now())
-  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+  board     Board         @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entry     FinanceEntry? @relation(fields: [entryId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+  @@index([entryId])
 }
 
 model UserLayout {
@@ -509,6 +518,17 @@ enum NotificationCategory {
   SCHEDULE
   REMINDERS
   DUE_TASKS
+  APPROVALS
+}
+
+/// What an inbox row is about. The table began as mentions only and kept its
+/// name; the kind decides what the row says and where a tap goes.
+enum InboxKind {
+  MENTION
+  /// To an admin: a member's expense is waiting for their approval.
+  APPROVAL
+  /// To the member: an admin approved or sent back their expense.
+  DECISION
 }
 
 /// How a notification reaches someone. One outbox serves both: the claim,
@@ -635,6 +655,9 @@ enum FinanceState {
   EXPECTED
   PENDING
   SETTLED
+  /// An admin sent a member's out-of-pocket expense back. It doesn't count;
+  /// the member can fix it and resubmit, which makes it PENDING again.
+  REJECTED
   VOID
 }
 
@@ -665,6 +688,8 @@ model FinanceEntry {
   /// member who logged it can no longer change it.
   approvedById String?        @db.Uuid
   approvedAt   DateTime?
+  /// Why an admin sent it back, shown to the member. Cleared on resubmit.
+  decisionNote String         @default("")
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   board        Board          @relation(fields: [boardId], references: [id], onDelete: Cascade)
@@ -674,6 +699,7 @@ model FinanceEntry {
   approvedBy   User?          @relation("FinanceEntryApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
   splits       FinanceSplit[]
   receipts     Attachment[]
+  inboxRows    MentionNotification[]
 
   @@index([boardId, occurredOn])
   @@index([eventId])
