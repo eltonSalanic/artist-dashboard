@@ -38,7 +38,7 @@ Everything lives in [apps/api/prisma/schema.prisma](../apps/api/prisma/schema.pr
 ## Where it shows
 
 - **Web** `/finances`: period totals, "Waiting for approval" (receipt, show, note and how long it has waited; admins approve or send back with a note from it), "Sent back", who's owed with member history and payouts, the ledger with filters and CSV export, reports by category, month and show.
-- **Phone** Finances spoke: the same totals, waiting for approval (admins swipe right to approve, left to send back), sent back, who's owed (members who owe the band too) with member history, "Record a payment" and deleting a payment, by month and by category, and the entries with filters and "Export CSV" through the share sheet. Forms: `form/finance`, `form/reject?id=…`, `form/payout?member=…`.
+- **Phone** Finances spoke, one card per group with a sentence-case title (Overview, Waiting for approval, Sent back, Who's owed, Month by month, By category, Entries): the same totals, waiting for approval (admins swipe right to approve, left to send back), sent back, who's owed (members who owe the band too) with member history, "Record a payment" and deleting a payment, by month and by category, and the entries with filters and "Export CSV" through the share sheet. Forms: `form/finance`, `form/reject?id=…`, `form/payout?member=…`.
 
 ## Test data
 
