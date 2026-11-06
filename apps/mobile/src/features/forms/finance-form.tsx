@@ -256,17 +256,6 @@ function FinanceFields({
           maxLength={2000}
         />
 
-        <TextField
-          label="Note"
-          value={note}
-          onChangeText={editable ? setNote : () => undefined}
-          placeholder="Optional details"
-          multiline
-          maxLength={2000}
-          textAlignVertical="top"
-          style={{ minHeight: 96 }}
-        />
-
         {entry?.state === 'VOID' && (
           <PosterText variant="cardMeta" color={colors.mutedForeground}>
             This entry was voided. It stays in the history but no longer counts.
@@ -310,11 +299,6 @@ function FinanceFields({
             An admin approved this, so only an admin can change it now.
           </PosterText>
         )}
-        {!entry && !manages && kind === 'EXPENSE' && handledById === myId && (
-          <PosterText variant="cardMeta" color={colors.mutedForeground}>
-            An admin approves money you paid yourself before the band owes it back.
-          </PosterText>
-        )}
 
         <View pointerEvents={editable ? 'auto' : 'none'} style={{ gap: spacing.md }}>
           {!entry && (
@@ -325,6 +309,46 @@ function FinanceFields({
               choices={[
                 { value: 'EXPENSE', label: 'Expense' },
                 { value: 'INCOME', label: 'Income' },
+              ]}
+            />
+          )}
+
+          {manages ? (
+            <ChoiceChips<string>
+              label={kind === 'INCOME' ? 'Who has the money' : 'Who paid'}
+              value={handledById}
+              onChange={setHandledById}
+              choices={[
+                { value: BAND, label: 'Band account' },
+                ...members.map((m) => ({ value: m.userId, label: m.displayName })),
+              ]}
+            />
+          ) : (
+            <ChoiceChips<string>
+              label={kind === 'INCOME' ? 'Who has the money' : 'Who paid'}
+              value={handledById === myId ? myId : BAND}
+              onChange={setHandledById}
+              choices={[
+                { value: BAND, label: 'Band account' },
+                { value: myId, label: 'I did' },
+              ]}
+            />
+          )}
+
+          {!entry && !manages && kind === 'EXPENSE' && handledById === myId && (
+            <PosterText variant="cardMeta" color={colors.mutedForeground}>
+              An admin approves money you paid yourself before the band owes it back.
+            </PosterText>
+          )}
+
+          {kind === 'INCOME' && (
+            <ChoiceChips<'yes' | 'no'>
+              label="Received"
+              value={expected ? 'no' : 'yes'}
+              onChange={(value) => setExpected(value === 'no')}
+              choices={[
+                { value: 'yes', label: 'In hand' },
+                { value: 'no', label: 'Still owed' },
               ]}
             />
           )}
@@ -382,39 +406,16 @@ function FinanceFields({
             onChange={setEventId}
           />
 
-          {manages ? (
-            <ChoiceChips<string>
-              label={kind === 'INCOME' ? 'Who has the money' : 'Who paid'}
-              value={handledById}
-              onChange={setHandledById}
-              choices={[
-                { value: BAND, label: 'Band account' },
-                ...members.map((m) => ({ value: m.userId, label: m.displayName })),
-              ]}
-            />
-          ) : (
-            <ChoiceChips<string>
-              label={kind === 'INCOME' ? 'Who has the money' : 'Who paid'}
-              value={handledById === myId ? myId : BAND}
-              onChange={setHandledById}
-              choices={[
-                { value: BAND, label: 'Band account' },
-                { value: myId, label: 'I did' },
-              ]}
-            />
-          )}
-
-          {kind === 'INCOME' && (
-            <ChoiceChips<'yes' | 'no'>
-              label="Received"
-              value={expected ? 'no' : 'yes'}
-              onChange={(value) => setExpected(value === 'no')}
-              choices={[
-                { value: 'yes', label: 'In hand' },
-                { value: 'no', label: 'Still owed' },
-              ]}
-            />
-          )}
+          <TextField
+            label="Note"
+            value={note}
+            onChangeText={editable ? setNote : () => undefined}
+            placeholder="Optional details"
+            multiline
+            maxLength={2000}
+            textAlignVertical="top"
+            style={{ minHeight: 96 }}
+          />
         </View>
 
         {entry && <TaskAttachments boardId={boardId} parent={{ financeEntryId: entry.id }} />}
