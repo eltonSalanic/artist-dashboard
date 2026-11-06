@@ -3,5 +3,5 @@
   "ts-node": {
     "transpileOnly": true
   },
-  "include": ["seed.ts"]
+  "include": ["seed.ts", "seed-finances.ts"]
 }

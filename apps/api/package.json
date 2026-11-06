@@ -15,6 +15,7 @@
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "db:seed": "TS_NODE_PROJECT=prisma/tsconfig.seed.json ts-node -r tsconfig-paths/register -r ./prisma/ts-ext-loader.js prisma/seed.ts",
+    "db:seed:finances": "TS_NODE_PROJECT=prisma/tsconfig.seed.json ts-node -r tsconfig-paths/register -r ./prisma/ts-ext-loader.js prisma/seed-finances.ts",
     "mail:test": "TS_NODE_PROJECT=prisma/tsconfig.seed.json ts-node -r tsconfig-paths/register -r ./prisma/ts-ext-loader.js prisma/send-test-email.ts",
     "billing:grant": "TS_NODE_PROJECT=prisma/tsconfig.seed.json ts-node -r tsconfig-paths/register -r ./prisma/ts-ext-loader.js prisma/grant-subscription.ts",
     "test": "tsc --noEmit && jest",
