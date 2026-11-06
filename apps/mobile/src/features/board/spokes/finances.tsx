@@ -27,9 +27,9 @@ import { FinanceAmount } from '../../finances/finance-amount';
 import { shareFinanceCsv } from '../../finances/export-csv';
 import { PosterText } from '@/components/poster-text';
 import { Row } from '@/components/row';
-import { Section } from '@/components/section';
+import { SectionCard } from '@/components/section-card';
 import { SpokeList } from '@/components/spoke-list';
-import { spacing, usePosterCanvas } from '@/theme';
+import { spacing, useTokens } from '@/theme';
 import { shortDate } from '../format';
 import { SpokeHeader } from '../spoke-header';
 
@@ -40,7 +40,7 @@ import { SpokeHeader } from '../spoke-header';
  * payments from a member's history.
  */
 export function FinancesSpoke({ boardId }: { boardId: string }) {
-  const canvas = usePosterCanvas();
+  const tokens = useTokens();
   const { can } = usePermissions();
   const me = useMe(true);
   const visible = can('finance.view');
@@ -98,35 +98,45 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
     >
       {data && (
         <View style={{ gap: spacing.lg }}>
-          <ChoiceChips
-            label="Period"
-            value={period}
-            onChange={setPeriod}
-            choices={[
-              { value: 'month', label: 'This month' },
-              { value: 'year', label: 'This year' },
-              { value: 'all', label: 'All time' },
-            ]}
-          />
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg }}>
-            <Figure label="IN" cents={data.totals.incomeCents} currency={data.currency} />
-            <Figure label="OUT" cents={0 - data.totals.expenseCents || 0} currency={data.currency} />
-            <Figure label="NET" cents={data.totals.netCents} currency={data.currency} />
-            <Figure
-              label="BAND FUND"
-              cents={data.balances.bandFundCents}
-              currency={data.currency}
-            />
-          </View>
+          {/* A card per group, as board settings does: with seven groups of
+              rows and nothing between them but air, small caps captions
+              didn't tell one from the next. */}
+          <SectionCard title="Overview">
+            <View
+              style={{ gap: spacing.lg, paddingHorizontal: spacing.sm, paddingBottom: spacing.sm }}
+            >
+              <ChoiceChips
+                label="Period"
+                value={period}
+                onChange={setPeriod}
+                choices={[
+                  { value: 'month', label: 'This month' },
+                  { value: 'year', label: 'This year' },
+                  { value: 'all', label: 'All time' },
+                ]}
+              />
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg }}>
+                <Figure label="IN" cents={data.totals.incomeCents} currency={data.currency} />
+                <Figure label="OUT" cents={0 - data.totals.expenseCents || 0} currency={data.currency} />
+                <Figure label="NET" cents={data.totals.netCents} currency={data.currency} />
+                <Figure
+                  label="BAND FUND"
+                  cents={data.balances.bandFundCents}
+                  currency={data.currency}
+                />
+              </View>
+            </View>
+          </SectionCard>
 
           {data.pending.length > 0 && (
-            <Section title={`WAITING FOR APPROVAL · ${data.pending.length}`}>
-              {/* Admins decide here; members only watch their own wait. */}
-              {manages && (
-                <PosterText variant="cardMeta" color={canvas.soft}>
-                  Swipe right to approve, left to send back with a note.
-                </PosterText>
-              )}
+            <SectionCard
+              title="Waiting for approval"
+              caption={`${data.pending.length} ${data.pending.length === 1 ? 'entry' : 'entries'}`}
+              // Admins decide here; members only watch their own wait.
+              description={
+                manages ? 'Swipe right to approve, left to send back with a note.' : undefined
+              }
+            >
               {data.pending.map((entry, index) => (
                 <ApprovalRow
                   key={entry.id}
@@ -140,11 +150,11 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
                   onSendBack={() => router.push(`/board/${boardId}/form/reject?id=${entry.id}`)}
                 />
               ))}
-            </Section>
+            </SectionCard>
           )}
 
           {data.sentBack.length > 0 && (
-            <Section title="SENT BACK">
+            <SectionCard title="Sent back">
               {data.sentBack.map((entry, index) => (
                 <Row
                   key={entry.id}
@@ -161,12 +171,16 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
                   onPress={() => router.push(`/board/${boardId}/form/finance?id=${entry.id}`)}
                 />
               ))}
-            </Section>
+            </SectionCard>
           )}
 
-          <Section title="WHO'S OWED · ALL TIME">
+          <SectionCard
+            title="Who's owed"
+            caption="All time"
+            description="What the band owes each member, or they owe the band. Tap someone for their history."
+          >
             {owedMembers.length === 0 && (
-              <PosterText variant="cardMeta" color={canvas.soft}>
+              <PosterText variant="cardMeta" color={tokens.mutedForeground} style={inset}>
                 Everyone is square right now.
               </PosterText>
             )}
@@ -196,10 +210,10 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
                 </View>
               );
             })}
-          </Section>
+          </SectionCard>
 
           {data.totals.byMonth.length > 1 && (
-            <Section title={`BY MONTH · ${periodLabel.toUpperCase()}`}>
+            <SectionCard title="Month by month" caption={periodLabel}>
               {[...data.totals.byMonth].reverse().map((month, index) => (
                 <Row
                   key={month.month}
@@ -215,11 +229,11 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
                   }
                 />
               ))}
-            </Section>
+            </SectionCard>
           )}
 
           {data.totals.byCategory.length > 0 && (
-            <Section title={`BY CATEGORY · ${periodLabel.toUpperCase()}`}>
+            <SectionCard title="By category" caption={periodLabel}>
               {data.totals.byCategory.map((cat, index) => (
                 <Row
                   key={cat.category}
@@ -234,10 +248,13 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
                   }
                 />
               ))}
-            </Section>
+            </SectionCard>
           )}
 
-          <Section title="ENTRIES">
+          <SectionCard
+            title="Entries"
+            caption={`${rows.length} ${rows.length === 1 ? 'entry' : 'entries'} · ${periodLabel}`}
+          >
             <Button
               title={`${filtersOpen ? 'Hide' : 'Filter / sort'}${activeFilters ? ` (${activeFilters})` : ''}`}
               variant="secondary"
@@ -303,9 +320,6 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
                 />
               </View>
             )}
-            <PosterText variant="cardMeta" color={canvas.soft}>
-              {rows.length} entries · {periodLabel}
-            </PosterText>
             {rows.length > 0 && (
               <Button
                 title="Export CSV"
@@ -315,7 +329,7 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
               />
             )}
             {rows.length === 0 ? (
-              <PosterText variant="cardMeta" color={canvas.soft}>
+              <PosterText variant="cardMeta" color={tokens.mutedForeground} style={inset}>
                 {activeFilters
                   ? 'No entries match these filters.'
                   : 'Nothing logged for this period.'}
@@ -347,7 +361,7 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
                 />
               ))
             )}
-          </Section>
+          </SectionCard>
         </View>
       )}
     </SpokeList>
@@ -363,11 +377,14 @@ function monthLabel(month: string) {
   });
 }
 
+/** Lines up loose text with a `Row`'s, which is inset by its own padding. */
+const inset = { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs };
+
 function Figure({ label, cents, currency }: { label: string; cents: number; currency: string }) {
-  const canvas = usePosterCanvas();
+  const tokens = useTokens();
   return (
     <View style={{ flexGrow: 1, flexBasis: '40%', gap: 2 }}>
-      <PosterText variant="label" color={canvas.soft}>
+      <PosterText variant="label" color={tokens.mutedForeground}>
         {label}
       </PosterText>
       <FinanceAmount cents={cents} currency={currency} />
