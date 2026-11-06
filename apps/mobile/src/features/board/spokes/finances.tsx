@@ -1,6 +1,12 @@
 import { View } from 'react-native';
 import { router } from 'expo-router';
-import { useFinanceEntries, useFinanceSummary, useMe, usePermissions } from '@artist/api-client';
+import {
+  useFinanceEntries,
+  useFinanceSplit,
+  useFinanceSummary,
+  useMe,
+  usePermissions,
+} from '@artist/api-client';
 import {
   categoryLabel,
   formatMoney,
@@ -17,6 +23,7 @@ import { PickOne } from '@/components/pick-one';
 import { ChoiceChips } from '@/components/choice-chips';
 import { MemberHistory } from '../../finances/member-history';
 import { FinanceAmount } from '../../finances/finance-amount';
+import { shareFinanceCsv } from '../../finances/export-csv';
 import { PosterText } from '@/components/poster-text';
 import { Row } from '@/components/row';
 import { Section } from '@/components/section';
@@ -27,8 +34,9 @@ import { SpokeHeader } from '../spoke-header';
 
 /**
  * The band's money for the selected period: the net, who is owed what, shows still owing,
- * and the latest entries. Logging is the header's + (members too); splits,
- * payments and reports are on web, where there's room for a table.
+ * the split, month and category reports, and the entries (with a CSV export).
+ * Logging is the header's + (members too); admins record payments from a
+ * member's history and edit the split from its section.
  */
 export function FinancesSpoke({ boardId }: { boardId: string }) {
   const canvas = usePosterCanvas();
@@ -51,6 +59,8 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
     period === 'month' ? 'this month' : period === 'year' ? 'this year' : 'all time';
   const summary = useFinanceSummary(boardId, range, visible);
   const entries = useFinanceEntries(boardId, range);
+  const split = useFinanceSplit(boardId);
+  const manages = can('finance.manage');
   const data = summary.data;
   const money = (cents: number) => formatMoney(cents, data?.currency ?? 'USD');
   const name = (userId: string) =>
@@ -64,7 +74,7 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
       member,
       cents: data?.balances.members.find((b) => b.userId === member.id)?.balanceCents ?? 0,
     }))
-    .filter(({ cents }) => cents > 0);
+    .filter(({ cents }) => cents !== 0);
 
   return (
     <SpokeList
@@ -141,7 +151,7 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
           <Section title="WHO'S OWED · ALL TIME">
             {owedMembers.length === 0 && (
               <PosterText variant="cardMeta" color={canvas.soft}>
-                Nobody is owed money right now.
+                Everyone is square right now.
               </PosterText>
             )}
             {owedMembers.map(({ member, cents }, index) => {
@@ -159,7 +169,7 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
                         ? 'Hide expenses and payouts'
                         : 'View expenses and payouts'
                     }
-                    trailing={money(cents)}
+                    trailing={cents > 0 ? money(cents) : `owes ${money(-cents)}`}
                     onPress={() =>
                       setSelectedMember(selectedMember === member.id ? null : member.id)
                     }
@@ -171,6 +181,69 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
               );
             })}
           </Section>
+
+          <Section title="HOW MONEY IS SPLIT">
+            {split.data?.isDefault && (
+              <PosterText variant="cardMeta" color={canvas.soft}>
+                Nobody has set a split yet, so everyone gets an equal share.
+              </PosterText>
+            )}
+            {(split.data?.shares ?? []).map((share, index) => (
+              <Row
+                key={share.userId ?? 'fund'}
+                first={index === 0}
+                title={share.userId ? name(share.userId) : 'Band fund'}
+                trailing={`${share.shareBps / 100}%`}
+              />
+            ))}
+            {manages && (
+              <Button
+                title="Edit split"
+                variant="secondary"
+                size="sm"
+                onPress={() => router.push(`/board/${boardId}/form/split`)}
+              />
+            )}
+          </Section>
+
+          {data.totals.byMonth.length > 1 && (
+            <Section title={`BY MONTH · ${periodLabel.toUpperCase()}`}>
+              {[...data.totals.byMonth].reverse().map((month, index) => (
+                <Row
+                  key={month.month}
+                  first={index === 0}
+                  title={monthLabel(month.month)}
+                  meta={`In ${money(month.incomeCents)} · out ${money(month.expenseCents)}`}
+                  trailing={
+                    <FinanceAmount
+                      cents={month.incomeCents - month.expenseCents}
+                      currency={data.currency}
+                      signed
+                    />
+                  }
+                />
+              ))}
+            </Section>
+          )}
+
+          {data.totals.byCategory.length > 0 && (
+            <Section title={`BY CATEGORY · ${periodLabel.toUpperCase()}`}>
+              {data.totals.byCategory.map((cat, index) => (
+                <Row
+                  key={cat.category}
+                  first={index === 0}
+                  title={categoryLabel(cat.category)}
+                  trailing={
+                    <FinanceAmount
+                      cents={cat.kind === 'INCOME' ? cat.cents : -cat.cents}
+                      currency={data.currency}
+                      signed
+                    />
+                  }
+                />
+              ))}
+            </Section>
+          )}
 
           <Section title="ENTRIES">
             <Button
@@ -240,6 +313,14 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
             <PosterText variant="cardMeta" color={canvas.soft}>
               {rows.length} entries · {periodLabel}
             </PosterText>
+            {rows.length > 0 && (
+              <Button
+                title="Export CSV"
+                variant="ghost"
+                size="sm"
+                onPress={() => void shareFinanceCsv(rows, data.members, periodLabel)}
+              />
+            )}
             {rows.length === 0 ? (
               <PosterText variant="cardMeta" color={canvas.soft}>
                 {activeFilters
@@ -277,6 +358,15 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
       )}
     </SpokeList>
   );
+}
+
+/** `2026-10` → "October 2026". */
+function monthLabel(month: string) {
+  const [y, m] = month.split('-').map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString(undefined, {
+    month: 'long',
+    year: 'numeric',
+  });
 }
 
 function Figure({ label, cents, currency }: { label: string; cents: number; currency: string }) {

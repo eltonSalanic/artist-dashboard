@@ -17,8 +17,10 @@ import { GoalForm } from '@/features/forms/goal-form';
 import { ItemLinkForm } from '@/features/forms/item-link-form';
 import { ItemNoteForm } from '@/features/forms/item-note-form';
 import { NoteForm } from '@/features/forms/note-form';
+import { PayoutForm } from '@/features/forms/payout-form';
 import { ReminderForm } from '@/features/forms/reminder-form';
 import { SettleForm } from '@/features/forms/settle-form';
+import { SplitForm } from '@/features/forms/split-form';
 import { TaskForm } from '@/features/forms/task-form';
 
 /**
@@ -31,12 +33,13 @@ import { TaskForm } from '@/features/forms/task-form';
  *   ?on=TASK|…&parentId=…  what a titled note hangs off (kind `item-note`)
  *   ?money=INCOME|EXPENSE  what a new ledger entry starts as (kind `finance`)
  *   ?eventId=…       the show a ledger entry belongs to, or the one to settle
+ *   ?member=…        who a payment was made to or by (kind `payout`)
  *
  * One route rather than ten: the forms share their frame, and the stack only
  * has to be told once that this is a modal.
  */
 export default function Form() {
-  const { boardId, kind, id, parentTaskId, goalId, eventId, type, on, parentId, money } =
+  const { boardId, kind, id, parentTaskId, goalId, eventId, type, on, parentId, money, member } =
     useLocalSearchParams<{
       boardId: string;
       kind: string;
@@ -48,6 +51,7 @@ export default function Form() {
       on?: string;
       parentId?: string;
       money?: string;
+      member?: string;
     }>();
 
   // Query parameters come from a URL, so they can be anything.
@@ -82,6 +86,10 @@ export default function Form() {
         );
       case 'settle':
         return eventId ? <SettleForm boardId={boardId} eventId={eventId} /> : null;
+      case 'payout':
+        return member ? <PayoutForm boardId={boardId} memberId={member} /> : null;
+      case 'split':
+        return <SplitForm boardId={boardId} />;
       case 'item-link':
         return (LinkParentKinds as readonly string[]).includes(on ?? '') && parentId ? (
           <ItemLinkForm boardId={boardId} kind={on as LinkParentKind} parentId={parentId} />

@@ -1,6 +1,12 @@
-import { View } from 'react-native';
+import { Alert, View } from 'react-native';
 import { router } from 'expo-router';
-import { useFinanceEntries, usePayouts } from '@artist/api-client';
+import {
+  useDeletePayout,
+  useFinanceEntries,
+  usePayouts,
+  usePermissions,
+} from '@artist/api-client';
+import { Button } from '@/components/button';
 import { categoryLabel, formatMoney } from '@artist/shared';
 import { ListState } from '@/components/list-state';
 import { PosterText } from '@/components/poster-text';
@@ -20,8 +26,11 @@ export function MemberHistory({
   currency: string;
 }) {
   const canvas = usePosterCanvas();
+  const { can } = usePermissions();
+  const manages = can('finance.manage');
   const entries = useFinanceEntries(boardId, { kind: 'EXPENSE' });
   const payouts = usePayouts(boardId);
+  const removePayout = useDeletePayout(boardId);
   if (entries.isPending || payouts.isPending || entries.error || payouts.error)
     return (
       <ListState
@@ -75,9 +84,30 @@ export function MemberHistory({
             title={p.amountCents > 0 ? 'Received from band' : 'Paid to band'}
             meta={`${shortDate(`${p.paidOn}T12:00:00`)}${p.note ? ` · ${p.note}` : ''}`}
             trailing={formatMoney(Math.abs(p.amountCents), currency)}
+            onPress={
+              manages
+                ? () =>
+                    Alert.alert('Delete this payment?', 'Their balance goes back to before it.', [
+                      { text: 'Keep', style: 'cancel' },
+                      {
+                        text: 'Delete',
+                        style: 'destructive',
+                        onPress: () => removePayout.mutate(p.id),
+                      },
+                    ])
+                : undefined
+            }
           />
         ))}
       </Section>
+      {manages && (
+        <Button
+          title="Record a payment"
+          variant="secondary"
+          size="sm"
+          onPress={() => router.push(`/board/${boardId}/form/payout?member=${userId}`)}
+        />
+      )}
     </View>
   );
 }
