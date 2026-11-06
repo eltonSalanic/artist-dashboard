@@ -150,10 +150,12 @@ export function ApprovalRow({
         />
       )}
       onSwipeableOpen={(direction) => {
-        // The row springs back either way: approving removes it from the list,
-        // and sending back hands off to the note form.
+        // `direction` is the way the row moved, not the side that opened: a
+        // swipe to the right reveals the left actions (Approve) and reports
+        // "right". The row springs back either way: approving removes it from
+        // the list, and sending back hands off to the note form.
         swipeable.current?.close();
-        if (direction === "left") onApprove();
+        if (direction === "right") onApprove();
         else onSendBack();
       }}
     >
