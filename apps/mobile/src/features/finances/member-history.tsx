@@ -51,8 +51,8 @@ export function MemberHistory({
   return (
     <View style={{ gap: spacing.md, padding: spacing.sm }}>
       <PosterText variant="cardMeta" color={canvas.soft}>
-        All-time expenses paid personally and recorded payments. Earnings shares also affect the
-        amount owed.
+        All-time expenses paid personally and recorded payments. Band cash they’re holding also
+        counts against what they’re owed.
       </PosterText>
       <Section title="EXPENSES">
         {expenses.length === 0 && (
