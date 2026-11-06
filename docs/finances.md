@@ -38,6 +38,22 @@ Everything lives in [apps/api/prisma/schema.prisma](../apps/api/prisma/schema.pr
 - **Web** `/finances`: period totals, "Waiting for approval" (admins approve from it), shows still owing with Settle, who's owed with member history and payouts, the split editor, the ledger with filters and CSV export, reports by category, month and show.
 - **Phone** Finances spoke: the same totals, waiting for approval, shows still owing, who's owed (members who owe the band too) with member history, "Record a payment" and deleting a payment, how money is split with "Edit split" for admins, by month and by category, and the entries with filters and "Export CSV" through the share sheet. Forms: `form/finance`, `form/settle`, `form/payout?member=…`, `form/split`.
 
+## Test data
+
+`npm run db:seed:finances -w apps/api` builds "Velvet Static" (`apps/api/prisma/seed-finances.ts`), a band with five real logins, all on one test password that the script prints:
+
+| Login | Role | Set up to try |
+| --- | --- | --- |
+| riley@bandwall.test | Owner, admin | Approving, payouts, settling |
+| casey@bandwall.test | Admin | Two admins settling at once |
+| jamie@bandwall.test | Member | Pending expenses: the $50 van tire and drumsticks |
+| avery@bandwall.test | Member | Fronted the motel, partly paid back |
+| quinn@bandwall.test | Member | Has held merch cash; try removing them |
+
+The split is 10% band fund and 18% each. It covers about three months of income and expenses across every category, settled shows, one voided duplicate, a played show whose fee is still expected (to settle), an upcoming expected fee, and payouts both ways. The owner gets a promotional subscription, so it works with `BILLING_ENFORCED=true`. Reruns rebuild that band and reset the five passwords.
+
+The main demo seed (`npm run db:seed`) also writes a small ledger into "Neon Harbor", but its bandmates can't log in.
+
 ## Not done yet
 
 - The activity log doesn't record edits, voids, approvals, split changes or payout deletes, and payouts are hard-deleted. Under discussion.
