@@ -109,7 +109,7 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
           />
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg }}>
             <Figure label="IN" cents={data.totals.incomeCents} currency={data.currency} />
-            <Figure label="OUT" cents={-data.totals.expenseCents} currency={data.currency} />
+            <Figure label="OUT" cents={0 - data.totals.expenseCents || 0} currency={data.currency} />
             <Figure label="NET" cents={data.totals.netCents} currency={data.currency} />
             <Figure
               label="BAND FUND"
