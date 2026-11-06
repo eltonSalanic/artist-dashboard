@@ -161,6 +161,49 @@ export function newRequestId(): string {
   return `${Date.now().toString(36)}-${random()}${random()}`;
 }
 
+/** Where a removed member's slice of the saved split goes. */
+export const SPLIT_EXIT_MODES = ['SPREAD', 'FUND'] as const;
+export type SplitExitMode = (typeof SPLIT_EXIT_MODES)[number];
+
+/**
+ * The saved split with a member taken out. SPREAD shares their slice among the
+ * other members in proportion to what each already has (4 × 25% becomes
+ * 3 × 33.33%); FUND gives it to the band fund and leaves everyone else as they
+ * were. With nobody else holding a share, SPREAD falls back to the fund. The
+ * result always totals exactly 10000, any leftover basis point going to the
+ * biggest slice so it lands on the same person every time.
+ */
+export function removeFromSplit(
+  shares: SplitShare[],
+  userId: string,
+  mode: SplitExitMode,
+): SplitShare[] {
+  const leaving = shares.find((s) => s.userId === userId)?.shareBps ?? 0;
+  const rest = shares
+    .filter((s) => s.userId !== userId)
+    .map((s) => ({ ...s }));
+  if (leaving === 0) return rest;
+
+  const others = rest.filter((s) => s.userId !== null && s.shareBps > 0);
+  const othersTotal = others.reduce((sum, s) => sum + s.shareBps, 0);
+  if (mode === 'FUND' || othersTotal === 0) {
+    const fund = rest.find((s) => s.userId === null);
+    if (fund) fund.shareBps += leaving;
+    else rest.unshift({ userId: null, shareBps: leaving });
+    return rest;
+  }
+
+  let handedOut = 0;
+  for (const s of others) {
+    const extra = Math.floor((leaving * s.shareBps) / othersTotal);
+    s.shareBps += extra;
+    handedOut += extra;
+  }
+  const biggest = others.reduce((a, b) => (b.shareBps > a.shareBps ? b : a));
+  biggest.shareBps += leaving - handedOut;
+  return rest;
+}
+
 export function sharesTotal(shares: SplitShare[]): number {
   return shares.reduce((sum, s) => sum + s.shareBps, 0);
 }

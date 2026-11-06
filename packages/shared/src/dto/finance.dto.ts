@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { FinanceKinds, FinanceStates, type FinanceKind, type FinanceState } from '../enums';
 import {
   FinanceCategoryKeys,
+  SPLIT_EXIT_MODES,
   categoryKind,
   isValidSplit,
   type Balances,
@@ -147,6 +148,21 @@ export const settleShowSchema = z
     path: ['lines'],
   });
 export type SettleShowDto = z.infer<typeof settleShowSchema>;
+
+/**
+ * What happens to a member's money when an admin removes them from the band.
+ * Their past entries always stay as they are. `split` decides where their
+ * slice of the saved split goes (only matters when a split was saved: the
+ * equal default re-divides by itself); `payout`, when given, records the
+ * final payment that squares them up, in the same step.
+ */
+export const removeMemberSchema = z
+  .object({
+    split: z.enum(SPLIT_EXIT_MODES).default('SPREAD'),
+    payout: createPayoutSchema.omit({ userId: true }).optional(),
+  })
+  .default({ split: 'SPREAD' });
+export type RemoveMemberDto = z.infer<typeof removeMemberSchema>;
 
 // ---- Responses ----
 

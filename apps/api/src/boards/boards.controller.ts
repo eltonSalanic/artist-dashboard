@@ -12,11 +12,13 @@ import {
   boardThemeSchema,
   createBoardSchema,
   deleteBoardSchema,
+  removeMemberSchema,
   transferBoardSchema,
   updateBoardSchema,
   type BoardThemeDto,
   type CreateBoardDto,
   type DeleteBoardDto,
+  type RemoveMemberDto,
   type TransferBoardDto,
   type UpdateBoardDto,
 } from '@artist/shared';
@@ -106,7 +108,8 @@ export class BoardsController {
     @Param('id') id: string,
     @Param('userId') userId: string,
     @CurrentUser() user: AuthUser,
+    @Body(new ZodValidationPipe(removeMemberSchema)) dto: RemoveMemberDto,
   ) {
-    return this.boards.removeMember(id, user.userId, userId);
+    return this.boards.removeMember(id, user.userId, userId, dto);
   }
 }

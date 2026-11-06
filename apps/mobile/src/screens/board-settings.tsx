@@ -10,11 +10,14 @@ import {
 import {
   BOARD_PALETTES,
   DEFAULT_TASK_STATUSES,
+  formatMoney,
+  localDayISO,
   NOTIFICATION_CATEGORY_COPY,
   NotificationCategories,
   resolveBoardTheme,
   ShowStatusCategories,
   type BoardRole,
+  type RemoveMemberDto,
   type ShowStatusCategory,
 } from '@artist/shared';
 import {
@@ -26,6 +29,8 @@ import {
   useCreateStatus,
   useDeleteShowStatus,
   useDeleteStatus,
+  useFinanceSplit,
+  useFinanceSummary,
   useShowStatuses,
   useUpdateShowStatus,
   useInvites,
@@ -168,17 +173,73 @@ function MembersSection({ boardId }: { boardId: string }) {
   const me = useMe(true);
   const board = useBoard(boardId);
   const remove = useRemoveMember(boardId);
+  const { can } = usePermissions();
+  const summary = useFinanceSummary(boardId, {}, can('finance.view'));
+  const split = useFinanceSplit(boardId);
   const members = board.data?.members ?? [];
 
-  const confirmRemove = (userId: string, name: string) =>
+  /**
+   * Removing someone asks about their money first: whether to record a final
+   * payment that squares them up, and, when the band saved a split, where
+   * their slice goes. Their past entries always stay. Each step is a plain
+   * alert of at most three buttons, which Android also shows.
+   */
+  const confirmRemove = (userId: string, name: string) => {
+    const balance =
+      summary.data?.balances.members.find((m) => m.userId === userId)?.balanceCents ?? 0;
+    const money = (cents: number) => formatMoney(cents, summary.data?.currency ?? 'USD');
+    const slice =
+      split.data && !split.data.isDefault
+        ? (split.data.shares.find((s) => s.userId === userId)?.shareBps ?? 0)
+        : 0;
+
+    const finish = (dto: RemoveMemberDto) =>
+      Alert.alert(
+        `Remove ${name}?`,
+        "They'll lose access to this band and be unassigned from all its tasks. Their past entries stay in the books.",
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Remove',
+            style: 'destructive',
+            onPress: () => remove.mutate({ userId, dto }),
+          },
+        ],
+      );
+    const askSplit = (payout?: RemoveMemberDto['payout']) =>
+      slice > 0
+        ? Alert.alert(
+            `${name}'s ${slice / 100}% of future money`,
+            'Where should it go from now on? To set exact numbers, cancel and edit the split in Finances first.',
+            [
+              { text: 'Split among everyone left', onPress: () => finish({ split: 'SPREAD', payout }) },
+              { text: 'Band fund', onPress: () => finish({ split: 'FUND', payout }) },
+              { text: 'Cancel', style: 'cancel' },
+            ],
+          )
+        : finish({ split: 'SPREAD', payout });
+
+    if (balance === 0) return askSplit();
     Alert.alert(
-      `Remove ${name}?`,
-      "They'll lose access to this band and be unassigned from all its tasks.",
+      balance > 0
+        ? `The band owes ${name} ${money(balance)}`
+        : `${name} owes the band ${money(-balance)}`,
+      "Record the final payment now, or leave it open in \"Who's owed\" for later?",
       [
+        { text: 'Leave it open', onPress: () => askSplit() },
+        {
+          text: balance > 0 ? 'We paid them' : 'They paid us',
+          onPress: () =>
+            askSplit({
+              amountCents: balance,
+              paidOn: localDayISO(),
+              note: `Final payment when ${name} left the band`,
+            }),
+        },
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Remove', style: 'destructive', onPress: () => remove.mutate(userId) },
       ],
     );
+  };
 
   return (
     <SectionCard

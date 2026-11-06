@@ -9,6 +9,7 @@ import {
   ledgerTotals,
   needsApproval,
   newRequestId,
+  removeFromSplit,
   parseMoneyToCents,
   showSettlement,
   type LedgerEntry,
@@ -221,6 +222,41 @@ describe('finance DTOs', () => {
 
   it('needs something to settle', () => {
     expect(settleShowSchema.safeParse({ occurredOn: '2026-10-01' }).success).toBe(false);
+  });
+});
+
+describe('removeFromSplit', () => {
+  const four = ['a', 'b', 'c', 'd'].map((userId) => ({ userId, shareBps: 2500 }));
+
+  it('spreads a leaver’s slice over the others in proportion', () => {
+    const next = removeFromSplit(four, 'd', 'SPREAD');
+    expect(next.map((s) => s.userId)).toEqual(['a', 'b', 'c']);
+    expect(next.reduce((sum, s) => sum + s.shareBps, 0)).toBe(10_000);
+    expect(next.map((s) => s.shareBps).sort()).toEqual([3333, 3333, 3334]);
+  });
+
+  it('keeps the fund’s slice where it was when spreading', () => {
+    const next = removeFromSplit(
+      [{ userId: null, shareBps: 1000 }, { userId: 'a', shareBps: 6000 }, { userId: 'b', shareBps: 3000 }],
+      'b',
+      'SPREAD',
+    );
+    expect(next).toEqual([
+      { userId: null, shareBps: 1000 },
+      { userId: 'a', shareBps: 9000 },
+    ]);
+  });
+
+  it('can hand the slice to the band fund instead', () => {
+    const next = removeFromSplit(four, 'a', 'FUND');
+    expect(next[0]).toEqual({ userId: null, shareBps: 2500 });
+    expect(next.slice(1).every((s) => s.shareBps === 2500)).toBe(true);
+  });
+
+  it('falls back to the fund when nobody else has a share', () => {
+    expect(removeFromSplit([{ userId: 'a', shareBps: 10_000 }], 'a', 'SPREAD')).toEqual([
+      { userId: null, shareBps: 10_000 },
+    ]);
   });
 });
 

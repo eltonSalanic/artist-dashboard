@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 import type { BoardRole } from "@artist/shared";
-import { useBoard, useInvites, usePermissions, useRemoveMember, useRevokeInvite, useSendInvite } from "@artist/api-client";
+import { useBoard, useInvites, usePermissions, useRevokeInvite, useSendInvite } from "@artist/api-client";
 import { useMe } from "@/lib/use-me";
 import { AppearanceCard } from "./appearance-card";
 import { DefaultLayoutCard } from "./default-layout-card";
 import { StatusesCard } from "./statuses-card";
 import { ShowStatusesCard } from "./show-statuses-card";
 import { NotificationsCard } from "./notifications-card";
+import { RemoveMemberDialog } from "./remove-member-dialog";
 import { SubscriptionCard } from "@/features/billing/subscription-card";
 import { OwnerCard } from "@/features/billing/owner-card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -73,7 +74,10 @@ export function SettingsPage() {
 function MembersCard({ boardId }: { boardId: string }) {
   const me = useMe(true);
   const board = useBoard(boardId);
-  const removeMember = useRemoveMember(boardId);
+  const [removing, setRemoving] = useState<{
+    userId: string;
+    displayName: string;
+  } | null>(null);
 
   const myUserId = me.data?.user.id;
 
@@ -109,16 +113,12 @@ function MembersCard({ boardId }: { boardId: string }) {
                 variant="ghost"
                 size="icon-sm"
                 aria-label={`Remove ${member.displayName} from board`}
-                disabled={removeMember.isPending}
-                onClick={() => {
-                  if (
-                    window.confirm(
-                      `Remove ${member.displayName} from this board? They'll lose access and be unassigned from all tasks.`,
-                    )
-                  ) {
-                    removeMember.mutate(member.userId);
-                  }
-                }}
+                onClick={() =>
+                  setRemoving({
+                    userId: member.userId,
+                    displayName: member.displayName,
+                  })
+                }
               >
                 <Trash2 />
               </Button>
@@ -126,6 +126,11 @@ function MembersCard({ boardId }: { boardId: string }) {
           </div>
         ))}
       </CardContent>
+      <RemoveMemberDialog
+        boardId={boardId}
+        member={removing}
+        onOpenChange={(open) => !open && setRemoving(null)}
+      />
     </Card>
   );
 }

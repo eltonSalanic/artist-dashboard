@@ -9,6 +9,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  formatMoney,
+  removeFromSplit,
   resolveBoardTheme,
   withShippedWidgets,
   type ApiErrorBody,
@@ -17,8 +19,10 @@ import {
   type CreateBoardDto,
   type LayoutItem,
   type OwnershipBlock,
+  type RemoveMemberDto,
   type UpdateBoardDto,
 } from '@artist/shared';
+import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { SUMMARY_OWNER_SELECT, toBoardSummary } from './board-summary';
 import { BillingService } from '../billing/billing.service';
@@ -276,7 +280,12 @@ export class BoardsService {
    * remove the owner: the band runs on their subscription, so it's theirs to
    * hand over or delete.
    */
-  async removeMember(boardId: string, actorId: string, userId: string) {
+  async removeMember(
+    boardId: string,
+    actorId: string,
+    userId: string,
+    dto: RemoveMemberDto = { split: 'SPREAD' },
+  ) {
     if (userId === actorId) {
       throw new BadRequestException(
         'You cannot remove yourself from the board',
@@ -314,6 +323,13 @@ export class BoardsService {
       await tx.notificationPreference.deleteMany({
         where: { boardId, userId },
       });
+      await this.settleLeaversMoney(
+        tx,
+        boardId,
+        actorId,
+        { userId, displayName: membership.user.displayName },
+        dto,
+      );
       await this.activity.log(tx, {
         boardId,
         type: 'MEMBER_REMOVED',
@@ -327,5 +343,65 @@ export class BoardsService {
     });
 
     return { removed: true };
+  }
+
+  /**
+   * A leaving member's money. Their past entries stay exactly as they are, so
+   * nobody else's balance moves. Their slice of the saved split goes to the
+   * others or the band fund (an unsaved split is equal shares among whoever
+   * is in the band, so it re-divides by itself), and an optional final
+   * payment squares them up.
+   */
+  private async settleLeaversMoney(
+    tx: Prisma.TransactionClient,
+    boardId: string,
+    actorId: string,
+    leaver: { userId: string; displayName: string },
+    dto: RemoveMemberDto,
+  ) {
+    const saved = await tx.splitShare.findMany({
+      where: { boardId },
+      select: { userId: true, shareBps: true },
+    });
+    if (saved.some((s) => s.userId === leaver.userId)) {
+      const next = removeFromSplit(saved, leaver.userId, dto.split);
+      await tx.splitShare.deleteMany({ where: { boardId } });
+      await tx.splitShare.createMany({
+        data: next
+          .filter((s) => s.shareBps > 0)
+          .map((s) => ({ boardId, ...s })),
+      });
+    }
+
+    if (dto.payout) {
+      const board = await tx.board.findUnique({
+        where: { id: boardId },
+        select: { currency: true },
+      });
+      const payout = await tx.payout.create({
+        data: {
+          boardId,
+          userId: leaver.userId,
+          amountCents: dto.payout.amountCents,
+          paidOn: new Date(`${dto.payout.paidOn}T00:00:00.000Z`),
+          note: dto.payout.note ?? '',
+          createdById: actorId,
+        },
+      });
+      await this.activity.log(tx, {
+        boardId,
+        type: 'PAYOUT_RECORDED',
+        actorId,
+        meta: {
+          payoutId: payout.id,
+          memberName: leaver.displayName,
+          toBand: dto.payout.amountCents < 0,
+          amount: formatMoney(
+            Math.abs(dto.payout.amountCents),
+            board?.currency ?? 'USD',
+          ),
+        },
+      });
+    }
   }
 }
