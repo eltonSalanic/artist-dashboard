@@ -5,14 +5,15 @@ import type { FinanceKind, FinanceState } from './enums';
  *
  * Everything here is pure so the web ledger, the phone's quick-add and the API
  * report the same cents. Amounts are integer cents in the board's currency and
- * never floats; shares are basis points (10000 = 100%) so a three-way split
- * rounds the same way everywhere.
+ * never floats.
+ *
+ * There is no split: the books record what came in, what went out, and whose
+ * pocket it went through. Profit is the band's. A member's balance is only the
+ * money they fronted or are holding for the band, net of what was paid back.
  *
  * Balances are always computed from the entries, never stored, so there is no
  * running total to drift out of step with the ledger.
  */
-
-export const BPS_WHOLE = 10_000;
 
 /**
  * The categories a band files money under. A fixed list for now: it covers
@@ -96,34 +97,6 @@ export function parseMoneyToCents(input: string): number | null {
   return Number(whole) * 100 + Number(frac.padEnd(2, '0'));
 }
 
-/** One slice of a split. `userId` null is the band fund. */
-export interface SplitShare {
-  userId: string | null;
-  shareBps: number;
-}
-
-/**
- * Equal shares for these members, with `fundBps` kept for the band first.
- * Basis points that don't divide evenly go to the first members listed, so
- * the shares always total exactly 10000.
- */
-export function equalSplit(memberIds: string[], fundBps = 0): SplitShare[] {
-  const fund = Math.max(0, Math.min(BPS_WHOLE, Math.round(fundBps)));
-  const shares: SplitShare[] = fund > 0 ? [{ userId: null, shareBps: fund }] : [];
-  if (memberIds.length === 0) {
-    return [{ userId: null, shareBps: BPS_WHOLE }];
-  }
-  const rest = BPS_WHOLE - fund;
-  const each = Math.floor(rest / memberIds.length);
-  let leftover = rest - each * memberIds.length;
-  for (const userId of memberIds) {
-    const extra = leftover > 0 ? 1 : 0;
-    leftover -= extra;
-    shares.push({ userId, shareBps: each + extra });
-  }
-  return shares.filter((s) => s.shareBps > 0 || s.userId !== null);
-}
-
 /**
  * An expense a member paid out of their own pocket and logged themselves. The
  * band only owes them for it once an admin approves it, so it starts PENDING.
@@ -151,86 +124,6 @@ export function isLockedFor(
   return !canManage && entry.approvedAt !== null;
 }
 
-/** Where a removed member's slice of the saved split goes. */
-export const SPLIT_EXIT_MODES = ['SPREAD', 'FUND'] as const;
-export type SplitExitMode = (typeof SPLIT_EXIT_MODES)[number];
-
-/**
- * The saved split with a member taken out. SPREAD shares their slice among the
- * other members in proportion to what each already has (4 × 25% becomes
- * 3 × 33.33%); FUND gives it to the band fund and leaves everyone else as they
- * were. With nobody else holding a share, SPREAD falls back to the fund. The
- * result always totals exactly 10000, any leftover basis point going to the
- * biggest slice so it lands on the same person every time.
- */
-export function removeFromSplit(
-  shares: SplitShare[],
-  userId: string,
-  mode: SplitExitMode,
-): SplitShare[] {
-  const leaving = shares.find((s) => s.userId === userId)?.shareBps ?? 0;
-  const rest = shares
-    .filter((s) => s.userId !== userId)
-    .map((s) => ({ ...s }));
-  if (leaving === 0) return rest;
-
-  const others = rest.filter((s) => s.userId !== null && s.shareBps > 0);
-  const othersTotal = others.reduce((sum, s) => sum + s.shareBps, 0);
-  if (mode === 'FUND' || othersTotal === 0) {
-    const fund = rest.find((s) => s.userId === null);
-    if (fund) fund.shareBps += leaving;
-    else rest.unshift({ userId: null, shareBps: leaving });
-    return rest;
-  }
-
-  let handedOut = 0;
-  for (const s of others) {
-    const extra = Math.floor((leaving * s.shareBps) / othersTotal);
-    s.shareBps += extra;
-    handedOut += extra;
-  }
-  const biggest = others.reduce((a, b) => (b.shareBps > a.shareBps ? b : a));
-  biggest.shareBps += leaving - handedOut;
-  return rest;
-}
-
-export function sharesTotal(shares: SplitShare[]): number {
-  return shares.reduce((sum, s) => sum + s.shareBps, 0);
-}
-
-/** A valid split: whole, no negative slices, nobody listed twice. */
-export function isValidSplit(shares: SplitShare[]): boolean {
-  if (shares.length === 0) return false;
-  if (shares.some((s) => !Number.isInteger(s.shareBps) || s.shareBps < 0)) {
-    return false;
-  }
-  const ids = shares.map((s) => s.userId ?? '__fund');
-  if (new Set(ids).size !== ids.length) return false;
-  return sharesTotal(shares) === BPS_WHOLE;
-}
-
-/**
- * Cut an amount by a split. Each slice rounds toward zero and the cents left
- * over go to the band fund, so slices always add back up to the amount and no
- * member gets an extra cent for being listed first.
- */
-export function allocate(
-  amountCents: number,
-  shares: SplitShare[],
-): { userId: string | null; cents: number }[] {
-  const out = shares.map((s) => ({
-    userId: s.userId,
-    cents: Math.trunc((amountCents * s.shareBps) / BPS_WHOLE),
-  }));
-  const remainder = amountCents - out.reduce((sum, s) => sum + s.cents, 0);
-  if (remainder !== 0) {
-    const fund = out.find((s) => s.userId === null);
-    if (fund) fund.cents += remainder;
-    else out.push({ userId: null, cents: remainder });
-  }
-  return out;
-}
-
 /** The fields of an entry the money math needs. */
 export interface LedgerEntry {
   kind: FinanceKind;
@@ -244,7 +137,6 @@ export interface LedgerEntry {
    * Null means the band's own account.
    */
   handledById: string | null;
-  splits: SplitShare[];
 }
 
 export interface LedgerPayout {
@@ -255,8 +147,6 @@ export interface LedgerPayout {
 
 export interface MemberBalance {
   userId: string;
-  /** Their cut of settled income minus their cut of settled expenses. */
-  shareCents: number;
   /** Expenses they paid personally. The band owes them this back. */
   frontedCents: number;
   /** Income they collected personally. They owe the band this. */
@@ -269,7 +159,7 @@ export interface MemberBalance {
 
 export interface Balances {
   members: MemberBalance[];
-  /** The band fund's cut of everything settled. */
+  /** The band's own money: everything settled, income less expenses. */
   bandFundCents: number;
 }
 
@@ -287,7 +177,6 @@ export function computeBalances(
     if (!row) {
       row = {
         userId,
-        shareCents: 0,
         frontedCents: 0,
         collectedCents: 0,
         paidOutCents: 0,
@@ -301,10 +190,7 @@ export function computeBalances(
 
   for (const entry of entries) {
     if (entry.state !== 'SETTLED') continue;
-    for (const slice of allocate(signed(entry), entry.splits)) {
-      if (slice.userId === null) bandFundCents += slice.cents;
-      else member(slice.userId).shareCents += slice.cents;
-    }
+    bandFundCents += signed(entry);
     if (entry.handledById) {
       const row = member(entry.handledById);
       if (entry.kind === 'EXPENSE') row.frontedCents += entry.amountCents;
@@ -315,8 +201,7 @@ export function computeBalances(
     member(payout.userId).paidOutCents += payout.amountCents;
   }
   for (const row of byMember.values()) {
-    row.balanceCents =
-      row.shareCents + row.frontedCents - row.collectedCents - row.paidOutCents;
+    row.balanceCents = row.frontedCents - row.collectedCents - row.paidOutCents;
   }
   return { members: [...byMember.values()], bandFundCents };
 }
@@ -396,18 +281,15 @@ export function ledgerTotals(entries: LedgerEntry[]): LedgerTotals {
   };
 }
 
-/** A show's money: what came in, what it cost, and each person's cut of the net. */
+/** A show's money: what came in, what it cost, and what's still expected. */
 export function showSettlement(entries: LedgerEntry[]) {
   const settled = entries.filter((e) => e.state === 'SETTLED');
   const totals = ledgerTotals(settled);
-  const { members, bandFundCents } = computeBalances(settled);
   return {
     incomeCents: totals.incomeCents,
     expenseCents: totals.expenseCents,
     netCents: totals.netCents,
     expectedCents: ledgerTotals(entries).expectedCents,
-    cuts: members.map((m) => ({ userId: m.userId, cents: m.shareCents })),
-    bandFundCents,
   };
 }
 

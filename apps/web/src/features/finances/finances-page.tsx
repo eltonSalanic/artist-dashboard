@@ -81,13 +81,11 @@ import {
   periodRange,
   type Period,
 } from "./finance-bits";
-import { SplitCard } from "./split-card";
 
 const TABS = [
   { key: "ledger", label: "Ledger" },
   { key: "balances", label: "Balances" },
   { key: "reports", label: "Reports" },
-  { key: "split", label: "Split" },
 ] as const;
 type Tab = (typeof TABS)[number]["key"];
 
@@ -413,12 +411,6 @@ function Finances({ boardId }: { boardId: string }) {
         ))}
 
       {tab === "reports" && <Reports rows={rows} currency={currency} />}
-
-      {tab === "split" && (
-        <div className="max-w-xl">
-          <SplitCard boardId={boardId} members={members} />
-        </div>
-      )}
 
       <EntryDialog
         boardId={boardId}

@@ -27,11 +27,6 @@ describe('BoardsService.removeMember', () => {
     taskAssignee: { deleteMany: jest.fn() },
     mentionNotification: { deleteMany: jest.fn() },
     notificationPreference: { deleteMany: jest.fn() },
-    splitShare: {
-      findMany: jest.fn(),
-      deleteMany: jest.fn(),
-      createMany: jest.fn(),
-    },
     payout: { create: jest.fn() },
     board: { findUnique: jest.fn() },
     activity: { create: jest.fn() },
@@ -49,7 +44,6 @@ describe('BoardsService.removeMember', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    prisma.splitShare.findMany.mockResolvedValue([]);
     prisma.board.findUnique.mockResolvedValue({ currency: 'USD' });
     prisma.payout.create.mockResolvedValue({ id: 'p1' });
   });
@@ -60,38 +54,16 @@ describe('BoardsService.removeMember', () => {
     board: { ownerId: 'admin' },
   };
 
-  it('spreads their slice of a saved split over the others by default', async () => {
+  it('removes them without touching the books unless asked to pay them out', async () => {
     prisma.membership.findFirst.mockResolvedValue(sam);
-    prisma.splitShare.findMany.mockResolvedValue([
-      { userId: 'admin', shareBps: 5000 },
-      { userId: 'u3', shareBps: 2500 },
-      { userId: 'u2', shareBps: 2500 },
-    ]);
     await service.removeMember('b1', 'admin', 'u2');
-    expect(prisma.splitShare.createMany).toHaveBeenCalledWith({
-      data: [
-        { boardId: 'b1', userId: 'admin', shareBps: 6667 },
-        { boardId: 'b1', userId: 'u3', shareBps: 3333 },
-      ],
-    });
     expect(prisma.payout.create).not.toHaveBeenCalled();
   });
 
-  it('can send their slice to the band fund and pay them out', async () => {
+  it('can record the payment that squares them up', async () => {
     prisma.membership.findFirst.mockResolvedValue(sam);
-    prisma.splitShare.findMany.mockResolvedValue([
-      { userId: 'admin', shareBps: 5000 },
-      { userId: 'u2', shareBps: 5000 },
-    ]);
     await service.removeMember('b1', 'admin', 'u2', {
-      split: 'FUND',
       payout: { amountCents: 13_750, paidOn: '2026-11-06' },
-    });
-    expect(prisma.splitShare.createMany).toHaveBeenCalledWith({
-      data: [
-        { boardId: 'b1', userId: null, shareBps: 5000 },
-        { boardId: 'b1', userId: 'admin', shareBps: 5000 },
-      ],
     });
     expect(prisma.payout.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ userId: 'u2', amountCents: 13_750 }),
@@ -101,12 +73,6 @@ describe('BoardsService.removeMember', () => {
         data: expect.objectContaining({ type: 'PAYOUT_RECORDED' }),
       }),
     );
-  });
-
-  it('leaves an unsaved (equal) split alone', async () => {
-    prisma.membership.findFirst.mockResolvedValue(sam);
-    await service.removeMember('b1', 'admin', 'u2');
-    expect(prisma.splitShare.deleteMany).not.toHaveBeenCalled();
   });
 
   it('refuses to remove yourself', async () => {

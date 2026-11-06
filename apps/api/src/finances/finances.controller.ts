@@ -6,7 +6,6 @@ import {
   Param,
   Patch,
   Post,
-  Put,
   Query,
   Req,
 } from '@nestjs/common';
@@ -17,7 +16,6 @@ import {
   financeSummaryQuerySchema,
   rejectFinanceEntrySchema,
   updateFinanceEntrySchema,
-  updateSplitSchema,
   type BoardRole,
   type CreateFinanceEntryDto,
   type CreatePayoutDto,
@@ -25,7 +23,6 @@ import {
   type FinanceSummaryQueryDto,
   type RejectFinanceEntryDto,
   type UpdateFinanceEntryDto,
-  type UpdateSplitDto,
 } from '@artist/shared';
 import { CurrentUser, type AuthUser } from '../auth/current-user.decorator';
 import { BoardRoles } from '../common/board-roles.decorator';
@@ -135,25 +132,6 @@ export class FinancesController {
     @Req() req: RequestWithMembership,
   ) {
     return this.finances.void(boardId, actorOf(user, req), entryId);
-  }
-
-  @Get('split')
-  getSplit(
-    @Param('boardId') boardId: string,
-    @CurrentUser() user: AuthUser,
-    @Req() req: RequestWithMembership,
-  ) {
-    return this.finances.getSplit(boardId, actorOf(user, req));
-  }
-
-  @Put('split')
-  setSplit(
-    @Param('boardId') boardId: string,
-    @CurrentUser() user: AuthUser,
-    @Req() req: RequestWithMembership,
-    @Body(new ZodValidationPipe(updateSplitSchema)) dto: UpdateSplitDto,
-  ) {
-    return this.finances.setSplit(boardId, actorOf(user, req), dto);
   }
 
   @Get('payouts')

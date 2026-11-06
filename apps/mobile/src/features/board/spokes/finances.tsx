@@ -3,7 +3,6 @@ import { router } from 'expo-router';
 import {
   useApproveFinanceEntry,
   useFinanceEntries,
-  useFinanceSplit,
   useFinanceSummary,
   useMe,
   usePermissions,
@@ -35,10 +34,10 @@ import { shortDate } from '../format';
 import { SpokeHeader } from '../spoke-header';
 
 /**
- * The band's money for the selected period: the net, what's waiting for approval, who is owed what,
- * the split, month and category reports, and the entries (with a CSV export).
- * Logging is the header's + (members too); admins record payments from a
- * member's history and edit the split from its section.
+ * The band's money for the selected period: the net, what's waiting for
+ * approval, who is owed what, month and category reports, and the entries
+ * (with a CSV export). Logging is the header's + (members too); admins record
+ * payments from a member's history.
  */
 export function FinancesSpoke({ boardId }: { boardId: string }) {
   const canvas = usePosterCanvas();
@@ -61,7 +60,6 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
     period === 'month' ? 'this month' : period === 'year' ? 'this year' : 'all time';
   const summary = useFinanceSummary(boardId, range, visible);
   const entries = useFinanceEntries(boardId, range);
-  const split = useFinanceSplit(boardId);
   const approve = useApproveFinanceEntry(boardId);
   const manages = can('finance.manage');
   const data = summary.data;
@@ -198,30 +196,6 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
                 </View>
               );
             })}
-          </Section>
-
-          <Section title="HOW MONEY IS SPLIT">
-            {split.data?.isDefault && (
-              <PosterText variant="cardMeta" color={canvas.soft}>
-                Nobody has set a split yet, so everyone gets an equal share.
-              </PosterText>
-            )}
-            {(split.data?.shares ?? []).map((share, index) => (
-              <Row
-                key={share.userId ?? 'fund'}
-                first={index === 0}
-                title={share.userId ? name(share.userId) : 'Band fund'}
-                trailing={`${share.shareBps / 100}%`}
-              />
-            ))}
-            {manages && (
-              <Button
-                title="Edit split"
-                variant="secondary"
-                size="sm"
-                onPress={() => router.push(`/board/${boardId}/form/split`)}
-              />
-            )}
           </Section>
 
           {data.totals.byMonth.length > 1 && (

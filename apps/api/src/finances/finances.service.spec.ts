@@ -26,10 +26,6 @@ describe('FinancesService', () => {
     decisionNote: '',
     createdAt: new Date('2026-10-01T12:00:00Z'),
     updatedAt: new Date('2026-10-01T12:00:00Z'),
-    splits: [
-      { userId: 'u1', shareBps: 5000 },
-      { userId: 'u2', shareBps: 5000 },
-    ],
     event: null,
     _count: { receipts: 0 },
     ...over,
@@ -43,12 +39,6 @@ describe('FinancesService', () => {
       update: jest.fn(),
       updateMany: jest.fn(),
       count: jest.fn(),
-    },
-    financeSplit: { deleteMany: jest.fn() },
-    splitShare: {
-      findMany: jest.fn(),
-      deleteMany: jest.fn(),
-      createMany: jest.fn(),
     },
     payout: { findMany: jest.fn(), create: jest.fn() },
     membership: { findMany: jest.fn() },
@@ -82,7 +72,6 @@ describe('FinancesService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     prisma.board.findUnique.mockResolvedValue({ currency: 'USD' });
-    prisma.splitShare.findMany.mockResolvedValue([]);
     prisma.membership.findMany.mockImplementation(
       (args: { where: { userId?: { in: string[] } } }) =>
         Promise.resolve(
@@ -111,7 +100,7 @@ describe('FinancesService', () => {
       state: 'SETTLED' as const,
     };
 
-    it('snapshots the equal default split and logs the entry', async () => {
+    it('writes the entry and logs it', async () => {
       await service.create('b1', member, { ...dto, handledById: 'u2' });
       const args = createCall(0) as {
         data: Record<string, unknown>;
@@ -122,12 +111,6 @@ describe('FinancesService', () => {
         handledById: 'u2',
         createdById: 'u2',
         occurredOn: new Date('2026-10-02T00:00:00.000Z'),
-        splits: {
-          create: [
-            { userId: 'u1', shareBps: 5000 },
-            { userId: 'u2', shareBps: 5000 },
-          ],
-        },
       });
       expect(prisma.activity.create).toHaveBeenCalledWith({
         data: expect.objectContaining({ type: 'FINANCE_ENTRY_ADDED' }),
@@ -153,33 +136,9 @@ describe('FinancesService', () => {
       expect(createCall(2)).toMatchObject({ data: { state: 'SETTLED' } });
     });
 
-    it('uses the saved split once there is one', async () => {
-      prisma.splitShare.findMany.mockResolvedValue([
-        { userId: null, shareBps: 2000 },
-        { userId: 'u1', shareBps: 8000 },
-      ]);
-      await service.create('b1', admin, dto);
-      const args = createCall(0) as {
-        data: { splits: { create: unknown[] } };
-      };
-      expect(args.data.splits.create).toEqual([
-        { userId: null, shareBps: 2000 },
-        { userId: 'u1', shareBps: 8000 },
-      ]);
-    });
-
     it('stops a member booking money to someone else’s pocket', async () => {
       await expect(
         service.create('b1', member, { ...dto, handledById: 'u1' }),
-      ).rejects.toBeInstanceOf(ForbiddenException);
-    });
-
-    it('stops a member carving up the split', async () => {
-      await expect(
-        service.create('b1', member, {
-          ...dto,
-          splits: [{ userId: 'u2', shareBps: 10_000 }],
-        }),
       ).rejects.toBeInstanceOf(ForbiddenException);
     });
 
@@ -438,12 +397,7 @@ describe('FinancesService', () => {
   });
 
   describe('admin-only', () => {
-    it('keeps splits, payouts and settling with admins', async () => {
-      await expect(
-        service.setSplit('b1', member, {
-          shares: [{ userId: 'u2', shareBps: 10_000 }],
-        }),
-      ).rejects.toBeInstanceOf(ForbiddenException);
+    it('keeps payouts with admins', async () => {
       await expect(
         service.createPayout('b1', member, {
           userId: 'u2',
@@ -476,7 +430,10 @@ describe('FinancesService', () => {
       expect(summary.totals.incomeCents).toBe(20_000);
       expect(summary.totals.expectedCents).toBe(15_000);
       const ben = summary.balances.members.find((m) => m.userId === 'u2');
-      expect(ben?.balanceCents).toBe(30_000 - 5_000);
+      // No split: the profit is the band's, so Ben only owes back what the
+      // band paid him.
+      expect(ben?.balanceCents).toBe(-5_000);
+      expect(summary.balances.bandFundCents).toBe(60_000);
     });
   });
 });

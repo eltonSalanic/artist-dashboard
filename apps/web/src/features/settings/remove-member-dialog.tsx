@@ -1,10 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { formatMoney, type SplitExitMode } from "@artist/shared";
+import { formatMoney } from "@artist/shared";
 import {
-  useFinanceSplit,
   useFinanceSummary,
   usePermissions,
   useRemoveMember,
@@ -25,8 +23,7 @@ import { todayISO } from "@/features/finances/finance-bits";
 /**
  * Removing a member, with what happens to their money. Their past entries
  * always stay. The admin chooses whether to record a final payment that
- * squares them up, and, when the band saved a split, where the leaver's slice
- * goes from now on.
+ * squares them up.
  */
 export function RemoveMemberDialog({
   boardId,
@@ -65,29 +62,22 @@ function RemoveMemberForm({
   const { can } = usePermissions();
   const seesBooks = can("finance.view");
   const summary = useFinanceSummary(boardId, {}, seesBooks);
-  const split = useFinanceSplit(boardId);
   const remove = useRemoveMember(boardId);
 
   const [payOut, setPayOut] = useState(true);
-  const [mode, setMode] = useState<SplitExitMode>("SPREAD");
 
   const name = member.displayName;
   const balance =
     summary.data?.balances.members.find((m) => m.userId === member.userId)
       ?.balanceCents ?? 0;
   const currency = summary.data?.currency ?? "USD";
-  const slice =
-    split.data && !split.data.isDefault
-      ? (split.data.shares.find((s) => s.userId === member.userId)?.shareBps ?? 0)
-      : 0;
-  const loading = seesBooks && (summary.isPending || split.isPending);
+  const loading = seesBooks && summary.isPending;
 
   const submit = () =>
     remove.mutate(
       {
         userId: member.userId,
         dto: {
-          split: mode,
           ...(payOut && balance !== 0
             ? {
                 payout: {
@@ -138,51 +128,6 @@ function RemoveMemberForm({
             </span>
           </label>
         </section>
-      )}
-
-      {!loading && slice > 0 && (
-        <fieldset className="flex flex-col gap-2 rounded-lg border p-3 text-sm">
-          <legend className="px-1 font-medium">
-            Their {slice / 100}% of future money
-          </legend>
-          {(
-            [
-              {
-                value: "SPREAD",
-                label: "Split it among everyone left",
-                hint: "Everyone's share grows in proportion.",
-              },
-              {
-                value: "FUND",
-                label: "Send it to the band fund",
-                hint: "Everyone else keeps their current percentage.",
-              },
-            ] as const
-          ).map((option) => (
-            <label key={option.value} className="flex items-start gap-2">
-              <input
-                type="radio"
-                name="split-exit"
-                className="mt-1"
-                checked={mode === option.value}
-                onChange={() => setMode(option.value)}
-              />
-              <span>
-                {option.label}
-                <span className="block text-xs text-muted-foreground">
-                  {option.hint}
-                </span>
-              </span>
-            </label>
-          ))}
-          <p className="text-xs text-muted-foreground">
-            Want exact numbers? Cancel and edit the split on the{" "}
-            <Link href="/finances" className="underline">
-              Finances page
-            </Link>{" "}
-            first.
-          </p>
-        </fieldset>
       )}
 
       <DialogFooter>

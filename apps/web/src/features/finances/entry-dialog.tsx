@@ -228,7 +228,7 @@ function EntryForm({
                     : "An admin sent this back. It doesn't count right now — fix it and save to ask again."
                 : saved && isLockedFor(saved, manages)
                   ? "An admin approved this, so only an admin can change it now."
-                  : "Amounts are split between members by the band's split."}
+                  : "If it came out of someone's pocket, pick them, and the band owes them it back."}
         </DialogDescription>
       </DialogHeader>
 

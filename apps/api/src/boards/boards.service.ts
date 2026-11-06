@@ -10,7 +10,6 @@ import {
 } from '@nestjs/common';
 import {
   formatMoney,
-  removeFromSplit,
   resolveBoardTheme,
   withShippedWidgets,
   type ApiErrorBody,
@@ -284,7 +283,7 @@ export class BoardsService {
     boardId: string,
     actorId: string,
     userId: string,
-    dto: RemoveMemberDto = { split: 'SPREAD' },
+    dto: RemoveMemberDto = {},
   ) {
     if (userId === actorId) {
       throw new BadRequestException(
@@ -347,10 +346,8 @@ export class BoardsService {
 
   /**
    * A leaving member's money. Their past entries stay exactly as they are, so
-   * nobody else's balance moves. Their slice of the saved split goes to the
-   * others or the band fund (an unsaved split is equal shares among whoever
-   * is in the band, so it re-divides by itself), and an optional final
-   * payment squares them up.
+   * nobody else's balance moves, and an optional final payment squares them
+   * up.
    */
   private async settleLeaversMoney(
     tx: Prisma.TransactionClient,
@@ -359,20 +356,6 @@ export class BoardsService {
     leaver: { userId: string; displayName: string },
     dto: RemoveMemberDto,
   ) {
-    const saved = await tx.splitShare.findMany({
-      where: { boardId },
-      select: { userId: true, shareBps: true },
-    });
-    if (saved.some((s) => s.userId === leaver.userId)) {
-      const next = removeFromSplit(saved, leaver.userId, dto.split);
-      await tx.splitShare.deleteMany({ where: { boardId } });
-      await tx.splitShare.createMany({
-        data: next
-          .filter((s) => s.shareBps > 0)
-          .map((s) => ({ boardId, ...s })),
-      });
-    }
-
     if (dto.payout) {
       const board = await tx.board.findUnique({
         where: { id: boardId },

@@ -1,14 +1,10 @@
 import {
-  allocate,
   cancelledShowMoneyNotice,
   computeBalances,
-  equalSplit,
   financeCsv,
   isLockedFor,
-  isValidSplit,
   ledgerTotals,
   needsApproval,
-  removeFromSplit,
   parseMoneyToCents,
   showSettlement,
   type LedgerEntry,
@@ -22,7 +18,6 @@ const entry = (over: Partial<LedgerEntry>): LedgerEntry => ({
   category: 'SHOW_FEE',
   occurredOn: '2026-10-01',
   handledById: null,
-  splits: equalSplit(['a', 'b']),
   ...over,
 });
 
@@ -42,81 +37,17 @@ describe('parseMoneyToCents', () => {
   });
 });
 
-describe('equalSplit', () => {
-  it('always totals 100%', () => {
-    for (const n of [1, 2, 3, 4, 6, 7]) {
-      const ids = Array.from({ length: n }, (_, i) => `m${i}`);
-      expect(isValidSplit(equalSplit(ids))).toBe(true);
-      expect(isValidSplit(equalSplit(ids, 2000))).toBe(true);
-    }
-  });
-
-  it('keeps the band fund cut first', () => {
-    expect(equalSplit(['a', 'b'], 2000)).toEqual([
-      { userId: null, shareBps: 2000 },
-      { userId: 'a', shareBps: 4000 },
-      { userId: 'b', shareBps: 4000 },
-    ]);
-  });
-
-  it('puts everything in the fund when nobody is listed', () => {
-    expect(equalSplit([])).toEqual([{ userId: null, shareBps: 10_000 }]);
-  });
-});
-
-describe('isValidSplit', () => {
-  it('rejects duplicates, shortfalls and negatives', () => {
-    expect(isValidSplit([])).toBe(false);
-    expect(isValidSplit([{ userId: 'a', shareBps: 9000 }])).toBe(false);
-    expect(
-      isValidSplit([
-        { userId: 'a', shareBps: 5000 },
-        { userId: 'a', shareBps: 5000 },
-      ]),
-    ).toBe(false);
-    expect(
-      isValidSplit([
-        { userId: 'a', shareBps: 11000 },
-        { userId: 'b', shareBps: -1000 },
-      ]),
-    ).toBe(false);
-  });
-});
-
-describe('allocate', () => {
-  it('gives the leftover cent to the band fund, not the first member', () => {
-    const shares = equalSplit(['a', 'b', 'c']);
-    const slices = allocate(1000, shares);
-    expect(slices).toEqual([
-      { userId: 'a', cents: 333 },
-      { userId: 'b', cents: 333 },
-      { userId: 'c', cents: 333 },
-      { userId: null, cents: 1 },
-    ]);
-  });
-
-  it('adds back up to the amount, negative amounts included', () => {
-    const shares = equalSplit(['a', 'b', 'c'], 1500);
-    for (const amount of [1, 7, 999, 100_001, -4321]) {
-      const total = allocate(amount, shares).reduce((s, x) => s + x.cents, 0);
-      expect(total).toBe(amount);
-    }
-  });
-});
-
 describe('computeBalances', () => {
-  it('splits a show and credits whoever fronted the gas', () => {
+  it('keeps the profit with the band and credits whoever fronted the gas', () => {
     const { members, bandFundCents } = computeBalances([
       entry({ amountCents: 40_000 }),
       entry({ kind: 'EXPENSE', category: 'TRAVEL', amountCents: 4_000, handledById: 'a' }),
     ]);
     const a = members.find((m) => m.userId === 'a')!;
-    const b = members.find((m) => m.userId === 'b')!;
-    expect(a.shareCents).toBe(18_000);
     expect(a.frontedCents).toBe(4_000);
-    expect(a.balanceCents).toBe(22_000);
-    expect(b.balanceCents).toBe(18_000);
-    expect(bandFundCents).toBe(0);
+    expect(a.balanceCents).toBe(4_000);
+    expect(members.find((m) => m.userId === 'b')).toBeUndefined();
+    expect(bandFundCents).toBe(36_000);
   });
 
   it('charges a member for cash they collected, and nets payouts', () => {
@@ -126,8 +57,8 @@ describe('computeBalances', () => {
     );
     const a = members.find((m) => m.userId === 'a')!;
     const b = members.find((m) => m.userId === 'b')!;
-    expect(a.balanceCents).toBe(0);
-    expect(b.balanceCents).toBe(-5_000);
+    expect(a.balanceCents).toBe(-5_000);
+    expect(b.balanceCents).toBe(-10_000);
   });
 
   it('ignores expected and void entries', () => {
@@ -162,7 +93,7 @@ describe('ledgerTotals', () => {
 });
 
 describe('showSettlement', () => {
-  it('reports each cut of the night’s net', () => {
+  it('reports the night’s net and what is still expected', () => {
     const result = showSettlement([
       entry({ amountCents: 50_000 }),
       entry({ kind: 'EXPENSE', category: 'FEES', amountCents: 10_000 }),
@@ -170,10 +101,6 @@ describe('showSettlement', () => {
     ]);
     expect(result.netCents).toBe(40_000);
     expect(result.expectedCents).toBe(7_000);
-    expect(result.cuts).toEqual([
-      { userId: 'a', cents: 20_000 },
-      { userId: 'b', cents: 20_000 },
-    ]);
   });
 });
 
@@ -217,41 +144,6 @@ describe('finance DTOs', () => {
       state: 'EXPECTED',
     });
     expect(result.success).toBe(false);
-  });
-});
-
-describe('removeFromSplit', () => {
-  const four = ['a', 'b', 'c', 'd'].map((userId) => ({ userId, shareBps: 2500 }));
-
-  it('spreads a leaver’s slice over the others in proportion', () => {
-    const next = removeFromSplit(four, 'd', 'SPREAD');
-    expect(next.map((s) => s.userId)).toEqual(['a', 'b', 'c']);
-    expect(next.reduce((sum, s) => sum + s.shareBps, 0)).toBe(10_000);
-    expect(next.map((s) => s.shareBps).sort()).toEqual([3333, 3333, 3334]);
-  });
-
-  it('keeps the fund’s slice where it was when spreading', () => {
-    const next = removeFromSplit(
-      [{ userId: null, shareBps: 1000 }, { userId: 'a', shareBps: 6000 }, { userId: 'b', shareBps: 3000 }],
-      'b',
-      'SPREAD',
-    );
-    expect(next).toEqual([
-      { userId: null, shareBps: 1000 },
-      { userId: 'a', shareBps: 9000 },
-    ]);
-  });
-
-  it('can hand the slice to the band fund instead', () => {
-    const next = removeFromSplit(four, 'a', 'FUND');
-    expect(next[0]).toEqual({ userId: null, shareBps: 2500 });
-    expect(next.slice(1).every((s) => s.shareBps === 2500)).toBe(true);
-  });
-
-  it('falls back to the fund when nobody else has a share', () => {
-    expect(removeFromSplit([{ userId: 'a', shareBps: 10_000 }], 'a', 'SPREAD')).toEqual([
-      { userId: null, shareBps: 10_000 },
-    ]);
   });
 });
 

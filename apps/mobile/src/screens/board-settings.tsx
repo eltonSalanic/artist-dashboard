@@ -29,7 +29,6 @@ import {
   useCreateStatus,
   useDeleteShowStatus,
   useDeleteStatus,
-  useFinanceSplit,
   useFinanceSummary,
   useShowStatuses,
   useUpdateShowStatus,
@@ -175,23 +174,17 @@ function MembersSection({ boardId }: { boardId: string }) {
   const remove = useRemoveMember(boardId);
   const { can } = usePermissions();
   const summary = useFinanceSummary(boardId, {}, can('finance.view'));
-  const split = useFinanceSplit(boardId);
   const members = board.data?.members ?? [];
 
   /**
    * Removing someone asks about their money first: whether to record a final
-   * payment that squares them up, and, when the band saved a split, where
-   * their slice goes. Their past entries always stay. Each step is a plain
-   * alert of at most three buttons, which Android also shows.
+   * payment that squares them up. Their past entries always stay. Each step
+   * is a plain alert of at most three buttons, which Android also shows.
    */
   const confirmRemove = (userId: string, name: string) => {
     const balance =
       summary.data?.balances.members.find((m) => m.userId === userId)?.balanceCents ?? 0;
     const money = (cents: number) => formatMoney(cents, summary.data?.currency ?? 'USD');
-    const slice =
-      split.data && !split.data.isDefault
-        ? (split.data.shares.find((s) => s.userId === userId)?.shareBps ?? 0)
-        : 0;
 
     const finish = (dto: RemoveMemberDto) =>
       Alert.alert(
@@ -206,34 +199,23 @@ function MembersSection({ boardId }: { boardId: string }) {
           },
         ],
       );
-    const askSplit = (payout?: RemoveMemberDto['payout']) =>
-      slice > 0
-        ? Alert.alert(
-            `${name}'s ${slice / 100}% of future money`,
-            'Where should it go from now on? To set exact numbers, cancel and edit the split in Finances first.',
-            [
-              { text: 'Split among everyone left', onPress: () => finish({ split: 'SPREAD', payout }) },
-              { text: 'Band fund', onPress: () => finish({ split: 'FUND', payout }) },
-              { text: 'Cancel', style: 'cancel' },
-            ],
-          )
-        : finish({ split: 'SPREAD', payout });
-
-    if (balance === 0) return askSplit();
+    if (balance === 0) return finish({});
     Alert.alert(
       balance > 0
         ? `The band owes ${name} ${money(balance)}`
         : `${name} owes the band ${money(-balance)}`,
       "Record the final payment now, or leave it open in \"Who's owed\" for later?",
       [
-        { text: 'Leave it open', onPress: () => askSplit() },
+        { text: 'Leave it open', onPress: () => finish({}) },
         {
           text: balance > 0 ? 'We paid them' : 'They paid us',
           onPress: () =>
-            askSplit({
-              amountCents: balance,
-              paidOn: localDayISO(),
-              note: `Final payment when ${name} left the band`,
+            finish({
+              payout: {
+                amountCents: balance,
+                paidOn: localDayISO(),
+                note: `Final payment when ${name} left the band`,
+              },
             }),
         },
         { text: 'Cancel', style: 'cancel' },

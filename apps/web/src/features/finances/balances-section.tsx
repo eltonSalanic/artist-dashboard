@@ -63,7 +63,6 @@ export function BalancesSection({
       (m) =>
         summary.balances.members.find((b) => b.userId === m.id) ?? {
           userId: m.id,
-          shareCents: 0,
           frontedCents: 0,
           collectedCents: 0,
           paidOutCents: 0,
@@ -78,8 +77,9 @@ export function BalancesSection({
         <CardHeader>
           <CardTitle>Who&apos;s owed</CardTitle>
           <CardDescription>
-            Each member&apos;s cut, plus what they fronted, minus cash they hold
-            and what they&apos;ve been paid. Band fund:{" "}
+            What each member paid for the band out of pocket, minus cash
+            they&apos;re holding and what they&apos;ve been paid back. The
+            band&apos;s own money:{" "}
             <Amount
               cents={summary.balances.bandFundCents}
               currency={currency}
@@ -107,8 +107,7 @@ export function BalancesSection({
                     {name(row.userId)}
                   </Button>
                   <div className="text-xs text-muted-foreground">
-                    Cut {formatMoney(row.shareCents, currency)} · fronted{" "}
-                    {formatMoney(row.frontedCents, currency)} · holding{" "}
+                    Fronted {formatMoney(row.frontedCents, currency)} · holding{" "}
                     {formatMoney(row.collectedCents, currency)} · paid{" "}
                     {formatMoney(row.paidOutCents, currency)}
                   </div>

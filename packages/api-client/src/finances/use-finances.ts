@@ -6,13 +6,11 @@ import type {
   CreatePayoutDto,
   FinanceEntryDto,
   FinanceEntryQueryDto,
-  FinanceSplitDto,
   FinanceSummaryDto,
   FinanceSummaryQueryDto,
   PayoutDto,
   ShowSettlementDto,
   UpdateFinanceEntryDto,
-  UpdateSplitDto,
 } from "@artist/shared";
 import { apiFetch, notify } from "../client";
 import { toUserMessage } from "../messages";
@@ -80,13 +78,6 @@ export function useFinanceSummary(
     queryFn: () =>
       apiFetch<FinanceSummaryDto>(`${base(boardId)}/summary${query(range)}`),
     enabled,
-  });
-}
-
-export function useFinanceSplit(boardId: string) {
-  return useQuery({
-    queryKey: ["finances", boardId, "split"],
-    queryFn: () => apiFetch<FinanceSplitDto>(`${base(boardId)}/split`),
   });
 }
 
@@ -174,19 +165,6 @@ export function useVoidFinanceEntry(boardId: string) {
     mutationFn: (entryId: string) =>
       apiFetch<FinanceEntryDto>(`${base(boardId)}/entries/${entryId}/void`, {
         method: "POST",
-      }),
-    onSuccess: invalidate,
-    onError: showError,
-  });
-}
-
-export function useUpdateFinanceSplit(boardId: string) {
-  const invalidate = useInvalidateFinances(boardId);
-  return useMutation({
-    mutationFn: (dto: UpdateSplitDto) =>
-      apiFetch<FinanceSplitDto>(`${base(boardId)}/split`, {
-        method: "PUT",
-        body: dto,
       }),
     onSuccess: invalidate,
     onError: showError,

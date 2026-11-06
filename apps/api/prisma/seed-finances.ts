@@ -1,7 +1,7 @@
 /**
  * Finance test band: a separate board with five real logins and a few months
  * of realistic money, for trying the finances feature by hand (approvals,
- * payouts, the split, removing a member, CSV export).
+ * payouts, sending an expense back, removing a member, CSV export).
  *
  *   npm run db:seed:finances -w apps/api
  *
@@ -219,16 +219,6 @@ async function main() {
     'Confirmed',
   );
   await show('Harvest Fest', 'Golden Gate Park', 33, 'Hold');
-
-  // The saved split: 10% band fund, 18% each.
-  const members = Object.values(PEOPLE).map((p) => p.id);
-  const split: { userId: string | null; shareBps: number }[] = [
-    { userId: null, shareBps: 1000 },
-    ...members.map((userId) => ({ userId, shareBps: 1800 })),
-  ];
-  await prisma.splitShare.createMany({
-    data: split.map((s) => ({ boardId: BOARD_ID, ...s })),
-  });
 
   type Line = {
     kind: 'INCOME' | 'EXPENSE';
@@ -542,7 +532,6 @@ async function main() {
         approvedAt: line.approvedBy ? days(Math.min(line.on, 0) + 1) : null,
         decisionNote: line.decisionNote ?? '',
         createdAt: created,
-        splits: { create: split },
       },
     });
     // The inbox rows the live app would have written: admins asked to
@@ -605,9 +594,6 @@ async function main() {
     },
     { who: 'avery', cents: 10_000, on: -40, note: 'Motel, part one (Venmo)' },
     { who: 'casey', cents: 8_600, on: -44, note: 'Gas back' },
-    { who: 'riley', cents: 25_000, on: -20, note: 'Monthly draw' },
-    { who: 'casey', cents: 25_000, on: -20, note: 'Monthly draw' },
-    { who: 'jamie', cents: 25_000, on: -20, note: 'Monthly draw' },
   ];
   for (const p of payouts) {
     const created = await prisma.payout.create({

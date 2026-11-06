@@ -20,7 +20,6 @@ import { NoteForm } from '@/features/forms/note-form';
 import { PayoutForm } from '@/features/forms/payout-form';
 import { RejectForm } from '@/features/forms/reject-form';
 import { ReminderForm } from '@/features/forms/reminder-form';
-import { SplitForm } from '@/features/forms/split-form';
 import { TaskForm } from '@/features/forms/task-form';
 
 /**
@@ -89,8 +88,6 @@ export default function Form() {
         return id ? <RejectForm boardId={boardId} entryId={id} /> : null;
       case 'payout':
         return member ? <PayoutForm boardId={boardId} memberId={member} /> : null;
-      case 'split':
-        return <SplitForm boardId={boardId} />;
       case 'item-link':
         return (LinkParentKinds as readonly string[]).includes(on ?? '') && parentId ? (
           <ItemLinkForm boardId={boardId} kind={on as LinkParentKind} parentId={parentId} />

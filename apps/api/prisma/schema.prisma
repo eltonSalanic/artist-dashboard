@@ -45,8 +45,6 @@ model User {
   financeEntriesCreated  FinanceEntry[]           @relation("FinanceEntryCreatedBy")
   financeEntriesHandled  FinanceEntry[]           @relation("FinanceEntryHandledBy")
   financeEntriesApproved FinanceEntry[]           @relation("FinanceEntryApprovedBy")
-  financeSplits          FinanceSplit[]
-  splitShares            SplitShare[]
   payouts                Payout[]                 @relation("PayoutMember")
   payoutsRecorded        Payout[]                 @relation("PayoutCreatedBy")
   subscription           UserSubscription?
@@ -87,7 +85,6 @@ model Board {
   notifications  NotificationDelivery[]
   notifyPrefs    NotificationPreference[]
   financeEntries FinanceEntry[]
-  splitShares    SplitShare[]
   payouts        Payout[]
   links          ItemLink[]
   /// Whose subscription keeps this band open. Separate from the ADMIN role:
@@ -697,39 +694,11 @@ model FinanceEntry {
   handledBy    User?          @relation("FinanceEntryHandledBy", fields: [handledById], references: [id], onDelete: SetNull)
   createdBy    User?          @relation("FinanceEntryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   approvedBy   User?          @relation("FinanceEntryApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
-  splits       FinanceSplit[]
   receipts     Attachment[]
   inboxRows    MentionNotification[]
 
   @@index([boardId, occurredOn])
   @@index([eventId])
-}
-
-/// How one entry is divided, snapshotted from the board's split when the entry
-/// is written, so changing the split later never rewrites past money.
-model FinanceSplit {
-  id       String       @id @default(uuid()) @db.Uuid
-  entryId  String       @db.Uuid
-  /// Null is the band fund. A deleted account's share falls back to the fund.
-  userId   String?      @db.Uuid
-  shareBps Int
-  entry    FinanceEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
-  user     User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([entryId])
-}
-
-/// The board's default split. No rows means equal shares among members.
-model SplitShare {
-  id       String  @id @default(uuid()) @db.Uuid
-  boardId  String  @db.Uuid
-  /// Null is the band fund.
-  userId   String? @db.Uuid
-  shareBps Int
-  board    Board   @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  user     User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([boardId])
 }
 
 /// Money that changed hands between the band and a member outside the app.

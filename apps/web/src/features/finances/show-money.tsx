@@ -8,7 +8,7 @@ import { labelStyle } from "@/lib/label-style";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EntryDialog } from "./entry-dialog";
-import { Amount, memberNamer } from "./finance-bits";
+import { Amount } from "./finance-bits";
 
 /** A show's money, inside the show: the net and each cut. */
 export function ShowMoney({
@@ -58,19 +58,6 @@ export function ShowMoney({
               <Amount cents={data.expectedCents} currency={data.currency} />
             </div>
           )}
-          <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-            {data.cuts.map((cut) => (
-              <li key={cut.userId}>
-                {memberNamer(data.members)(cut.userId)}{" "}
-                <Amount cents={cut.cents} currency={data.currency} />
-              </li>
-            ))}
-            {data.bandFundCents !== 0 && (
-              <li>
-                Band fund <Amount cents={data.bandFundCents} currency={data.currency} />
-              </li>
-            )}
-          </ul>
           <Link href="/finances" className="text-xs underline-offset-2 hover:underline">
             Open the books
           </Link>

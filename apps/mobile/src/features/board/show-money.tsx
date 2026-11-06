@@ -19,8 +19,6 @@ export function ShowMoney({ boardId, eventId }: { boardId: string; eventId: stri
 
   const data = settlement.data;
   const money = (cents: number) => formatMoney(cents, data?.currency ?? 'USD');
-  const name = (userId: string) =>
-    data?.members.find((m) => m.id === userId)?.displayName ?? 'Former member';
 
   return (
     <Section title={data && data.entries.length > 0 ? `MONEY · ${money(data.netCents)} NET` : 'MONEY'}>
@@ -32,19 +30,10 @@ export function ShowMoney({ boardId, eventId }: { boardId: string; eventId: stri
         </PosterText>
       ) : (
         <View>
+          <Row first title="In" trailing={money(data.incomeCents)} />
+          <Row title="Out" trailing={money(-data.expenseCents)} />
           {data.expectedCents > 0 && (
-            <Row first title="Still owed" trailing={money(data.expectedCents)} />
-          )}
-          {data.cuts.map((cut, index) => (
-            <Row
-              key={cut.userId}
-              first={index === 0 && data.expectedCents === 0}
-              title={name(cut.userId)}
-              trailing={money(cut.cents)}
-            />
-          ))}
-          {data.bandFundCents !== 0 && (
-            <Row title="Band fund" trailing={money(data.bandFundCents)} />
+            <Row title="Still owed" trailing={money(data.expectedCents)} />
           )}
         </View>
       )}

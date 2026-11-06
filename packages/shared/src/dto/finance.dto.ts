@@ -2,12 +2,9 @@ import { z } from 'zod';
 import { FinanceKinds, FinanceStates, type FinanceKind, type FinanceState } from '../enums';
 import {
   FinanceCategoryKeys,
-  SPLIT_EXIT_MODES,
   categoryKind,
-  isValidSplit,
   type Balances,
   type LedgerTotals,
-  type SplitShare,
 } from '../finance';
 
 /** $10M — far past any band's single line, well inside a Postgres int. */
@@ -15,20 +12,6 @@ export const MAX_AMOUNT_CENTS = 1_000_000_000;
 
 const amountCents = z.number().int().min(1).max(MAX_AMOUNT_CENTS);
 const isoDate = z.iso.date();
-
-export const splitShareSchema = z.object({
-  /** Null is the band fund. */
-  userId: z.uuid().nullable(),
-  shareBps: z.number().int().min(0).max(10_000),
-});
-
-const splitSchema = z
-  .array(splitShareSchema)
-  .min(1)
-  .max(50)
-  .refine((shares) => isValidSplit(shares), {
-    message: 'Shares must add up to 100%, with nobody listed twice',
-  });
 
 const entryFields = {
   kind: z.enum(FinanceKinds),
@@ -40,8 +23,6 @@ const entryFields = {
   note: z.string().trim().max(2_000).optional(),
   /** Member whose own money this went through; null is the band's account. */
   handledById: z.uuid().nullish(),
-  /** Overrides the board's default split for this one entry. */
-  splits: splitSchema.optional(),
 };
 
 const categoryMatchesKind = (e: { kind?: FinanceKind; category?: string }) =>
@@ -109,9 +90,6 @@ export const rejectFinanceEntrySchema = z.object({
 });
 export type RejectFinanceEntryDto = z.infer<typeof rejectFinanceEntrySchema>;
 
-export const updateSplitSchema = z.object({ shares: splitSchema });
-export type UpdateSplitDto = z.infer<typeof updateSplitSchema>;
-
 export const createPayoutSchema = z.object({
   userId: z.uuid(),
   /** Positive: the band paid the member. Negative: the member paid the band. */
@@ -128,17 +106,14 @@ export type CreatePayoutDto = z.infer<typeof createPayoutSchema>;
 
 /**
  * What happens to a member's money when an admin removes them from the band.
- * Their past entries always stay as they are. `split` decides where their
- * slice of the saved split goes (only matters when a split was saved: the
- * equal default re-divides by itself); `payout`, when given, records the
- * final payment that squares them up, in the same step.
+ * Their past entries always stay as they are; `payout`, when given, records
+ * the final payment that squares them up, in the same step.
  */
 export const removeMemberSchema = z
   .object({
-    split: z.enum(SPLIT_EXIT_MODES).default('SPREAD'),
     payout: createPayoutSchema.omit({ userId: true }).optional(),
   })
-  .default({ split: 'SPREAD' });
+  .default({});
 export type RemoveMemberDto = z.infer<typeof removeMemberSchema>;
 
 // ---- Responses ----
@@ -169,7 +144,6 @@ export interface FinanceEntryDto {
   approvedAt: string | null;
   /** Why an admin sent it back; `''` unless `state` is REJECTED. */
   decisionNote: string;
-  splits: SplitShare[];
   receiptCount: number;
   createdAt: string;
   updatedAt: string;
@@ -183,12 +157,6 @@ export interface PayoutDto {
   note: string;
   createdById: string | null;
   createdAt: string;
-}
-
-export interface FinanceSplitDto {
-  shares: SplitShare[];
-  /** True when nobody has saved a split yet and this is the equal default. */
-  isDefault: boolean;
 }
 
 export interface FinanceSummaryDto {
@@ -215,8 +183,6 @@ export interface ShowSettlementDto {
   expenseCents: number;
   netCents: number;
   expectedCents: number;
-  cuts: { userId: string; cents: number }[];
-  bandFundCents: number;
-  split: SplitShare[];
+  /** Today's members plus anyone these entries mention, for names and pickers. */
   members: FinanceMemberRef[];
 }

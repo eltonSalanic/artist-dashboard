@@ -9,7 +9,6 @@ import {
   categoryKind,
   categoryLabel,
   computeBalances,
-  equalSplit,
   formatMoney,
   isLockedFor,
   ledgerTotals,
@@ -24,16 +23,13 @@ import {
   type FinanceEntryDto,
   type FinanceEntryQueryDto,
   type FinanceMemberRef,
-  type FinanceSplitDto,
   type FinanceSummaryDto,
   type FinanceSummaryQueryDto,
   type LedgerEntry,
   type PayoutDto,
   type RejectFinanceEntryDto,
   type ShowSettlementDto,
-  type SplitShare,
   type UpdateFinanceEntryDto,
-  type UpdateSplitDto,
 } from '@artist/shared';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -41,7 +37,6 @@ import { ActivityService } from '../activity/activity.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
 const entryInclude = {
-  splits: { select: { userId: true, shareBps: true } },
   event: { select: { title: true } },
   _count: { select: { receipts: true } },
 } satisfies Prisma.FinanceEntryInclude;
@@ -110,8 +105,6 @@ export class FinancesService {
     this.assertMemberMayShape(actor, dto);
     if (dto.eventId) await this.assertEventInBoard(boardId, dto.eventId);
     if (dto.handledById) await this.assertMembers(boardId, [dto.handledById]);
-    const splits = dto.splits ?? (await this.boardSplit(boardId)).shares;
-    if (dto.splits) await this.assertSplitMembers(boardId, dto.splits);
 
     const state = needsApproval(
       { kind: dto.kind, handledById: dto.handledById ?? null },
@@ -136,7 +129,6 @@ export class FinancesService {
           eventId: dto.eventId ?? null,
           handledById: dto.handledById ?? null,
           createdById: actor.userId,
-          splits: { create: splits },
         },
         include: entryInclude,
       });
@@ -177,12 +169,8 @@ export class FinancesService {
     }
     if (dto.eventId) await this.assertEventInBoard(boardId, dto.eventId);
     if (dto.handledById) await this.assertMembers(boardId, [dto.handledById]);
-    if (dto.splits) await this.assertSplitMembers(boardId, dto.splits);
 
     const entry = await this.prisma.$transaction(async (tx) => {
-      if (dto.splits) {
-        await tx.financeSplit.deleteMany({ where: { entryId } });
-      }
       const updated = await tx.financeEntry.update({
         where: { id: entryId },
         data: {
@@ -208,7 +196,6 @@ export class FinancesService {
           ...(dto.handledById !== undefined
             ? { handledById: dto.handledById }
             : {}),
-          ...(dto.splits ? { splits: { create: dto.splits } } : {}),
         },
         include: entryInclude,
       });
@@ -300,29 +287,6 @@ export class FinancesService {
       return updated;
     });
     return toEntryDto(entry);
-  }
-
-  // ---- Split ----
-
-  async getSplit(
-    boardId: string,
-    actor: FinanceActor,
-  ): Promise<FinanceSplitDto> {
-    this.require(actor, 'finance.view');
-    return this.boardSplit(boardId);
-  }
-
-  /** Applies to entries written from now on; past entries keep their split. */
-  async setSplit(boardId: string, actor: FinanceActor, dto: UpdateSplitDto) {
-    this.require(actor, 'finance.manage');
-    await this.assertSplitMembers(boardId, dto.shares);
-    await this.prisma.$transaction([
-      this.prisma.splitShare.deleteMany({ where: { boardId } }),
-      this.prisma.splitShare.createMany({
-        data: dto.shares.map((s) => ({ boardId, ...s })),
-      }),
-    ]);
-    return this.boardSplit(boardId);
   }
 
   // ---- Payouts ----
@@ -443,25 +407,22 @@ export class FinancesService {
       select: { id: true, title: true, startsAt: true },
     });
     if (!event) throw new NotFoundException('Event not found');
-    const [rows, split, currency] = await Promise.all([
+    const [rows, currency] = await Promise.all([
       this.prisma.financeEntry.findMany({
         where: { boardId, eventId, state: { not: 'VOID' } },
         include: entryInclude,
         orderBy: [{ occurredOn: 'asc' }, { createdAt: 'asc' }],
       }),
-      this.boardSplit(boardId),
       this.currency(boardId),
     ]);
-    const result = showSettlement(rows.map(toLedger));
     return {
       currency,
       event: { ...event, startsAt: event.startsAt.toISOString() },
       entries: rows.map(toEntryDto),
-      ...result,
-      split: split.shares,
+      ...showSettlement(rows.map(toLedger)),
       members: await this.members(
         boardId,
-        result.cuts.map((c) => c.userId),
+        rows.flatMap((r) => (r.handledById ? [r.handledById] : [])),
       ),
     };
   }
@@ -475,20 +436,17 @@ export class FinancesService {
 
   /**
    * Members log their own money: they can't book it against someone else's
-   * pocket or carve up the split for one entry. Admins can.
+   * pocket. Admins can.
    */
   private assertMemberMayShape(
     actor: FinanceActor,
-    dto: { handledById?: string | null; splits?: SplitShare[] },
+    dto: { handledById?: string | null },
   ) {
     if (can(actor.role, 'finance.manage')) return;
     if (dto.handledById && dto.handledById !== actor.userId) {
       throw new ForbiddenException(
         'You can only log money that went through your own pocket',
       );
-    }
-    if (dto.splits) {
-      throw new ForbiddenException('Only board admins can change a split');
     }
   }
 
@@ -555,25 +513,6 @@ export class FinancesService {
     return entry;
   }
 
-  /** The saved split, or equal shares among today's members. */
-  private async boardSplit(boardId: string): Promise<FinanceSplitDto> {
-    const saved = await this.prisma.splitShare.findMany({
-      where: { boardId },
-      select: { userId: true, shareBps: true },
-      orderBy: { shareBps: 'desc' },
-    });
-    if (saved.length) return { shares: saved, isDefault: false };
-    const memberships = await this.prisma.membership.findMany({
-      where: { boardId },
-      select: { userId: true },
-      orderBy: { createdAt: 'asc' },
-    });
-    return {
-      shares: equalSplit(memberships.map((m) => m.userId)),
-      isDefault: true,
-    };
-  }
-
   private async currency(boardId: string) {
     const board = await this.prisma.board.findUnique({
       where: { id: boardId },
@@ -610,13 +549,6 @@ export class FinancesService {
       throw new BadRequestException('Everyone named must be on this board');
     }
     return found.map((m) => m.user);
-  }
-
-  private async assertSplitMembers(boardId: string, shares: SplitShare[]) {
-    const ids = shares
-      .map((s) => s.userId)
-      .filter((id): id is string => id !== null);
-    if (ids.length) await this.assertMembers(boardId, ids);
   }
 
   private async assertEventInBoard(boardId: string, eventId: string) {
@@ -786,7 +718,6 @@ function toLedger(row: EntryRow): LedgerEntry {
     category: row.category,
     occurredOn: fromDate(row.occurredOn),
     handledById: row.handledById,
-    splits: row.splits,
   };
 }
 
@@ -809,7 +740,6 @@ function toEntryDto(row: EntryRow): FinanceEntryDto {
     approvedById: row.approvedById,
     approvedAt: row.approvedAt?.toISOString() ?? null,
     decisionNote: row.decisionNote,
-    splits: row.splits,
     receiptCount: row._count.receipts,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),

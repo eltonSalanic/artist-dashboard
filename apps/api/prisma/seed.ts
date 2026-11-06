@@ -31,7 +31,6 @@ import {
   DEFAULT_BOARD_LAYOUT,
   DEFAULT_SHOW_STATUSES,
   DEFAULT_TASK_STATUSES,
-  equalSplit,
   localDayISO,
 } from '@artist/shared';
 
@@ -139,10 +138,9 @@ async function main() {
     await prisma.reminder.deleteMany({ where: { boardId } });
     await prisma.focusPin.deleteMany({ where: { boardId } });
     await prisma.customWidgetContent.deleteMany({ where: { boardId } });
-    // Entries take their splits and receipts with them.
+    // Entries take their receipts with them.
     await prisma.financeEntry.deleteMany({ where: { boardId } });
     await prisma.payout.deleteMany({ where: { boardId } });
-    await prisma.splitShare.deleteMany({ where: { boardId } });
 
     // Give the board a clear demo identity and add the synthetic bandmates as
     // members (so they're valid assignees). The real owner keeps their role.
@@ -682,20 +680,8 @@ async function main() {
     data: feed.map((f) => ({ boardId: boardId, ...f })),
   });
 
-  // Finances: 10% to the band fund, the rest split evenly. Entries snapshot
-  // the split, as the API does, so changing it later leaves these alone.
-  const members = await prisma.membership.findMany({
-    where: { boardId },
-    orderBy: { createdAt: 'asc' },
-    select: { userId: true },
-  });
-  const split = equalSplit(
-    members.map((m) => m.userId),
-    1000,
-  );
-  await prisma.splitShare.createMany({
-    data: split.map((share) => ({ boardId, ...share })),
-  });
+  // Finances: a few months of the band's money. There is no split; profit
+  // stays with the band.
   const day = (offset: number) =>
     new Date(`${localDayISO(days(offset))}T00:00:00.000Z`);
   const ledger: {
@@ -802,7 +788,6 @@ async function main() {
         eventId: line.eventId ?? null,
         handledById: line.handledById ?? null,
         createdById: owner.id,
-        splits: { create: split },
       },
     });
   }
