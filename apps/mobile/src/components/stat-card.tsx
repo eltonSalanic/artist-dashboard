@@ -108,9 +108,16 @@ export function HubStatCard({
             <Skeleton width="35%" height={12} />
           </View>
         ) : card.primary === null ? (
-          <PosterText variant="cardMeta" color={tokens.mutedForeground}>
-            Nothing yet
-          </PosterText>
+          // Fills the space under the title so the empty state sits in its middle.
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <PosterText
+              variant="cardMeta"
+              color={tokens.mutedForeground}
+              style={{ textAlign: 'center' }}
+            >
+              Nothing yet
+            </PosterText>
+          </View>
         ) : (
           <View style={{ gap: 2 }}>
             <PosterText
