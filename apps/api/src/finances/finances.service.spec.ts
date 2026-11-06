@@ -456,7 +456,7 @@ describe('FinancesService', () => {
 
 
   describe('summary', () => {
-    it('totals the range, balances all time, and lists unpaid shows', async () => {
+    it('totals the range and balances all time', async () => {
       prisma.financeEntry.findMany.mockResolvedValue([
         row({ occurredOn: new Date('2026-09-01T00:00:00Z') }),
         row({ id: 'f2', amountCents: 20_000 }),
@@ -470,14 +470,6 @@ describe('FinancesService', () => {
       prisma.payout.findMany.mockResolvedValue([
         { userId: 'u2', amountCents: 5_000 },
       ]);
-      prisma.event.findMany.mockResolvedValue([
-        {
-          id: 'e1',
-          title: 'The Echo',
-          startsAt: new Date('2026-10-20T03:00:00Z'),
-        },
-      ]);
-
       const summary = await service.summary('b1', member, {
         from: '2026-10-01',
       });
@@ -485,14 +477,6 @@ describe('FinancesService', () => {
       expect(summary.totals.expectedCents).toBe(15_000);
       const ben = summary.balances.members.find((m) => m.userId === 'u2');
       expect(ben?.balanceCents).toBe(30_000 - 5_000);
-      expect(summary.unpaidShows).toEqual([
-        {
-          eventId: 'e1',
-          title: 'The Echo',
-          startsAt: '2026-10-20T03:00:00.000Z',
-          expectedCents: 15_000,
-        },
-      ]);
     });
   });
 });

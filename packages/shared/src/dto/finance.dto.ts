@@ -205,8 +205,6 @@ export interface FinanceSummaryDto {
    * member's to-do list. Admins see every sent-back entry.
    */
   sentBack: FinanceEntryDto[];
-  /** Shows with promised income still outstanding. */
-  unpaidShows: { eventId: string; title: string; startsAt: string; expectedCents: number }[];
 }
 
 export interface ShowSettlementDto {

@@ -33,7 +33,7 @@ export function FinancesWidget({ boardId }: { boardId: string }) {
   }
   if (!summary.data) return <Skeleton className="h-full min-h-24" />;
 
-  const { totals, balances, currency, unpaidShows } = summary.data;
+  const { totals, balances, currency, pending } = summary.data;
   const mine =
     balances.members.find((m) => m.userId === me.data?.user.id)?.balanceCents ??
     0;
@@ -60,8 +60,10 @@ export function FinancesWidget({ boardId }: { boardId: string }) {
           </dd>
         </div>
         <div>
-          <dt className="text-xs text-muted-foreground">Unpaid shows</dt>
-          <dd className="tabular-nums">{unpaidShows.length}</dd>
+          <dt className="text-xs text-muted-foreground">
+            Waiting for approval
+          </dt>
+          <dd className="tabular-nums">{pending.length}</dd>
         </div>
       </dl>
       <Button

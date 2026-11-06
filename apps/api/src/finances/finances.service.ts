@@ -408,20 +408,6 @@ export class FinancesService {
     );
     const balances = computeBalances(all, payouts);
 
-    const unpaid = new Map<string, number>();
-    for (const row of rows) {
-      if (row.state !== 'EXPECTED' || row.kind !== 'INCOME' || !row.eventId)
-        continue;
-      unpaid.set(row.eventId, (unpaid.get(row.eventId) ?? 0) + row.amountCents);
-    }
-    const shows = unpaid.size
-      ? await this.prisma.event.findMany({
-          where: { boardId, id: { in: [...unpaid.keys()] } },
-          select: { id: true, title: true, startsAt: true },
-          orderBy: { startsAt: 'asc' },
-        })
-      : [];
-
     return {
       currency,
       totals: ledgerTotals(inRange),
@@ -443,12 +429,6 @@ export class FinancesService {
         )
         .map(toEntryDto)
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
-      unpaidShows: shows.map((show) => ({
-        eventId: show.id,
-        title: show.title,
-        startsAt: show.startsAt.toISOString(),
-        expectedCents: unpaid.get(show.id) ?? 0,
-      })),
     };
   }
 

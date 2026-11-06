@@ -287,18 +287,13 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
                 : touched
                   ? 'net this month'
                   : null,
-        urgent: data.unpaidShows.length > 0 || waiting > 0 || sentBack > 0,
+        urgent: waiting > 0 || sentBack > 0,
         loading: false,
         lines: [
           ...(can('finance.manage') ? data.pending : data.sentBack).map((entry) => ({
             key: entry.id,
             text: `${entry.description || categoryLabel(entry.category)} · ${money(entry.amountCents)}`,
             meta: can('finance.manage') ? 'needs approval' : 'sent back',
-          })),
-          ...data.unpaidShows.map((show) => ({
-            key: show.eventId,
-            text: `${show.title} owes ${money(show.expectedCents)}`,
-            meta: shortDate(show.startsAt),
           })),
           ...data.totals.byCategory.map((c) => ({
             key: c.category,

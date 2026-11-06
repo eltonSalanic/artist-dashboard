@@ -232,8 +232,6 @@ function Finances({ boardId }: { boardId: string }) {
         />
       )}
 
-      {data && data.unpaidShows.length > 0 && <UnpaidShows data={data} />}
-
       <div className="flex flex-wrap items-center justify-between gap-2">
         <nav className="flex gap-1 rounded-full bg-muted/60 p-1">
           {TABS.map((t) => (
@@ -681,31 +679,6 @@ function SentBack({
                 </span>
               </button>
               <Amount cents={-entry.amountCents} currency={data.currency} />
-            </li>
-          ))}
-        </ul>
-      </CardContent>
-    </Card>
-  );
-}
-
-function UnpaidShows({ data }: { data: FinanceSummaryDto }) {
-  return (
-    <Card size="sm">
-      <CardHeader>
-        <CardTitle>Shows still owing money</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ul className="flex flex-col gap-1 text-sm">
-          {data.unpaidShows.map((show) => (
-            <li key={show.eventId} className="flex items-center gap-3">
-              <span className="min-w-0 flex-1 truncate">
-                {show.title}
-                <span className="ml-2 text-xs text-muted-foreground">
-                  {new Date(show.startsAt).toLocaleDateString()}
-                </span>
-              </span>
-              <Amount cents={show.expectedCents} currency={data.currency} />
             </li>
           ))}
         </ul>

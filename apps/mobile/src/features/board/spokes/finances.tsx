@@ -35,7 +35,7 @@ import { shortDate } from '../format';
 import { SpokeHeader } from '../spoke-header';
 
 /**
- * The band's money for the selected period: the net, who is owed what, shows still owing,
+ * The band's money for the selected period: the net, what's waiting for approval, who is owed what,
  * the split, month and category reports, and the entries (with a CSV export).
  * Logging is the header's + (members too); admins record payments from a
  * member's history and edit the split from its section.
@@ -161,21 +161,6 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
                   }
                   trailing={money(entry.amountCents)}
                   onPress={() => router.push(`/board/${boardId}/form/finance?id=${entry.id}`)}
-                />
-              ))}
-            </Section>
-          )}
-
-          {data.unpaidShows.length > 0 && (
-            <Section title="SHOWS STILL OWING">
-              {data.unpaidShows.map((show, index) => (
-                <Row
-                  key={show.eventId}
-                  first={index === 0}
-                  title={show.title}
-                  meta={shortDate(show.startsAt)}
-                  trailing={money(show.expectedCents)}
-                  onPress={() => router.push(`/board/${boardId}/event/${show.eventId}`)}
                 />
               ))}
             </Section>
