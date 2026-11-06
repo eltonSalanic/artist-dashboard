@@ -1,5 +1,4 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
-import { Prisma } from '../../generated/prisma/client';
 import { FinancesService, type FinanceActor } from './finances.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
@@ -23,7 +22,6 @@ describe('FinancesService', () => {
     createdById: 'u1',
     approvedById: null,
     approvedAt: null,
-    settleKey: null,
     createdAt: new Date('2026-10-01T12:00:00Z'),
     updatedAt: new Date('2026-10-01T12:00:00Z'),
     splits: [
@@ -324,118 +322,9 @@ describe('FinancesService', () => {
           paidOn: '2026-10-02',
         }),
       ).rejects.toBeInstanceOf(ForbiddenException);
-      await expect(
-        service.settleShow('b1', member, 'e1', {
-          requestId: 'req-00000001',
-          occurredOn: '2026-10-02',
-          lines: [],
-          receivedIds: ['f1'],
-        }),
-      ).rejects.toBeInstanceOf(ForbiddenException);
     });
   });
 
-  describe('settleShow', () => {
-    beforeEach(() => {
-      prisma.event.findFirst.mockResolvedValue({
-        id: 'e1',
-        title: 'The Echo',
-        startsAt: new Date('2026-10-02T03:00:00Z'),
-      });
-      prisma.financeEntry.findMany.mockResolvedValue([]);
-      prisma.financeEntry.findFirst.mockResolvedValue(null);
-      prisma.financeEntry.updateMany.mockResolvedValue({ count: 1 });
-    });
-
-    it('refuses fees that are not this show’s expected ones', async () => {
-      prisma.financeEntry.count.mockResolvedValue(0);
-      await expect(
-        service.settleShow('b1', admin, 'e1', {
-          requestId: 'req-00000001',
-          occurredOn: '2026-10-02',
-          lines: [],
-          receivedIds: ['f1'],
-        }),
-      ).rejects.toBeInstanceOf(BadRequestException);
-    });
-
-    it('writes the lines against the show and marks fees received', async () => {
-      prisma.financeEntry.count.mockResolvedValue(1);
-      await service.settleShow('b1', admin, 'e1', {
-        requestId: 'req-00000001',
-        occurredOn: '2026-10-02',
-        lines: [
-          {
-            kind: 'INCOME',
-            category: 'MERCH_SALES',
-            amountCents: 12_000,
-            handledById: 'u2',
-          },
-          { kind: 'EXPENSE', category: 'TRAVEL', amountCents: 3_000 },
-        ],
-        receivedIds: ['f1'],
-      });
-      expect(prisma.financeEntry.create).toHaveBeenCalledTimes(2);
-      expect(createCall(0)).toMatchObject({
-        data: {
-          eventId: 'e1',
-          state: 'SETTLED',
-          handledById: 'u2',
-          settleKey: 'req-00000001:0',
-        },
-      });
-      expect(createCall(1)).toMatchObject({
-        data: { settleKey: 'req-00000001:1' },
-      });
-      expect(prisma.financeEntry.updateMany).toHaveBeenCalledWith({
-        where: { id: { in: ['f1'] }, boardId: 'b1', eventId: 'e1', state: 'EXPECTED' },
-        data: { state: 'SETTLED' },
-      });
-      expect(prisma.activity.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ type: 'SHOW_SETTLED' }),
-      });
-    });
-
-    const night = {
-      requestId: 'req-00000001',
-      occurredOn: '2026-10-02',
-      lines: [
-        { kind: 'INCOME' as const, category: 'MERCH_SALES' as const, amountCents: 12_000 },
-      ],
-      receivedIds: [],
-    };
-
-    it('writes nothing when the same request comes again', async () => {
-      prisma.financeEntry.findFirst.mockResolvedValue({ id: 'f9' });
-      await service.settleShow('b1', admin, 'e1', night);
-      expect(prisma.financeEntry.create).not.toHaveBeenCalled();
-      expect(prisma.activity.create).not.toHaveBeenCalled();
-    });
-
-    it('treats losing a race against the same request as done', async () => {
-      prisma.financeEntry.create.mockRejectedValueOnce(
-        new Prisma.PrismaClientKnownRequestError('Unique constraint', {
-          code: 'P2002',
-          clientVersion: 'test',
-        }),
-      );
-      await expect(
-        service.settleShow('b1', admin, 'e1', night),
-      ).resolves.toMatchObject({ event: { id: 'e1' } });
-    });
-
-    it('does not log a settle that changed nothing', async () => {
-      prisma.financeEntry.count.mockResolvedValue(1);
-      prisma.financeEntry.updateMany.mockResolvedValue({ count: 0 });
-      await service.settleShow('b1', admin, 'e1', {
-        requestId: 'req-00000002',
-        occurredOn: '2026-10-02',
-        lines: [],
-        receivedIds: ['f1'],
-      });
-      expect(prisma.activity.create).not.toHaveBeenCalled();
-    });
-  });
 
   describe('summary', () => {
     it('totals the range, balances all time, and lists unpaid shows', async () => {

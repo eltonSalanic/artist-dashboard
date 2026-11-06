@@ -665,9 +665,6 @@ model FinanceEntry {
   /// member who logged it can no longer change it.
   approvedById String?        @db.Uuid
   approvedAt   DateTime?
-  /// `<requestId>:<line>` for lines written by settling a show, so a retried
-  /// settle can't write the night twice.
-  settleKey    String?        @unique
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   board        Board          @relation(fields: [boardId], references: [id], onDelete: Cascade)

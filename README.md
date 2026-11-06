@@ -91,7 +91,7 @@ It's **idempotent but destructive to that board's content**: each run wipes the 
 npm run db:seed:finances -w apps/api
 ```
 
-Builds a separate band, "Velvet Static", with five accounts you can actually log in as (unlike the demo seed's bandmates): two admins and three members, each in this band only. It holds about three months of money in every state, with a fee waiting to be settled and expenses waiting for approval. The logins and their shared test password are printed when it runs and listed at the top of `apps/api/prisma/seed-finances.ts`. Each run deletes and rebuilds only that band; nothing else is touched. More in [docs/finances.md](docs/finances.md#test-data).
+Builds a separate band, "Velvet Static", with five accounts you can actually log in as (unlike the demo seed's bandmates): two admins and three members, each in this band only. It holds about three months of money in every state, with an expected fee not yet received and expenses waiting for approval. The logins and their shared test password are printed when it runs and listed at the top of `apps/api/prisma/seed-finances.ts`. Each run deletes and rebuilds only that band; nothing else is touched. More in [docs/finances.md](docs/finances.md#test-data).
 
 ## Tests
 

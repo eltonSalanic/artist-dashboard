@@ -116,39 +116,6 @@ export const createPayoutSchema = z.object({
 });
 export type CreatePayoutDto = z.infer<typeof createPayoutSchema>;
 
-const settleLineSchema = z
-  .object({
-    kind: z.enum(FinanceKinds),
-    category: z.enum(FinanceCategoryKeys),
-    amountCents,
-    description: z.string().trim().max(2_000).optional(),
-    handledById: z.uuid().nullish(),
-  })
-  .refine(categoryMatchesKind, categoryMessage);
-
-/** One pass over a show: new lines, plus expected fees that arrived. */
-export const settleShowSchema = z
-  .object({
-    /**
-     * From `newRequestId()`, made once when the settle form opens. Sending the
-     * same one again (a double tap, a retry after a dropped connection) is a
-     * no-op, so a night's money is never written twice.
-     */
-    requestId: z
-      .string()
-      .min(8)
-      .max(48)
-      .regex(/^[A-Za-z0-9_-]+$/),
-    occurredOn: isoDate,
-    lines: z.array(settleLineSchema).max(50).default([]),
-    receivedIds: z.array(z.uuid()).max(50).default([]),
-  })
-  .refine((s) => s.lines.length > 0 || s.receivedIds.length > 0, {
-    message: 'Add at least one line or mark a fee received',
-    path: ['lines'],
-  });
-export type SettleShowDto = z.infer<typeof settleShowSchema>;
-
 /**
  * What happens to a member's money when an admin removes them from the band.
  * Their past entries always stay as they are. `split` decides where their

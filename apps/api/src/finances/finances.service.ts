@@ -29,7 +29,6 @@ import {
   type FinanceSummaryQueryDto,
   type LedgerEntry,
   type PayoutDto,
-  type SettleShowDto,
   type ShowSettlementDto,
   type SplitShare,
   type UpdateFinanceEntryDto,
@@ -417,105 +416,6 @@ export class FinancesService {
     };
   }
 
-  /**
-   * Writes the night's lines and marks arrived fees received, all at once.
-   *
-   * Idempotent on `requestId`: each line is stored with the key
-   * `<requestId>:<index>`, so the same request sent twice (a double tap, a
-   * retry after a dropped connection) writes nothing the second time, even
-   * when both arrive together (the unique key makes one of them fail). Fees
-   * are only flipped while still EXPECTED, inside the transaction, so marking
-   * one received twice is a no-op too.
-   */
-  async settleShow(
-    boardId: string,
-    actor: FinanceActor,
-    eventId: string,
-    dto: SettleShowDto,
-  ) {
-    this.require(actor, 'finance.manage');
-    const event = await this.prisma.event.findFirst({
-      where: { id: eventId, boardId },
-      select: { id: true, title: true },
-    });
-    if (!event) throw new NotFoundException('Event not found');
-    const handlers = dto.lines
-      .map((l) => l.handledById)
-      .filter((id): id is string => !!id);
-    if (handlers.length) await this.assertMembers(boardId, handlers);
-    const receivedIds = [...new Set(dto.receivedIds)];
-    if (receivedIds.length) {
-      const fees = await this.prisma.financeEntry.count({
-        where: {
-          id: { in: receivedIds },
-          boardId,
-          eventId,
-          kind: 'INCOME',
-          state: { in: ['EXPECTED', 'SETTLED'] },
-        },
-      });
-      if (fees !== receivedIds.length) {
-        throw new BadRequestException(
-          'Only this show’s expected fees can be marked received',
-        );
-      }
-    }
-    const { shares } = await this.boardSplit(boardId);
-
-    try {
-      await this.prisma.$transaction(async (tx) => {
-        const seen = await tx.financeEntry.findFirst({
-          where: { boardId, settleKey: { startsWith: `${dto.requestId}:` } },
-          select: { id: true },
-        });
-        if (seen) return;
-
-        let index = 0;
-        for (const line of dto.lines) {
-          await tx.financeEntry.create({
-            data: {
-              boardId,
-              kind: line.kind,
-              state: 'SETTLED',
-              category: line.category,
-              amountCents: line.amountCents,
-              occurredOn: toDate(dto.occurredOn),
-              description: line.description ?? '',
-              eventId,
-              handledById: line.handledById ?? null,
-              createdById: actor.userId,
-              settleKey: `${dto.requestId}:${index++}`,
-              splits: { create: shares },
-            },
-          });
-        }
-        const received = receivedIds.length
-          ? await tx.financeEntry.updateMany({
-              where: {
-                id: { in: receivedIds },
-                boardId,
-                eventId,
-                state: 'EXPECTED',
-              },
-              data: { state: 'SETTLED' },
-            })
-          : { count: 0 };
-        if (dto.lines.length === 0 && received.count === 0) return;
-        await this.activity.log(tx, {
-          boardId,
-          type: 'SHOW_SETTLED',
-          actorId: actor.userId,
-          meta: { eventId, eventTitle: event.title },
-        });
-      });
-    } catch (error) {
-      // The same request won a race against itself: the other copy wrote it.
-      if (!isUniqueViolation(error)) throw error;
-    }
-    return this.showSettlement(boardId, actor, eventId);
-  }
-
-  // ---- Helpers ----
 
   private require(actor: FinanceActor, action: Action) {
     if (!can(actor.role, action)) {
@@ -697,13 +597,6 @@ export class FinancesService {
       },
     });
   }
-}
-
-function isUniqueViolation(error: unknown): boolean {
-  return (
-    error instanceof Prisma.PrismaClientKnownRequestError &&
-    error.code === 'P2002'
-  );
 }
 
 function toLedger(row: EntryRow): LedgerEntry {

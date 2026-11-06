@@ -30,13 +30,13 @@ Everything lives in [apps/api/prisma/schema.prisma](../apps/api/prisma/schema.pr
 | Split, payouts, settling a show | | ✓ |
 
 - **Approvals.** An expense a member logs as paid from their own pocket starts `PENDING` (`needsApproval()`). An admin approves it (`POST /boards/:id/finances/entries/:entryId/approve`) or rejects it by voiding. Once approved it's locked to that member (`isLockedFor()`); admins can still fix it. Editing never approves: a member's edit keeps it pending, and turning an existing entry into your own out-of-pocket expense sends it back for approval. Income a member collected skips approval, since it means they owe the band.
-- **Settling a show** sends a `requestId` (`newRequestId()`, made once per opening of the form). Each line is stored with the unique `settleKey` `<requestId>:<index>`, so the same request twice (a double tap, a retry) writes the night once, even when both copies race. Expected fees flip to settled only while still `EXPECTED`, inside the transaction, and a settle that changed nothing isn't logged.
+- **There is no "settle show" step.** A show's money is ordinary entries tied to the show: an expected fee is marked received by editing it, and the night's merch, gas and door cut are added as entries whenever.
 - **Removing a member** (`DELETE /boards/:id/members/:userId`) takes an optional body (`removeMemberSchema`): `split` is `SPREAD` (the default: their slice of the saved split is shared among everyone left in proportion, so 4 × 25% becomes 3 × 33.33%) or `FUND` (it goes to the band fund); `payout` records the final payment that squares them up, in the same transaction. Their past entries never change. With no saved split nothing needs moving: equal shares re-divide by themselves. Web asks in a dialog with their balance; the phone asks in a short run of alerts.
 
 ## Where it shows
 
-- **Web** `/finances`: period totals, "Waiting for approval" (admins approve from it), shows still owing with Settle, who's owed with member history and payouts, the split editor, the ledger with filters and CSV export, reports by category, month and show.
-- **Phone** Finances spoke: the same totals, waiting for approval, shows still owing, who's owed (members who owe the band too) with member history, "Record a payment" and deleting a payment, how money is split with "Edit split" for admins, by month and by category, and the entries with filters and "Export CSV" through the share sheet. Forms: `form/finance`, `form/settle`, `form/payout?member=…`, `form/split`.
+- **Web** `/finances`: period totals, "Waiting for approval" (admins approve from it), shows still owing, who's owed with member history and payouts, the split editor, the ledger with filters and CSV export, reports by category, month and show.
+- **Phone** Finances spoke: the same totals, waiting for approval, shows still owing, who's owed (members who owe the band too) with member history, "Record a payment" and deleting a payment, how money is split with "Edit split" for admins, by month and by category, and the entries with filters and "Export CSV" through the share sheet. Forms: `form/finance`, `form/payout?member=…`, `form/split`.
 
 ## Test data
 
@@ -50,7 +50,7 @@ Everything lives in [apps/api/prisma/schema.prisma](../apps/api/prisma/schema.pr
 | avery@bandwall.test | Member | Fronted the motel, partly paid back |
 | quinn@bandwall.test | Member | Has held merch cash; try removing them |
 
-The split is 10% band fund and 18% each. It covers about three months of income and expenses across every category, settled shows, one voided duplicate, a played show whose fee is still expected (to settle), an upcoming expected fee, and payouts both ways. The owner gets a promotional subscription, so it works with `BILLING_ENFORCED=true`. Reruns rebuild that band and reset the five passwords.
+The split is 10% band fund and 18% each. It covers about three months of income and expenses across every category, settled shows, one voided duplicate, a played show whose fee is still expected, an upcoming expected fee, and payouts both ways. The owner gets a promotional subscription, so it works with `BILLING_ENFORCED=true`. Reruns rebuild that band and reset the five passwords.
 
 The main demo seed (`npm run db:seed`) also writes a small ledger into "Neon Harbor", but its bandmates can't log in.
 

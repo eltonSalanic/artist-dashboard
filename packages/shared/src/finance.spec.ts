@@ -8,13 +8,12 @@ import {
   isValidSplit,
   ledgerTotals,
   needsApproval,
-  newRequestId,
   removeFromSplit,
   parseMoneyToCents,
   showSettlement,
   type LedgerEntry,
 } from './finance';
-import { createFinanceEntrySchema, settleShowSchema } from './dto/finance.dto';
+import { createFinanceEntrySchema } from './dto/finance.dto';
 
 const entry = (over: Partial<LedgerEntry>): LedgerEntry => ({
   kind: 'INCOME',
@@ -219,10 +218,6 @@ describe('finance DTOs', () => {
     });
     expect(result.success).toBe(false);
   });
-
-  it('needs something to settle', () => {
-    expect(settleShowSchema.safeParse({ occurredOn: '2026-10-01' }).success).toBe(false);
-  });
 });
 
 describe('removeFromSplit', () => {
@@ -303,18 +298,6 @@ describe('approval', () => {
       () => '',
     );
     expect(csv).toContain('Pending approval');
-  });
-
-  it('makes request ids the settle schema accepts', () => {
-    const a = newRequestId();
-    expect(a).not.toBe(newRequestId());
-    expect(
-      settleShowSchema.safeParse({
-        requestId: a,
-        occurredOn: '2026-10-02',
-        receivedIds: ['00000000-0000-4000-8000-000000000000'],
-      }).success,
-    ).toBe(true);
   });
 });
 

@@ -69,7 +69,6 @@ import {
   periodRange,
   type Period,
 } from "./finance-bits";
-import { SettleShowDialog } from "./settle-show-dialog";
 import { SplitCard } from "./split-card";
 
 const TABS = [
@@ -95,7 +94,6 @@ function Finances({ boardId }: { boardId: string }) {
   const [showVoid, setShowVoid] = useState(false);
   const [logging, setLogging] = useState<FinanceKind | null>(null);
   const [editing, setEditing] = useState<FinanceEntryDto | null>(null);
-  const [settling, setSettling] = useState<string | null>(null);
 
   const range = periodRange(period);
   const summary = useFinanceSummary(boardId, range);
@@ -214,12 +212,7 @@ function Finances({ boardId }: { boardId: string }) {
         />
       )}
 
-      {data && data.unpaidShows.length > 0 && (
-        <UnpaidShows
-          data={data}
-          onSettle={can("finance.manage") ? setSettling : null}
-        />
-      )}
+      {data && data.unpaidShows.length > 0 && <UnpaidShows data={data} />}
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <nav className="flex gap-1 rounded-full bg-muted/60 p-1">
@@ -424,14 +417,6 @@ function Finances({ boardId }: { boardId: string }) {
         members={members}
         currency={currency}
       />
-      {settling && (
-        <SettleShowDialog
-          boardId={boardId}
-          eventId={settling}
-          open
-          onOpenChange={(open) => !open && setSettling(null)}
-        />
-      )}
     </div>
   );
 }
@@ -520,13 +505,7 @@ function PendingApprovals({
   );
 }
 
-function UnpaidShows({
-  data,
-  onSettle,
-}: {
-  data: FinanceSummaryDto;
-  onSettle: ((eventId: string) => void) | null;
-}) {
+function UnpaidShows({ data }: { data: FinanceSummaryDto }) {
   return (
     <Card size="sm">
       <CardHeader>
@@ -543,15 +522,6 @@ function UnpaidShows({
                 </span>
               </span>
               <Amount cents={show.expectedCents} currency={data.currency} />
-              {onSettle && (
-                <Button
-                  size="xs"
-                  variant="outline"
-                  onClick={() => onSettle(show.eventId)}
-                >
-                  Settle
-                </Button>
-              )}
             </li>
           ))}
         </ul>

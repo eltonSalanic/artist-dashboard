@@ -1,7 +1,7 @@
 /**
  * Finance test band: a separate board with five real logins and a few months
  * of realistic money, for trying the finances feature by hand (approvals,
- * settling a show, payouts, the split, removing a member, CSV export).
+ * payouts, the split, removing a member, CSV export).
  *
  *   npm run db:seed:finances -w apps/api
  *
@@ -46,7 +46,7 @@ const PEOPLE = {
     email: 'casey@bandwall.test',
     displayName: 'Casey Morgan',
     role: 'ADMIN',
-    note: 'Second admin (guitar), for two-admin tests like settling at once.',
+    note: 'Second admin (guitar), for two-admin tests like approving at once.',
   },
   jamie: {
     id: 'f1a10000-0000-4000-8000-000000000003',
@@ -180,7 +180,7 @@ async function main() {
   };
 
   // Shows: three played and settled, one played but not settled yet (the one
-  // to try "Settle show" on), and two coming up.
+  // whose fee is still expected), and two coming up.
   const show = (title: string, location: string, on: number, s: string) =>
     prisma.event.create({
       data: {
@@ -544,19 +544,6 @@ async function main() {
         },
       });
     }
-  }
-  for (const [ev, on] of [
-    [echo, -74],
-    [bottom, -47],
-    [sacramento, -45],
-  ] as const) {
-    feed.push({
-      boardId: BOARD_ID,
-      type: 'SHOW_SETTLED',
-      actorId: PEOPLE.riley.id,
-      createdAt: days(on),
-      meta: { eventId: ev.id, eventTitle: ev.title },
-    });
   }
 
   // Money that changed hands outside the app. Positive: the band paid them.

@@ -151,16 +151,6 @@ export function isLockedFor(
   return !canManage && entry.approvedAt !== null;
 }
 
-/**
- * A key for one press of a button that writes money, so a retried or
- * double-tapped request is applied once. Not a secret: uniqueness is all it
- * needs, and React Native has no `crypto.randomUUID`.
- */
-export function newRequestId(): string {
-  const random = () => Math.random().toString(36).slice(2, 10);
-  return `${Date.now().toString(36)}-${random()}${random()}`;
-}
-
 /** Where a removed member's slice of the saved split goes. */
 export const SPLIT_EXIT_MODES = ['SPREAD', 'FUND'] as const;
 export type SplitExitMode = (typeof SPLIT_EXIT_MODES)[number];

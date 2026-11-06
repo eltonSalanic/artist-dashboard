@@ -2,16 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { HandCoins, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useShowSettlement, usePermissions } from "@artist/api-client";
 import { labelStyle } from "@/lib/label-style";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EntryDialog } from "./entry-dialog";
 import { Amount, memberNamer } from "./finance-bits";
-import { SettleShowDialog } from "./settle-show-dialog";
 
-/** A show's money, inside the show: the net, each cut, and Settle. */
+/** A show's money, inside the show: the net and each cut. */
 export function ShowMoney({
   boardId,
   eventId,
@@ -22,7 +21,6 @@ export function ShowMoney({
   const { can } = usePermissions();
   const visible = can("finance.view");
   const settlement = useShowSettlement(boardId, visible ? eventId : null);
-  const [settling, setSettling] = useState(false);
   const [logging, setLogging] = useState(false);
 
   if (!visible) return null;
@@ -36,13 +34,7 @@ export function ShowMoney({
           {can("finance.create") && (
             <Button variant="outline" size="sm" onClick={() => setLogging(true)}>
               <Plus data-icon="inline-start" />
-              Log
-            </Button>
-          )}
-          {can("finance.manage") && (
-            <Button size="sm" onClick={() => setSettling(true)}>
-              <HandCoins data-icon="inline-start" />
-              Settle show
+              Add Expense/Income
             </Button>
           )}
         </div>
@@ -85,14 +77,6 @@ export function ShowMoney({
         </div>
       )}
 
-      {settling && (
-        <SettleShowDialog
-          boardId={boardId}
-          eventId={eventId}
-          open
-          onOpenChange={setSettling}
-        />
-      )}
       <EntryDialog
         boardId={boardId}
         open={logging}

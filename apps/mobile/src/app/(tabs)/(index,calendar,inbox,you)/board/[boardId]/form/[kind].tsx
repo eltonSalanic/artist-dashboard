@@ -19,7 +19,6 @@ import { ItemNoteForm } from '@/features/forms/item-note-form';
 import { NoteForm } from '@/features/forms/note-form';
 import { PayoutForm } from '@/features/forms/payout-form';
 import { ReminderForm } from '@/features/forms/reminder-form';
-import { SettleForm } from '@/features/forms/settle-form';
 import { SplitForm } from '@/features/forms/split-form';
 import { TaskForm } from '@/features/forms/task-form';
 
@@ -32,7 +31,7 @@ import { TaskForm } from '@/features/forms/task-form';
  *   ?type=SHOW|…     what a new event starts as (kind `event`)
  *   ?on=TASK|…&parentId=…  what a titled note hangs off (kind `item-note`)
  *   ?money=INCOME|EXPENSE  what a new ledger entry starts as (kind `finance`)
- *   ?eventId=…       the show a ledger entry belongs to, or the one to settle
+ *   ?eventId=…       the show a ledger entry belongs to
  *   ?member=…        who a payment was made to or by (kind `payout`)
  *
  * One route rather than ten: the forms share their frame, and the stack only
@@ -84,8 +83,6 @@ export default function Form() {
             }
           />
         );
-      case 'settle':
-        return eventId ? <SettleForm boardId={boardId} eventId={eventId} /> : null;
       case 'payout':
         return member ? <PayoutForm boardId={boardId} memberId={member} /> : null;
       case 'split':

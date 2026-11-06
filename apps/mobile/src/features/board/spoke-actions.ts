@@ -53,7 +53,7 @@ export function spokeAction(
         : null;
     case 'FINANCES':
       return can('finance.create')
-        ? { label: 'Log money', href: `${base}/finance` }
+        ? { label: 'Add Expense/Income', href: `${base}/finance` }
         : null;
     default:
       return null;

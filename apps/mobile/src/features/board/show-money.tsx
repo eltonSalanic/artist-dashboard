@@ -9,7 +9,7 @@ import { Section } from '@/components/section';
 import { Skeleton } from '@/components/skeleton';
 import { spacing, useThemeColors } from '@/theme';
 
-/** A show's money, on the show: the net, each cut, and Settle for an admin. */
+/** A show's money, on the show: the net and each cut. */
 export function ShowMoney({ boardId, eventId }: { boardId: string; eventId: string }) {
   const colors = useThemeColors();
   const { can } = usePermissions();
@@ -51,17 +51,10 @@ export function ShowMoney({ boardId, eventId }: { boardId: string; eventId: stri
       <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs }}>
         {can('finance.create') && (
           <Button
-            title="Log Money"
+            title="Add Expense/Income"
             variant="secondary"
             size="sm"
             onPress={() => router.push(`/board/${boardId}/form/finance?eventId=${eventId}`)}
-          />
-        )}
-        {can('finance.manage') && (
-          <Button
-            title="Settle Show"
-            size="sm"
-            onPress={() => router.push(`/board/${boardId}/form/settle?eventId=${eventId}`)}
           />
         )}
       </View>

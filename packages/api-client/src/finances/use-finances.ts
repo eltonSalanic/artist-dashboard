@@ -10,7 +10,6 @@ import type {
   FinanceSummaryDto,
   FinanceSummaryQueryDto,
   PayoutDto,
-  SettleShowDto,
   ShowSettlementDto,
   UpdateFinanceEntryDto,
   UpdateSplitDto,
@@ -192,19 +191,6 @@ export function useDeletePayout(boardId: string) {
   return useMutation({
     mutationFn: (payoutId: string) =>
       apiFetch(`${base(boardId)}/payouts/${payoutId}`, { method: "DELETE" }),
-    onSuccess: invalidate,
-    onError: showError,
-  });
-}
-
-export function useSettleShow(boardId: string) {
-  const invalidate = useInvalidateFinances(boardId);
-  return useMutation({
-    mutationFn: ({ eventId, dto }: { eventId: string; dto: SettleShowDto }) =>
-      apiFetch<ShowSettlementDto>(`${base(boardId)}/shows/${eventId}/settle`, {
-        method: "POST",
-        body: dto,
-      }),
     onSuccess: invalidate,
     onError: showError,
   });

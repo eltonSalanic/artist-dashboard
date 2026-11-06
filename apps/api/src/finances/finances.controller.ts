@@ -15,7 +15,6 @@ import {
   createPayoutSchema,
   financeEntryQuerySchema,
   financeSummaryQuerySchema,
-  settleShowSchema,
   updateFinanceEntrySchema,
   updateSplitSchema,
   type BoardRole,
@@ -23,7 +22,6 @@ import {
   type CreatePayoutDto,
   type FinanceEntryQueryDto,
   type FinanceSummaryQueryDto,
-  type SettleShowDto,
   type UpdateFinanceEntryDto,
   type UpdateSplitDto,
 } from '@artist/shared';
@@ -181,16 +179,5 @@ export class FinancesController {
     @Req() req: RequestWithMembership,
   ) {
     return this.finances.showSettlement(boardId, actorOf(user, req), eventId);
-  }
-
-  @Post('shows/:eventId/settle')
-  settleShow(
-    @Param('boardId') boardId: string,
-    @Param('eventId') eventId: string,
-    @CurrentUser() user: AuthUser,
-    @Req() req: RequestWithMembership,
-    @Body(new ZodValidationPipe(settleShowSchema)) dto: SettleShowDto,
-  ) {
-    return this.finances.settleShow(boardId, actorOf(user, req), eventId, dto);
   }
 }
