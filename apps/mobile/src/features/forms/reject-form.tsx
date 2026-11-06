@@ -78,7 +78,7 @@ function RejectFields({
       saving={reject.isPending}
       onSave={() => reject.mutateAsync({ entryId, note: note.trim() })}
     >
-      <View style={{ gap: spacing.md }}>
+      <View style={{ gap: spacing.xl }}>
         <PosterText variant="cardMeta" color={colors.mutedForeground}>
           {`${who} paid ${amount} for ${label}. Sending it back stops it counting until they fix it and save again — then it comes back to you.`}
         </PosterText>

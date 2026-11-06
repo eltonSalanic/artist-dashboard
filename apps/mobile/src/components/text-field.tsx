@@ -17,12 +17,15 @@ import { PosterText } from './poster-text';
  */
 export function TextField({
   label,
+  hint,
   error,
   required,
   style,
   ...props
 }: TextInputProps & {
   label: string;
+  /** One plain line under the field's heading saying what it is for. */
+  hint?: string;
   error?: string | null;
   /** Marks the label with a red asterisk. The form still decides what's missing. */
   required?: boolean;
@@ -34,7 +37,9 @@ export function TextField({
 
   return (
     <View style={{ gap: spacing.xs + 2 }}>
-      <FieldLabel required={required}>{label}</FieldLabel>
+      <FieldLabel required={required} hint={hint}>
+        {label}
+      </FieldLabel>
       <TextInput
         accessibilityLabel={required ? `${label}, required` : label}
         placeholderTextColor={tokens.mutedForeground}

@@ -17,6 +17,7 @@ import {
 } from '@artist/api-client';
 import { BOARD_PALETTES, BoardPalettes, type BoardPalette } from '@artist/shared';
 import { Button } from '@/components/button';
+import { FieldHeadings, FieldLabel } from '@/components/field-label';
 import { MyMascot } from '@/components/mascot';
 import { PosterText } from '@/components/poster-text';
 import { TextField } from '@/components/text-field';
@@ -170,71 +171,72 @@ export function StartBandScreen() {
           Name Your Band.
         </PosterText>
 
-        <TextField
-          label="Band name"
-          ref={nameInput}
-          autoFocus
-          required
-          error={required.error('name')}
-          value={name}
-          onChangeText={setName}
-          editable={!working}
-          placeholder="The Midnight Owls"
-          autoCapitalize="words"
-          maxLength={80}
-          returnKeyType="done"
-          doneBar={false}
-        />
+        {/* A create form: its fields are headed like FormScreen's. */}
+        <FieldHeadings>
+          <TextField
+            label="Band name"
+            ref={nameInput}
+            autoFocus
+            required
+            error={required.error('name')}
+            value={name}
+            onChangeText={setName}
+            editable={!working}
+            placeholder="The Midnight Owls"
+            autoCapitalize="words"
+            maxLength={80}
+            returnKeyType="done"
+            doneBar={false}
+          />
 
-        <View style={{ gap: spacing.sm }}>
-          <PosterText variant="label" color={canvas.soft}>
-            PICK ITS COLOUR
-          </PosterText>
-          <View accessibilityRole="radiogroup" style={styles.swatches}>
-            {BoardPalettes.map((id) => {
-              const swatch = posterSlot(id, scheme, 'c1');
-              const selected = id === palette;
-              const label = BOARD_PALETTES.find((p) => p.id === id)?.label ?? id;
-              return (
-                <Pressable
-                  key={id}
-                  accessibilityRole="radio"
-                  accessibilityLabel={label}
-                  accessibilityState={{ selected }}
-                  disabled={working}
-                  hitSlop={6}
-                  onPress={() => setPalette(id)}
-                  style={[
-                    styles.swatch,
-                    { backgroundColor: swatch.bg },
-                    selected && { borderWidth: 3, borderColor: canvas.ink },
-                  ]}
+          <View style={{ gap: spacing.sm }}>
+            <FieldLabel>Pick its colour</FieldLabel>
+            <View accessibilityRole="radiogroup" style={styles.swatches}>
+              {BoardPalettes.map((id) => {
+                const swatch = posterSlot(id, scheme, 'c1');
+                const selected = id === palette;
+                const label = BOARD_PALETTES.find((p) => p.id === id)?.label ?? id;
+                return (
+                  <Pressable
+                    key={id}
+                    accessibilityRole="radio"
+                    accessibilityLabel={label}
+                    accessibilityState={{ selected }}
+                    disabled={working}
+                    hitSlop={6}
+                    onPress={() => setPalette(id)}
+                    style={[
+                      styles.swatch,
+                      { backgroundColor: swatch.bg },
+                      selected && { borderWidth: 3, borderColor: canvas.ink },
+                    ]}
+                  />
+                );
+              })}
+            </View>
+          </View>
+
+          <View
+            accessible
+            accessibilityLabel={`Preview: ${trimmed || 'your band'} on the wall`}
+            style={[styles.preview, { backgroundColor: block.bg }]}
+          >
+            <PosterText variant="label" color={block.soft}>
+              OWNER · YOU
+            </PosterText>
+            <PosterText variant="statement" color={block.ink} numberOfLines={2}>
+              {trimmed || 'Your band'}
+            </PosterText>
+            <View style={styles.cards}>
+              {(['c2', 'c3', 'c4', 'base'] as const).map((slot) => (
+                <View
+                  key={slot}
+                  style={[styles.card, { backgroundColor: posterSlot(palette, scheme, slot).bg }]}
                 />
-              );
-            })}
+              ))}
+            </View>
           </View>
-        </View>
-
-        <View
-          accessible
-          accessibilityLabel={`Preview: ${trimmed || 'your band'} on the wall`}
-          style={[styles.preview, { backgroundColor: block.bg }]}
-        >
-          <PosterText variant="label" color={block.soft}>
-            OWNER · YOU
-          </PosterText>
-          <PosterText variant="statement" color={block.ink} numberOfLines={2}>
-            {trimmed || 'Your band'}
-          </PosterText>
-          <View style={styles.cards}>
-            {(['c2', 'c3', 'c4', 'base'] as const).map((slot) => (
-              <View
-                key={slot}
-                style={[styles.card, { backgroundColor: posterSlot(palette, scheme, slot).bg }]}
-              />
-            ))}
-          </View>
-        </View>
+        </FieldHeadings>
 
         {awaiting && !stuck && (
           <PosterText variant="body" color={canvas.soft} style={styles.centred}>

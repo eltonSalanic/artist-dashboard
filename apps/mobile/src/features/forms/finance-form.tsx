@@ -300,7 +300,7 @@ function FinanceFields({
           </PosterText>
         )}
 
-        <View pointerEvents={editable ? 'auto' : 'none'} style={{ gap: spacing.md }}>
+        <View pointerEvents={editable ? 'auto' : 'none'} style={{ gap: spacing.xl }}>
           {!entry && (
             <ChoiceChips<FinanceKind>
               label="Type"
@@ -316,6 +316,11 @@ function FinanceFields({
           {manages ? (
             <ChoiceChips<string>
               label={kind === 'INCOME' ? 'Who has the money' : 'Who paid'}
+              hint={
+                kind === 'INCOME'
+                  ? 'The band account, or the member holding it.'
+                  : 'If a member paid, the band owes it back to them.'
+              }
               value={handledById}
               onChange={setHandledById}
               choices={[
@@ -326,6 +331,11 @@ function FinanceFields({
           ) : (
             <ChoiceChips<string>
               label={kind === 'INCOME' ? 'Who has the money' : 'Who paid'}
+              hint={
+                kind === 'INCOME'
+                  ? 'The band account, or you if you’re holding it.'
+                  : 'If you paid, an admin approves it before the band owes it back.'
+              }
               value={handledById === myId ? myId : BAND}
               onChange={setHandledById}
               choices={[
@@ -335,15 +345,10 @@ function FinanceFields({
             />
           )}
 
-          {!entry && !manages && kind === 'EXPENSE' && handledById === myId && (
-            <PosterText variant="cardMeta" color={colors.mutedForeground}>
-              An admin approves money you paid yourself before the band owes it back.
-            </PosterText>
-          )}
-
           {kind === 'INCOME' && (
             <ChoiceChips<'yes' | 'no'>
               label="Received"
+              hint="Still owed is promised money that hasn’t been paid yet."
               value={expected ? 'no' : 'yes'}
               onChange={(value) => setExpected(value === 'no')}
               choices={[
@@ -396,6 +401,7 @@ function FinanceFields({
 
           <PickOne
             label="Show"
+            hint="File it under a show to see what that show made or cost."
             noneLabel="Not tied to a show"
             options={(shows.data ?? []).map((show) => ({
               value: show.id,

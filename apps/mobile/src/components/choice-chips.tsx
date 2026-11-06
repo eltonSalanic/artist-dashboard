@@ -20,11 +20,14 @@ export interface Choice<T extends string> {
  */
 export function ChoiceChips<T extends string>({
   label,
+  hint,
   choices,
   value,
   onChange,
 }: {
   label: string;
+  /** One plain line under the field's heading saying what it is for. */
+  hint?: string;
   choices: Choice<T>[];
 } & (
   | { value: T; onChange: (value: T) => void; multiple?: false }
@@ -48,7 +51,7 @@ export function ChoiceChips<T extends string>({
 
   return (
     <View style={{ gap: spacing.xs + 2 }}>
-      <FieldLabel>{label}</FieldLabel>
+      <FieldLabel hint={hint}>{label}</FieldLabel>
       <View
         accessibilityRole={multiple ? undefined : 'radiogroup'}
         accessibilityLabel={label}

@@ -4,9 +4,10 @@ import { attachmentSizeError } from '@artist/shared';
 import { notify } from '@artist/api-client';
 import { reportError } from '@/lib/report-error';
 import { Button } from '@/components/button';
-import { Section } from '@/components/section';
+import { View } from 'react-native';
+import { FieldLabel } from '@/components/field-label';
 import { PosterText } from '@/components/poster-text';
-import { useThemeColors } from '@/theme';
+import { spacing, useThemeColors } from '@/theme';
 import { NameSheet } from './name-sheet';
 import { chooseSource, pickUpload, type PickedUpload } from './pick';
 
@@ -51,7 +52,11 @@ export function DraftReceipt({
   };
 
   return (
-    <Section title="RECEIPT">
+    // Headed like the form's other fields: it only ever sits in the finance form.
+    <View style={{ gap: spacing.xs + 2 }}>
+      <FieldLabel hint={receipt ? undefined : 'Add a photo or file to upload when you save.'}>
+        Receipt
+      </FieldLabel>
       {receipt?.preview && (
         <Image
           source={{ uri: receipt.preview }}
@@ -59,11 +64,11 @@ export function DraftReceipt({
           style={{ width: 120, height: 120 }}
         />
       )}
-      <PosterText variant="cardMeta" color={colors.mutedForeground}>
-        {receipt
-          ? `${receipt.source.fileName} · uploads when you save`
-          : 'Add a photo or file to upload when you save.'}
-      </PosterText>
+      {receipt && (
+        <PosterText variant="cardMeta" color={colors.mutedForeground}>
+          {`${receipt.source.fileName} · uploads when you save`}
+        </PosterText>
+      )}
       <Button
         title={receipt ? 'Change Receipt' : 'Add Receipt'}
         variant="secondary"
@@ -93,6 +98,6 @@ export function DraftReceipt({
           }}
         />
       )}
-    </Section>
+    </View>
   );
 }

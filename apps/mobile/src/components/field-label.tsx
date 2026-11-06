@@ -1,14 +1,71 @@
-import { useTokens } from '@/theme';
+import { createContext, use, type ReactNode } from 'react';
+import { Text, View } from 'react-native';
+import { BODY_SCALE, spacing, uiText, useTokens } from '@/theme';
 import { PosterText, type PosterVariant } from './poster-text';
 
 /**
- * The name over a form field, in the small caps a block uses for its kind
- * ("TASK", "FOR YOU"), so a form reads as part of the same poster set as the
- * screen it opened from. `required` adds a red asterisk; screen readers get
- * "required" from the field itself.
+ * How field names are set. A create/edit form (`FormScreen`, Create a band)
+ * gives each field a real heading, as the Finances screen heads its sections:
+ * the field is the thing being decided, and a big sentence-case name reads as
+ * a question to answer. Everywhere else (filter sheets, settings, sign-in) a
+ * field is a small control among others, and keeps the small caps a block
+ * uses for its kind ("TASK", "FOR YOU").
  */
-export function FieldLabel({ children, required }: { children: string; required?: boolean }) {
+export type FieldLabelStyle = 'caps' | 'heading';
+
+const FieldLabelStyleContext = createContext<FieldLabelStyle>('caps');
+
+/** Sets every field under it to big headings. */
+export function FieldHeadings({ children }: { children: ReactNode }) {
+  return <FieldLabelStyleContext value="heading">{children}</FieldLabelStyleContext>;
+}
+
+export const useFieldLabelStyle = () => use(FieldLabelStyleContext);
+
+/**
+ * The name over a form field. `required` adds a red asterisk; screen readers
+ * get "required" from the field itself.
+ *
+ * `hint` is one plain line under a heading for a field whose name doesn't say
+ * what it does ("Show": filing money against a show). Most fields need none.
+ * Only drawn as a heading: a small caps label has no room for a second line.
+ */
+export function FieldLabel({
+  children,
+  required,
+  hint,
+}: {
+  children: string;
+  required?: boolean;
+  hint?: string;
+}) {
   const tokens = useTokens();
+  const style = useFieldLabelStyle();
+
+  if (style === 'heading') {
+    return (
+      <View style={{ gap: 2, marginBottom: spacing.xs }}>
+        <Text
+          accessibilityRole="header"
+          maxFontSizeMultiplier={BODY_SCALE}
+          style={[uiText.title, { color: tokens.foreground }]}
+        >
+          {children}
+          {required && (
+            <Text accessible={false} style={{ color: tokens.destructive }}>
+              {' *'}
+            </Text>
+          )}
+        </Text>
+        {hint ? (
+          <PosterText variant="cardMeta" color={tokens.mutedForeground}>
+            {hint}
+          </PosterText>
+        ) : null}
+      </View>
+    );
+  }
+
   return (
     <PosterText variant="label" color={tokens.mutedForeground}>
       {children.toUpperCase()}

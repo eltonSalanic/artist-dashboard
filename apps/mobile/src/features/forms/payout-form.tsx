@@ -92,7 +92,7 @@ function PayoutFields({
         })
       }
     >
-      <View style={{ gap: spacing.md }}>
+      <View style={{ gap: spacing.xl }}>
         <PosterText variant="cardMeta" color={colors.mutedForeground}>
           {balanceCents > 0
             ? `The band owes ${name} ${formatMoney(balanceCents, currency)}.`

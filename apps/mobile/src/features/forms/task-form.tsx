@@ -224,6 +224,7 @@ function TaskFields({
         <>
           <PickOne
             label="Goal"
+            hint="Done tasks count toward the goal."
             noneLabel="No goal"
             options={goalOptions}
             value={goal}

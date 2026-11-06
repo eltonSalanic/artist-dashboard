@@ -2,7 +2,7 @@ import type { Ref } from 'react';
 import { Pressable, View } from 'react-native';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { posterRadius, spacing, useTokens } from '@/theme';
-import { RequiredMark } from './field-label';
+import { FieldLabel, RequiredMark, useFieldLabelStyle } from './field-label';
 import { Icon } from './icon';
 import { PosterText } from './poster-text';
 
@@ -19,6 +19,7 @@ import { PosterText } from './poster-text';
  */
 export function DateField({
   label,
+  hint,
   value,
   onChange,
   mode = 'date',
@@ -29,6 +30,8 @@ export function DateField({
   ref,
 }: {
   label: string;
+  /** One plain line under the field's heading saying what it is for. */
+  hint?: string;
   value: Date | null;
   onChange: (value: Date | null) => void;
   mode?: 'date' | 'datetime';
@@ -43,6 +46,10 @@ export function DateField({
 }) {
   const tokens = useTokens();
   const failed = error != null && error !== '';
+  // In a form the name is a heading over the row, as every other field's is,
+  // and the row holds only the date. Elsewhere it stays a settings-style row
+  // with the name on the left.
+  const headed = useFieldLabelStyle() === 'heading';
 
   // Where a picker opens when there is no value yet: today, at the next hour
   // for a date-time — a show is never at the current minute.
@@ -90,6 +97,11 @@ export function DateField({
 
   return (
     <View style={{ gap: spacing.xs + 2 }}>
+      {headed && (
+        <FieldLabel required={required} hint={hint}>
+          {label}
+        </FieldLabel>
+      )}
       <View
         ref={ref}
         style={{
@@ -105,10 +117,12 @@ export function DateField({
           borderColor: failed ? tokens.destructive : 'transparent',
         }}
       >
-        <PosterText variant="rowTitle" color={tokens.foreground} style={{ flex: 1 }}>
-          {label}
-          {required && <RequiredMark color={tokens.destructive} variant="rowTitle" />}
-        </PosterText>
+        {!headed && (
+          <PosterText variant="rowTitle" color={tokens.foreground} style={{ flex: 1 }}>
+            {label}
+            {required && <RequiredMark color={tokens.destructive} variant="rowTitle" />}
+          </PosterText>
+        )}
 
         {process.env.EXPO_OS === 'ios' && value ? (
           <DateTimePicker
@@ -123,9 +137,7 @@ export function DateField({
             accessibilityLabel={`${label}: ${formatted}`}
             accessibilityHint="Opens a date picker"
             hitSlop={8}
-            onPress={() =>
-              process.env.EXPO_OS === 'ios' ? onChange(seed()) : openAndroid()
-            }
+            onPress={() => (process.env.EXPO_OS === 'ios' ? onChange(seed()) : openAndroid())}
           >
             {/* Empty, the action is set a weight up so it reads as tappable
                 without borrowing the app's blue onto the poster screens. */}
@@ -134,6 +146,8 @@ export function DateField({
             </PosterText>
           </Pressable>
         )}
+
+        {headed && <View style={{ flex: 1 }} />}
 
         {clearable && value && (
           <Pressable

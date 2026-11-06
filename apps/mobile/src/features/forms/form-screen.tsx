@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { router, Stack, useNavigation } from 'expo-router';
 import { useHeaderHeight, usePreventRemove } from 'expo-router/react-navigation';
+import { FieldHeadings } from '@/components/field-label';
 import { PosterText } from '@/components/poster-text';
 import { LIQUID_GLASS } from '@/lib/liquid-glass';
 import { face, spacing, usePosterCanvas, useThemeColors } from '@/theme';
@@ -131,36 +132,39 @@ export function FormScreen({
 
   return (
     <LeaveContext value={leave}>
-      <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: canvas.background }}
-        behavior={process.env.EXPO_OS === 'android' ? 'padding' : undefined}
-      >
-        <Stack.Screen options={{ title, headerTitle: postered ? '' : undefined }} />
-        <ConfirmHeader
-          confirm="Save"
-          pending={saving}
-          confirmDisabled={!canSave}
-          onCancel={() => router.back()}
-          onConfirm={() => void save()}
-        />
-        {scrollable ? (
-          <ScrollView
-            ref={scroller}
-            // Typed as never-null, though React sets it to null on unmount.
-            innerViewRef={content as RefObject<View>}
-            style={{ flex: 1 }}
-            contentInsetAdjustmentBehavior="automatic"
-            automaticallyAdjustKeyboardInsets
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="interactive"
-            contentContainerStyle={{ padding: spacing.md, gap: spacing.lg }}
-          >
-            {children}
-          </ScrollView>
-        ) : (
-          children
-        )}
-      </KeyboardAvoidingView>
+      {/* Every field in a form is headed in the Finances section style. */}
+      <FieldHeadings>
+        <KeyboardAvoidingView
+          style={{ flex: 1, backgroundColor: canvas.background }}
+          behavior={process.env.EXPO_OS === 'android' ? 'padding' : undefined}
+        >
+          <Stack.Screen options={{ title, headerTitle: postered ? '' : undefined }} />
+          <ConfirmHeader
+            confirm="Save"
+            pending={saving}
+            confirmDisabled={!canSave}
+            onCancel={() => router.back()}
+            onConfirm={() => void save()}
+          />
+          {scrollable ? (
+            <ScrollView
+              ref={scroller}
+              // Typed as never-null, though React sets it to null on unmount.
+              innerViewRef={content as RefObject<View>}
+              style={{ flex: 1 }}
+              contentInsetAdjustmentBehavior="automatic"
+              automaticallyAdjustKeyboardInsets
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+              contentContainerStyle={{ padding: spacing.md, gap: spacing.xl }}
+            >
+              {children}
+            </ScrollView>
+          ) : (
+            children
+          )}
+        </KeyboardAvoidingView>
+      </FieldHeadings>
     </LeaveContext>
   );
 }
@@ -262,7 +266,10 @@ export function HeaderText({
       <PosterText
         variant="rowTitle"
         color={colors.primary}
-        style={{ fontFamily: bold ? face.bold : face.medium, opacity: disabled ? 0.4 : 1 }}
+        style={{
+          fontFamily: bold ? face.bold : face.medium,
+          opacity: disabled ? 0.4 : 1,
+        }}
       >
         {title}
       </PosterText>

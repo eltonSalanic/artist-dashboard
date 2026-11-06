@@ -1690,6 +1690,14 @@ not touched.
   `spoke-header.tsx` replaces three copies. Focus and Notes keep their own
   layouts (Notes waits for P16). Trap: a single-line `TextInput` with a
   `lineHeight` draws its text off-centre on iOS, so `posterInput` drops it.
+  *Since 2026-11-06:* inside a form (`FormScreen`, and Create a band) the
+  labels are big sentence-case headings in the Finances section style
+  (`uiText.title`), with an optional one-line `hint` under the few fields
+  whose name doesn't say what they do (Who paid, Received, Show, Goal,
+  Receipt). No hairline between fields: the filled inputs already mark each
+  one. `DateField` puts its name above the row there. Outside forms (filters,
+  settings, sign-in) `FieldLabel` keeps the small caps; `FieldHeadings` is
+  the context that switches it.
 - **Step 6, sheets:** the band switcher is a wall of bands, each a block in
   its own colour (the You tab's band block), the one showing marked by a
   filled tick and "· SHOWING", never by colour alone, since two bands can

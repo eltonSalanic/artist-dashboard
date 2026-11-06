@@ -24,12 +24,15 @@ export interface PickOption {
  */
 export function PickOne({
   label,
+  hint,
   noneLabel,
   options,
   value,
   onChange,
 }: {
   label: string;
+  /** One plain line under the field's heading saying what it is for. */
+  hint?: string;
   noneLabel: string;
   options: PickOption[];
   value: string | null;
@@ -46,7 +49,7 @@ export function PickOne({
 
   return (
     <View style={{ gap: spacing.xs + 2 }}>
-      <FieldLabel>{label}</FieldLabel>
+      <FieldLabel hint={hint}>{label}</FieldLabel>
       <View
         style={{
           borderRadius: posterRadius.block,
