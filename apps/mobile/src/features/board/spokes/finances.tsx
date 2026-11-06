@@ -108,6 +108,21 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
             />
           </View>
 
+          {data.pending.length > 0 && (
+            <Section title="WAITING FOR APPROVAL">
+              {data.pending.map((entry, index) => (
+                <Row
+                  key={entry.id}
+                  first={index === 0}
+                  title={entry.description || categoryLabel(entry.category)}
+                  meta={`${entry.handledById ? name(entry.handledById) : 'Band'} paid · ${shortDate(`${entry.occurredOn}T12:00:00`)}`}
+                  trailing={money(-entry.amountCents)}
+                  onPress={() => router.push(`/board/${boardId}/form/finance?id=${entry.id}`)}
+                />
+              ))}
+            </Section>
+          )}
+
           {data.unpaidShows.length > 0 && (
             <Section title="SHOWS STILL OWING">
               {data.unpaidShows.map((show, index) => (
@@ -199,6 +214,7 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
                   options={[
                     { value: 'SETTLED', label: 'Settled' },
                     { value: 'EXPECTED', label: 'Expected' },
+                    { value: 'PENDING', label: 'Waiting for approval' },
                   ]}
                   onChange={(value) => setFilters({ ...filters, state: value ?? 'all' })}
                 />
@@ -239,6 +255,7 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
                   meta={[
                     shortDate(`${entry.occurredOn}T12:00:00`),
                     entry.state === 'EXPECTED' ? 'owed' : null,
+                    entry.state === 'PENDING' ? 'needs approval' : null,
                     entry.handledById ? name(entry.handledById) : null,
                     entry.receiptCount > 0 ? 'receipt' : null,
                   ]

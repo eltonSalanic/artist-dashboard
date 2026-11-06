@@ -1,16 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Ban } from "lucide-react";
+import { Ban, Check } from "lucide-react";
 import {
   categoriesFor,
   formatMoney,
+  isLockedFor,
   parseMoneyToCents,
   type FinanceEntryDto,
   type FinanceKind,
   type FinanceMemberRef,
 } from "@artist/shared";
 import {
+  useApproveFinanceEntry,
   useCreateFinanceEntry,
   useEvents,
   usePermissions,
@@ -106,6 +108,7 @@ function EntryForm({
   const create = useCreateFinanceEntry(boardId);
   const update = useUpdateFinanceEntry(boardId);
   const voidEntry = useVoidFinanceEntry(boardId);
+  const approve = useApproveFinanceEntry(boardId);
 
   // Once a new entry is saved the form edits it, receipts and all.
   const [saved, setSaved] = useState<FinanceEntryDto | undefined>(entry);
@@ -129,7 +132,10 @@ function EntryForm({
   const manages = can("finance.manage");
   const editable =
     !saved ||
-    (saved.state !== "VOID" && (manages || saved.createdById === myId));
+    (saved.state !== "VOID" &&
+      (manages || saved.createdById === myId) &&
+      !isLockedFor(saved, manages));
+  const awaitsApproval = saved?.state === "PENDING";
   const cents = parseMoneyToCents(amount);
   const valid = cents !== null && cents > 0 && /^\d{4}-\d{2}-\d{2}$/.test(occurredOn);
   const pending = create.isPending || update.isPending;
@@ -201,10 +207,18 @@ function EntryForm({
         </DialogTitle>
         <DialogDescription>
           {justCreated
-            ? `${formatMoney(saved.amountCents, currency)} is in the books. Add a receipt if you have one.`
+            ? awaitsApproval
+              ? `${formatMoney(saved.amountCents, currency)} is waiting for an admin to approve it. A receipt helps.`
+              : `${formatMoney(saved.amountCents, currency)} is in the books. Add a receipt if you have one.`
             : saved?.state === "VOID"
               ? "This entry was voided. It stays in the history but no longer counts."
-              : "Amounts are split between members by the band's split."}
+              : awaitsApproval
+                ? manages
+                  ? "Paid out of a member's pocket. Approve it and the band owes them this back."
+                  : "Waiting for an admin to approve it. Until then it doesn't count toward what you're owed."
+                : saved && isLockedFor(saved, manages)
+                  ? "An admin approved this, so only an admin can change it now."
+                  : "Amounts are split between members by the band's split."}
         </DialogDescription>
       </DialogHeader>
 
@@ -333,7 +347,7 @@ function EntryForm({
               />
               {kind === "INCOME"
                 ? "I'm holding this cash for the band"
-                : "I paid for this myself"}
+                : "I paid for this myself (an admin approves it before it counts)"}
             </label>
           )}
 
@@ -371,7 +385,18 @@ function EntryForm({
             onClick={() => voidEntry.mutate(saved.id, { onSuccess: onClose })}
           >
             <Ban data-icon="inline-start" />
-            Void
+            {awaitsApproval && manages ? "Reject" : "Void"}
+          </Button>
+        )}
+        {saved && !justCreated && awaitsApproval && manages && (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={approve.isPending}
+            onClick={() => approve.mutate(saved.id, { onSuccess: onClose })}
+          >
+            <Check data-icon="inline-start" />
+            Approve
           </Button>
         )}
         {justCreated ? (

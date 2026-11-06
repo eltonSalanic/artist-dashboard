@@ -1,4 +1,5 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Prisma } from '../../generated/prisma/client';
 import { FinancesService, type FinanceActor } from './finances.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
@@ -20,6 +21,9 @@ describe('FinancesService', () => {
     eventId: null,
     handledById: null,
     createdById: 'u1',
+    approvedById: null,
+    approvedAt: null,
+    settleKey: null,
     createdAt: new Date('2026-10-01T12:00:00Z'),
     updatedAt: new Date('2026-10-01T12:00:00Z'),
     splits: [
@@ -104,6 +108,7 @@ describe('FinancesService', () => {
       };
       expect(args.data).toMatchObject({
         kind: 'EXPENSE',
+        state: 'PENDING',
         handledById: 'u2',
         createdById: 'u2',
         occurredOn: new Date('2026-10-02T00:00:00.000Z'),
@@ -117,6 +122,25 @@ describe('FinancesService', () => {
       expect(prisma.activity.create).toHaveBeenCalledWith({
         data: expect.objectContaining({ type: 'FINANCE_ENTRY_ADDED' }),
       });
+    });
+
+    it('holds a member’s out-of-pocket expense for approval', async () => {
+      await service.create('b1', member, { ...dto, handledById: 'u2' });
+      expect(createCall(0)).toMatchObject({ data: { state: 'PENDING' } });
+    });
+
+    it('needs no approval for an admin’s own expense or collected income', async () => {
+      await service.create('b1', admin, { ...dto, handledById: 'u1' });
+      await service.create('b1', member, {
+        ...dto,
+        kind: 'INCOME',
+        category: 'MERCH_SALES',
+        handledById: 'u2',
+      });
+      await service.create('b1', member, dto);
+      expect(createCall(0)).toMatchObject({ data: { state: 'SETTLED' } });
+      expect(createCall(1)).toMatchObject({ data: { state: 'SETTLED' } });
+      expect(createCall(2)).toMatchObject({ data: { state: 'SETTLED' } });
     });
 
     it('uses the saved split once there is one', async () => {
@@ -197,6 +221,95 @@ describe('FinancesService', () => {
     });
   });
 
+  describe('approval', () => {
+    const pending = row({
+      kind: 'EXPENSE',
+      category: 'TRAVEL',
+      state: 'PENDING',
+      handledById: 'u2',
+      createdById: 'u2',
+    });
+
+    it('settles a pending expense and records who approved it', async () => {
+      prisma.financeEntry.findFirst.mockResolvedValue(pending);
+      prisma.financeEntry.update.mockResolvedValue(pending);
+      await service.approve('b1', admin, 'f1');
+      expect(prisma.financeEntry.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: {
+            state: 'SETTLED',
+            approvedById: 'u1',
+            approvedAt: expect.any(Date),
+          },
+        }),
+      );
+    });
+
+    it('is for admins, and only for pending entries', async () => {
+      prisma.financeEntry.findFirst.mockResolvedValue(pending);
+      await expect(service.approve('b1', member, 'f1')).rejects.toBeInstanceOf(
+        ForbiddenException,
+      );
+      prisma.financeEntry.findFirst.mockResolvedValue(row());
+      await expect(service.approve('b1', admin, 'f1')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    });
+
+    it('keeps a member’s own edit pending, whatever state they send', async () => {
+      prisma.financeEntry.findFirst.mockResolvedValue(pending);
+      prisma.financeEntry.update.mockResolvedValue(pending);
+      await service.update('b1', member, 'f1', {
+        amountCents: 4_500,
+        state: 'SETTLED',
+      });
+      expect(prisma.financeEntry.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ state: 'PENDING' }),
+        }),
+      );
+    });
+
+    it('sends a member’s settled entry back for approval when it becomes theirs', async () => {
+      prisma.financeEntry.findFirst.mockResolvedValue(
+        row({ kind: 'EXPENSE', category: 'TRAVEL', createdById: 'u2' }),
+      );
+      prisma.financeEntry.update.mockResolvedValue(pending);
+      await service.update('b1', member, 'f1', { handledById: 'u2' });
+      expect(prisma.financeEntry.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ state: 'PENDING' }),
+        }),
+      );
+    });
+
+    it('locks an approved expense to the member who logged it', async () => {
+      prisma.financeEntry.findFirst.mockResolvedValue(
+        row({
+          kind: 'EXPENSE',
+          category: 'TRAVEL',
+          handledById: 'u2',
+          createdById: 'u2',
+          approvedById: 'u1',
+          approvedAt: new Date('2026-10-03T00:00:00Z'),
+        }),
+      );
+      prisma.financeEntry.update.mockResolvedValue(row());
+      await expect(
+        service.update('b1', member, 'f1', { amountCents: 9_000 }),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+      await expect(service.void('b1', member, 'f1')).rejects.toBeInstanceOf(
+        ForbiddenException,
+      );
+      await service.update('b1', admin, 'f1', { amountCents: 3_900 });
+      expect(prisma.financeEntry.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ state: 'SETTLED', amountCents: 3_900 }),
+        }),
+      );
+    });
+  });
+
   describe('admin-only', () => {
     it('keeps splits, payouts and settling with admins', async () => {
       await expect(
@@ -213,6 +326,7 @@ describe('FinancesService', () => {
       ).rejects.toBeInstanceOf(ForbiddenException);
       await expect(
         service.settleShow('b1', member, 'e1', {
+          requestId: 'req-00000001',
           occurredOn: '2026-10-02',
           lines: [],
           receivedIds: ['f1'],
@@ -229,12 +343,15 @@ describe('FinancesService', () => {
         startsAt: new Date('2026-10-02T03:00:00Z'),
       });
       prisma.financeEntry.findMany.mockResolvedValue([]);
+      prisma.financeEntry.findFirst.mockResolvedValue(null);
+      prisma.financeEntry.updateMany.mockResolvedValue({ count: 1 });
     });
 
     it('refuses fees that are not this show’s expected ones', async () => {
       prisma.financeEntry.count.mockResolvedValue(0);
       await expect(
         service.settleShow('b1', admin, 'e1', {
+          requestId: 'req-00000001',
           occurredOn: '2026-10-02',
           lines: [],
           receivedIds: ['f1'],
@@ -245,6 +362,7 @@ describe('FinancesService', () => {
     it('writes the lines against the show and marks fees received', async () => {
       prisma.financeEntry.count.mockResolvedValue(1);
       await service.settleShow('b1', admin, 'e1', {
+        requestId: 'req-00000001',
         occurredOn: '2026-10-02',
         lines: [
           {
@@ -259,15 +377,63 @@ describe('FinancesService', () => {
       });
       expect(prisma.financeEntry.create).toHaveBeenCalledTimes(2);
       expect(createCall(0)).toMatchObject({
-        data: { eventId: 'e1', state: 'SETTLED', handledById: 'u2' },
+        data: {
+          eventId: 'e1',
+          state: 'SETTLED',
+          handledById: 'u2',
+          settleKey: 'req-00000001:0',
+        },
+      });
+      expect(createCall(1)).toMatchObject({
+        data: { settleKey: 'req-00000001:1' },
       });
       expect(prisma.financeEntry.updateMany).toHaveBeenCalledWith({
-        where: { id: { in: ['f1'] }, boardId: 'b1' },
+        where: { id: { in: ['f1'] }, boardId: 'b1', eventId: 'e1', state: 'EXPECTED' },
         data: { state: 'SETTLED' },
       });
       expect(prisma.activity.create).toHaveBeenCalledWith({
         data: expect.objectContaining({ type: 'SHOW_SETTLED' }),
       });
+    });
+
+    const night = {
+      requestId: 'req-00000001',
+      occurredOn: '2026-10-02',
+      lines: [
+        { kind: 'INCOME' as const, category: 'MERCH_SALES' as const, amountCents: 12_000 },
+      ],
+      receivedIds: [],
+    };
+
+    it('writes nothing when the same request comes again', async () => {
+      prisma.financeEntry.findFirst.mockResolvedValue({ id: 'f9' });
+      await service.settleShow('b1', admin, 'e1', night);
+      expect(prisma.financeEntry.create).not.toHaveBeenCalled();
+      expect(prisma.activity.create).not.toHaveBeenCalled();
+    });
+
+    it('treats losing a race against the same request as done', async () => {
+      prisma.financeEntry.create.mockRejectedValueOnce(
+        new Prisma.PrismaClientKnownRequestError('Unique constraint', {
+          code: 'P2002',
+          clientVersion: 'test',
+        }),
+      );
+      await expect(
+        service.settleShow('b1', admin, 'e1', night),
+      ).resolves.toMatchObject({ event: { id: 'e1' } });
+    });
+
+    it('does not log a settle that changed nothing', async () => {
+      prisma.financeEntry.count.mockResolvedValue(1);
+      prisma.financeEntry.updateMany.mockResolvedValue({ count: 0 });
+      await service.settleShow('b1', admin, 'e1', {
+        requestId: 'req-00000002',
+        occurredOn: '2026-10-02',
+        lines: [],
+        receivedIds: ['f1'],
+      });
+      expect(prisma.activity.create).not.toHaveBeenCalled();
     });
   });
 

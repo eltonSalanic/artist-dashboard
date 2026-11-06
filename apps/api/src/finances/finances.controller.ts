@@ -17,7 +17,6 @@ import {
   financeSummaryQuerySchema,
   settleShowSchema,
   updateFinanceEntrySchema,
-  updateFinanceSettingsSchema,
   updateSplitSchema,
   type BoardRole,
   type CreateFinanceEntryDto,
@@ -26,7 +25,6 @@ import {
   type FinanceSummaryQueryDto,
   type SettleShowDto,
   type UpdateFinanceEntryDto,
-  type UpdateFinanceSettingsDto,
   type UpdateSplitDto,
 } from '@artist/shared';
 import { CurrentUser, type AuthUser } from '../auth/current-user.decorator';
@@ -107,6 +105,16 @@ export class FinancesController {
     return this.finances.update(boardId, actorOf(user, req), entryId, dto);
   }
 
+  @Post('entries/:entryId/approve')
+  approve(
+    @Param('boardId') boardId: string,
+    @Param('entryId') entryId: string,
+    @CurrentUser() user: AuthUser,
+    @Req() req: RequestWithMembership,
+  ) {
+    return this.finances.approve(boardId, actorOf(user, req), entryId);
+  }
+
   @Post('entries/:entryId/void')
   void(
     @Param('boardId') boardId: string,
@@ -134,17 +142,6 @@ export class FinancesController {
     @Body(new ZodValidationPipe(updateSplitSchema)) dto: UpdateSplitDto,
   ) {
     return this.finances.setSplit(boardId, actorOf(user, req), dto);
-  }
-
-  @Put('settings')
-  setSettings(
-    @Param('boardId') boardId: string,
-    @CurrentUser() user: AuthUser,
-    @Req() req: RequestWithMembership,
-    @Body(new ZodValidationPipe(updateFinanceSettingsSchema))
-    dto: UpdateFinanceSettingsDto,
-  ) {
-    return this.finances.setSettings(boardId, actorOf(user, req), dto);
   }
 
   @Get('payouts')

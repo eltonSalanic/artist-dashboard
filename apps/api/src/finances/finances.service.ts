@@ -11,10 +11,14 @@ import {
   computeBalances,
   equalSplit,
   formatMoney,
+  isLockedFor,
   ledgerTotals,
+  needsApproval,
   showSettlement,
   type Action,
   type BoardRole,
+  type FinanceKind,
+  type FinanceState,
   type CreateFinanceEntryDto,
   type CreatePayoutDto,
   type FinanceEntryDto,
@@ -29,7 +33,6 @@ import {
   type ShowSettlementDto,
   type SplitShare,
   type UpdateFinanceEntryDto,
-  type UpdateFinanceSettingsDto,
   type UpdateSplitDto,
 } from '@artist/shared';
 import { Prisma } from '../../generated/prisma/client';
@@ -108,12 +111,20 @@ export class FinancesService {
     const splits = dto.splits ?? (await this.boardSplit(boardId)).shares;
     if (dto.splits) await this.assertSplitMembers(boardId, dto.splits);
 
+    const state = needsApproval(
+      { kind: dto.kind, handledById: dto.handledById ?? null },
+      actor.userId,
+      can(actor.role, 'finance.manage'),
+    )
+      ? 'PENDING'
+      : dto.state;
+
     const entry = await this.prisma.$transaction(async (tx) => {
       const created = await tx.financeEntry.create({
         data: {
           boardId,
           kind: dto.kind,
-          state: dto.state,
+          state,
           category: dto.category,
           amountCents: dto.amountCents,
           occurredOn: toDate(dto.occurredOn),
@@ -148,7 +159,9 @@ export class FinancesService {
 
     const kind = dto.kind ?? before.kind;
     const category = dto.category ?? before.category;
-    const state = dto.state ?? before.state;
+    const handledById =
+      dto.handledById !== undefined ? dto.handledById : before.handledById;
+    const state = this.nextState(actor, before, { kind, handledById }, dto);
     if (categoryKind(category) !== kind) {
       throw new BadRequestException(
         'That category belongs to the other kind of entry',
@@ -194,6 +207,29 @@ export class FinancesService {
     return toEntryDto(entry);
   }
 
+  /**
+   * An admin accepts a member's out-of-pocket expense: from now on it counts,
+   * the band owes the member for it, and the member can't change it any more.
+   * To turn one down, void it.
+   */
+  async approve(boardId: string, actor: FinanceActor, entryId: string) {
+    this.require(actor, 'finance.manage');
+    const before = await this.getEntry(boardId, entryId);
+    if (before.state !== 'PENDING') {
+      throw new BadRequestException('That entry isn’t waiting for approval');
+    }
+    const entry = await this.prisma.financeEntry.update({
+      where: { id: entryId },
+      data: {
+        state: 'SETTLED',
+        approvedById: actor.userId,
+        approvedAt: new Date(),
+      },
+      include: entryInclude,
+    });
+    return toEntryDto(entry);
+  }
+
   /** The books keep the row; it just stops counting. */
   async void(boardId: string, actor: FinanceActor, entryId: string) {
     const before = await this.getEntry(boardId, entryId);
@@ -206,7 +242,7 @@ export class FinancesService {
     return toEntryDto(entry);
   }
 
-  // ---- Split and settings ----
+  // ---- Split ----
 
   async getSplit(
     boardId: string,
@@ -227,20 +263,6 @@ export class FinancesService {
       }),
     ]);
     return this.boardSplit(boardId);
-  }
-
-  async setSettings(
-    boardId: string,
-    actor: FinanceActor,
-    dto: UpdateFinanceSettingsDto,
-  ) {
-    this.require(actor, 'finance.manage');
-    const board = await this.prisma.board.update({
-      where: { id: boardId },
-      data: { currency: dto.currency },
-      select: { currency: true },
-    });
-    return board;
   }
 
   // ---- Payouts ----
@@ -348,6 +370,10 @@ export class FinancesService {
         boardId,
         balances.members.map((m) => m.userId),
       ),
+      pending: rows
+        .filter((row) => row.state === 'PENDING')
+        .map(toEntryDto)
+        .sort((a, b) => b.occurredOn.localeCompare(a.occurredOn)),
       unpaidShows: shows.map((show) => ({
         eventId: show.id,
         title: show.title,
@@ -391,7 +417,16 @@ export class FinancesService {
     };
   }
 
-  /** Writes the night's lines and marks arrived fees received, all at once. */
+  /**
+   * Writes the night's lines and marks arrived fees received, all at once.
+   *
+   * Idempotent on `requestId`: each line is stored with the key
+   * `<requestId>:<index>`, so the same request sent twice (a double tap, a
+   * retry after a dropped connection) writes nothing the second time, even
+   * when both arrive together (the unique key makes one of them fail). Fees
+   * are only flipped while still EXPECTED, inside the transaction, so marking
+   * one received twice is a no-op too.
+   */
   async settleShow(
     boardId: string,
     actor: FinanceActor,
@@ -408,16 +443,18 @@ export class FinancesService {
       .map((l) => l.handledById)
       .filter((id): id is string => !!id);
     if (handlers.length) await this.assertMembers(boardId, handlers);
-    if (dto.receivedIds.length) {
-      const expected = await this.prisma.financeEntry.count({
+    const receivedIds = [...new Set(dto.receivedIds)];
+    if (receivedIds.length) {
+      const fees = await this.prisma.financeEntry.count({
         where: {
-          id: { in: dto.receivedIds },
+          id: { in: receivedIds },
           boardId,
           eventId,
-          state: 'EXPECTED',
+          kind: 'INCOME',
+          state: { in: ['EXPECTED', 'SETTLED'] },
         },
       });
-      if (expected !== new Set(dto.receivedIds).size) {
+      if (fees !== receivedIds.length) {
         throw new BadRequestException(
           'Only this show’s expected fees can be marked received',
         );
@@ -425,37 +462,56 @@ export class FinancesService {
     }
     const { shares } = await this.boardSplit(boardId);
 
-    await this.prisma.$transaction(async (tx) => {
-      for (const line of dto.lines) {
-        await tx.financeEntry.create({
-          data: {
-            boardId,
-            kind: line.kind,
-            state: 'SETTLED',
-            category: line.category,
-            amountCents: line.amountCents,
-            occurredOn: toDate(dto.occurredOn),
-            description: line.description ?? '',
-            eventId,
-            handledById: line.handledById ?? null,
-            createdById: actor.userId,
-            splits: { create: shares },
-          },
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        const seen = await tx.financeEntry.findFirst({
+          where: { boardId, settleKey: { startsWith: `${dto.requestId}:` } },
+          select: { id: true },
         });
-      }
-      if (dto.receivedIds.length) {
-        await tx.financeEntry.updateMany({
-          where: { id: { in: dto.receivedIds }, boardId },
-          data: { state: 'SETTLED' },
+        if (seen) return;
+
+        let index = 0;
+        for (const line of dto.lines) {
+          await tx.financeEntry.create({
+            data: {
+              boardId,
+              kind: line.kind,
+              state: 'SETTLED',
+              category: line.category,
+              amountCents: line.amountCents,
+              occurredOn: toDate(dto.occurredOn),
+              description: line.description ?? '',
+              eventId,
+              handledById: line.handledById ?? null,
+              createdById: actor.userId,
+              settleKey: `${dto.requestId}:${index++}`,
+              splits: { create: shares },
+            },
+          });
+        }
+        const received = receivedIds.length
+          ? await tx.financeEntry.updateMany({
+              where: {
+                id: { in: receivedIds },
+                boardId,
+                eventId,
+                state: 'EXPECTED',
+              },
+              data: { state: 'SETTLED' },
+            })
+          : { count: 0 };
+        if (dto.lines.length === 0 && received.count === 0) return;
+        await this.activity.log(tx, {
+          boardId,
+          type: 'SHOW_SETTLED',
+          actorId: actor.userId,
+          meta: { eventId, eventTitle: event.title },
         });
-      }
-      await this.activity.log(tx, {
-        boardId,
-        type: 'SHOW_SETTLED',
-        actorId: actor.userId,
-        meta: { eventId, eventTitle: event.title },
       });
-    });
+    } catch (error) {
+      // The same request won a race against itself: the other copy wrote it.
+      if (!isUniqueViolation(error)) throw error;
+    }
     return this.showSettlement(boardId, actor, eventId);
   }
 
@@ -486,10 +542,13 @@ export class FinancesService {
     }
   }
 
-  /** Your own entries, or anyone's if you can manage the books. */
+  /**
+   * Your own entries, or anyone's if you can manage the books. Once an admin
+   * has approved your out-of-pocket expense it's locked to you.
+   */
   private assertMayEdit(
     actor: FinanceActor,
-    entry: { createdById: string | null },
+    entry: { createdById: string | null; approvedAt: Date | null },
   ) {
     if (can(actor.role, 'finance.manage')) return;
     if (
@@ -498,6 +557,40 @@ export class FinancesService {
     ) {
       throw new ForbiddenException('You can only change entries you logged');
     }
+    if (
+      isLockedFor(
+        { approvedAt: entry.approvedAt?.toISOString() ?? null },
+        false,
+      )
+    ) {
+      throw new ForbiddenException(
+        'An admin approved this, so only an admin can change it now',
+      );
+    }
+  }
+
+  /**
+   * The state an edited entry ends up in. A member's own out-of-pocket expense
+   * stays (or becomes) PENDING until an admin approves it; editing never
+   * approves anything, that has its own route. Anything else takes the state
+   * asked for, and a pending entry that no longer needs approval (an admin
+   * moved it to the band's account) counts as settled.
+   */
+  private nextState(
+    actor: FinanceActor,
+    before: { state: FinanceState; createdById: string | null; approvedAt: Date | null },
+    after: { kind: FinanceKind; handledById: string | null },
+    dto: UpdateFinanceEntryDto,
+  ): FinanceState {
+    const fronted =
+      !before.approvedAt &&
+      before.createdById !== null &&
+      needsApproval(after, before.createdById, false);
+    if (fronted && (before.state === 'PENDING' || !can(actor.role, 'finance.manage'))) {
+      return 'PENDING';
+    }
+    if (dto.state) return dto.state;
+    return before.state === 'PENDING' ? 'SETTLED' : before.state;
   }
 
   private async getEntry(boardId: string, entryId: string) {
@@ -606,6 +699,13 @@ export class FinancesService {
   }
 }
 
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === 'P2002'
+  );
+}
+
 function toLedger(row: EntryRow): LedgerEntry {
   return {
     kind: row.kind,
@@ -634,6 +734,8 @@ function toEntryDto(row: EntryRow): FinanceEntryDto {
     eventTitle: row.event?.title ?? null,
     handledById: row.handledById,
     createdById: row.createdById,
+    approvedById: row.approvedById,
+    approvedAt: row.approvedAt?.toISOString() ?? null,
     splits: row.splits,
     receiptCount: row._count.receipts,
     createdAt: row.createdAt.toISOString(),

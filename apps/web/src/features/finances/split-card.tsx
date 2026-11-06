@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import {
-  BOARD_CURRENCIES,
   BPS_WHOLE,
   equalSplit,
   isValidSplit,
@@ -12,7 +11,6 @@ import {
 import {
   useFinanceSplit,
   usePermissions,
-  useUpdateFinanceSettings,
   useUpdateFinanceSplit,
 } from "@artist/api-client";
 import { Button } from "@/components/ui/button";
@@ -23,27 +21,24 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { OptionSelect, memberNamer } from "./finance-bits";
+import { memberNamer } from "./finance-bits";
 
 const FUND = "fund";
 const pct = (bps: number) => String(bps / 100);
 const toBps = (text: string) => Math.round(Number(text) * 100);
 
 /**
- * The board's default split and currency. A change applies to money logged
+ * The board's default split. A change applies to money logged
  * from now on — each entry keeps the split it was written with.
  */
 export function SplitCard({
   boardId,
   members,
-  currency,
 }: {
   boardId: string;
   members: FinanceMemberRef[];
-  currency: string;
 }) {
   const split = useFinanceSplit(boardId);
   if (!split.data) return <Skeleton className="h-64" />;
@@ -52,7 +47,6 @@ export function SplitCard({
       key={JSON.stringify(split.data.shares)}
       boardId={boardId}
       members={members}
-      currency={currency}
       shares={split.data.shares}
       isDefault={split.data.isDefault}
     />
@@ -62,20 +56,17 @@ export function SplitCard({
 function SplitForm({
   boardId,
   members,
-  currency,
   shares,
   isDefault,
 }: {
   boardId: string;
   members: FinanceMemberRef[];
-  currency: string;
   shares: SplitShare[];
   isDefault: boolean;
 }) {
   const { can } = usePermissions();
   const manages = can("finance.manage");
   const save = useUpdateFinanceSplit(boardId);
-  const saveSettings = useUpdateFinanceSettings(boardId);
   const name = memberNamer(members);
 
   const initial = () => {
@@ -173,19 +164,6 @@ function SplitForm({
                 {save.isPending ? "Saving…" : "Save split"}
               </Button>
             </div>
-            <Field className="max-w-48">
-              <FieldLabel htmlFor="finance-currency">Currency</FieldLabel>
-              <OptionSelect
-                id="finance-currency"
-                value={currency}
-                onChange={(v) =>
-                  saveSettings.mutate({
-                    currency: v as (typeof BOARD_CURRENCIES)[number],
-                  })
-                }
-                options={BOARD_CURRENCIES.map((c) => ({ value: c, label: c }))}
-              />
-            </Field>
           </>
         )}
       </CardContent>

@@ -4,6 +4,7 @@ import { Alert, View } from 'react-native';
 import { router } from 'expo-router';
 import {
   categoriesFor,
+  isLockedFor,
   localDayISO,
   parseMoneyToCents,
   type FinanceCategory,
@@ -12,6 +13,7 @@ import {
 } from '@artist/shared';
 import {
   uploadAttachment,
+  useApproveFinanceEntry,
   useBoard,
   useCreateFinanceEntry,
   useEvents,
@@ -103,6 +105,7 @@ function FinanceFields({
   const shows = useEvents(boardId, { type: 'SHOW' });
   const create = useCreateFinanceEntry(boardId);
   const update = useUpdateFinanceEntry(boardId);
+  const approve = useApproveFinanceEntry(boardId);
   const voidEntry = useVoidFinanceEntry(boardId);
   const queryClient = useQueryClient();
   const progress = useRef<FinanceDraftProgress>({ entryId: entry?.id });
@@ -138,7 +141,12 @@ function FinanceFields({
   const [expected, setExpected] = useState(initial.expected);
 
   const manages = can('finance.manage');
-  const editable = !entry || (entry.state !== 'VOID' && (manages || entry.createdById === myId));
+  const editable =
+    !entry ||
+    (entry.state !== 'VOID' &&
+      (manages || entry.createdById === myId) &&
+      !isLockedFor(entry, manages));
+  const awaitsApproval = entry?.state === 'PENDING';
   const cents = parseMoneyToCents(amount);
   const dirty =
     receipt !== null ||
@@ -263,6 +271,23 @@ function FinanceFields({
             This entry was voided. It stays in the history but no longer counts.
           </PosterText>
         )}
+        {awaitsApproval && (
+          <PosterText variant="cardMeta" color={colors.mutedForeground}>
+            {manages
+              ? 'Paid out of a member’s pocket. Approve it and the band owes them this back.'
+              : 'Waiting for an admin to approve it. Until then it doesn’t count toward what you’re owed.'}
+          </PosterText>
+        )}
+        {entry && entry.state !== 'PENDING' && isLockedFor(entry, manages) && (
+          <PosterText variant="cardMeta" color={colors.mutedForeground}>
+            An admin approved this, so only an admin can change it now.
+          </PosterText>
+        )}
+        {!entry && !manages && kind === 'EXPENSE' && handledById === myId && (
+          <PosterText variant="cardMeta" color={colors.mutedForeground}>
+            An admin approves money you paid yourself before the band owes it back.
+          </PosterText>
+        )}
 
         <View pointerEvents={editable ? 'auto' : 'none'} style={{ gap: spacing.md }}>
           {!entry && (
@@ -376,8 +401,15 @@ function FinanceFields({
           </PosterText>
         )}
 
+        {entry && awaitsApproval && manages && (
+          <ApproveEntryButton
+            disabled={approve.isPending}
+            onApprove={() => approve.mutateAsync(entry.id)}
+          />
+        )}
         {entry && editable && (
           <VoidEntryButton
+            title={awaitsApproval && manages ? 'Reject' : 'Void entry'}
             disabled={voidEntry.isPending}
             onVoid={() => voidEntry.mutateAsync(entry.id)}
           />
@@ -388,17 +420,37 @@ function FinanceFields({
 }
 
 /** Read the leave context below FormScreen's provider. */
+function ApproveEntryButton({
+  disabled,
+  onApprove,
+}: {
+  disabled: boolean;
+  onApprove: () => Promise<unknown>;
+}) {
+  const leave = useLeaveForm();
+  return (
+    <Button
+      title="Approve"
+      size="sm"
+      disabled={disabled}
+      onPress={() => void onApprove().then(() => leave(() => router.back()))}
+    />
+  );
+}
+
 function VoidEntryButton({
+  title,
   disabled,
   onVoid,
 }: {
+  title: string;
   disabled: boolean;
   onVoid: () => Promise<unknown>;
 }) {
   const leave = useLeaveForm();
   return (
     <Button
-      title="Void entry"
+      title={title}
       variant="destructive"
       size="sm"
       disabled={disabled}

@@ -13,7 +13,6 @@ import type {
   SettleShowDto,
   ShowSettlementDto,
   UpdateFinanceEntryDto,
-  UpdateFinanceSettingsDto,
   UpdateSplitDto,
 } from "@artist/shared";
 import { apiFetch, notify } from "../client";
@@ -137,6 +136,19 @@ export function useUpdateFinanceEntry(boardId: string) {
   });
 }
 
+/** An admin accepts a member's out-of-pocket expense; it counts from now on. */
+export function useApproveFinanceEntry(boardId: string) {
+  const invalidate = useInvalidateFinances(boardId);
+  return useMutation({
+    mutationFn: (entryId: string) =>
+      apiFetch<FinanceEntryDto>(`${base(boardId)}/entries/${entryId}/approve`, {
+        method: "POST",
+      }),
+    onSuccess: invalidate,
+    onError: showError,
+  });
+}
+
 export function useVoidFinanceEntry(boardId: string) {
   const invalidate = useInvalidateFinances(boardId);
   return useMutation({
@@ -154,19 +166,6 @@ export function useUpdateFinanceSplit(boardId: string) {
   return useMutation({
     mutationFn: (dto: UpdateSplitDto) =>
       apiFetch<FinanceSplitDto>(`${base(boardId)}/split`, {
-        method: "PUT",
-        body: dto,
-      }),
-    onSuccess: invalidate,
-    onError: showError,
-  });
-}
-
-export function useUpdateFinanceSettings(boardId: string) {
-  const invalidate = useInvalidateFinances(boardId);
-  return useMutation({
-    mutationFn: (dto: UpdateFinanceSettingsDto) =>
-      apiFetch<{ currency: string }>(`${base(boardId)}/settings`, {
         method: "PUT",
         body: dto,
       }),

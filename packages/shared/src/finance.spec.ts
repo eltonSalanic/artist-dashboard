@@ -4,8 +4,11 @@ import {
   computeBalances,
   equalSplit,
   financeCsv,
+  isLockedFor,
   isValidSplit,
   ledgerTotals,
+  needsApproval,
+  newRequestId,
   parseMoneyToCents,
   showSettlement,
   type LedgerEntry,
@@ -218,6 +221,64 @@ describe('finance DTOs', () => {
 
   it('needs something to settle', () => {
     expect(settleShowSchema.safeParse({ occurredOn: '2026-10-01' }).success).toBe(false);
+  });
+});
+
+describe('approval', () => {
+  it('holds only a member’s own out-of-pocket expense', () => {
+    const fronted = { kind: 'EXPENSE' as const, handledById: 'a' };
+    expect(needsApproval(fronted, 'a', false)).toBe(true);
+    expect(needsApproval(fronted, 'a', true)).toBe(false);
+    expect(needsApproval({ kind: 'INCOME', handledById: 'a' }, 'a', false)).toBe(false);
+    expect(needsApproval({ kind: 'EXPENSE', handledById: null }, 'a', false)).toBe(false);
+  });
+
+  it('locks an approved entry to members only', () => {
+    const approved = { approvedAt: '2026-10-03T00:00:00.000Z' };
+    expect(isLockedFor(approved, false)).toBe(true);
+    expect(isLockedFor(approved, true)).toBe(false);
+    expect(isLockedFor({ approvedAt: null }, false)).toBe(false);
+  });
+
+  it('keeps pending expenses out of the totals and the balances', () => {
+    const pending = entry({
+      kind: 'EXPENSE',
+      category: 'TRAVEL',
+      state: 'PENDING',
+      amountCents: 5_000,
+      handledById: 'a',
+    });
+    const totals = ledgerTotals([pending]);
+    expect(totals.expenseCents).toBe(0);
+    expect(totals.pendingCents).toBe(5_000);
+    expect(computeBalances([pending]).members).toEqual([]);
+  });
+
+  it('labels a pending entry in the spreadsheet', () => {
+    const csv = financeCsv(
+      [
+        {
+          ...entry({ kind: 'EXPENSE', category: 'TRAVEL', state: 'PENDING', amountCents: 5_000 }),
+          description: 'Tire',
+          counterparty: null,
+          eventTitle: null,
+        },
+      ],
+      () => '',
+    );
+    expect(csv).toContain('Pending approval');
+  });
+
+  it('makes request ids the settle schema accepts', () => {
+    const a = newRequestId();
+    expect(a).not.toBe(newRequestId());
+    expect(
+      settleShowSchema.safeParse({
+        requestId: a,
+        occurredOn: '2026-10-02',
+        receivedIds: ['00000000-0000-4000-8000-000000000000'],
+      }).success,
+    ).toBe(true);
   });
 });
 

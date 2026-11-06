@@ -59,21 +59,12 @@ export function categoryKind(key: string): FinanceKind | null {
   return FINANCE_CATEGORIES.find((c) => c.key === key)?.kind ?? null;
 }
 
-/** ISO 4217 codes offered in board settings. */
-export const BOARD_CURRENCIES = [
-  'USD',
-  'CAD',
-  'EUR',
-  'GBP',
-  'AUD',
-  'NZD',
-  'MXN',
-  'SEK',
-  'NOK',
-  'DKK',
-  'CHF',
-  'JPY',
-] as const;
+/**
+ * Band Wall keeps every band's books in US dollars. `Board.currency` stays in
+ * the schema (always 'USD') so a later multi-currency version has somewhere to
+ * live, but nothing lets a band change it.
+ */
+export const BOARD_CURRENCY = 'USD';
 
 /** `-1234` in USD → `-$12.34`. Falls back to a plain number for an odd code. */
 export function formatMoney(cents: number, currency = 'USD'): string {
@@ -131,6 +122,43 @@ export function equalSplit(memberIds: string[], fundBps = 0): SplitShare[] {
     shares.push({ userId, shareBps: each + extra });
   }
   return shares.filter((s) => s.shareBps > 0 || s.userId !== null);
+}
+
+/**
+ * An expense a member paid out of their own pocket and logged themselves. The
+ * band only owes them for it once an admin approves it, so it starts PENDING.
+ * Admins' own entries, and income a member collected (which they owe the band),
+ * skip approval.
+ */
+export function needsApproval(
+  entry: { kind: FinanceKind; handledById: string | null },
+  loggedById: string,
+  canManage: boolean,
+): boolean {
+  return (
+    !canManage && entry.kind === 'EXPENSE' && entry.handledById === loggedById
+  );
+}
+
+/**
+ * Once an admin has approved an entry, the member who logged it can't change or
+ * void it any more; admins still can, to fix a mistake.
+ */
+export function isLockedFor(
+  entry: { approvedAt: string | null },
+  canManage: boolean,
+): boolean {
+  return !canManage && entry.approvedAt !== null;
+}
+
+/**
+ * A key for one press of a button that writes money, so a retried or
+ * double-tapped request is applied once. Not a secret: uniqueness is all it
+ * needs, and React Native has no `crypto.randomUUID`.
+ */
+export function newRequestId(): string {
+  const random = () => Math.random().toString(36).slice(2, 10);
+  return `${Date.now().toString(36)}-${random()}${random()}`;
 }
 
 export function sharesTotal(shares: SplitShare[]): number {
@@ -279,6 +307,8 @@ export interface LedgerTotals {
   netCents: number;
   /** Income promised but not received yet. */
   expectedCents: number;
+  /** Members' out-of-pocket expenses waiting for an admin's approval. */
+  pendingCents: number;
   byCategory: CategoryTotal[];
   byMonth: MonthTotal[];
 }
@@ -288,6 +318,7 @@ export function ledgerTotals(entries: LedgerEntry[]): LedgerTotals {
   let incomeCents = 0;
   let expenseCents = 0;
   let expectedCents = 0;
+  let pendingCents = 0;
   const byCategory = new Map<string, CategoryTotal>();
   const byMonth = new Map<string, MonthTotal>();
 
@@ -295,6 +326,10 @@ export function ledgerTotals(entries: LedgerEntry[]): LedgerTotals {
     if (entry.state === 'VOID') continue;
     if (entry.state === 'EXPECTED') {
       if (entry.kind === 'INCOME') expectedCents += entry.amountCents;
+      continue;
+    }
+    if (entry.state === 'PENDING') {
+      pendingCents += entry.amountCents;
       continue;
     }
     if (entry.kind === 'INCOME') incomeCents += entry.amountCents;
@@ -320,6 +355,7 @@ export function ledgerTotals(entries: LedgerEntry[]): LedgerTotals {
     expenseCents,
     netCents: incomeCents - expenseCents,
     expectedCents,
+    pendingCents,
     byCategory: [...byCategory.values()].sort((a, b) => b.cents - a.cents),
     byMonth: [...byMonth.values()].sort((a, b) => a.month.localeCompare(b.month)),
   };
@@ -345,6 +381,13 @@ export interface CsvEntry extends LedgerEntry {
   counterparty: string | null;
   eventTitle: string | null;
 }
+
+const STATE_LABELS: Record<FinanceState, string> = {
+  SETTLED: 'Settled',
+  EXPECTED: 'Expected',
+  PENDING: 'Pending approval',
+  VOID: 'Void',
+};
 
 const csvCell = (text: string) => {
   // Leading = + - @ make a spreadsheet run the cell as a formula. A plain
@@ -375,7 +418,7 @@ export function financeCsv(
     .map((e) => [
       e.occurredOn,
       e.kind === 'INCOME' ? 'Income' : 'Expense',
-      e.state === 'SETTLED' ? 'Settled' : e.state === 'EXPECTED' ? 'Expected' : 'Void',
+      STATE_LABELS[e.state],
       categoryLabel(e.category),
       (signed(e) / 100).toFixed(2),
       e.description,

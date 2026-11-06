@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { FinanceKinds, FinanceStates, type FinanceKind, type FinanceState } from '../enums';
 import {
-  BOARD_CURRENCIES,
   FinanceCategoryKeys,
   categoryKind,
   isValidSplit,
@@ -102,11 +101,6 @@ export type FinanceSummaryQueryDto = z.infer<typeof financeSummaryQuerySchema>;
 export const updateSplitSchema = z.object({ shares: splitSchema });
 export type UpdateSplitDto = z.infer<typeof updateSplitSchema>;
 
-export const updateFinanceSettingsSchema = z.object({
-  currency: z.enum(BOARD_CURRENCIES),
-});
-export type UpdateFinanceSettingsDto = z.infer<typeof updateFinanceSettingsSchema>;
-
 export const createPayoutSchema = z.object({
   userId: z.uuid(),
   /** Positive: the band paid the member. Negative: the member paid the band. */
@@ -134,6 +128,16 @@ const settleLineSchema = z
 /** One pass over a show: new lines, plus expected fees that arrived. */
 export const settleShowSchema = z
   .object({
+    /**
+     * From `newRequestId()`, made once when the settle form opens. Sending the
+     * same one again (a double tap, a retry after a dropped connection) is a
+     * no-op, so a night's money is never written twice.
+     */
+    requestId: z
+      .string()
+      .min(8)
+      .max(48)
+      .regex(/^[A-Za-z0-9_-]+$/),
     occurredOn: isoDate,
     lines: z.array(settleLineSchema).max(50).default([]),
     receivedIds: z.array(z.uuid()).max(50).default([]),
@@ -167,6 +171,9 @@ export interface FinanceEntryDto {
   eventTitle: string | null;
   handledById: string | null;
   createdById: string | null;
+  /** The admin who approved a member's out-of-pocket expense, and when. */
+  approvedById: string | null;
+  approvedAt: string | null;
   splits: SplitShare[];
   receiptCount: number;
   createdAt: string;
@@ -196,6 +203,8 @@ export interface FinanceSummaryDto {
   /** All-time, regardless of range: who is owed what right now. */
   balances: Balances;
   members: FinanceMemberRef[];
+  /** Members' out-of-pocket expenses waiting for an admin, all time, newest first. */
+  pending: FinanceEntryDto[];
   /** Shows with promised income still outstanding. */
   unpaidShows: { eventId: string; title: string; startsAt: string; expectedCents: number }[];
 }

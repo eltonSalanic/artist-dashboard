@@ -23,6 +23,7 @@ import {
   type FinanceSummaryDto,
 } from "@artist/shared";
 import {
+  useApproveFinanceEntry,
   useFinanceEntries,
   useFinanceSummary,
   usePermissions,
@@ -204,6 +205,15 @@ function Finances({ boardId }: { boardId: string }) {
         </div>
       )}
 
+      {data && data.pending.length > 0 && (
+        <PendingApprovals
+          boardId={boardId}
+          data={data}
+          canApprove={can("finance.manage")}
+          onOpen={setEditing}
+        />
+      )}
+
       {data && data.unpaidShows.length > 0 && (
         <UnpaidShows
           data={data}
@@ -311,6 +321,7 @@ function Finances({ boardId }: { boardId: string }) {
                   { value: "all", label: "All statuses" },
                   { value: "SETTLED", label: "Settled" },
                   { value: "EXPECTED", label: "Expected" },
+                  { value: "PENDING", label: "Waiting for approval" },
                   ...(showVoid ? [{ value: "VOID", label: "Voided" }] : []),
                 ]}
               />
@@ -393,7 +404,7 @@ function Finances({ boardId }: { boardId: string }) {
 
       {tab === "split" && (
         <div className="max-w-xl">
-          <SplitCard boardId={boardId} members={members} currency={currency} />
+          <SplitCard boardId={boardId} members={members} />
         </div>
       )}
 
@@ -450,6 +461,61 @@ function Stat({
           />
         </CardTitle>
       </CardHeader>
+    </Card>
+  );
+}
+
+/**
+ * Members' out-of-pocket expenses that don't count yet. Everyone sees the
+ * list; admins can approve from it, or open an entry to check it or reject it.
+ */
+function PendingApprovals({
+  boardId,
+  data,
+  canApprove,
+  onOpen,
+}: {
+  boardId: string;
+  data: FinanceSummaryDto;
+  canApprove: boolean;
+  onOpen: (entry: FinanceEntryDto) => void;
+}) {
+  const approve = useApproveFinanceEntry(boardId);
+  const name = memberNamer(data.members);
+  return (
+    <Card size="sm">
+      <CardHeader>
+        <CardTitle>Waiting for approval</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ul className="flex flex-col gap-1 text-sm">
+          {data.pending.map((entry) => (
+            <li key={entry.id} className="flex items-center gap-3">
+              <button
+                type="button"
+                className="min-w-0 flex-1 truncate text-left hover:underline"
+                onClick={() => onOpen(entry)}
+              >
+                {entry.description || categoryLabel(entry.category)}
+                <span className="ml-2 text-xs text-muted-foreground">
+                  {name(entry.handledById)} paid · {formatDay(entry.occurredOn)}
+                </span>
+              </button>
+              <Amount cents={-entry.amountCents} currency={data.currency} />
+              {canApprove && (
+                <Button
+                  size="xs"
+                  variant="outline"
+                  disabled={approve.isPending}
+                  onClick={() => approve.mutate(entry.id)}
+                >
+                  Approve
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      </CardContent>
     </Card>
   );
 }
@@ -540,6 +606,9 @@ function Ledger({
                 )}
                 {e.state === "EXPECTED" && (
                   <Badge variant="secondary">Owed</Badge>
+                )}
+                {e.state === "PENDING" && (
+                  <Badge variant="secondary">Needs approval</Badge>
                 )}
                 {e.state === "VOID" && <Badge variant="outline">Void</Badge>}
               </div>

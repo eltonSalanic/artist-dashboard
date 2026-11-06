@@ -24,33 +24,34 @@ enum InviteStatus {
 }
 
 model User {
-  id                    String                   @id @db.Uuid // = Supabase auth user id
-  email                 String                   @unique
-  displayName           String
-  avatarUrl             String?
-  createdAt             DateTime                 @default(now())
-  memberships           Membership[]
-  sentInvites           Invite[]                 @relation("InvitedBy")
-  createdTasks          Task[]                   @relation("TaskCreatedBy")
-  taskAssignees         TaskAssignee[]
-  layouts               UserLayout[]
-  mobileLayouts         MobileLayout[]
-  comments              Comment[]
-  attachments           Attachment[]
-  activities            Activity[]
-  mentions              MentionNotification[]
-  notifications         NotificationDelivery[]
-  notifyPrefs           NotificationPreference[]
-  devices               DeviceToken[]
-  financeEntriesCreated FinanceEntry[]           @relation("FinanceEntryCreatedBy")
-  financeEntriesHandled FinanceEntry[]           @relation("FinanceEntryHandledBy")
-  financeSplits         FinanceSplit[]
-  splitShares           SplitShare[]
-  payouts               Payout[]                 @relation("PayoutMember")
-  payoutsRecorded       Payout[]                 @relation("PayoutCreatedBy")
-  subscription          UserSubscription?
-  ownedBoards           Board[]                  @relation("BoardOwner")
-  links                 ItemLink[]
+  id                     String                   @id @db.Uuid // = Supabase auth user id
+  email                  String                   @unique
+  displayName            String
+  avatarUrl              String?
+  createdAt              DateTime                 @default(now())
+  memberships            Membership[]
+  sentInvites            Invite[]                 @relation("InvitedBy")
+  createdTasks           Task[]                   @relation("TaskCreatedBy")
+  taskAssignees          TaskAssignee[]
+  layouts                UserLayout[]
+  mobileLayouts          MobileLayout[]
+  comments               Comment[]
+  attachments            Attachment[]
+  activities             Activity[]
+  mentions               MentionNotification[]
+  notifications          NotificationDelivery[]
+  notifyPrefs            NotificationPreference[]
+  devices                DeviceToken[]
+  financeEntriesCreated  FinanceEntry[]           @relation("FinanceEntryCreatedBy")
+  financeEntriesHandled  FinanceEntry[]           @relation("FinanceEntryHandledBy")
+  financeEntriesApproved FinanceEntry[]           @relation("FinanceEntryApprovedBy")
+  financeSplits          FinanceSplit[]
+  splitShares            SplitShare[]
+  payouts                Payout[]                 @relation("PayoutMember")
+  payoutsRecorded        Payout[]                 @relation("PayoutCreatedBy")
+  subscription           UserSubscription?
+  ownedBoards            Board[]                  @relation("BoardOwner")
+  links                  ItemLink[]
 }
 
 model Board {
@@ -626,10 +627,13 @@ enum FinanceKind {
   EXPENSE
 }
 
-/// EXPECTED: promised, not in hand (a show fee still owed). VOID replaces
-/// delete, so the books never quietly lose a row.
+/// EXPECTED: promised, not in hand (a show fee still owed). PENDING: a
+/// member's out-of-pocket expense waiting for an admin's approval; it doesn't
+/// count toward balances yet. VOID replaces delete, so the books never quietly
+/// lose a row.
 enum FinanceState {
   EXPECTED
+  PENDING
   SETTLED
   VOID
 }
@@ -657,12 +661,20 @@ model FinanceEntry {
   handledById  String?        @db.Uuid
   /// Null once the account is gone — the books outlive it.
   createdById  String?        @db.Uuid
+  /// The admin who approved a member's out-of-pocket expense. Once set, the
+  /// member who logged it can no longer change it.
+  approvedById String?        @db.Uuid
+  approvedAt   DateTime?
+  /// `<requestId>:<line>` for lines written by settling a show, so a retried
+  /// settle can't write the night twice.
+  settleKey    String?        @unique
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   board        Board          @relation(fields: [boardId], references: [id], onDelete: Cascade)
   event        Event?         @relation(fields: [eventId], references: [id], onDelete: SetNull)
   handledBy    User?          @relation("FinanceEntryHandledBy", fields: [handledById], references: [id], onDelete: SetNull)
   createdBy    User?          @relation("FinanceEntryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  approvedBy   User?          @relation("FinanceEntryApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
   splits       FinanceSplit[]
   receipts     Attachment[]
 

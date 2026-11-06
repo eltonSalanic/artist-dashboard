@@ -5,6 +5,7 @@ import { Plus, X } from "lucide-react";
 import {
   categoriesFor,
   categoryLabel,
+  newRequestId,
   parseMoneyToCents,
   showSettlement,
   type FinanceCategory,
@@ -101,6 +102,9 @@ function SettleForm({
   const settle = useSettleShow(boardId);
   const name = memberNamer(data.members);
   const hasFee = data.entries.some((e) => e.category === "SHOW_FEE");
+  // One per opening of the dialog: pressing Settle again after a dropped
+  // connection resends it, and the API writes the night only once.
+  const [requestId] = useState(newRequestId);
 
   const [occurredOn, setOccurredOn] = useState(() => {
     const day = todayISO(new Date(data.event.startsAt));
@@ -153,6 +157,7 @@ function SettleForm({
       {
         eventId: data.event.id,
         dto: {
+          requestId,
           occurredOn,
           receivedIds: [...received],
           lines: ready.map((l) => ({

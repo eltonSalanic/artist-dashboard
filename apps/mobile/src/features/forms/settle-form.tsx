@@ -4,6 +4,7 @@ import {
   categoryLabel,
   formatMoney,
   localDayISO,
+  newRequestId,
   parseMoneyToCents,
   showSettlement,
   type LedgerEntry,
@@ -49,6 +50,9 @@ function SettleFields({ boardId, data }: { boardId: string; data: ShowSettlement
   const money = (cents: number) => formatMoney(cents, data.currency);
   const expected = data.entries.filter((e) => e.state === 'EXPECTED');
   const hasFee = data.entries.some((e) => e.category === 'SHOW_FEE');
+  // One per opening of the form: saving again after a dropped connection
+  // resends it, and the API writes the night only once.
+  const [requestId] = useState(newRequestId);
 
   const [note, setNote] = useState('');
   const [received, setReceived] = useState<string[]>([]);
@@ -131,7 +135,7 @@ function SettleFields({ boardId, data }: { boardId: string; data: ShowSettlement
       onSave={() =>
         settle.mutateAsync({
           eventId: data.event.id,
-          dto: { occurredOn, receivedIds: received, lines },
+          dto: { requestId, occurredOn, receivedIds: received, lines },
         })
       }
       postered
