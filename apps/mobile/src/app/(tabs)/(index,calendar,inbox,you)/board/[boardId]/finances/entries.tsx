@@ -1,6 +1,6 @@
-import { useLocalSearchParams } from "expo-router";
-import { BoardPermissions } from "@/features/board/board-permissions";
-import { FinanceEntriesScreen } from "@/screens/finance-entries";
+import { useLocalSearchParams } from 'expo-router';
+import { BoardPermissions } from '@/features/board/board-permissions';
+import { FinanceEntriesScreen } from '@/screens/finance-entries';
 
 /** `/board/:boardId/finances/entries` — every income and expense, searchable. */
 export default function FinanceEntries() {

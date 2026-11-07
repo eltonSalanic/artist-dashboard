@@ -1,6 +1,6 @@
-import { useLocalSearchParams } from "expo-router";
-import { BoardPermissions } from "@/features/board/board-permissions";
-import { FinanceMemberScreen } from "@/screens/finance-member";
+import { useLocalSearchParams } from 'expo-router';
+import { BoardPermissions } from '@/features/board/board-permissions';
+import { FinanceMemberScreen } from '@/screens/finance-member';
 
 /** `/board/:boardId/finances/member/:userId` — one member's expenses and paybacks. */
 export default function FinanceMember() {

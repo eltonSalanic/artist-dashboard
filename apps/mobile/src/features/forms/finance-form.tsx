@@ -442,7 +442,9 @@ function FinanceFields({
             label={`Pay ${entry.handledById === myId ? 'yourself' : memberName(entry.handledById)} back ${formatMoney(entry.amountCents, currency)}`}
             // Paying back locks the entry, so unsaved edits would be lost.
             disabled={payBack.isPending || dirty}
-            hint={dirty ? 'Save your changes first.' : 'Comes out of the band fund. You can undo it.'}
+            hint={
+              dirty ? 'Save your changes first.' : 'Comes out of the band fund. You can undo it.'
+            }
             onPayBack={() => payBack.mutate(entry.id)}
           />
         )}

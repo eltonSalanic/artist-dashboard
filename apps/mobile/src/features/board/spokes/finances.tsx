@@ -146,7 +146,7 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
                   }
                   trailing={
                     owed > 0 ? (
-                      <FinanceAmount cents={-owed} currency={data.currency} />
+                      <FinanceAmount cents={owed} currency={data.currency} owed />
                     ) : (
                       <PosterText variant="cardMeta" color={tokens.mutedForeground}>
                         Square

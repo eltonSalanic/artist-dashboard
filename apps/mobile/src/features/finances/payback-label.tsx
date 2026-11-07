@@ -1,11 +1,7 @@
-import { View } from "react-native";
-import {
-  FINANCE_COLORS,
-  PAYBACK_LABELS,
-  type PaybackStatus,
-} from "@artist/shared";
-import { PosterText } from "@/components/poster-text";
-import { radius, spacing, useScheme } from "@/theme";
+import { View } from 'react-native';
+import { FINANCE_COLORS, PAYBACK_LABELS, type PaybackStatus } from '@artist/shared';
+import { PosterText } from '@/components/poster-text';
+import { radius, spacing, useScheme } from '@/theme';
 
 /**
  * "Owed back" or "Paid back" on an expense a member paid out of pocket, in the
@@ -13,12 +9,12 @@ import { radius, spacing, useScheme } from "@/theme";
  */
 export function PaybackLabel({ status }: { status: PaybackStatus }) {
   const colors = FINANCE_COLORS[useScheme()];
-  const color = status === "paid" ? colors.positive : colors.negative;
+  const color = status === 'paid' ? colors.positive : colors.negative;
   return (
     <View
       accessibilityLabel={PAYBACK_LABELS[status]}
       style={{
-        alignSelf: "flex-end",
+        alignSelf: 'flex-end',
         // The ink at a low alpha: a tint of itself on either canvas.
         backgroundColor: `${color}1f`,
         borderRadius: radius.full,

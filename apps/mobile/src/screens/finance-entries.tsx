@@ -1,25 +1,21 @@
-import { useState } from "react";
-import { View } from "react-native";
-import { router } from "expo-router";
-import {
-  useFinanceEntries,
-  useFinanceSummary,
-  usePermissions,
-} from "@artist/api-client";
+import { useState } from 'react';
+import { View } from 'react-native';
+import { router } from 'expo-router';
+import { useFinanceEntries, useFinanceSummary, usePermissions } from '@artist/api-client';
 import {
   activeFinanceFilterCount,
   DEFAULT_FINANCE_FILTERS,
   filterFinanceEntries,
   formatMoney,
-} from "@artist/shared";
-import { Button } from "@/components/button";
-import { PosterText } from "@/components/poster-text";
-import { SpokeList } from "@/components/spoke-list";
-import { FinanceEntryRow } from "@/features/finances/entry-row";
-import { FinanceFilters } from "@/features/finances/entry-filters";
-import { FinanceSearch } from "@/features/finances/finance-search";
-import { shareFinanceCsv } from "@/features/finances/export-csv";
-import { spacing, useTokens } from "@/theme";
+} from '@artist/shared';
+import { Button } from '@/components/button';
+import { PosterText } from '@/components/poster-text';
+import { SpokeList } from '@/components/spoke-list';
+import { FinanceEntryRow } from '@/features/finances/entry-row';
+import { FinanceFilters } from '@/features/finances/entry-filters';
+import { FinanceSearch } from '@/features/finances/finance-search';
+import { shareFinanceCsv } from '@/features/finances/export-csv';
+import { spacing, useTokens } from '@/theme';
 
 /**
  * Every income and expense entry the band has logged, all time: search by
@@ -29,28 +25,23 @@ import { spacing, useTokens } from "@/theme";
 export function FinanceEntriesScreen({ boardId }: { boardId: string }) {
   const tokens = useTokens();
   const { can } = usePermissions();
-  const visible = can("finance.view");
+  const visible = can('finance.view');
   const summary = useFinanceSummary(boardId, {}, visible);
   const entries = useFinanceEntries(boardId);
   const [filters, setFilters] = useState(DEFAULT_FINANCE_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const currency = summary.data?.currency ?? "USD";
+  const currency = summary.data?.currency ?? 'USD';
   const members = summary.data?.members ?? [];
   const name = (userId: string) =>
-    members.find((m) => m.id === userId)?.displayName ?? "Former member";
+    members.find((m) => m.id === userId)?.displayName ?? 'Former member';
   const all = entries.data ?? [];
   const rows = filterFinanceEntries(all, filters);
   const active = activeFinanceFilterCount(filters);
-  const narrowed = active > 0 || filters.query.trim() !== "";
+  const narrowed = active > 0 || filters.query.trim() !== '';
   const net = rows.reduce(
     (sum, e) =>
-      sum +
-      (e.state === "SETTLED"
-        ? e.kind === "INCOME"
-          ? e.amountCents
-          : -e.amountCents
-        : 0),
+      sum + (e.state === 'SETTLED' ? (e.kind === 'INCOME' ? e.amountCents : -e.amountCents) : 0),
     0,
   );
 
@@ -63,19 +54,15 @@ export function FinanceEntriesScreen({ boardId }: { boardId: string }) {
         void entries.refetch();
       }}
       empty={!visible || rows.length === 0}
-      emptyIcon={{ sf: "dollarsign.circle", md: "account-balance-wallet" }}
+      emptyIcon={{ sf: 'dollarsign.circle', md: 'account-balance-wallet' }}
       emptyTitle={
-        !visible
-          ? "Only admins see the books"
-          : narrowed
-            ? "No matches"
-            : "Nothing logged yet"
+        !visible ? 'Only admins see the books' : narrowed ? 'No matches' : 'Nothing logged yet'
       }
       emptyBody={
         visible && narrowed
-          ? "Nothing matches this search and these filters."
+          ? 'Nothing matches this search and these filters.'
           : visible
-            ? "Log income or an expense with the + on Finances."
+            ? 'Log income or an expense with the + on Finances.'
             : undefined
       }
       header={
@@ -87,13 +74,13 @@ export function FinanceEntriesScreen({ boardId }: { boardId: string }) {
             />
             <View
               style={{
-                flexDirection: "row",
+                flexDirection: 'row',
                 gap: spacing.sm,
-                alignItems: "center",
+                alignItems: 'center',
               }}
             >
               <Button
-                title={`${filtersOpen ? "Hide filters" : "Filter and sort"}${active ? ` (${active})` : ""}`}
+                title={`${filtersOpen ? 'Hide filters' : 'Filter and sort'}${active ? ` (${active})` : ''}`}
                 variant="secondary"
                 size="sm"
                 onPress={() => setFiltersOpen(!filtersOpen)}
@@ -104,25 +91,17 @@ export function FinanceEntriesScreen({ boardId }: { boardId: string }) {
                   variant="ghost"
                   size="sm"
                   onPress={() =>
-                    void shareFinanceCsv(
-                      rows,
-                      members,
-                      narrowed ? "filtered" : "all-time",
-                    )
+                    void shareFinanceCsv(rows, members, narrowed ? 'filtered' : 'all-time')
                   }
                 />
               )}
             </View>
             {filtersOpen && (
-              <FinanceFilters
-                filters={filters}
-                onChange={setFilters}
-                members={members}
-              />
+              <FinanceFilters filters={filters} onChange={setFilters} members={members} />
             )}
             <PosterText variant="cardMeta" color={tokens.mutedForeground}>
-              {`${rows.length} of ${all.length} ${all.length === 1 ? "entry" : "entries"}${
-                narrowed ? ` · net ${formatMoney(net, currency)}` : ""
+              {`${rows.length} of ${all.length} ${all.length === 1 ? 'entry' : 'entries'}${
+                narrowed ? ` · net ${formatMoney(net, currency)}` : ''
               }`}
             </PosterText>
           </View>
@@ -136,9 +115,7 @@ export function FinanceEntriesScreen({ boardId }: { boardId: string }) {
           currency={currency}
           first={index === 0}
           name={name}
-          onPress={() =>
-            router.push(`/board/${boardId}/form/finance?id=${entry.id}`)
-          }
+          onPress={() => router.push(`/board/${boardId}/form/finance?id=${entry.id}`)}
         />
       ))}
     </SpokeList>
