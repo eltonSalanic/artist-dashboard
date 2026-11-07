@@ -267,33 +267,32 @@ export function useHubCards(boardId: string, theme: BoardTheme): HubCards {
         };
       }
       const money = (cents: number) => formatMoney(cents, data.currency);
-      const mine =
-        data.balances.members.find((m) => m.userId === me.data?.user.id)?.balanceCents ?? 0;
+      const myId = me.data?.user.id;
+      const mine = data.balances.members.find((m) => m.userId === myId)?.owedCents ?? 0;
       const touched = data.totals.incomeCents > 0 || data.totals.expenseCents > 0;
-      // What needs a hand: an admin's approvals, or a member's sent-back entries.
-      const waiting = can('finance.manage') ? data.pending.length : 0;
-      const sentBack = data.sentBack.length;
+      // What needs a hand: for an admin, members to pay back; for a member,
+      // what the band still owes them.
+      const toPayBack = can('finance.manage') ? data.owed : [];
+      const owedToMe = data.owed.filter((e) => e.handledById === myId);
       return {
         primary: touched ? money(data.totals.netCents) : null,
         primaryTone:
           data.totals.netCents > 0 ? 'positive' : data.totals.netCents < 0 ? 'negative' : undefined,
         qualifier:
-          waiting > 0
-            ? `${waiting} waiting for your approval`
-            : sentBack > 0
-              ? `${sentBack} sent back to you`
-              : mine > 0
-                ? `${money(mine)} owed to you`
-                : touched
-                  ? 'net this month'
-                  : null,
-        urgent: waiting > 0 || sentBack > 0,
+          toPayBack.length > 0
+            ? `${money(data.balances.owedCents)} to pay back`
+            : mine > 0
+              ? `${money(mine)} owed to you`
+              : touched
+                ? 'net this month'
+                : null,
+        urgent: toPayBack.length > 0,
         loading: false,
         lines: [
-          ...(can('finance.manage') ? data.pending : data.sentBack).map((entry) => ({
+          ...(toPayBack.length > 0 ? toPayBack : owedToMe).map((entry) => ({
             key: entry.id,
             text: `${entry.description || categoryLabel(entry.category)} · ${money(entry.amountCents)}`,
-            meta: can('finance.manage') ? 'needs approval' : 'sent back',
+            meta: 'owed back',
           })),
           ...data.totals.byCategory.map((c) => ({
             key: c.category,

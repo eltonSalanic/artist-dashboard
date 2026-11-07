@@ -92,6 +92,9 @@ export default function TabStackLayout({ segment }: { segment: string }) {
       <Stack.Screen name="board/[boardId]/reminder/[reminderId]" options={{ title: '' }} />
       <Stack.Screen name="board/[boardId]/attach" options={{ title: 'Attach a task' }} />
       <Stack.Screen name="board/[boardId]/archive" options={{ title: 'Archive' }} />
+      <Stack.Screen name="board/[boardId]/finances/entries" options={{ title: 'All entries' }} />
+      {/* Titled by the screen with the member's name, once it has loaded. */}
+      <Stack.Screen name="board/[boardId]/finances/member/[userId]" options={{ title: '' }} />
       <Stack.Screen name="board/[boardId]/settings" options={{ title: 'Settings' }} />
       <Stack.Screen name="board/[boardId]/subscribe" options={{ title: 'Subscription' }} />
       <Stack.Screen name="subscribe" options={{ title: 'Subscription' }} />

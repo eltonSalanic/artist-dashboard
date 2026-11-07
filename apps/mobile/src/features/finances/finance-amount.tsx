@@ -1,6 +1,6 @@
-import { FINANCE_COLORS, formatMoney } from '@artist/shared';
-import { PosterText } from '@/components/poster-text';
-import { useScheme, usePosterCanvas } from '@/theme';
+import { FINANCE_COLORS, formatMoney } from "@artist/shared";
+import { PosterText } from "@/components/poster-text";
+import { useScheme, usePosterCanvas } from "@/theme";
 
 export function FinanceAmount({
   cents,
@@ -16,9 +16,11 @@ export function FinanceAmount({
   return (
     <PosterText
       variant="rowTitle"
-      color={cents > 0 ? colors.positive : cents < 0 ? colors.negative : canvas.soft}
+      color={
+        cents > 0 ? colors.positive : cents < 0 ? colors.negative : canvas.soft
+      }
     >
-      {signed && cents > 0 ? '+' : ''}
+      {signed && cents > 0 ? "+" : ""}
       {formatMoney(cents, currency)}
     </PosterText>
   );

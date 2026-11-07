@@ -8,9 +8,9 @@
  * Decided by the ids present rather than by template name, so a trigger added
  * later still opens its entity without this file learning its name. Two
  * templates need naming: the reminder, which carries no id — reminders have no
- * detail screen, so it opens the band's Reminders spoke — and the expense
- * approval ones, which open Finances, where approving happens, rather than the
- * entry itself.
+ * detail screen, so it opens the band's Reminders spoke — and the payback
+ * ones ("owed back" to admins, "paid back" to the member), which open Finances,
+ * where who's owed what is, rather than the entry itself.
  *
  * The payload arrives from outside the app, so nothing about it is trusted: a
  * missing or non-string board id means there is nowhere to go, and ids are

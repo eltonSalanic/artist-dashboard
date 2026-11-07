@@ -3,12 +3,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   CreateFinanceEntryDto,
-  CreatePayoutDto,
   FinanceEntryDto,
   FinanceEntryQueryDto,
   FinanceSummaryDto,
   FinanceSummaryQueryDto,
-  PayoutDto,
   ShowSettlementDto,
   UpdateFinanceEntryDto,
 } from "@artist/shared";
@@ -40,7 +38,7 @@ function useInvalidateFinances(boardId: string) {
     Promise.all([
       queryClient.invalidateQueries({ queryKey: ["finances", boardId] }),
       queryClient.invalidateQueries({ queryKey: ["activity", boardId] }),
-      // Approval requests and decisions live in the inbox.
+      // "Owed back" reminders and "paid back" alerts live in the inbox.
       queryClient.invalidateQueries({ queryKey: ["inbox"] }),
       queryClient.invalidateQueries({ queryKey: ["mentions"] }),
     ]);
@@ -78,13 +76,6 @@ export function useFinanceSummary(
     queryFn: () =>
       apiFetch<FinanceSummaryDto>(`${base(boardId)}/summary${query(range)}`),
     enabled,
-  });
-}
-
-export function usePayouts(boardId: string) {
-  return useQuery({
-    queryKey: ["finances", boardId, "payouts"],
-    queryFn: () => apiFetch<PayoutDto[]>(`${base(boardId)}/payouts`),
   });
 }
 
@@ -129,31 +120,46 @@ export function useUpdateFinanceEntry(boardId: string) {
   });
 }
 
-/** An admin accepts a member's out-of-pocket expense; it counts from now on. */
-export function useApproveFinanceEntry(boardId: string) {
+/**
+ * An admin pays a member back for an out-of-pocket expense, from the band
+ * fund. The entry locks until the payback is undone.
+ */
+export function usePayBackFinanceEntry(boardId: string) {
   const invalidate = useInvalidateFinances(boardId);
   return useMutation({
     mutationFn: (entryId: string) =>
-      apiFetch<FinanceEntryDto>(`${base(boardId)}/entries/${entryId}/approve`, {
-        method: "POST",
-      }),
+      apiFetch<FinanceEntryDto>(
+        `${base(boardId)}/entries/${entryId}/pay-back`,
+        { method: "POST" },
+      ),
     onSuccess: invalidate,
     onError: showError,
   });
 }
 
-/**
- * An admin sends a member's expense back with a note. It stops counting until
- * the member fixes it and saves, which asks for approval again.
- */
-export function useRejectFinanceEntry(boardId: string) {
+/** Takes a payback back: the member is owed again, and it can be edited. */
+export function useUndoPayBackFinanceEntry(boardId: string) {
   const invalidate = useInvalidateFinances(boardId);
   return useMutation({
-    mutationFn: ({ entryId, note }: { entryId: string; note: string }) =>
-      apiFetch<FinanceEntryDto>(`${base(boardId)}/entries/${entryId}/reject`, {
-        method: "POST",
-        body: { note },
-      }),
+    mutationFn: (entryId: string) =>
+      apiFetch<FinanceEntryDto>(
+        `${base(boardId)}/entries/${entryId}/undo-pay-back`,
+        { method: "POST" },
+      ),
+    onSuccess: invalidate,
+    onError: showError,
+  });
+}
+
+/** Pays a member back for everything the band still owes them. */
+export function usePayBackMember(boardId: string) {
+  const invalidate = useInvalidateFinances(boardId);
+  return useMutation({
+    mutationFn: (userId: string) =>
+      apiFetch<FinanceEntryDto[]>(
+        `${base(boardId)}/members/${userId}/pay-back`,
+        { method: "POST" },
+      ),
     onSuccess: invalidate,
     onError: showError,
   });
@@ -166,29 +172,6 @@ export function useVoidFinanceEntry(boardId: string) {
       apiFetch<FinanceEntryDto>(`${base(boardId)}/entries/${entryId}/void`, {
         method: "POST",
       }),
-    onSuccess: invalidate,
-    onError: showError,
-  });
-}
-
-export function useCreatePayout(boardId: string) {
-  const invalidate = useInvalidateFinances(boardId);
-  return useMutation({
-    mutationFn: (dto: CreatePayoutDto) =>
-      apiFetch<PayoutDto>(`${base(boardId)}/payouts`, {
-        method: "POST",
-        body: dto,
-      }),
-    onSuccess: invalidate,
-    onError: showError,
-  });
-}
-
-export function useDeletePayout(boardId: string) {
-  const invalidate = useInvalidateFinances(boardId);
-  return useMutation({
-    mutationFn: (payoutId: string) =>
-      apiFetch(`${base(boardId)}/payouts/${payoutId}`, { method: "DELETE" }),
     onSuccess: invalidate,
     onError: showError,
   });

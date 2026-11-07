@@ -1,30 +1,17 @@
 import { View } from 'react-native';
 import { router } from 'expo-router';
 import {
-  useApproveFinanceEntry,
   useFinanceEntries,
   useFinanceSummary,
   useMe,
   usePermissions,
 } from '@artist/api-client';
-import {
-  categoryLabel,
-  formatMoney,
-  monthToDate,
-  DEFAULT_FINANCE_FILTERS,
-  FINANCE_CATEGORIES,
-  FINANCE_SORTS,
-  filterFinanceEntries,
-  type FinanceSort,
-} from '@artist/shared';
+import { categoryLabel, formatMoney, monthToDate } from '@artist/shared';
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/button';
-import { PickOne } from '@/components/pick-one';
 import { ChoiceChips } from '@/components/choice-chips';
-import { ApprovalRow } from '../../finances/approval-row';
-import { MemberHistory } from '../../finances/member-history';
 import { FinanceAmount } from '../../finances/finance-amount';
-import { shareFinanceCsv } from '../../finances/export-csv';
+import { FinanceEntryRow } from '../../finances/entry-row';
 import { PosterText } from '@/components/poster-text';
 import { Row } from '@/components/row';
 import { SectionCard } from '@/components/section-card';
@@ -33,11 +20,15 @@ import { spacing, useTokens } from '@/theme';
 import { shortDate } from '../format';
 import { SpokeHeader } from '../spoke-header';
 
+/** How many of the latest entries the page shows before "All entries". */
+const RECENT = 5;
+
 /**
- * The band's money for the selected period: the net, what's waiting for
- * approval, who is owed what, month and category reports, and the entries
- * (with a CSV export). Logging is the header's + (members too); admins record
- * payments from a member's history.
+ * The band's money for the selected period: the totals and the band fund, what
+ * the band owes members who paid out of pocket (tap someone for everything
+ * they paid), month and category reports, and the latest entries, with the
+ * full searchable list a tap away. Logging is the header's + (members too);
+ * admins pay members back from an expense or from the member's page.
  */
 export function FinancesSpoke({ boardId }: { boardId: string }) {
   const tokens = useTokens();
@@ -45,9 +36,6 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
   const me = useMe(true);
   const visible = can('finance.view');
   const [period, setPeriod] = useState('month');
-  const [filters, setFilters] = useState(DEFAULT_FINANCE_FILTERS);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [selectedMember, setSelectedMember] = useState<string | null>(null);
   const range = useMemo(() => {
     const range = monthToDate();
     return period === 'all'
@@ -59,23 +47,27 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
   const periodLabel =
     period === 'month' ? 'this month' : period === 'year' ? 'this year' : 'all time';
   const summary = useFinanceSummary(boardId, range, visible);
-  const entries = useFinanceEntries(boardId, range);
-  const approve = useApproveFinanceEntry(boardId);
-  const manages = can('finance.manage');
+  const entries = useFinanceEntries(boardId);
   const data = summary.data;
   const money = (cents: number) => formatMoney(cents, data?.currency ?? 'USD');
   const name = (userId: string) =>
     data?.members.find((m) => m.id === userId)?.displayName ?? 'Former member';
-  const rows = filterFinanceEntries(entries.data ?? [], filters);
-  const activeFilters = Object.entries(filters).filter(
-    ([key, value]) => value !== DEFAULT_FINANCE_FILTERS[key as keyof typeof filters],
-  ).length;
-  const owedMembers = (data?.members ?? [])
+  const recent = (entries.data ?? []).slice(0, RECENT);
+  const myId = me.data?.user.id;
+
+  // Everyone who has paid for something, most owed first, then today's
+  // members who haven't, so any member's page is one tap away.
+  const people = (data?.members ?? [])
     .map((member) => ({
       member,
-      cents: data?.balances.members.find((b) => b.userId === member.id)?.balanceCents ?? 0,
+      balance: data?.balances.members.find((b) => b.userId === member.id),
     }))
-    .filter(({ cents }) => cents !== 0);
+    .sort(
+      (a, b) =>
+        (b.balance?.owedCents ?? 0) - (a.balance?.owedCents ?? 0) ||
+        (b.balance?.paidCents ?? 0) - (a.balance?.paidCents ?? 0) ||
+        a.member.displayName.localeCompare(b.member.displayName),
+    );
 
   return (
     <SpokeList
@@ -98,7 +90,7 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
     >
       {data && (
         <View style={{ gap: spacing.lg }}>
-          {/* A card per group, as board settings does: with seven groups of
+          {/* A card per group, as board settings does: with several groups of
               rows and nothing between them but air, small caps captions
               didn't tell one from the next. */}
           <SectionCard title="Overview">
@@ -128,89 +120,67 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
             </View>
           </SectionCard>
 
-          {data.pending.length > 0 && (
+          <SectionCard
+            title="Who's owed"
+            caption={
+              data.balances.owedCents > 0
+                ? `Band owes ${money(data.balances.owedCents)}`
+                : 'All time'
+            }
+            description="Members are owed only what they paid for out of pocket, until it's paid back. Tap anyone for everything they've paid for."
+          >
+            {people.map(({ member, balance }, index) => {
+              const owed = balance?.owedCents ?? 0;
+              const owedCount = data.owed.filter((e) => e.handledById === member.id).length;
+              return (
+                <Row
+                  key={member.id}
+                  first={index === 0}
+                  title={member.id === myId ? `${member.displayName} (you)` : member.displayName}
+                  meta={
+                    owed > 0
+                      ? `${owedCount} ${owedCount === 1 ? 'expense' : 'expenses'} owed back`
+                      : balance && balance.paidCents > 0
+                        ? `All paid back · ${money(balance.paidCents)} paid in total`
+                        : 'Hasn’t paid for anything'
+                  }
+                  trailing={
+                    owed > 0 ? (
+                      <FinanceAmount cents={-owed} currency={data.currency} />
+                    ) : (
+                      <PosterText variant="cardMeta" color={tokens.mutedForeground}>
+                        Square
+                      </PosterText>
+                    )
+                  }
+                  onPress={() => router.push(`/board/${boardId}/finances/member/${member.id}`)}
+                />
+              );
+            })}
+          </SectionCard>
+
+          {data.owed.length > 0 && (
             <SectionCard
-              title="Waiting for approval"
-              caption={`${data.pending.length} ${data.pending.length === 1 ? 'entry' : 'entries'}`}
-              // Admins decide here; members only watch their own wait.
+              title="Owed back"
+              caption={`${data.owed.length} ${data.owed.length === 1 ? 'expense' : 'expenses'}`}
               description={
-                manages ? 'Swipe right to approve, left to send back with a note.' : undefined
+                can('finance.manage')
+                  ? 'Open one to pay the member back from the band fund.'
+                  : undefined
               }
             >
-              {data.pending.map((entry, index) => (
-                <ApprovalRow
-                  key={entry.id}
-                  entry={entry}
-                  currency={data.currency}
-                  first={index === 0}
-                  who={entry.handledById ? name(entry.handledById) : 'Band'}
-                  canDecide={manages}
-                  onOpen={() => router.push(`/board/${boardId}/form/finance?id=${entry.id}`)}
-                  onApprove={() => approve.mutate(entry.id)}
-                  onSendBack={() => router.push(`/board/${boardId}/form/reject?id=${entry.id}`)}
-                />
-              ))}
-            </SectionCard>
-          )}
-
-          {data.sentBack.length > 0 && (
-            <SectionCard title="Sent back">
-              {data.sentBack.map((entry, index) => (
+              {data.owed.map((entry, index) => (
                 <Row
                   key={entry.id}
                   first={index === 0}
                   title={entry.description || categoryLabel(entry.category)}
-                  meta={
-                    entry.decisionNote
-                      ? `“${entry.decisionNote}”`
-                      : manages
-                        ? `${entry.handledById ? name(entry.handledById) : 'Band'} paid · ${shortDate(`${entry.occurredOn}T12:00:00`)}`
-                        : 'Fix it and save to ask again'
-                  }
+                  meta={`${entry.handledById ? name(entry.handledById) : 'Band'} paid · ${shortDate(`${entry.occurredOn}T12:00:00`)}`}
                   trailing={money(entry.amountCents)}
                   onPress={() => router.push(`/board/${boardId}/form/finance?id=${entry.id}`)}
                 />
               ))}
             </SectionCard>
           )}
-
-          <SectionCard
-            title="Who's owed"
-            caption="All time"
-            description="What the band owes each member, or they owe the band. Tap someone for their history."
-          >
-            {owedMembers.length === 0 && (
-              <PosterText variant="cardMeta" color={tokens.mutedForeground} style={inset}>
-                Everyone is square right now.
-              </PosterText>
-            )}
-            {owedMembers.map(({ member, cents }, index) => {
-              return (
-                <View key={member.id}>
-                  <Row
-                    first={index === 0}
-                    title={
-                      member.id === me.data?.user.id
-                        ? `${member.displayName} (you)`
-                        : member.displayName
-                    }
-                    meta={
-                      selectedMember === member.id
-                        ? 'Hide expenses and payouts'
-                        : 'View expenses and payouts'
-                    }
-                    trailing={cents > 0 ? money(cents) : `owes ${money(-cents)}`}
-                    onPress={() =>
-                      setSelectedMember(selectedMember === member.id ? null : member.id)
-                    }
-                  />
-                  {selectedMember === member.id && (
-                    <MemberHistory boardId={boardId} userId={member.id} currency={data.currency} />
-                  )}
-                </View>
-              );
-            })}
-          </SectionCard>
 
           {data.totals.byMonth.length > 1 && (
             <SectionCard title="Month by month" caption={periodLabel}>
@@ -252,114 +222,34 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
           )}
 
           <SectionCard
-            title="Entries"
-            caption={`${rows.length} ${rows.length === 1 ? 'entry' : 'entries'} · ${periodLabel}`}
+            title="All entries"
+            caption={`${entries.data?.length ?? 0} in total`}
+            description="Every income and expense. Search by name, or filter by category, amount or who paid."
           >
-            <Button
-              title={`${filtersOpen ? 'Hide' : 'Filter / sort'}${activeFilters ? ` (${activeFilters})` : ''}`}
-              variant="secondary"
-              onPress={() => setFiltersOpen(!filtersOpen)}
-            />
-            {filtersOpen && (
-              <View style={{ gap: spacing.md, paddingVertical: spacing.md }}>
-                <PickOne
-                  label="Type"
-                  noneLabel="All types"
-                  value={filters.kind === 'all' ? null : filters.kind}
-                  options={[
-                    { value: 'INCOME', label: 'Income' },
-                    { value: 'EXPENSE', label: 'Expenses' },
-                  ]}
-                  onChange={(value) => setFilters({ ...filters, kind: value ?? 'all' })}
-                />
-                <PickOne
-                  label="Handled by"
-                  noneLabel="All members"
-                  value={filters.member === 'all' ? null : filters.member}
-                  options={[
-                    { value: 'band', label: 'Band account' },
-                    ...data.members.map((m) => ({ value: m.id, label: m.displayName })),
-                  ]}
-                  onChange={(value) => setFilters({ ...filters, member: value ?? 'all' })}
-                />
-                <PickOne
-                  label="Category"
-                  noneLabel="All categories"
-                  value={filters.category === 'all' ? null : filters.category}
-                  options={FINANCE_CATEGORIES.map((c) => ({ value: c.key, label: c.label }))}
-                  onChange={(value) => setFilters({ ...filters, category: value ?? 'all' })}
-                />
-                <PickOne
-                  label="Status"
-                  noneLabel="All statuses"
-                  value={filters.state === 'all' ? null : filters.state}
-                  options={[
-                    { value: 'SETTLED', label: 'Settled' },
-                    { value: 'EXPECTED', label: 'Expected' },
-                    { value: 'PENDING', label: 'Waiting for approval' },
-                    { value: 'REJECTED', label: 'Sent back' },
-                  ]}
-                  onChange={(value) => setFilters({ ...filters, state: value ?? 'all' })}
-                />
-                <PickOne
-                  label="Sort"
-                  noneLabel="Newest first"
-                  value={filters.sort === 'newest' ? null : filters.sort}
-                  options={FINANCE_SORTS.filter((s) => s.value !== 'newest').map((s) => ({ ...s }))}
-                  onChange={(value) =>
-                    setFilters({ ...filters, sort: (value ?? 'newest') as FinanceSort })
-                  }
-                />
-                <Button
-                  title="Reset filters"
-                  variant="ghost"
-                  onPress={() => {
-                    setFilters(DEFAULT_FINANCE_FILTERS);
-                    setPeriod('month');
-                  }}
-                />
-              </View>
-            )}
-            {rows.length > 0 && (
-              <Button
-                title="Export CSV"
-                variant="ghost"
-                size="sm"
-                onPress={() => void shareFinanceCsv(rows, data.members, periodLabel)}
-              />
-            )}
-            {rows.length === 0 ? (
+            {recent.length === 0 ? (
               <PosterText variant="cardMeta" color={tokens.mutedForeground} style={inset}>
-                {activeFilters
-                  ? 'No entries match these filters.'
-                  : 'Nothing logged for this period.'}
+                Nothing logged yet.
               </PosterText>
             ) : (
-              rows.map((entry, index) => (
-                <Row
+              recent.map((entry, index) => (
+                <FinanceEntryRow
                   key={entry.id}
+                  entry={entry}
+                  currency={data.currency}
                   first={index === 0}
-                  title={entry.description || categoryLabel(entry.category)}
-                  meta={[
-                    shortDate(`${entry.occurredOn}T12:00:00`),
-                    entry.state === 'EXPECTED' ? 'owed' : null,
-                    entry.state === 'PENDING' ? 'needs approval' : null,
-                    entry.state === 'REJECTED' ? 'sent back' : null,
-                    entry.handledById ? name(entry.handledById) : null,
-                    entry.receiptCount > 0 ? 'receipt' : null,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
-                  trailing={
-                    <FinanceAmount
-                      cents={entry.kind === 'INCOME' ? entry.amountCents : -entry.amountCents}
-                      currency={data.currency}
-                      signed
-                    />
-                  }
+                  name={name}
                   onPress={() => router.push(`/board/${boardId}/form/finance?id=${entry.id}`)}
                 />
               ))
+            )}
+            {recent.length > 0 && (
+              <View style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.sm }}>
+                <Button
+                  title="Search all entries"
+                  variant="secondary"
+                  onPress={() => router.push(`/board/${boardId}/finances/entries`)}
+                />
+              </View>
             )}
           </SectionCard>
         </View>

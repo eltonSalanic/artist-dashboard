@@ -22,7 +22,7 @@ const icons: Record<ActivityType, IconName> = {
   COMMENT_ADDED: { sf: 'bubble.left', md: 'chat-bubble-outline' },
   FINANCE_ENTRY_ADDED: { sf: 'dollarsign.circle', md: 'account-balance-wallet' },
   SHOW_SETTLED: { sf: 'banknote', md: 'payments' },
-  PAYOUT_RECORDED: { sf: 'banknote', md: 'payments' },
+  EXPENSE_PAID_BACK: { sf: 'banknote', md: 'payments' },
   SHOW_STATUS_CHANGED: { sf: 'arrow.triangle.2.circlepath', md: 'sync' },
 };
 

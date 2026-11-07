@@ -160,17 +160,15 @@ function PositionStrip({
   const shadows = useShadows();
   const ink = useWidgetInk(boardId, pages[index] ?? pages[0]);
   const { can } = usePermissions();
-  // Finances is the one spoke with a to-do count: expenses waiting on an
-  // admin, or — for the member — ones sent back to fix. Shown on its chip so
-  // it is seen from any other spoke, like the inbox's tab badge.
+  // Finances is the one spoke with a to-do count: for an admin, expenses
+  // members paid out of pocket that the band hasn't paid back yet. Shown on
+  // its chip so it is seen from any other spoke, like the inbox's tab badge.
   const finances = useFinanceSummary(
     boardId,
     EMPTY_RANGE,
     pages.includes('FINANCES') && can('finance.view'),
   );
-  const financeCount = can('finance.manage')
-    ? (finances.data?.pending.length ?? 0)
-    : (finances.data?.sentBack.length ?? 0);
+  const financeCount = can('finance.manage') ? (finances.data?.owed.length ?? 0) : 0;
 
   const stripRef = useRef<ScrollView>(null);
   const stripWidth = useRef(0);
@@ -269,7 +267,7 @@ function PositionStrip({
             </PosterText>
             {type === 'FINANCES' && financeCount > 0 && (
               <View
-                accessibilityLabel={`${financeCount} waiting`}
+                accessibilityLabel={`${financeCount} to pay back`}
                 style={{
                   minWidth: 18,
                   height: 18,

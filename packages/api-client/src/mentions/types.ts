@@ -1,14 +1,17 @@
 export interface MentionNotificationDto {
   id: string;
   /**
-   * What the row is about. A MENTION opens its task; an APPROVAL (to an admin:
-   * a member's expense is waiting) or a DECISION (to the member: approved or
-   * sent back) opens the band's Finances.
+   * What the row is about. A MENTION opens its task; a PAYBACK (to an admin:
+   * a member paid out of pocket and is owed) or a PAID_BACK (to the member:
+   * the band paid them back) opens the band's Finances.
    */
-  kind: "MENTION" | "APPROVAL" | "DECISION";
+  kind: "MENTION" | "PAYBACK" | "PAID_BACK";
   /** The task a MENTION lives on; null for the finance kinds. */
   taskId: string | null;
-  /** The ledger entry an APPROVAL or DECISION is about; null for a mention. */
+  /**
+   * The ledger entry a PAYBACK or PAID_BACK is about; null for a mention, or
+   * for one payback that covered several entries.
+   */
   entryId: string | null;
   /**
    * Which board the mention happened on. Needed to open the task — every

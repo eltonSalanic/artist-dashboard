@@ -11,7 +11,6 @@ import {
   BOARD_PALETTES,
   DEFAULT_TASK_STATUSES,
   formatMoney,
-  localDayISO,
   NOTIFICATION_CATEGORY_COPY,
   NotificationCategories,
   resolveBoardTheme,
@@ -177,13 +176,14 @@ function MembersSection({ boardId }: { boardId: string }) {
   const members = board.data?.members ?? [];
 
   /**
-   * Removing someone asks about their money first: whether to record a final
-   * payment that squares them up. Their past entries always stay. Each step
-   * is a plain alert of at most three buttons, which Android also shows.
+   * Removing someone asks about their money first: if the band still owes
+   * them for expenses they paid, whether to pay that back now. Their past
+   * entries always stay. Each step is a plain alert of at most three buttons,
+   * which Android also shows.
    */
   const confirmRemove = (userId: string, name: string) => {
-    const balance =
-      summary.data?.balances.members.find((m) => m.userId === userId)?.balanceCents ?? 0;
+    const owed =
+      summary.data?.balances.members.find((m) => m.userId === userId)?.owedCents ?? 0;
     const money = (cents: number) => formatMoney(cents, summary.data?.currency ?? 'USD');
 
     const finish = (dto: RemoveMemberDto) =>
@@ -199,25 +199,13 @@ function MembersSection({ boardId }: { boardId: string }) {
           },
         ],
       );
-    if (balance === 0) return finish({});
+    if (owed <= 0) return finish({});
     Alert.alert(
-      balance > 0
-        ? `The band owes ${name} ${money(balance)}`
-        : `${name} owes the band ${money(-balance)}`,
-      "Record the final payment now, or leave it open in \"Who's owed\" for later?",
+      `The band owes ${name} ${money(owed)}`,
+      "For expenses they paid out of pocket. Pay it back now, or leave it owed in \"Who's owed\" for later?",
       [
-        { text: 'Leave it open', onPress: () => finish({}) },
-        {
-          text: balance > 0 ? 'We paid them' : 'They paid us',
-          onPress: () =>
-            finish({
-              payout: {
-                amountCents: balance,
-                paidOn: localDayISO(),
-                note: `Final payment when ${name} left the band`,
-              },
-            }),
-        },
+        { text: 'Leave it owed', onPress: () => finish({}) },
+        { text: 'Pay back now', onPress: () => finish({ payBack: true }) },
         { text: 'Cancel', style: 'cancel' },
       ],
     );

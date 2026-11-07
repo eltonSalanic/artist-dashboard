@@ -3,23 +3,26 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Alert, View } from 'react-native';
 import { router } from 'expo-router';
 import {
+  canEditEntry,
   categoriesFor,
-  isLockedFor,
+  formatMoney,
   localDayISO,
   parseMoneyToCents,
+  paybackStatus,
   type FinanceCategory,
   type FinanceEntryDto,
   type FinanceKind,
 } from '@artist/shared';
 import {
   uploadAttachment,
-  useApproveFinanceEntry,
   useBoard,
   useCreateFinanceEntry,
   useEvents,
   useFinanceEntry,
   useMe,
+  usePayBackFinanceEntry,
   usePermissions,
+  useUndoPayBackFinanceEntry,
   useUpdateFinanceEntry,
   useVoidFinanceEntry,
 } from '@artist/api-client';
@@ -34,6 +37,8 @@ import { TaskAttachments } from '@/features/attachments/task-attachments';
 import { DraftReceipt } from '@/features/attachments/draft-receipt';
 import type { PickedUpload } from '@/features/attachments/pick';
 import { useWidgetInk } from '@/features/board/spoke-header';
+import { PaybackLabel } from '@/features/finances/payback-label';
+import { shortDate } from '@/features/board/format';
 import { spacing, useThemeColors } from '@/theme';
 import { FormGate } from './form-gate';
 import { FormPoster } from './form-poster';
@@ -105,7 +110,8 @@ function FinanceFields({
   const shows = useEvents(boardId, { type: 'SHOW' });
   const create = useCreateFinanceEntry(boardId);
   const update = useUpdateFinanceEntry(boardId);
-  const approve = useApproveFinanceEntry(boardId);
+  const payBack = usePayBackFinanceEntry(boardId);
+  const undoPayBack = useUndoPayBackFinanceEntry(boardId);
   const voidEntry = useVoidFinanceEntry(boardId);
   const queryClient = useQueryClient();
   const progress = useRef<FinanceDraftProgress>({ entryId: entry?.id });
@@ -141,13 +147,11 @@ function FinanceFields({
   const [expected, setExpected] = useState(initial.expected);
 
   const manages = can('finance.manage');
+  // Admins, or the member who paid; nobody once it's paid back.
   const editable =
     !entry ||
-    (entry.state !== 'VOID' &&
-      (manages || entry.createdById === myId) &&
-      !isLockedFor(entry, manages));
-  const awaitsApproval = entry?.state === 'PENDING';
-  const sentBack = entry?.state === 'REJECTED';
+    (entry.state !== 'VOID' && can('finance.create') && canEditEntry(entry, myId, manages));
+  const payback = entry ? paybackStatus(entry) : null;
   const cents = parseMoneyToCents(amount);
   const dirty =
     receipt !== null ||
@@ -193,7 +197,8 @@ function FinanceFields({
         note: note.trim(),
         counterparty: counterparty.trim() || null,
         eventId,
-        handledById: handledById === BAND ? null : handledById,
+        // Income goes to the band; only an expense can be owed back.
+        handledById: kind === 'EXPENSE' && handledById !== BAND ? handledById : null,
         state: expected ? ('EXPECTED' as const) : ('SETTLED' as const),
       };
       await saveFinanceDraft(progress.current, fields, receipt?.source ?? null, {
@@ -225,6 +230,11 @@ function FinanceFields({
   };
 
   const members = board.data?.members ?? [];
+  const currency = board.data?.currency ?? 'USD';
+  const memberName = (userId: string) =>
+    userId === myId
+      ? 'you'
+      : (members.find((m) => m.userId === userId)?.displayName ?? 'a former member');
   const title = entry
     ? entry.kind === 'INCOME'
       ? 'Income'
@@ -261,42 +271,42 @@ function FinanceFields({
             This entry was voided. It stays in the history but no longer counts.
           </PosterText>
         )}
-        {awaitsApproval && (
-          <PosterText variant="cardMeta" color={colors.mutedForeground}>
-            {manages
-              ? 'Paid out of a member’s pocket. Approve it and the band owes them this back, or send it back with a note.'
-              : 'Waiting for an admin to approve it. Until then it doesn’t count toward what you’re owed.'}
-          </PosterText>
-        )}
-        {sentBack && entry && (
+        {entry && payback && entry.handledById && (
           <View
             accessibilityRole="summary"
             style={{
-              gap: 2,
+              gap: spacing.xs,
               padding: spacing.sm + 2,
               borderRadius: 10,
               borderCurve: 'continuous',
               backgroundColor: colors.muted,
             }}
           >
-            <PosterText variant="rowTitle" color={colors.destructive}>
-              Sent back
+            <PaybackLabel status={payback} />
+            <PosterText variant="paragraph" color={colors.foreground}>
+              {payback === 'owed'
+                ? `${capital(memberName(entry.handledById))} paid for this out of pocket. The band owes ${entry.handledById === myId ? 'you' : 'them'} ${formatMoney(entry.amountCents, currency)}.`
+                : `Paid back to ${memberName(entry.handledById)}${entry.paidBackAt ? ` on ${shortDate(entry.paidBackAt)}` : ''}${
+                    entry.paidBackById
+                      ? ` by ${entry.paidBackById === myId ? 'you' : memberName(entry.paidBackById)}`
+                      : ''
+                  }.`}
             </PosterText>
-            {entry.decisionNote !== '' && (
-              <PosterText variant="paragraph" color={colors.foreground}>
-                {`“${entry.decisionNote}”`}
+            {payback === 'paid' && (
+              <PosterText variant="cardMeta" color={colors.mutedForeground}>
+                {manages
+                  ? 'It’s locked so it can’t drift from what was paid. Undo the payback to change it.'
+                  : 'It’s locked now. An admin can undo the payback if something needs changing.'}
               </PosterText>
             )}
-            <PosterText variant="cardMeta" color={colors.mutedForeground}>
-              {manages
-                ? 'It doesn’t count. Approve it if you’ve changed your mind; otherwise it waits for them.'
-                : 'It doesn’t count right now. Fix it and save to send it back for approval.'}
-            </PosterText>
           </View>
         )}
-        {entry && entry.state !== 'PENDING' && isLockedFor(entry, manages) && (
+
+        {entry && !editable && entry.state !== 'VOID' && payback !== 'paid' && (
           <PosterText variant="cardMeta" color={colors.mutedForeground}>
-            An admin approved this, so only an admin can change it now.
+            {entry.handledById
+              ? `Only an admin or ${memberName(entry.handledById)} can change this.`
+              : 'Only an admin or whoever logged it can change this.'}
           </PosterText>
         )}
 
@@ -313,14 +323,10 @@ function FinanceFields({
             />
           )}
 
-          {manages ? (
+          {kind === 'INCOME' ? null : manages ? (
             <ChoiceChips<string>
-              label={kind === 'INCOME' ? 'Who has the money' : 'Who paid'}
-              hint={
-                kind === 'INCOME'
-                  ? 'The band account, or the member holding it.'
-                  : 'If a member paid, the band owes it back to them.'
-              }
+              label="Who paid"
+              hint="If a member paid out of pocket, the band owes it back to them until an admin pays them back."
               value={handledById}
               onChange={setHandledById}
               choices={[
@@ -330,12 +336,8 @@ function FinanceFields({
             />
           ) : (
             <ChoiceChips<string>
-              label={kind === 'INCOME' ? 'Who has the money' : 'Who paid'}
-              hint={
-                kind === 'INCOME'
-                  ? 'The band account, or you if you’re holding it.'
-                  : 'If you paid, an admin approves it before the band owes it back.'
-              }
+              label="Who paid"
+              hint="If you paid out of pocket, the band owes it back to you until an admin pays you back."
               value={handledById === myId ? myId : BAND}
               onChange={setHandledById}
               choices={[
@@ -435,18 +437,31 @@ function FinanceFields({
           </PosterText>
         )}
 
-        {entry && (awaitsApproval || sentBack) && manages && (
-          <ApproveEntryButton
-            disabled={approve.isPending}
-            onApprove={() => approve.mutateAsync(entry.id)}
+        {entry && manages && payback === 'owed' && entry.handledById && (
+          <PayBackButton
+            label={`Pay ${entry.handledById === myId ? 'yourself' : memberName(entry.handledById)} back ${formatMoney(entry.amountCents, currency)}`}
+            // Paying back locks the entry, so unsaved edits would be lost.
+            disabled={payBack.isPending || dirty}
+            hint={dirty ? 'Save your changes first.' : 'Comes out of the band fund. You can undo it.'}
+            onPayBack={() => payBack.mutate(entry.id)}
           />
         )}
-        {entry && awaitsApproval && manages && (
+        {entry && manages && payback === 'paid' && (
           <Button
-            title="Send back"
+            title="Undo pay back"
             variant="secondary"
             size="sm"
-            onPress={() => router.push(`/board/${boardId}/form/reject?id=${entry.id}`)}
+            disabled={undoPayBack.isPending}
+            onPress={() =>
+              Alert.alert(
+                'Undo this payback?',
+                'The band will owe it again, and the expense can be edited.',
+                [
+                  { text: 'Keep it', style: 'cancel' },
+                  { text: 'Undo', onPress: () => undoPayBack.mutate(entry.id) },
+                ],
+              )
+            }
           />
         )}
         {entry && editable && (
@@ -460,22 +475,27 @@ function FinanceFields({
   );
 }
 
-/** Read the leave context below FormScreen's provider. */
-function ApproveEntryButton({
+const capital = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
+function PayBackButton({
+  label,
+  hint,
   disabled,
-  onApprove,
+  onPayBack,
 }: {
+  label: string;
+  hint: string;
   disabled: boolean;
-  onApprove: () => Promise<unknown>;
+  onPayBack: () => void;
 }) {
-  const leave = useLeaveForm();
+  const colors = useThemeColors();
   return (
-    <Button
-      title="Approve"
-      size="sm"
-      disabled={disabled}
-      onPress={() => void onApprove().then(() => leave(() => router.back()))}
-    />
+    <View style={{ gap: spacing.xs }}>
+      <Button title={label} disabled={disabled} onPress={onPayBack} />
+      <PosterText variant="cardMeta" color={colors.mutedForeground} style={{ textAlign: 'center' }}>
+        {hint}
+      </PosterText>
+    </View>
   );
 }
 
