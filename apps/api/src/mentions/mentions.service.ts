@@ -4,10 +4,10 @@ import { PrismaService } from '../prisma/prisma.service';
 export interface MentionNotificationDto {
   id: string;
   /** What the row is about; decides what it says and where a tap goes. */
-  kind: 'MENTION' | 'APPROVAL' | 'DECISION';
+  kind: 'MENTION' | 'PAYBACK' | 'PAID_BACK';
   /** The task a MENTION lives on; null for the finance kinds. */
   taskId: string | null;
-  /** The ledger entry an APPROVAL or DECISION is about; null for a mention. */
+  /** The ledger entry a PAYBACK or PAID_BACK row is about; null for a mention, or for one payback that covered several entries. */
   entryId: string | null;
   /**
    * Which board the mention happened on. Needed to open the task — every

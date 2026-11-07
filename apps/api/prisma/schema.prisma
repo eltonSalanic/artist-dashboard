@@ -44,9 +44,7 @@ model User {
   devices                DeviceToken[]
   financeEntriesCreated  FinanceEntry[]           @relation("FinanceEntryCreatedBy")
   financeEntriesHandled  FinanceEntry[]           @relation("FinanceEntryHandledBy")
-  financeEntriesApproved FinanceEntry[]           @relation("FinanceEntryApprovedBy")
-  payouts                Payout[]                 @relation("PayoutMember")
-  payoutsRecorded        Payout[]                 @relation("PayoutCreatedBy")
+  financeEntriesPaidBack FinanceEntry[]           @relation("FinanceEntryPaidBackBy")
   subscription           UserSubscription?
   ownedBoards            Board[]                  @relation("BoardOwner")
   links                  ItemLink[]
@@ -85,7 +83,6 @@ model Board {
   notifications  NotificationDelivery[]
   notifyPrefs    NotificationPreference[]
   financeEntries FinanceEntry[]
-  payouts        Payout[]
   links          ItemLink[]
   /// Whose subscription keeps this band open. Separate from the ADMIN role:
   /// there can be several admins, but one owner. Null once that account is
@@ -421,7 +418,7 @@ enum ActivityType {
   FINANCE_ENTRY_ADDED
   SHOW_SETTLED
   SHOW_STATUS_CHANGED
-  PAYOUT_RECORDED
+  EXPENSE_PAID_BACK
 }
 
 model Activity {
@@ -452,8 +449,8 @@ model CustomWidgetContent {
 /// A "you were mentioned" notification for a single recipient. Fields are a
 /// denormalized snapshot (like Activity) so the list never joins and outlives
 /// the comment that spawned it.
-/// One row in a member's inbox. Named for the mentions it started with; an
-/// approval request or decision is the same shape with a `kind`.
+/// One row in a member's inbox. Named for the mentions it started with; a
+/// payback alert is the same shape with a `kind`.
 model MentionNotification {
   id        String        @id @default(uuid()) @db.Uuid
   boardId   String        @db.Uuid
@@ -462,7 +459,7 @@ model MentionNotification {
   kind      InboxKind     @default(MENTION)
   /// Task the mentioning comment lives on, for navigation. MENTION only.
   taskId    String?       @db.Uuid
-  /// The ledger entry an APPROVAL or DECISION row is about. Cascade: rows
+  /// The ledger entry a PAYBACK or PAID_BACK row is about. Cascade: rows
   /// about an entry go with it.
   entryId   String?       @db.Uuid
   actorName String
@@ -522,10 +519,10 @@ enum NotificationCategory {
 /// name; the kind decides what the row says and where a tap goes.
 enum InboxKind {
   MENTION
-  /// To an admin: a member's expense is waiting for their approval.
-  APPROVAL
-  /// To the member: an admin approved or sent back their expense.
-  DECISION
+  /// To an admin: a member paid for an expense out of pocket and is owed it.
+  PAYBACK
+  /// To the member: an admin paid them back for an expense.
+  PAID_BACK
 }
 
 /// How a notification reaches someone. One outbox serves both: the claim,
@@ -644,17 +641,11 @@ enum FinanceKind {
   EXPENSE
 }
 
-/// EXPECTED: promised, not in hand (a show fee still owed). PENDING: a
-/// member's out-of-pocket expense waiting for an admin's approval; it doesn't
-/// count toward balances yet. VOID replaces delete, so the books never quietly
-/// lose a row.
+/// EXPECTED: promised, not in hand (a show fee still owed). VOID replaces
+/// delete, so the books never quietly lose a row.
 enum FinanceState {
   EXPECTED
-  PENDING
   SETTLED
-  /// An admin sent a member's out-of-pocket expense back. It doesn't count;
-  /// the member can fix it and resubmit, which makes it PENDING again.
-  REJECTED
   VOID
 }
 
@@ -676,47 +667,29 @@ model FinanceEntry {
   /// The show this money belongs to. SetNull: deleting a show never deletes
   /// its money.
   eventId      String?        @db.Uuid
-  /// Member whose own money this went through (paid an expense, or pocketed
-  /// income for the band). Null is the band's own account.
+  /// Expenses only: the member who paid out of their own pocket, so the band
+  /// owes it back to them. Null is the band's own account. Always null for
+  /// income.
   handledById  String?        @db.Uuid
   /// Null once the account is gone — the books outlive it.
   createdById  String?        @db.Uuid
-  /// The admin who approved a member's out-of-pocket expense. Once set, the
-  /// member who logged it can no longer change it.
-  approvedById String?        @db.Uuid
-  approvedAt   DateTime?
-  /// Why an admin sent it back, shown to the member. Cleared on resubmit.
-  decisionNote String         @default("")
+  /// When an admin paid the member back for an out-of-pocket expense, from
+  /// the band fund. Once set, nobody can change the entry until it's undone.
+  paidBackAt   DateTime?
+  /// The admin who paid it back.
+  paidBackById String?        @db.Uuid
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   board        Board          @relation(fields: [boardId], references: [id], onDelete: Cascade)
   event        Event?         @relation(fields: [eventId], references: [id], onDelete: SetNull)
   handledBy    User?          @relation("FinanceEntryHandledBy", fields: [handledById], references: [id], onDelete: SetNull)
   createdBy    User?          @relation("FinanceEntryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  approvedBy   User?          @relation("FinanceEntryApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  paidBackBy   User?          @relation("FinanceEntryPaidBackBy", fields: [paidBackById], references: [id], onDelete: SetNull)
   receipts     Attachment[]
   inboxRows    MentionNotification[]
 
   @@index([boardId, occurredOn])
   @@index([eventId])
-}
-
-/// Money that changed hands between the band and a member outside the app.
-model Payout {
-  id          String   @id @default(uuid()) @db.Uuid
-  boardId     String   @db.Uuid
-  userId      String   @db.Uuid
-  /// Positive: the band paid the member. Negative: the member paid the band.
-  amountCents Int
-  paidOn      DateTime @db.Date
-  note        String   @default("")
-  createdById String?  @db.Uuid
-  createdAt   DateTime @default(now())
-  board       Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  user        User     @relation("PayoutMember", fields: [userId], references: [id], onDelete: Cascade)
-  createdBy   User?    @relation("PayoutCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-
-  @@index([boardId, paidOn])
 }
 
 /// Named external web links; each belongs to exactly one item.

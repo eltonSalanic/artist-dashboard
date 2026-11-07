@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   Param,
   Patch,
@@ -11,17 +10,13 @@ import {
 } from '@nestjs/common';
 import {
   createFinanceEntrySchema,
-  createPayoutSchema,
   financeEntryQuerySchema,
   financeSummaryQuerySchema,
-  rejectFinanceEntrySchema,
   updateFinanceEntrySchema,
   type BoardRole,
   type CreateFinanceEntryDto,
-  type CreatePayoutDto,
   type FinanceEntryQueryDto,
   type FinanceSummaryQueryDto,
-  type RejectFinanceEntryDto,
   type UpdateFinanceEntryDto,
 } from '@artist/shared';
 import { CurrentUser, type AuthUser } from '../auth/current-user.decorator';
@@ -102,28 +97,6 @@ export class FinancesController {
     return this.finances.update(boardId, actorOf(user, req), entryId, dto);
   }
 
-  @Post('entries/:entryId/approve')
-  approve(
-    @Param('boardId') boardId: string,
-    @Param('entryId') entryId: string,
-    @CurrentUser() user: AuthUser,
-    @Req() req: RequestWithMembership,
-  ) {
-    return this.finances.approve(boardId, actorOf(user, req), entryId);
-  }
-
-  @Post('entries/:entryId/reject')
-  reject(
-    @Param('boardId') boardId: string,
-    @Param('entryId') entryId: string,
-    @CurrentUser() user: AuthUser,
-    @Req() req: RequestWithMembership,
-    @Body(new ZodValidationPipe(rejectFinanceEntrySchema))
-    dto: RejectFinanceEntryDto,
-  ) {
-    return this.finances.reject(boardId, actorOf(user, req), entryId, dto);
-  }
-
   @Post('entries/:entryId/void')
   void(
     @Param('boardId') boardId: string,
@@ -134,33 +107,36 @@ export class FinancesController {
     return this.finances.void(boardId, actorOf(user, req), entryId);
   }
 
-  @Get('payouts')
-  listPayouts(
+  /** An admin pays a member back for one out-of-pocket expense. */
+  @Post('entries/:entryId/pay-back')
+  payBack(
     @Param('boardId') boardId: string,
+    @Param('entryId') entryId: string,
     @CurrentUser() user: AuthUser,
     @Req() req: RequestWithMembership,
   ) {
-    return this.finances.listPayouts(boardId, actorOf(user, req));
+    return this.finances.payBack(boardId, actorOf(user, req), entryId);
   }
 
-  @Post('payouts')
-  createPayout(
+  @Post('entries/:entryId/undo-pay-back')
+  undoPayBack(
     @Param('boardId') boardId: string,
+    @Param('entryId') entryId: string,
     @CurrentUser() user: AuthUser,
     @Req() req: RequestWithMembership,
-    @Body(new ZodValidationPipe(createPayoutSchema)) dto: CreatePayoutDto,
   ) {
-    return this.finances.createPayout(boardId, actorOf(user, req), dto);
+    return this.finances.undoPayBack(boardId, actorOf(user, req), entryId);
   }
 
-  @Delete('payouts/:payoutId')
-  removePayout(
+  /** Pays a member back for everything the band still owes them. */
+  @Post('members/:userId/pay-back')
+  payBackMember(
     @Param('boardId') boardId: string,
-    @Param('payoutId') payoutId: string,
+    @Param('userId') userId: string,
     @CurrentUser() user: AuthUser,
     @Req() req: RequestWithMembership,
   ) {
-    return this.finances.removePayout(boardId, actorOf(user, req), payoutId);
+    return this.finances.payBackMember(boardId, actorOf(user, req), userId);
   }
 
   @Get('shows/:eventId')

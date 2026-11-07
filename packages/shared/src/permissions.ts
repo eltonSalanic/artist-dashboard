@@ -44,9 +44,9 @@ const USER_ACTIONS: ReadonlySet<Action> = new Set<Action>([
   // of it ('item.archive') or delete them for good.
   'archive.view',
   // Everyone in the band can see the books, and whoever bought the strings is
-  // the one holding the receipt. Members may still only change or void entries
-  // they logged themselves; 'finance.manage' (approvals, payouts, anyone's
-  // entry) stays with admins.
+  // the one holding the receipt. Members may still only change or void
+  // expenses they paid for, or entries they logged on the band account;
+  // 'finance.manage' (paying members back, anyone's entry) stays with admins.
   'finance.view',
   'finance.create',
   // Everyone in the band can see whether it's open. Paying is the owner's

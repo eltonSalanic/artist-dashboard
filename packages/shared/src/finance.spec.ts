@@ -1,11 +1,11 @@
 import {
   cancelledShowMoneyNotice,
   computeBalances,
+  canEditEntry,
   financeCsv,
-  isLockedFor,
   ledgerTotals,
-  needsApproval,
   parseMoneyToCents,
+  paybackStatus,
   showSettlement,
   type LedgerEntry,
 } from './finance';
@@ -18,6 +18,7 @@ const entry = (over: Partial<LedgerEntry>): LedgerEntry => ({
   category: 'SHOW_FEE',
   occurredOn: '2026-10-01',
   handledById: null,
+  paidBackAt: null,
   ...over,
 });
 
@@ -38,33 +39,57 @@ describe('parseMoneyToCents', () => {
 });
 
 describe('computeBalances', () => {
-  it('keeps the profit with the band and credits whoever fronted the gas', () => {
-    const { members, bandFundCents } = computeBalances([
+  const gas = (over: Partial<LedgerEntry> = {}) =>
+    entry({
+      kind: 'EXPENSE',
+      category: 'TRAVEL',
+      amountCents: 4_000,
+      handledById: 'a',
+      ...over,
+    });
+
+  it('keeps the profit with the band and owes whoever paid for the gas', () => {
+    const { members, bandFundCents, owedCents } = computeBalances([
       entry({ amountCents: 40_000 }),
-      entry({ kind: 'EXPENSE', category: 'TRAVEL', amountCents: 4_000, handledById: 'a' }),
+      gas(),
     ]);
-    const a = members.find((m) => m.userId === 'a')!;
-    expect(a.frontedCents).toBe(4_000);
-    expect(a.balanceCents).toBe(4_000);
-    expect(members.find((m) => m.userId === 'b')).toBeUndefined();
-    expect(bandFundCents).toBe(36_000);
+    expect(members).toEqual([
+      { userId: 'a', paidCents: 4_000, paidBackCents: 0, owedCents: 4_000 },
+    ]);
+    // Out of the member's pocket, not the band's, until it's paid back.
+    expect(bandFundCents).toBe(40_000);
+    expect(owedCents).toBe(4_000);
   });
 
-  it('charges a member for cash they collected, and nets payouts', () => {
-    const { members } = computeBalances(
-      [entry({ category: 'MERCH_SALES', amountCents: 10_000, handledById: 'b' })],
-      [{ userId: 'a', amountCents: 5_000 }],
-    );
-    const a = members.find((m) => m.userId === 'a')!;
-    const b = members.find((m) => m.userId === 'b')!;
-    expect(a.balanceCents).toBe(-5_000);
-    expect(b.balanceCents).toBe(-10_000);
+  it('takes a payback out of the band fund, even below zero', () => {
+    const { members, bandFundCents, owedCents } = computeBalances([
+      gas({ paidBackAt: '2026-10-03T00:00:00.000Z' }),
+      gas({ amountCents: 1_000 }),
+    ]);
+    expect(members[0]).toEqual({
+      userId: 'a',
+      paidCents: 5_000,
+      paidBackCents: 4_000,
+      owedCents: 1_000,
+    });
+    expect(bandFundCents).toBe(-4_000);
+    expect(owedCents).toBe(1_000);
+  });
+
+  it('spends band-account expenses straight from the fund', () => {
+    const { members, bandFundCents } = computeBalances([
+      entry({ amountCents: 10_000 }),
+      gas({ handledById: null }),
+    ]);
+    expect(members).toEqual([]);
+    expect(bandFundCents).toBe(6_000);
   });
 
   it('ignores expected and void entries', () => {
     const { members, bandFundCents } = computeBalances([
       entry({ amountCents: 500, state: 'EXPECTED' }),
       entry({ amountCents: 500, state: 'VOID' }),
+      gas({ state: 'VOID' }),
     ]);
     expect(members).toEqual([]);
     expect(bandFundCents).toBe(0);
@@ -119,7 +144,7 @@ describe('financeCsv', () => {
     );
     const [, row] = csv.trim().split('\n');
     expect(row).toBe(
-      `2026-10-01,Expense,Settled,Gear,-12.50,"'=HYPERLINK(""x"")","Strings, Inc.",,Alex`,
+      `2026-10-01,Expense,Settled,Gear,-12.50,"'=HYPERLINK(""x"")","Strings, Inc.",,Alex,Owed`,
     );
   });
 });
@@ -147,49 +172,49 @@ describe('finance DTOs', () => {
   });
 });
 
-describe('approval', () => {
-  it('holds only a member’s own out-of-pocket expense', () => {
-    const fronted = { kind: 'EXPENSE' as const, handledById: 'a' };
-    expect(needsApproval(fronted, 'a', false)).toBe(true);
-    expect(needsApproval(fronted, 'a', true)).toBe(false);
-    expect(needsApproval({ kind: 'INCOME', handledById: 'a' }, 'a', false)).toBe(false);
-    expect(needsApproval({ kind: 'EXPENSE', handledById: null }, 'a', false)).toBe(false);
+describe('paybacks', () => {
+  it('labels only out-of-pocket expenses', () => {
+    const gas = entry({ kind: 'EXPENSE', category: 'TRAVEL', handledById: 'a' });
+    expect(paybackStatus(gas)).toBe('owed');
+    expect(paybackStatus({ ...gas, paidBackAt: '2026-10-03T00:00:00.000Z' })).toBe('paid');
+    expect(paybackStatus({ ...gas, handledById: null })).toBeNull();
+    expect(paybackStatus({ ...gas, state: 'VOID' })).toBeNull();
+    expect(paybackStatus(entry({}))).toBeNull();
   });
 
-  it('locks an approved entry to members only', () => {
-    const approved = { approvedAt: '2026-10-03T00:00:00.000Z' };
-    expect(isLockedFor(approved, false)).toBe(true);
-    expect(isLockedFor(approved, true)).toBe(false);
-    expect(isLockedFor({ approvedAt: null }, false)).toBe(false);
+  it('lets admins and whoever paid edit, until it is paid back', () => {
+    const mine = { handledById: 'a', createdById: 'b', paidBackAt: null };
+    expect(canEditEntry(mine, 'a', false)).toBe(true);
+    expect(canEditEntry(mine, 'b', false)).toBe(false);
+    expect(canEditEntry(mine, 'c', true)).toBe(true);
+    const band = { handledById: null, createdById: 'b', paidBackAt: null };
+    expect(canEditEntry(band, 'b', false)).toBe(true);
+    expect(canEditEntry(band, 'a', false)).toBe(false);
+    const paid = { ...mine, paidBackAt: '2026-10-03T00:00:00.000Z' };
+    expect(canEditEntry(paid, 'a', false)).toBe(false);
+    expect(canEditEntry(paid, 'c', true)).toBe(false);
   });
 
-  it('keeps pending expenses out of the totals and the balances', () => {
-    const pending = entry({
-      kind: 'EXPENSE',
-      category: 'TRAVEL',
-      state: 'PENDING',
-      amountCents: 5_000,
-      handledById: 'a',
+  it('says who paid and whether it was paid back in the spreadsheet', () => {
+    const row = (over: Partial<LedgerEntry>) => ({
+      ...entry({ kind: 'EXPENSE', category: 'TRAVEL', amountCents: 5_000, ...over }),
+      description: 'Tire',
+      counterparty: null,
+      eventTitle: null,
     });
-    const totals = ledgerTotals([pending]);
-    expect(totals.expenseCents).toBe(0);
-    expect(totals.pendingCents).toBe(5_000);
-    expect(computeBalances([pending]).members).toEqual([]);
-  });
-
-  it('labels a pending entry in the spreadsheet', () => {
     const csv = financeCsv(
       [
-        {
-          ...entry({ kind: 'EXPENSE', category: 'TRAVEL', state: 'PENDING', amountCents: 5_000 }),
-          description: 'Tire',
-          counterparty: null,
-          eventTitle: null,
-        },
+        row({ handledById: 'a', occurredOn: '2026-10-01' }),
+        row({ handledById: 'a', occurredOn: '2026-10-02', paidBackAt: '2026-10-05T12:00:00.000Z' }),
+        row({ occurredOn: '2026-10-03' }),
       ],
-      () => '',
+      () => 'Jamie',
     );
-    expect(csv).toContain('Pending approval');
+    const lines = csv.trim().split('\n');
+    expect(lines[0]).toContain('Paid by,Paid back');
+    expect(lines[1].endsWith('Jamie,Owed')).toBe(true);
+    expect(lines[2].endsWith('Jamie,2026-10-05')).toBe(true);
+    expect(lines[3].endsWith('Band account,')).toBe(true);
   });
 });
 

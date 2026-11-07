@@ -27,7 +27,7 @@ describe('BoardsService.removeMember', () => {
     taskAssignee: { deleteMany: jest.fn() },
     mentionNotification: { deleteMany: jest.fn() },
     notificationPreference: { deleteMany: jest.fn() },
-    payout: { create: jest.fn() },
+    financeEntry: { findMany: jest.fn(), updateMany: jest.fn() },
     board: { findUnique: jest.fn() },
     activity: { create: jest.fn() },
     $transaction: jest.fn(),
@@ -45,7 +45,10 @@ describe('BoardsService.removeMember', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     prisma.board.findUnique.mockResolvedValue({ currency: 'USD' });
-    prisma.payout.create.mockResolvedValue({ id: 'p1' });
+    prisma.financeEntry.findMany.mockResolvedValue([
+      { id: 'f1', amountCents: 12_500 },
+      { id: 'f2', amountCents: 1_250 },
+    ]);
   });
 
   const sam = {
@@ -54,23 +57,33 @@ describe('BoardsService.removeMember', () => {
     board: { ownerId: 'admin' },
   };
 
-  it('removes them without touching the books unless asked to pay them out', async () => {
+  it('removes them without touching the books unless asked to pay them back', async () => {
     prisma.membership.findFirst.mockResolvedValue(sam);
     await service.removeMember('b1', 'admin', 'u2');
-    expect(prisma.payout.create).not.toHaveBeenCalled();
+    expect(prisma.financeEntry.updateMany).not.toHaveBeenCalled();
   });
 
-  it('can record the payment that squares them up', async () => {
+  it('can pay back everything the band still owes them', async () => {
     prisma.membership.findFirst.mockResolvedValue(sam);
-    await service.removeMember('b1', 'admin', 'u2', {
-      payout: { amountCents: 13_750, paidOn: '2026-11-06' },
-    });
-    expect(prisma.payout.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ userId: 'u2', amountCents: 13_750 }),
+    await service.removeMember('b1', 'admin', 'u2', { payBack: true });
+    expect(prisma.financeEntry.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ handledById: 'u2', paidBackAt: null }),
+      }),
+    );
+    expect(prisma.financeEntry.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ['f1', 'f2'] } },
+      data: { paidBackAt: expect.any(Date), paidBackById: 'admin' },
     });
     expect(prisma.activity.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ type: 'PAYOUT_RECORDED' }),
+        data: expect.objectContaining({
+          type: 'EXPENSE_PAID_BACK',
+          meta: expect.objectContaining({
+            label: '2 expenses',
+            amount: '$137.50',
+          }),
+        }),
       }),
     );
   });

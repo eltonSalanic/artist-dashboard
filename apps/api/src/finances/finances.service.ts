@@ -6,28 +6,23 @@ import {
 } from '@nestjs/common';
 import {
   can,
+  canEditEntry,
   categoryKind,
   categoryLabel,
   computeBalances,
   formatMoney,
-  isLockedFor,
   ledgerTotals,
-  needsApproval,
+  paybackStatus,
   showSettlement,
   type Action,
   type BoardRole,
-  type FinanceKind,
-  type FinanceState,
   type CreateFinanceEntryDto,
-  type CreatePayoutDto,
   type FinanceEntryDto,
   type FinanceEntryQueryDto,
   type FinanceMemberRef,
   type FinanceSummaryDto,
   type FinanceSummaryQueryDto,
   type LedgerEntry,
-  type PayoutDto,
-  type RejectFinanceEntryDto,
   type ShowSettlementDto,
   type UpdateFinanceEntryDto,
 } from '@artist/shared';
@@ -53,6 +48,18 @@ export interface FinanceActor {
 const toDate = (day: string) => new Date(`${day}T00:00:00.000Z`);
 const fromDate = (date: Date) => date.toISOString().slice(0, 10);
 
+const entryLabel = (entry: { description: string; category: string }) =>
+  entry.description || categoryLabel(entry.category);
+
+/** Out of a member's pocket, counted, and not paid back yet. */
+const isOwedRow = (row: EntryRow) => paybackStatus(toLedger(row)) === 'owed';
+
+/**
+ * The band's books: a ledger of what came in and what went out. A member is
+ * owed money only for an expense they paid out of pocket, until an admin pays
+ * them back from the band fund. Paying back locks the entry for everyone until
+ * an admin undoes it.
+ */
 @Injectable()
 export class FinancesService {
   constructor(
@@ -102,24 +109,19 @@ export class FinancesService {
     dto: CreateFinanceEntryDto,
   ) {
     this.require(actor, 'finance.create');
-    this.assertMemberMayShape(actor, dto);
+    // Income goes into the band fund; nobody is owed for it.
+    const handledById =
+      dto.kind === 'EXPENSE' ? (dto.handledById ?? null) : null;
+    this.assertMemberMayShape(actor, { handledById });
     if (dto.eventId) await this.assertEventInBoard(boardId, dto.eventId);
-    if (dto.handledById) await this.assertMembers(boardId, [dto.handledById]);
-
-    const state = needsApproval(
-      { kind: dto.kind, handledById: dto.handledById ?? null },
-      actor.userId,
-      can(actor.role, 'finance.manage'),
-    )
-      ? 'PENDING'
-      : dto.state;
+    if (handledById) await this.assertMembers(boardId, [handledById]);
 
     const entry = await this.prisma.$transaction(async (tx) => {
       const created = await tx.financeEntry.create({
         data: {
           boardId,
           kind: dto.kind,
-          state,
+          state: dto.state,
           category: dto.category,
           amountCents: dto.amountCents,
           occurredOn: toDate(dto.occurredOn),
@@ -127,14 +129,14 @@ export class FinancesService {
           description: dto.description ?? '',
           note: dto.note ?? '',
           eventId: dto.eventId ?? null,
-          handledById: dto.handledById ?? null,
+          handledById,
           createdById: actor.userId,
         },
         include: entryInclude,
       });
       await this.logEntry(tx, boardId, actor.userId, created);
-      if (created.state === 'PENDING') {
-        await this.askForApproval(tx, created, actor.userId, true);
+      if (isOwedRow(created)) {
+        await this.tellAdminsOwed(tx, created, actor.userId, true);
       }
       return created;
     });
@@ -152,13 +154,19 @@ export class FinancesService {
     if (before.state === 'VOID') {
       throw new BadRequestException('A void entry cannot be changed');
     }
-    this.assertMemberMayShape(actor, dto);
 
     const kind = dto.kind ?? before.kind;
     const category = dto.category ?? before.category;
     const handledById =
-      dto.handledById !== undefined ? dto.handledById : before.handledById;
-    const state = this.nextState(actor, before, { kind, handledById }, dto);
+      kind === 'EXPENSE'
+        ? dto.handledById !== undefined
+          ? dto.handledById
+          : before.handledById
+        : null;
+    if (handledById !== before.handledById) {
+      this.assertMemberMayShape(actor, { handledById });
+    }
+    const state = dto.state ?? before.state;
     if (categoryKind(category) !== kind) {
       throw new BadRequestException(
         'That category belongs to the other kind of entry',
@@ -168,7 +176,9 @@ export class FinancesService {
       throw new BadRequestException('Only income can be expected');
     }
     if (dto.eventId) await this.assertEventInBoard(boardId, dto.eventId);
-    if (dto.handledById) await this.assertMembers(boardId, [dto.handledById]);
+    if (handledById && handledById !== before.handledById) {
+      await this.assertMembers(boardId, [handledById]);
+    }
 
     const entry = await this.prisma.$transaction(async (tx) => {
       const updated = await tx.financeEntry.update({
@@ -177,10 +187,7 @@ export class FinancesService {
           kind,
           category,
           state,
-          // Resubmitting clears the admin's note: the member has acted on it.
-          ...(before.state === 'REJECTED' && state !== 'REJECTED'
-            ? { decisionNote: '' }
-            : {}),
+          handledById,
           ...(dto.amountCents !== undefined
             ? { amountCents: dto.amountCents }
             : {}),
@@ -193,80 +200,19 @@ export class FinancesService {
             : {}),
           ...(dto.note !== undefined ? { note: dto.note } : {}),
           ...(dto.eventId !== undefined ? { eventId: dto.eventId } : {}),
-          ...(dto.handledById !== undefined
-            ? { handledById: dto.handledById }
-            : {}),
         },
         include: entryInclude,
       });
-      if (updated.state === 'PENDING') {
+      if (isOwedRow(updated)) {
         // Admins' inbox rows restate the entry, so an edit refreshes them. A
-        // push only goes out when the request is new (or resubmitted) — a
-        // member fixing a typo shouldn't buzz every admin's phone again.
-        await this.askForApproval(
-          tx,
-          updated,
-          actor.userId,
-          before.state !== 'PENDING',
-        );
-      } else if (before.state === 'PENDING') {
-        await this.dropApprovalRows(tx, entryId);
+        // push only goes out when someone is newly owed: a member fixing a
+        // typo shouldn't buzz every admin's phone again.
+        const fresh =
+          !isOwedRow(before) || before.handledById !== updated.handledById;
+        await this.tellAdminsOwed(tx, updated, actor.userId, fresh);
+      } else if (isOwedRow(before)) {
+        await this.dropOwedRows(tx, [entryId]);
       }
-      return updated;
-    });
-    return toEntryDto(entry);
-  }
-
-  /**
-   * An admin accepts a member's out-of-pocket expense: from now on it counts,
-   * the band owes the member for it, and the member can't change it any more.
-   * A sent-back entry can be approved too, when the admin comes around.
-   */
-  async approve(boardId: string, actor: FinanceActor, entryId: string) {
-    this.require(actor, 'finance.manage');
-    const before = await this.getEntry(boardId, entryId);
-    if (before.state !== 'PENDING' && before.state !== 'REJECTED') {
-      throw new BadRequestException('That entry isn’t waiting for approval');
-    }
-    const entry = await this.prisma.$transaction(async (tx) => {
-      const updated = await tx.financeEntry.update({
-        where: { id: entryId },
-        data: {
-          state: 'SETTLED',
-          approvedById: actor.userId,
-          approvedAt: new Date(),
-          decisionNote: '',
-        },
-        include: entryInclude,
-      });
-      await this.decide(tx, updated, actor.userId, 'APPROVED', '');
-      return updated;
-    });
-    return toEntryDto(entry);
-  }
-
-  /**
-   * An admin sends a member's expense back with a note. It stops counting, and
-   * the member — who still owns it — can fix it and save, which asks again.
-   */
-  async reject(
-    boardId: string,
-    actor: FinanceActor,
-    entryId: string,
-    dto: RejectFinanceEntryDto,
-  ) {
-    this.require(actor, 'finance.manage');
-    const before = await this.getEntry(boardId, entryId);
-    if (before.state !== 'PENDING') {
-      throw new BadRequestException('That entry isn’t waiting for approval');
-    }
-    const entry = await this.prisma.$transaction(async (tx) => {
-      const updated = await tx.financeEntry.update({
-        where: { id: entryId },
-        data: { state: 'REJECTED', decisionNote: dto.note },
-        include: entryInclude,
-      });
-      await this.decide(tx, updated, actor.userId, 'REJECTED', dto.note);
       return updated;
     });
     return toEntryDto(entry);
@@ -282,67 +228,85 @@ export class FinancesService {
         data: { state: 'VOID' },
         include: entryInclude,
       });
-      // Nothing left to approve.
-      await this.dropApprovalRows(tx, entryId);
+      // Nobody is owed for it any more.
+      await this.dropOwedRows(tx, [entryId]);
       return updated;
     });
     return toEntryDto(entry);
   }
 
-  // ---- Payouts ----
+  // ---- Paybacks ----
 
-  async listPayouts(boardId: string, actor: FinanceActor) {
-    this.require(actor, 'finance.view');
-    const rows = await this.prisma.payout.findMany({
-      where: { boardId },
-      orderBy: [{ paidOn: 'desc' }, { createdAt: 'desc' }],
+  /**
+   * An admin pays a member back for one out-of-pocket expense, from the band
+   * fund. The fund can go below zero; that's the band's business. The entry
+   * locks until the payback is undone, and the member hears about it.
+   */
+  async payBack(boardId: string, actor: FinanceActor, entryId: string) {
+    this.require(actor, 'finance.manage');
+    const before = await this.getEntry(boardId, entryId);
+    if (!isOwedRow(before)) {
+      throw new BadRequestException(
+        before.paidBackAt
+          ? 'That was already paid back'
+          : 'Nobody is owed for that entry',
+      );
+    }
+    const entry = await this.prisma.$transaction(async (tx) => {
+      const [updated] = await this.markPaidBack(tx, [before], actor.userId);
+      return updated;
     });
-    return rows.map(toPayoutDto);
+    return toEntryDto(entry);
   }
 
-  async createPayout(
-    boardId: string,
-    actor: FinanceActor,
-    dto: CreatePayoutDto,
-  ) {
+  /** Pays a member back for everything the band still owes them, at once. */
+  async payBackMember(boardId: string, actor: FinanceActor, userId: string) {
     this.require(actor, 'finance.manage');
-    const [member] = await this.assertMembers(boardId, [dto.userId]);
-    const currency = await this.currency(boardId);
-    const payout = await this.prisma.$transaction(async (tx) => {
-      const created = await tx.payout.create({
-        data: {
-          boardId,
-          userId: dto.userId,
-          amountCents: dto.amountCents,
-          paidOn: toDate(dto.paidOn),
-          note: dto.note ?? '',
-          createdById: actor.userId,
-        },
-      });
-      await this.activity.log(tx, {
+    const owed = await this.prisma.financeEntry.findMany({
+      where: {
         boardId,
-        type: 'PAYOUT_RECORDED',
-        actorId: actor.userId,
-        meta: {
-          payoutId: created.id,
-          memberName: member.displayName,
-          toBand: dto.amountCents < 0,
-          amount: formatMoney(Math.abs(dto.amountCents), currency),
-        },
-      });
-      return created;
+        kind: 'EXPENSE',
+        state: 'SETTLED',
+        handledById: userId,
+        paidBackAt: null,
+      },
+      include: entryInclude,
+      orderBy: [{ occurredOn: 'asc' }, { createdAt: 'asc' }],
     });
-    return toPayoutDto(payout);
+    if (owed.length === 0) {
+      throw new BadRequestException('The band doesn’t owe them anything');
+    }
+    const entries = await this.prisma.$transaction((tx) =>
+      this.markPaidBack(tx, owed, actor.userId),
+    );
+    return entries.map(toEntryDto);
   }
 
-  async removePayout(boardId: string, actor: FinanceActor, payoutId: string) {
+  /**
+   * Takes a payback back, for when an admin tapped the wrong one. The member
+   * is owed again and the entry can be edited again.
+   */
+  async undoPayBack(boardId: string, actor: FinanceActor, entryId: string) {
     this.require(actor, 'finance.manage');
-    const payout = await this.prisma.payout.findFirst({
-      where: { id: payoutId, boardId },
+    const before = await this.getEntry(boardId, entryId);
+    if (!before.paidBackAt) {
+      throw new BadRequestException('That hasn’t been paid back');
+    }
+    const entry = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.financeEntry.update({
+        where: { id: entryId },
+        data: { paidBackAt: null, paidBackById: null },
+        include: entryInclude,
+      });
+      await tx.mentionNotification.deleteMany({
+        where: { entryId, kind: 'PAID_BACK' },
+      });
+      if (isOwedRow(updated)) {
+        await this.tellAdminsOwed(tx, updated, actor.userId, false);
+      }
+      return updated;
     });
-    if (!payout) throw new NotFoundException('Payment not found');
-    await this.prisma.payout.delete({ where: { id: payoutId } });
-    return { deleted: true };
+    return toEntryDto(entry);
   }
 
   // ---- Reports ----
@@ -353,14 +317,10 @@ export class FinancesService {
     query: FinanceSummaryQueryDto,
   ): Promise<FinanceSummaryDto> {
     this.require(actor, 'finance.view');
-    const [rows, payouts, currency] = await Promise.all([
+    const [rows, currency] = await Promise.all([
       this.prisma.financeEntry.findMany({
         where: { boardId, state: { not: 'VOID' } },
         include: entryInclude,
-      }),
-      this.prisma.payout.findMany({
-        where: { boardId },
-        select: { userId: true, amountCents: true },
       }),
       this.currency(boardId),
     ]);
@@ -370,7 +330,7 @@ export class FinancesService {
         (!query.from || e.occurredOn >= query.from) &&
         (!query.to || e.occurredOn <= query.to),
     );
-    const balances = computeBalances(all, payouts);
+    const balances = computeBalances(all);
 
     return {
       currency,
@@ -380,19 +340,14 @@ export class FinancesService {
         boardId,
         balances.members.map((m) => m.userId),
       ),
-      pending: rows
-        .filter((row) => row.state === 'PENDING')
+      owed: rows
+        .filter(isOwedRow)
         .map(toEntryDto)
-        .sort((a, b) => b.occurredOn.localeCompare(a.occurredOn)),
-      sentBack: rows
-        .filter(
-          (row) =>
-            row.state === 'REJECTED' &&
-            (can(actor.role, 'finance.manage') ||
-              row.createdById === actor.userId),
-        )
-        .map(toEntryDto)
-        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+        .sort(
+          (a, b) =>
+            b.occurredOn.localeCompare(a.occurredOn) ||
+            b.createdAt.localeCompare(a.createdAt),
+        ),
     };
   }
 
@@ -427,7 +382,6 @@ export class FinancesService {
     };
   }
 
-
   private require(actor: FinanceActor, action: Action) {
     if (!can(actor.role, action)) {
       throw new ForbiddenException('Only board admins can do that');
@@ -435,8 +389,8 @@ export class FinancesService {
   }
 
   /**
-   * Members log their own money: they can't book it against someone else's
-   * pocket. Admins can.
+   * Members log their own money: they can't say someone else paid for
+   * something, which would have the band owe that person. Admins can.
    */
   private assertMemberMayShape(
     actor: FinanceActor,
@@ -445,63 +399,34 @@ export class FinancesService {
     if (can(actor.role, 'finance.manage')) return;
     if (dto.handledById && dto.handledById !== actor.userId) {
       throw new ForbiddenException(
-        'You can only log money that went through your own pocket',
+        'You can only log money you paid yourself',
       );
     }
   }
 
-  /**
-   * Your own entries, or anyone's if you can manage the books. Once an admin
-   * has approved your out-of-pocket expense it's locked to you.
-   */
-  private assertMayEdit(
-    actor: FinanceActor,
-    entry: { createdById: string | null; approvedAt: Date | null },
-  ) {
-    if (can(actor.role, 'finance.manage')) return;
-    if (
-      !can(actor.role, 'finance.create') ||
-      entry.createdById !== actor.userId
-    ) {
-      throw new ForbiddenException('You can only change entries you logged');
-    }
-    if (
-      isLockedFor(
-        { approvedAt: entry.approvedAt?.toISOString() ?? null },
-        false,
-      )
-    ) {
+  /** The shared `canEditEntry` rule, with the reason when it says no. */
+  private assertMayEdit(actor: FinanceActor, entry: EntryRow) {
+    if (entry.paidBackAt) {
       throw new ForbiddenException(
-        'An admin approved this, so only an admin can change it now',
+        'This was paid back, so it’s locked. An admin can undo the payback to change it.',
       );
     }
-  }
-
-  /**
-   * The state an edited entry ends up in. A member's own out-of-pocket expense
-   * stays (or becomes) PENDING until an admin approves it; editing never
-   * approves anything, that has its own route. A sent-back entry goes back to
-   * PENDING the same way. Anything else takes the state asked for, and a
-   * pending entry that no longer needs approval (an admin moved it to the
-   * band's account) counts as settled.
-   */
-  private nextState(
-    actor: FinanceActor,
-    before: { state: FinanceState; createdById: string | null; approvedAt: Date | null },
-    after: { kind: FinanceKind; handledById: string | null },
-    dto: UpdateFinanceEntryDto,
-  ): FinanceState {
-    const fronted =
-      !before.approvedAt &&
-      before.createdById !== null &&
-      needsApproval(after, before.createdById, false);
-    const awaiting = before.state === 'PENDING' || before.state === 'REJECTED';
-    // A member saving a sent-back entry is resubmitting it.
-    if (fronted && (awaiting || !can(actor.role, 'finance.manage'))) {
-      return 'PENDING';
+    const allowed =
+      can(actor.role, 'finance.create') &&
+      canEditEntry(
+        {
+          handledById: entry.handledById,
+          createdById: entry.createdById,
+          paidBackAt: null,
+        },
+        actor.userId,
+        can(actor.role, 'finance.manage'),
+      );
+    if (!allowed) {
+      throw new ForbiddenException(
+        'Only an admin or the member who paid can change this',
+      );
     }
-    if (dto.state) return dto.state;
-    return awaiting ? 'SETTLED' : before.state;
   }
 
   private async getEntry(boardId: string, entryId: string) {
@@ -560,23 +485,25 @@ export class FinancesService {
   }
 
   /**
-   * Puts a member's expense in front of every admin: an inbox row each, and —
-   * when `fresh` — a push and email. Rows are rewritten rather than updated so
-   * they always restate the entry as it stands.
+   * Puts an out-of-pocket expense in front of every admin, as a reminder that
+   * the band owes the member who paid: an inbox row each, and when `fresh`, a
+   * push and email. Rows are rewritten rather than updated so they always
+   * restate the entry as it stands. Nobody is told about their own expense,
+   * or about one they just logged or changed themselves.
    */
-  private async askForApproval(
+  private async tellAdminsOwed(
     tx: Prisma.TransactionClient,
     entry: EntryRow,
     actorId: string,
     fresh: boolean,
   ) {
-    const [admins, actor, board] = await Promise.all([
+    const [admins, payee, board] = await Promise.all([
       tx.membership.findMany({
         where: { boardId: entry.boardId, role: 'ADMIN' },
         select: { userId: true },
       }),
       tx.user.findUnique({
-        where: { id: actorId },
+        where: { id: entry.handledById! },
         select: { displayName: true },
       }),
       tx.board.findUnique({
@@ -586,28 +513,26 @@ export class FinancesService {
     ]);
     const recipients = admins
       .map((m) => m.userId)
-      .filter((id) => id !== actorId);
-    await this.dropApprovalRows(tx, entry.id);
+      .filter((id) => id !== actorId && id !== entry.handledById);
+    await this.dropOwedRows(tx, [entry.id]);
     if (recipients.length === 0) return;
 
-    const actorName = actor?.displayName ?? 'A bandmate';
-    const label = entry.description || categoryLabel(entry.category);
+    const payeeName = payee?.displayName ?? 'A bandmate';
+    const label = entryLabel(entry);
     const amount = formatMoney(entry.amountCents, board?.currency ?? 'USD');
     await tx.mentionNotification.createMany({
       data: recipients.map((userId) => ({
         boardId: entry.boardId,
         userId,
-        kind: 'APPROVAL' as const,
+        kind: 'PAYBACK' as const,
         entryId: entry.id,
-        actorName,
+        actorName: payeeName,
         taskTitle: `${label} · ${amount}`,
         excerpt: entry.note,
       })),
     });
     if (!fresh) return;
 
-    // Keyed on the resubmission, not the entry: sending it back and getting
-    // it again is two requests, and the admin should hear about both.
     const stamp = entry.updatedAt.getTime();
     await this.notifications.queue(
       tx,
@@ -615,11 +540,11 @@ export class FinancesService {
         boardId: entry.boardId,
         userId,
         category: 'APPROVALS' as const,
-        template: 'expense-approval',
-        dedupeKey: `approval:${entry.id}:${stamp}:${userId}`,
+        template: 'expense-owed',
+        dedupeKey: `owed:${entry.id}:${stamp}:${userId}`,
         payload: {
           entryId: entry.id,
-          actorName,
+          actorName: payeeName,
           label,
           amount,
           note: entry.note,
@@ -630,58 +555,94 @@ export class FinancesService {
   }
 
   /**
-   * Tells the member who logged the expense what the admin decided. The
-   * admins' own request rows go, since there is nothing left to decide.
+   * Marks owed entries, all paid by one member, as paid back by `actorId`:
+   * the admins' reminders go, the member gets one inbox row and one push for
+   * the lot, and the activity feed says who paid whom.
    */
-  private async decide(
+  private async markPaidBack(
     tx: Prisma.TransactionClient,
-    entry: EntryRow,
+    entries: EntryRow[],
     actorId: string,
-    decision: 'APPROVED' | 'REJECTED',
-    note: string,
-  ) {
-    await this.dropApprovalRows(tx, entry.id);
-    const recipient = entry.createdById;
-    if (!recipient || recipient === actorId) return;
+  ): Promise<EntryRow[]> {
+    const ids = entries.map((e) => e.id);
+    const { boardId, handledById: payeeId } = entries[0];
+    const now = new Date();
+    await tx.financeEntry.updateMany({
+      where: { id: { in: ids } },
+      data: { paidBackAt: now, paidBackById: actorId },
+    });
+    await this.dropOwedRows(tx, ids);
+    const updated = await tx.financeEntry.findMany({
+      where: { id: { in: ids } },
+      include: entryInclude,
+      orderBy: [{ occurredOn: 'asc' }, { createdAt: 'asc' }],
+    });
 
-    const [actor, board] = await Promise.all([
+    const [actor, payee, board] = await Promise.all([
       tx.user.findUnique({
         where: { id: actorId },
         select: { displayName: true },
       }),
+      tx.user.findUnique({
+        where: { id: payeeId! },
+        select: { displayName: true },
+      }),
       tx.board.findUnique({
-        where: { id: entry.boardId },
+        where: { id: boardId },
         select: { currency: true },
       }),
     ]);
+    const currency = board?.currency ?? 'USD';
     const actorName = actor?.displayName ?? 'An admin';
-    const label = entry.description || categoryLabel(entry.category);
-    const amount = formatMoney(entry.amountCents, board?.currency ?? 'USD');
-    await tx.mentionNotification.create({
-      data: {
-        boardId: entry.boardId,
-        userId: recipient,
-        kind: 'DECISION',
-        entryId: entry.id,
-        actorName,
-        // The headline is written here so every client shows the same one.
-        taskTitle: `${decision === 'APPROVED' ? 'Approved' : 'Sent back'}: ${label} · ${amount}`,
-        excerpt: decision === 'APPROVED' ? 'The band owes you for it now.' : note,
+    const total = updated.reduce((sum, e) => sum + e.amountCents, 0);
+    const amount = formatMoney(total, currency);
+    const single = updated.length === 1 ? updated[0] : null;
+    const label = single
+      ? entryLabel(single)
+      : `${updated.length} expenses`;
+
+    await this.activity.log(tx, {
+      boardId,
+      type: 'EXPENSE_PAID_BACK',
+      actorId,
+      meta: {
+        entryIds: ids,
+        memberId: payeeId,
+        memberName: payee?.displayName ?? 'a member',
+        label,
+        amount,
       },
     });
-    await this.notifications.queue(tx, {
-      boardId: entry.boardId,
-      userId: recipient,
-      category: 'APPROVALS',
-      template: 'expense-decided',
-      dedupeKey: `decision:${entry.id}:${entry.updatedAt.getTime()}`,
-      payload: { entryId: entry.id, actorName, label, amount, decision, note },
-    });
+
+    if (payeeId && payeeId !== actorId) {
+      await tx.mentionNotification.create({
+        data: {
+          boardId,
+          userId: payeeId,
+          kind: 'PAID_BACK',
+          // A single entry opens; a batch has nothing one row could point at.
+          entryId: single?.id ?? null,
+          actorName,
+          // The headline is written here so every client shows the same one.
+          taskTitle: `Paid back: ${label} · ${amount}`,
+          excerpt: `${actorName} paid you back from the band fund.`,
+        },
+      });
+      await this.notifications.queue(tx, {
+        boardId,
+        userId: payeeId,
+        category: 'APPROVALS',
+        template: 'expense-paid-back',
+        dedupeKey: `paid-back:${ids.join(',')}:${now.getTime()}`,
+        payload: { entryId: single?.id ?? '', actorName, label, amount },
+      });
+    }
+    return updated;
   }
 
-  private async dropApprovalRows(tx: Prisma.TransactionClient, entryId: string) {
+  private async dropOwedRows(tx: Prisma.TransactionClient, entryIds: string[]) {
     await tx.mentionNotification.deleteMany({
-      where: { entryId, kind: 'APPROVAL' },
+      where: { entryId: { in: entryIds }, kind: 'PAYBACK' },
     });
   }
 
@@ -702,7 +663,7 @@ export class FinancesService {
       meta: {
         entryId: entry.id,
         kind: entry.kind,
-        label: entry.description || categoryLabel(entry.category),
+        label: entryLabel(entry),
         amount: formatMoney(entry.amountCents, board?.currency ?? 'USD'),
         eventId: entry.eventId,
       },
@@ -718,6 +679,7 @@ function toLedger(row: EntryRow): LedgerEntry {
     category: row.category,
     occurredOn: fromDate(row.occurredOn),
     handledById: row.handledById,
+    paidBackAt: row.paidBackAt?.toISOString() ?? null,
   };
 }
 
@@ -737,31 +699,10 @@ function toEntryDto(row: EntryRow): FinanceEntryDto {
     eventTitle: row.event?.title ?? null,
     handledById: row.handledById,
     createdById: row.createdById,
-    approvedById: row.approvedById,
-    approvedAt: row.approvedAt?.toISOString() ?? null,
-    decisionNote: row.decisionNote,
+    paidBackAt: row.paidBackAt?.toISOString() ?? null,
+    paidBackById: row.paidBackById,
     receiptCount: row._count.receipts,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
-  };
-}
-
-function toPayoutDto(row: {
-  id: string;
-  userId: string;
-  amountCents: number;
-  paidOn: Date;
-  note: string;
-  createdById: string | null;
-  createdAt: Date;
-}): PayoutDto {
-  return {
-    id: row.id,
-    userId: row.userId,
-    amountCents: row.amountCents,
-    paidOn: fromDate(row.paidOn),
-    note: row.note,
-    createdById: row.createdById,
-    createdAt: row.createdAt.toISOString(),
   };
 }

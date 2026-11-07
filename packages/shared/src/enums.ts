@@ -31,7 +31,7 @@ export const ActivityTypes = [
   'COMMENT_ADDED',
   'FINANCE_ENTRY_ADDED',
   'SHOW_SETTLED',
-  'PAYOUT_RECORDED',
+  'EXPENSE_PAID_BACK',
   'SHOW_STATUS_CHANGED',
 ] as const;
 export type ActivityType = (typeof ActivityTypes)[number];
@@ -62,11 +62,10 @@ export type FinanceKind = (typeof FinanceKinds)[number];
 
 /**
  * EXPECTED is money promised but not in hand yet (a show fee the promoter still
- * owes). PENDING is a member's own out-of-pocket expense waiting for an admin to
- * approve it: until then the band doesn't owe them for it. VOID replaces delete:
- * a ledger that quietly loses rows can't be trusted.
+ * owes). VOID replaces delete: a ledger that quietly loses rows can't be
+ * trusted.
  */
-export const FinanceStates = ['EXPECTED', 'PENDING', 'SETTLED', 'REJECTED', 'VOID'] as const;
+export const FinanceStates = ['EXPECTED', 'SETTLED', 'VOID'] as const;
 export type FinanceState = (typeof FinanceStates)[number];
 
 /**

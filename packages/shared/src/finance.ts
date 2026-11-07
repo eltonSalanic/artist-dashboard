@@ -7,9 +7,9 @@ import type { FinanceKind, FinanceState } from './enums';
  * report the same cents. Amounts are integer cents in the board's currency and
  * never floats.
  *
- * There is no split: the books record what came in, what went out, and whose
- * pocket it went through. Profit is the band's. A member's balance is only the
- * money they fronted or are holding for the band, net of what was paid back.
+ * The books are a ledger: what came in and what went out. Profit is the
+ * band's. A member is only owed money when they paid for an expense out of
+ * their own pocket, and only until an admin pays them back from the band fund.
  *
  * Balances are always computed from the entries, never stored, so there is no
  * running total to drift out of step with the ledger.
@@ -97,33 +97,6 @@ export function parseMoneyToCents(input: string): number | null {
   return Number(whole) * 100 + Number(frac.padEnd(2, '0'));
 }
 
-/**
- * An expense a member paid out of their own pocket and logged themselves. The
- * band only owes them for it once an admin approves it, so it starts PENDING.
- * Admins' own entries, and income a member collected (which they owe the band),
- * skip approval.
- */
-export function needsApproval(
-  entry: { kind: FinanceKind; handledById: string | null },
-  loggedById: string,
-  canManage: boolean,
-): boolean {
-  return (
-    !canManage && entry.kind === 'EXPENSE' && entry.handledById === loggedById
-  );
-}
-
-/**
- * Once an admin has approved an entry, the member who logged it can't change or
- * void it any more; admins still can, to fix a mistake.
- */
-export function isLockedFor(
-  entry: { approvedAt: string | null },
-  canManage: boolean,
-): boolean {
-  return !canManage && entry.approvedAt !== null;
-}
-
 /** The fields of an entry the money math needs. */
 export interface LedgerEntry {
   kind: FinanceKind;
@@ -132,78 +105,111 @@ export interface LedgerEntry {
   category: string;
   occurredOn: string;
   /**
-   * The member whose own money this went through: who paid an expense out of
-   * pocket, or who pocketed income (cash from the door) on the band's behalf.
-   * Null means the band's own account.
+   * Expenses only: the member who paid out of their own pocket. Null means the
+   * band's own account. Always null for income.
    */
   handledById: string | null;
+  /** When an admin paid the member back for it, as an ISO time. */
+  paidBackAt: string | null;
 }
 
-export interface LedgerPayout {
-  userId: string;
-  /** Positive: the band paid the member. Negative: the member paid the band. */
-  amountCents: number;
+type PaybackFields = Pick<LedgerEntry, 'kind' | 'handledById'>;
+
+/** An expense a member paid with their own money, so the band owes it back. */
+export function isOutOfPocket(entry: PaybackFields): boolean {
+  return entry.kind === 'EXPENSE' && entry.handledById !== null;
+}
+
+/** Where an out-of-pocket expense stands. Null for anything else. */
+export type PaybackStatus = 'owed' | 'paid';
+
+export function paybackStatus(
+  entry: PaybackFields & Pick<LedgerEntry, 'state' | 'paidBackAt'>,
+): PaybackStatus | null {
+  if (!isOutOfPocket(entry) || entry.state !== 'SETTLED') return null;
+  return entry.paidBackAt ? 'paid' : 'owed';
+}
+
+/** The label both platforms show on an out-of-pocket expense. */
+export const PAYBACK_LABELS: Record<PaybackStatus, string> = {
+  owed: 'Owed back',
+  paid: 'Paid back',
+};
+
+/**
+ * Who may change or void an entry. Nobody once it's paid back: an admin has to
+ * undo the payback first, so the amount a member was paid can't drift from the
+ * entry. Otherwise admins can change anything; a member can change an expense
+ * they paid for, or an entry they logged on the band account.
+ */
+export function canEditEntry(
+  entry: {
+    handledById: string | null;
+    createdById: string | null;
+    paidBackAt: string | null;
+  },
+  userId: string,
+  canManage: boolean,
+): boolean {
+  if (entry.paidBackAt) return false;
+  if (canManage) return true;
+  if (entry.handledById) return entry.handledById === userId;
+  return entry.createdById === userId;
 }
 
 export interface MemberBalance {
   userId: string;
-  /** Expenses they paid personally. The band owes them this back. */
-  frontedCents: number;
-  /** Income they collected personally. They owe the band this. */
-  collectedCents: number;
-  /** What the band has already paid them, net. */
-  paidOutCents: number;
-  /** Positive: the band owes them. Negative: they owe the band. */
-  balanceCents: number;
+  /** Everything they paid for the band out of their own pocket. */
+  paidCents: number;
+  /** How much of that an admin has paid back. */
+  paidBackCents: number;
+  /** What the band still owes them: paid, less paid back. */
+  owedCents: number;
 }
 
 export interface Balances {
   members: MemberBalance[];
-  /** The band's own money: everything settled, income less expenses. */
+  /**
+   * The band's own money: income received, less what the band account paid
+   * for and what it paid members back. Can go below zero when the band pays a
+   * member back before it has the money.
+   */
   bandFundCents: number;
+  /** What the band owes all members together. */
+  owedCents: number;
 }
 
 const signed = (e: Pick<LedgerEntry, 'kind' | 'amountCents'>) =>
   e.kind === 'INCOME' ? e.amountCents : -e.amountCents;
 
-/** Who is owed what, from settled entries and payouts. */
-export function computeBalances(
-  entries: LedgerEntry[],
-  payouts: LedgerPayout[] = [],
-): Balances {
+/** The band fund and who is owed what, from settled entries. */
+export function computeBalances(entries: LedgerEntry[]): Balances {
   const byMember = new Map<string, MemberBalance>();
-  const member = (userId: string) => {
-    let row = byMember.get(userId);
-    if (!row) {
-      row = {
-        userId,
-        frontedCents: 0,
-        collectedCents: 0,
-        paidOutCents: 0,
-        balanceCents: 0,
-      };
-      byMember.set(userId, row);
-    }
-    return row;
-  };
   let bandFundCents = 0;
+  let owedCents = 0;
 
   for (const entry of entries) {
     if (entry.state !== 'SETTLED') continue;
-    bandFundCents += signed(entry);
-    if (entry.handledById) {
-      const row = member(entry.handledById);
-      if (entry.kind === 'EXPENSE') row.frontedCents += entry.amountCents;
-      else row.collectedCents += entry.amountCents;
+    if (!isOutOfPocket(entry)) {
+      bandFundCents += signed(entry);
+      continue;
+    }
+    const userId = entry.handledById!;
+    let row = byMember.get(userId);
+    if (!row) {
+      row = { userId, paidCents: 0, paidBackCents: 0, owedCents: 0 };
+      byMember.set(userId, row);
+    }
+    row.paidCents += entry.amountCents;
+    if (entry.paidBackAt) {
+      row.paidBackCents += entry.amountCents;
+      bandFundCents -= entry.amountCents;
+    } else {
+      row.owedCents += entry.amountCents;
+      owedCents += entry.amountCents;
     }
   }
-  for (const payout of payouts) {
-    member(payout.userId).paidOutCents += payout.amountCents;
-  }
-  for (const row of byMember.values()) {
-    row.balanceCents = row.frontedCents - row.collectedCents - row.paidOutCents;
-  }
-  return { members: [...byMember.values()], bandFundCents };
+  return { members: [...byMember.values()], bandFundCents, owedCents };
 }
 
 export interface CategoryTotal {
@@ -225,8 +231,6 @@ export interface LedgerTotals {
   netCents: number;
   /** Income promised but not received yet. */
   expectedCents: number;
-  /** Members' out-of-pocket expenses waiting for an admin's approval. */
-  pendingCents: number;
   byCategory: CategoryTotal[];
   byMonth: MonthTotal[];
 }
@@ -236,20 +240,13 @@ export function ledgerTotals(entries: LedgerEntry[]): LedgerTotals {
   let incomeCents = 0;
   let expenseCents = 0;
   let expectedCents = 0;
-  let pendingCents = 0;
   const byCategory = new Map<string, CategoryTotal>();
   const byMonth = new Map<string, MonthTotal>();
 
   for (const entry of entries) {
-    // Neither counts: void is gone for good, rejected until the member fixes
-    // it and an admin approves.
-    if (entry.state === 'VOID' || entry.state === 'REJECTED') continue;
+    if (entry.state === 'VOID') continue;
     if (entry.state === 'EXPECTED') {
       if (entry.kind === 'INCOME') expectedCents += entry.amountCents;
-      continue;
-    }
-    if (entry.state === 'PENDING') {
-      pendingCents += entry.amountCents;
       continue;
     }
     if (entry.kind === 'INCOME') incomeCents += entry.amountCents;
@@ -275,7 +272,6 @@ export function ledgerTotals(entries: LedgerEntry[]): LedgerTotals {
     expenseCents,
     netCents: incomeCents - expenseCents,
     expectedCents,
-    pendingCents,
     byCategory: [...byCategory.values()].sort((a, b) => b.cents - a.cents),
     byMonth: [...byMonth.values()].sort((a, b) => a.month.localeCompare(b.month)),
   };
@@ -302,8 +298,6 @@ export interface CsvEntry extends LedgerEntry {
 const STATE_LABELS: Record<FinanceState, string> = {
   SETTLED: 'Settled',
   EXPECTED: 'Expected',
-  PENDING: 'Pending approval',
-  REJECTED: 'Sent back',
   VOID: 'Void',
 };
 
@@ -329,7 +323,8 @@ export function financeCsv(
     'Description',
     'Counterparty',
     'Show',
-    'Handled by',
+    'Paid by',
+    'Paid back',
   ];
   const rows = [...entries]
     .sort((a, b) => a.occurredOn.localeCompare(b.occurredOn))
@@ -342,7 +337,12 @@ export function financeCsv(
       e.description,
       e.counterparty ?? '',
       e.eventTitle ?? '',
-      e.handledById ? memberName(e.handledById) : '',
+      e.kind === 'EXPENSE'
+        ? e.handledById
+          ? memberName(e.handledById)
+          : 'Band account'
+        : '',
+      isOutOfPocket(e) ? (e.paidBackAt?.slice(0, 10) ?? 'Owed') : '',
     ]);
   return [header, ...rows].map((r) => r.map(csvCell).join(',')).join('\n') + '\n';
 }

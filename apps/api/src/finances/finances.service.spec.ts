@@ -21,9 +21,8 @@ describe('FinancesService', () => {
     eventId: null,
     handledById: null,
     createdById: 'u1',
-    approvedById: null,
-    approvedAt: null,
-    decisionNote: '',
+    paidBackAt: null,
+    paidBackById: null,
     createdAt: new Date('2026-10-01T12:00:00Z'),
     updatedAt: new Date('2026-10-01T12:00:00Z'),
     event: null,
@@ -40,7 +39,6 @@ describe('FinancesService', () => {
       updateMany: jest.fn(),
       count: jest.fn(),
     },
-    payout: { findMany: jest.fn(), create: jest.fn() },
     membership: { findMany: jest.fn() },
     user: { findMany: jest.fn(), findUnique: jest.fn() },
     mentionNotification: {
@@ -91,23 +89,34 @@ describe('FinancesService', () => {
     prisma.financeEntry.create.mockResolvedValue(row());
   });
 
-  describe('create', () => {
-    const dto = {
-      kind: 'EXPENSE' as const,
-      category: 'TRAVEL' as const,
-      amountCents: 4_000,
-      occurredOn: '2026-10-02',
-      state: 'SETTLED' as const,
-    };
+  const owed = row({
+    kind: 'EXPENSE',
+    category: 'TRAVEL',
+    handledById: 'u2',
+    createdById: 'u2',
+  });
+  const paidBack = row({
+    ...owed,
+    paidBackAt: new Date('2026-10-03T00:00:00Z'),
+    paidBackById: 'u1',
+  });
+  const dto = {
+    kind: 'EXPENSE' as const,
+    category: 'TRAVEL' as const,
+    amountCents: 4_000,
+    occurredOn: '2026-10-02',
+    state: 'SETTLED' as const,
+  };
 
-    it('writes the entry and logs it', async () => {
+  describe('create', () => {
+    it('writes the entry, counted at once, and logs it', async () => {
       await service.create('b1', member, { ...dto, handledById: 'u2' });
       const args = createCall(0) as {
         data: Record<string, unknown>;
       };
       expect(args.data).toMatchObject({
         kind: 'EXPENSE',
-        state: 'PENDING',
+        state: 'SETTLED',
         handledById: 'u2',
         createdById: 'u2',
         occurredOn: new Date('2026-10-02T00:00:00.000Z'),
@@ -117,32 +126,56 @@ describe('FinancesService', () => {
       });
     });
 
-    it('holds a member’s out-of-pocket expense for approval', async () => {
-      await service.create('b1', member, { ...dto, handledById: 'u2' });
-      expect(createCall(0)).toMatchObject({ data: { state: 'PENDING' } });
-    });
-
-    it('needs no approval for an admin’s own expense or collected income', async () => {
-      await service.create('b1', admin, { ...dto, handledById: 'u1' });
+    it('never records who holds income', async () => {
       await service.create('b1', member, {
         ...dto,
         kind: 'INCOME',
         category: 'MERCH_SALES',
         handledById: 'u2',
       });
-      await service.create('b1', member, dto);
-      expect(createCall(0)).toMatchObject({ data: { state: 'SETTLED' } });
-      expect(createCall(1)).toMatchObject({ data: { state: 'SETTLED' } });
-      expect(createCall(2)).toMatchObject({ data: { state: 'SETTLED' } });
+      expect(createCall(0)).toMatchObject({ data: { handledById: null } });
+      expect(prisma.mentionNotification.createMany).not.toHaveBeenCalled();
     });
 
-    it('stops a member booking money to someone else’s pocket', async () => {
+    it('reminds every other admin that the band owes the member', async () => {
+      prisma.financeEntry.create.mockResolvedValue(owed);
+      await service.create('b1', member, { ...dto, handledById: 'u2' });
+      // Both members come back as admins from the mock; the payee is skipped.
+      expect(prisma.mentionNotification.createMany).toHaveBeenCalledWith({
+        data: [
+          expect.objectContaining({
+            userId: 'u1',
+            kind: 'PAYBACK',
+            entryId: 'f1',
+            actorName: 'Ben',
+            taskTitle: 'Travel and fuel · $400.00',
+          }),
+        ],
+      });
+      expect(notifications.queue).toHaveBeenCalledWith(prisma, [
+        expect.objectContaining({
+          userId: 'u1',
+          category: 'APPROVALS',
+          template: 'expense-owed',
+          dedupeKey: expect.stringMatching(/^owed:f1:\d+:u1$/),
+          payload: expect.objectContaining({ actorName: 'Ben', amount: '$400.00' }),
+        }),
+      ]);
+    });
+
+    it('tells nobody about a band-account expense', async () => {
+      await service.create('b1', member, dto);
+      expect(prisma.mentionNotification.createMany).not.toHaveBeenCalled();
+      expect(notifications.queue).not.toHaveBeenCalled();
+    });
+
+    it('stops a member saying someone else paid', async () => {
       await expect(
         service.create('b1', member, { ...dto, handledById: 'u1' }),
       ).rejects.toBeInstanceOf(ForbiddenException);
     });
 
-    it('refuses a handler who is not on the board', async () => {
+    it('refuses a payer who is not on the board', async () => {
       prisma.membership.findMany.mockResolvedValueOnce([]);
       await expect(
         service.create('b1', admin, { ...dto, handledById: 'u9' }),
@@ -151,7 +184,7 @@ describe('FinancesService', () => {
   });
 
   describe('update and void', () => {
-    it('lets a member change only what they logged', async () => {
+    it('lets a member change only what they paid for or logged', async () => {
       prisma.financeEntry.findFirst.mockResolvedValue(
         row({ createdById: 'u1' }),
       );
@@ -161,18 +194,81 @@ describe('FinancesService', () => {
       await expect(service.void('b1', member, 'f1')).rejects.toBeInstanceOf(
         ForbiddenException,
       );
+      // An admin logged it, but the member paid: theirs to fix.
+      prisma.financeEntry.findFirst.mockResolvedValue(
+        row({ ...owed, createdById: 'u1' }),
+      );
+      prisma.financeEntry.update.mockResolvedValue(owed);
+      await service.update('b1', member, 'f1', { amountCents: 1 });
+      expect(prisma.financeEntry.update).toHaveBeenCalled();
     });
 
-    it('lets a member void their own entry', async () => {
-      prisma.financeEntry.findFirst.mockResolvedValue(
-        row({ createdById: 'u2' }),
-      );
+    it('lets a member void their own entry, and drops the reminders', async () => {
+      prisma.financeEntry.findFirst.mockResolvedValue(owed);
       prisma.financeEntry.update.mockResolvedValue(row({ state: 'VOID' }));
       const result = await service.void('b1', member, 'f1');
       expect(prisma.financeEntry.update).toHaveBeenCalledWith(
         expect.objectContaining({ data: { state: 'VOID' } }),
       );
+      expect(prisma.mentionNotification.deleteMany).toHaveBeenCalledWith({
+        where: { entryId: { in: ['f1'] }, kind: 'PAYBACK' },
+      });
       expect(result.state).toBe('VOID');
+    });
+
+    it('locks a paid-back entry for everyone, admins too', async () => {
+      prisma.financeEntry.findFirst.mockResolvedValue(paidBack);
+      for (const actor of [member, admin]) {
+        await expect(
+          service.update('b1', actor, 'f1', { amountCents: 1 }),
+        ).rejects.toBeInstanceOf(ForbiddenException);
+        await expect(service.void('b1', actor, 'f1')).rejects.toBeInstanceOf(
+          ForbiddenException,
+        );
+      }
+    });
+
+    it('refreshes the admins’ reminders on an edit, without a push', async () => {
+      prisma.financeEntry.findFirst.mockResolvedValue(owed);
+      prisma.financeEntry.update.mockResolvedValue(owed);
+      await service.update('b1', member, 'f1', { note: 'typo' });
+      expect(prisma.mentionNotification.createMany).toHaveBeenCalled();
+      expect(notifications.queue).not.toHaveBeenCalled();
+    });
+
+    it('pushes when an edit makes the band owe someone', async () => {
+      prisma.financeEntry.findFirst.mockResolvedValue(
+        row({ kind: 'EXPENSE', category: 'TRAVEL', createdById: 'u2' }),
+      );
+      prisma.financeEntry.update.mockResolvedValue(owed);
+      await service.update('b1', member, 'f1', { handledById: 'u2' });
+      expect(notifications.queue).toHaveBeenCalledWith(prisma, [
+        expect.objectContaining({ template: 'expense-owed' }),
+      ]);
+    });
+
+    it('drops the reminders when it moves to the band account', async () => {
+      prisma.financeEntry.findFirst.mockResolvedValue(owed);
+      prisma.financeEntry.update.mockResolvedValue(row({ ...owed, handledById: null }));
+      await service.update('b1', member, 'f1', { handledById: null });
+      expect(prisma.mentionNotification.deleteMany).toHaveBeenCalledWith({
+        where: { entryId: { in: ['f1'] }, kind: 'PAYBACK' },
+      });
+      expect(prisma.mentionNotification.createMany).not.toHaveBeenCalled();
+    });
+
+    it('clears who paid when an expense becomes income', async () => {
+      prisma.financeEntry.findFirst.mockResolvedValue(owed);
+      prisma.financeEntry.update.mockResolvedValue(row());
+      await service.update('b1', admin, 'f1', {
+        kind: 'INCOME',
+        category: 'MERCH_SALES',
+      });
+      expect(prisma.financeEntry.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ handledById: null }),
+        }),
+      );
     });
 
     it('refuses a category from the other side once merged with the row', async () => {
@@ -190,227 +286,108 @@ describe('FinancesService', () => {
     });
   });
 
-  describe('approval', () => {
-    const pending = row({
-      kind: 'EXPENSE',
-      category: 'TRAVEL',
-      state: 'PENDING',
-      handledById: 'u2',
-      createdById: 'u2',
+  describe('paying back', () => {
+    beforeEach(() => {
+      prisma.financeEntry.findMany.mockResolvedValue([paidBack]);
     });
 
-    it('settles a pending expense and records who approved it', async () => {
-      prisma.financeEntry.findFirst.mockResolvedValue(pending);
-      prisma.financeEntry.update.mockResolvedValue(pending);
-      await service.approve('b1', admin, 'f1');
-      expect(prisma.financeEntry.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: {
-            state: 'SETTLED',
-            approvedById: 'u1',
-            approvedAt: expect.any(Date),
-            decisionNote: '',
-          },
-        }),
-      );
-    });
-
-    it('asks every other admin when a member’s expense lands pending', async () => {
-      prisma.financeEntry.create.mockResolvedValue(pending);
-      await service.create('b1', member, {
-        kind: 'EXPENSE',
-        category: 'TRAVEL',
-        amountCents: 4_000,
-        occurredOn: '2026-10-02',
-        state: 'SETTLED',
-        handledById: 'u2',
+    it('marks it paid back, clears the reminders and tells the member', async () => {
+      prisma.financeEntry.findFirst.mockResolvedValue(owed);
+      const result = await service.payBack('b1', admin, 'f1');
+      expect(prisma.financeEntry.updateMany).toHaveBeenCalledWith({
+        where: { id: { in: ['f1'] } },
+        data: { paidBackAt: expect.any(Date), paidBackById: 'u1' },
       });
-      // Both members come back as admins from the mock; the actor is skipped.
-      expect(prisma.mentionNotification.createMany).toHaveBeenCalledWith({
-        data: [
-          expect.objectContaining({
-            userId: 'u1',
-            kind: 'APPROVAL',
-            entryId: 'f1',
-            actorName: 'Ben',
-            taskTitle: 'Travel and fuel · $400.00',
-          }),
-        ],
-      });
-      expect(notifications.queue).toHaveBeenCalledWith(prisma, [
-        expect.objectContaining({
-          userId: 'u1',
-          category: 'APPROVALS',
-          template: 'expense-approval',
-          dedupeKey: expect.stringMatching(/^approval:f1:\d+:u1$/),
-          payload: expect.objectContaining({ actorName: 'Ben', amount: '$400.00' }),
-        }),
-      ]);
-    });
-
-    it('tells the member when their expense is approved, and clears the requests', async () => {
-      prisma.financeEntry.findFirst.mockResolvedValue(pending);
-      prisma.financeEntry.update.mockResolvedValue(pending);
-      await service.approve('b1', admin, 'f1');
       expect(prisma.mentionNotification.deleteMany).toHaveBeenCalledWith({
-        where: { entryId: 'f1', kind: 'APPROVAL' },
+        where: { entryId: { in: ['f1'] }, kind: 'PAYBACK' },
       });
       expect(prisma.mentionNotification.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           userId: 'u2',
-          kind: 'DECISION',
+          kind: 'PAID_BACK',
+          entryId: 'f1',
           actorName: 'Ana',
-          taskTitle: 'Approved: Travel and fuel · $400.00',
+          taskTitle: 'Paid back: Travel and fuel · $400.00',
         }),
       });
       expect(notifications.queue).toHaveBeenCalledWith(
         prisma,
         expect.objectContaining({
           userId: 'u2',
-          template: 'expense-decided',
-          payload: expect.objectContaining({ decision: 'APPROVED' }),
+          template: 'expense-paid-back',
+          payload: expect.objectContaining({ amount: '$400.00' }),
         }),
       );
-    });
-
-    it('sends a pending expense back with the admin’s note', async () => {
-      prisma.financeEntry.findFirst.mockResolvedValue(pending);
-      prisma.financeEntry.update.mockResolvedValue(
-        row({ ...pending, state: 'REJECTED', decisionNote: 'Receipt?' }),
-      );
-      const result = await service.reject('b1', admin, 'f1', { note: 'Receipt?' });
-      expect(prisma.financeEntry.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: { state: 'REJECTED', decisionNote: 'Receipt?' },
+      expect(prisma.activity.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          type: 'EXPENSE_PAID_BACK',
+          meta: expect.objectContaining({ memberName: 'Ben', amount: '$400.00' }),
         }),
-      );
-      expect(result.decisionNote).toBe('Receipt?');
-      expect(prisma.mentionNotification.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ userId: 'u2', kind: 'DECISION', excerpt: 'Receipt?' }),
       });
-      expect(notifications.queue).toHaveBeenCalledWith(
-        prisma,
-        expect.objectContaining({
-          payload: expect.objectContaining({ decision: 'REJECTED', note: 'Receipt?' }),
-        }),
-      );
+      expect(result.paidBackAt).toBe('2026-10-03T00:00:00.000Z');
     });
 
-    it('only sends back what is pending, and only for admins', async () => {
-      prisma.financeEntry.findFirst.mockResolvedValue(pending);
+    it('is for admins, and only for what is owed', async () => {
+      prisma.financeEntry.findFirst.mockResolvedValue(owed);
+      await expect(service.payBack('b1', member, 'f1')).rejects.toBeInstanceOf(
+        ForbiddenException,
+      );
+      for (const entry of [paidBack, row()]) {
+        prisma.financeEntry.findFirst.mockResolvedValue(entry);
+        await expect(service.payBack('b1', admin, 'f1')).rejects.toBeInstanceOf(
+          BadRequestException,
+        );
+      }
+    });
+
+    it('pays back everything a member is owed, with one alert', async () => {
+      const two = [owed, row({ ...owed, id: 'f2', amountCents: 1_000 })];
+      prisma.financeEntry.findMany
+        .mockResolvedValueOnce(two)
+        .mockResolvedValueOnce(two);
+      await service.payBackMember('b1', admin, 'u2');
+      expect(prisma.financeEntry.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: { in: ['f1', 'f2'] } } }),
+      );
+      expect(prisma.mentionNotification.create).toHaveBeenCalledTimes(1);
+      expect(prisma.mentionNotification.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          entryId: null,
+          taskTitle: 'Paid back: 2 expenses · $410.00',
+        }),
+      });
+      expect(notifications.queue).toHaveBeenCalledTimes(1);
+    });
+
+    it('says so when nothing is owed', async () => {
+      prisma.financeEntry.findMany.mockResolvedValueOnce([]);
       await expect(
-        service.reject('b1', member, 'f1', { note: '' }),
-      ).rejects.toBeInstanceOf(ForbiddenException);
-      prisma.financeEntry.findFirst.mockResolvedValue(row());
-      await expect(
-        service.reject('b1', admin, 'f1', { note: '' }),
+        service.payBackMember('b1', admin, 'u2'),
       ).rejects.toBeInstanceOf(BadRequestException);
     });
 
-    it('a member saving a sent-back expense resubmits it', async () => {
-      const sentBack = row({ ...pending, state: 'REJECTED', decisionNote: 'Receipt?' });
-      prisma.financeEntry.findFirst.mockResolvedValue(sentBack);
-      prisma.financeEntry.update.mockResolvedValue(pending);
-      await service.update('b1', member, 'f1', { note: 'Added the receipt' });
+    it('undoes a payback: owed again, and the reminders come back quietly', async () => {
+      prisma.financeEntry.findFirst.mockResolvedValue(paidBack);
+      prisma.financeEntry.update.mockResolvedValue(owed);
+      await service.undoPayBack('b1', admin, 'f1');
       expect(prisma.financeEntry.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ state: 'PENDING', decisionNote: '' }),
+          data: { paidBackAt: null, paidBackById: null },
         }),
       );
-      // A fresh request: the admins hear about it again.
-      expect(notifications.queue).toHaveBeenCalledWith(prisma, [
-        expect.objectContaining({ template: 'expense-approval' }),
-      ]);
-    });
-
-    it('an edit while pending refreshes the admins’ inbox rows without a push', async () => {
-      prisma.financeEntry.findFirst.mockResolvedValue(pending);
-      prisma.financeEntry.update.mockResolvedValue(pending);
-      await service.update('b1', member, 'f1', { note: 'typo' });
-      expect(prisma.mentionNotification.createMany).toHaveBeenCalled();
-      expect(notifications.queue).not.toHaveBeenCalled();
-    });
-
-    it('is for admins, and only for pending entries', async () => {
-      prisma.financeEntry.findFirst.mockResolvedValue(pending);
-      await expect(service.approve('b1', member, 'f1')).rejects.toBeInstanceOf(
-        ForbiddenException,
-      );
-      prisma.financeEntry.findFirst.mockResolvedValue(row());
-      await expect(service.approve('b1', admin, 'f1')).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
-    });
-
-    it('keeps a member’s own edit pending, whatever state they send', async () => {
-      prisma.financeEntry.findFirst.mockResolvedValue(pending);
-      prisma.financeEntry.update.mockResolvedValue(pending);
-      await service.update('b1', member, 'f1', {
-        amountCents: 4_500,
-        state: 'SETTLED',
+      expect(prisma.mentionNotification.deleteMany).toHaveBeenCalledWith({
+        where: { entryId: 'f1', kind: 'PAID_BACK' },
       });
-      expect(prisma.financeEntry.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ state: 'PENDING' }),
-        }),
-      );
-    });
-
-    it('sends a member’s settled entry back for approval when it becomes theirs', async () => {
-      prisma.financeEntry.findFirst.mockResolvedValue(
-        row({ kind: 'EXPENSE', category: 'TRAVEL', createdById: 'u2' }),
-      );
-      prisma.financeEntry.update.mockResolvedValue(pending);
-      await service.update('b1', member, 'f1', { handledById: 'u2' });
-      expect(prisma.financeEntry.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ state: 'PENDING' }),
-        }),
-      );
-    });
-
-    it('locks an approved expense to the member who logged it', async () => {
-      prisma.financeEntry.findFirst.mockResolvedValue(
-        row({
-          kind: 'EXPENSE',
-          category: 'TRAVEL',
-          handledById: 'u2',
-          createdById: 'u2',
-          approvedById: 'u1',
-          approvedAt: new Date('2026-10-03T00:00:00Z'),
-        }),
-      );
-      prisma.financeEntry.update.mockResolvedValue(row());
+      expect(notifications.queue).not.toHaveBeenCalled();
+      prisma.financeEntry.findFirst.mockResolvedValue(owed);
       await expect(
-        service.update('b1', member, 'f1', { amountCents: 9_000 }),
-      ).rejects.toBeInstanceOf(ForbiddenException);
-      await expect(service.void('b1', member, 'f1')).rejects.toBeInstanceOf(
-        ForbiddenException,
-      );
-      await service.update('b1', admin, 'f1', { amountCents: 3_900 });
-      expect(prisma.financeEntry.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ state: 'SETTLED', amountCents: 3_900 }),
-        }),
-      );
+        service.undoPayBack('b1', admin, 'f1'),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
   });
-
-  describe('admin-only', () => {
-    it('keeps payouts with admins', async () => {
-      await expect(
-        service.createPayout('b1', member, {
-          userId: 'u2',
-          amountCents: 100,
-          paidOn: '2026-10-02',
-        }),
-      ).rejects.toBeInstanceOf(ForbiddenException);
-    });
-  });
-
 
   describe('summary', () => {
-    it('totals the range and balances all time', async () => {
+    it('totals the range, and lists what the band owes all time', async () => {
       prisma.financeEntry.findMany.mockResolvedValue([
         row({ occurredOn: new Date('2026-09-01T00:00:00Z') }),
         row({ id: 'f2', amountCents: 20_000 }),
@@ -420,20 +397,21 @@ describe('FinancesService', () => {
           eventId: 'e1',
           amountCents: 15_000,
         }),
-      ]);
-      prisma.payout.findMany.mockResolvedValue([
-        { userId: 'u2', amountCents: 5_000 },
+        owed,
+        row({ ...paidBack, id: 'f5', amountCents: 1_000 }),
       ]);
       const summary = await service.summary('b1', member, {
         from: '2026-10-01',
       });
       expect(summary.totals.incomeCents).toBe(20_000);
+      expect(summary.totals.expenseCents).toBe(41_000);
       expect(summary.totals.expectedCents).toBe(15_000);
-      const ben = summary.balances.members.find((m) => m.userId === 'u2');
-      // No split: the profit is the band's, so Ben only owes back what the
-      // band paid him.
-      expect(ben?.balanceCents).toBe(-5_000);
-      expect(summary.balances.bandFundCents).toBe(60_000);
+      expect(summary.balances.members).toEqual([
+        { userId: 'u2', paidCents: 41_000, paidBackCents: 1_000, owedCents: 40_000 },
+      ]);
+      // Income, less the payback; the unpaid expense is still Ben's money.
+      expect(summary.balances.bandFundCents).toBe(59_000);
+      expect(summary.owed.map((e) => e.id)).toEqual(['f1']);
     });
   });
 });

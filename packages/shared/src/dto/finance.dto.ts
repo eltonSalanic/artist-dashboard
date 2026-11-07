@@ -21,7 +21,10 @@ const entryFields = {
   counterparty: z.string().trim().max(200).nullish(),
   description: z.string().trim().max(2_000).optional(),
   note: z.string().trim().max(2_000).optional(),
-  /** Member whose own money this went through; null is the band's account. */
+  /**
+   * Expenses only: the member who paid out of pocket, so the band owes them.
+   * Null is the band's account. Ignored for income.
+   */
   handledById: z.uuid().nullish(),
 };
 
@@ -81,37 +84,13 @@ export const financeSummaryQuerySchema = z.object({
 export type FinanceSummaryQueryDto = z.infer<typeof financeSummaryQuerySchema>;
 
 /**
- * An admin sends a member's out-of-pocket expense back. The note is what the
- * member reads to know what to fix, so it's worth writing, but a bare "no" is
- * still a decision.
- */
-export const rejectFinanceEntrySchema = z.object({
-  note: z.string().trim().max(500).default(''),
-});
-export type RejectFinanceEntryDto = z.infer<typeof rejectFinanceEntrySchema>;
-
-export const createPayoutSchema = z.object({
-  userId: z.uuid(),
-  /** Positive: the band paid the member. Negative: the member paid the band. */
-  amountCents: z
-    .number()
-    .int()
-    .min(-MAX_AMOUNT_CENTS)
-    .max(MAX_AMOUNT_CENTS)
-    .refine((n) => n !== 0, 'Amount must not be zero'),
-  paidOn: isoDate,
-  note: z.string().trim().max(500).optional(),
-});
-export type CreatePayoutDto = z.infer<typeof createPayoutSchema>;
-
-/**
  * What happens to a member's money when an admin removes them from the band.
- * Their past entries always stay as they are; `payout`, when given, records
- * the final payment that squares them up, in the same step.
+ * Their past entries always stay as they are; `payBack` pays back everything
+ * the band still owes them, in the same step.
  */
 export const removeMemberSchema = z
   .object({
-    payout: createPayoutSchema.omit({ userId: true }).optional(),
+    payBack: z.boolean().optional(),
   })
   .default({});
 export type RemoveMemberDto = z.infer<typeof removeMemberSchema>;
@@ -139,24 +118,13 @@ export interface FinanceEntryDto {
   eventTitle: string | null;
   handledById: string | null;
   createdById: string | null;
-  /** The admin who approved a member's out-of-pocket expense, and when. */
-  approvedById: string | null;
-  approvedAt: string | null;
-  /** Why an admin sent it back; `''` unless `state` is REJECTED. */
-  decisionNote: string;
+  /** When an admin paid the member back for this out-of-pocket expense. */
+  paidBackAt: string | null;
+  /** The admin who paid it back. */
+  paidBackById: string | null;
   receiptCount: number;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface PayoutDto {
-  id: string;
-  userId: string;
-  amountCents: number;
-  paidOn: string;
-  note: string;
-  createdById: string | null;
-  createdAt: string;
 }
 
 export interface FinanceSummaryDto {
@@ -166,13 +134,8 @@ export interface FinanceSummaryDto {
   /** All-time, regardless of range: who is owed what right now. */
   balances: Balances;
   members: FinanceMemberRef[];
-  /** Members' out-of-pocket expenses waiting for an admin, all time, newest first. */
-  pending: FinanceEntryDto[];
-  /**
-   * Expenses an admin sent back that the caller logged, newest first — the
-   * member's to-do list. Admins see every sent-back entry.
-   */
-  sentBack: FinanceEntryDto[];
+  /** Out-of-pocket expenses not paid back yet, all time, newest first. */
+  owed: FinanceEntryDto[];
 }
 
 export interface ShowSettlementDto {

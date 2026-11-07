@@ -236,11 +236,11 @@ const reminderDue: TemplateRenderer = (payload, ctx) => {
   };
 };
 
-/** The Finances page; approvals are decided there, on both web and phone. */
+/** The Finances page; members are paid back there, on both web and phone. */
 const financesLink = (webUrl: string) => `${webUrl}/finances`;
 
-/** Trigger 7 — to admins: a member logged an expense from their own pocket. */
-const expenseApproval: TemplateRenderer = (payload, ctx) => {
+/** Trigger 7 — to admins: a member paid for an expense out of pocket. */
+const expenseOwed: TemplateRenderer = (payload, ctx) => {
   const actorName = str(payload, 'actorName') || 'A bandmate';
   const label = str(payload, 'label') || 'an expense';
   const amount = str(payload, 'amount');
@@ -252,72 +252,48 @@ const expenseApproval: TemplateRenderer = (payload, ctx) => {
     .join(' · ');
 
   return {
-    subject: `${actorName} paid ${amount} — needs your approval`,
+    subject: `${actorName} paid ${amount} — the band owes them`,
     html: renderLayout({
-      heading: 'Waiting for your approval',
+      heading: 'Owed back',
       bodyHtml: `<p style="margin:0">${esc(actorName)} paid <strong>${esc(amount)}</strong> for <strong>${esc(label)}</strong> out of pocket.</p>${
         detail
           ? `<p style="margin:8px 0 0;color:#6f6862">${esc(detail)}</p>`
           : ''
       }
-        <p style="margin:12px 0 0;color:#6f6862">Approve it and the band owes them for it; send it back with a note and they can fix it.</p>`,
-      cta: { label: 'Review in Finances', url },
+        <p style="margin:12px 0 0;color:#6f6862">When the band pays them back, tap Pay back on the expense so the books match.</p>`,
+      cta: { label: 'Open Finances', url },
       boardName: ctx.boardName,
       unsubscribeUrl: ctx.unsubscribeUrl,
     }),
-    text: `${actorName} paid ${amount} for ${label} out of pocket.${detail ? `\n${detail}` : ''}\n\nReview it: ${url}\nTurn these off: ${ctx.unsubscribeUrl}`,
+    text: `${actorName} paid ${amount} for ${label} out of pocket.${detail ? `\n${detail}` : ''}\n\nWhen the band pays them back, tap Pay back on the expense: ${url}\nTurn these off: ${ctx.unsubscribeUrl}`,
     push: {
       title: `${actorName} paid ${amount}`,
-      body: `${label} — waiting for your approval`,
+      body: `${label} — owed back from the band fund`,
     },
   };
 };
 
-/** Trigger 8 — to the member: an admin approved or sent back their expense. */
-const expenseDecided: TemplateRenderer = (payload, ctx) => {
+/** Trigger 8 — to the member: an admin paid them back. */
+const expensePaidBack: TemplateRenderer = (payload, ctx) => {
   const actorName = str(payload, 'actorName') || 'An admin';
   const label = str(payload, 'label') || 'your expense';
   const amount = str(payload, 'amount');
-  const note = str(payload, 'note');
-  const approved = str(payload, 'decision') === 'APPROVED';
   const url = financesLink(ctx.webUrl);
   const what = amount ? `${label} (${amount})` : label;
 
-  if (approved) {
-    return {
-      subject: `Approved: ${what}`,
-      html: renderLayout({
-        heading: 'Approved',
-        bodyHtml: `<p style="margin:0">${esc(actorName)} approved <strong>${esc(what)}</strong>. The band owes you for it now.</p>`,
-        cta: { label: 'See your balance', url },
-        boardName: ctx.boardName,
-        unsubscribeUrl: ctx.unsubscribeUrl,
-      }),
-      text: `${actorName} approved ${what}. The band owes you for it now.\n\nSee your balance: ${url}\nTurn these off: ${ctx.unsubscribeUrl}`,
-      push: {
-        title: `Approved: ${what}`,
-        body: `${actorName} approved it. The band owes you for it now.`,
-      },
-    };
-  }
   return {
-    subject: `Sent back: ${what}`,
+    subject: `Paid back: ${what}`,
     html: renderLayout({
-      heading: 'Sent back',
-      bodyHtml: `<p style="margin:0">${esc(actorName)} sent <strong>${esc(what)}</strong> back.</p>${
-        note
-          ? `<blockquote style="margin:12px 0 0;padding:12px 16px;border-left:3px solid #e2624a;background:#faf6f0;border-radius:0 8px 8px 0">${esc(note)}</blockquote>`
-          : ''
-      }
-        <p style="margin:12px 0 0;color:#6f6862">Fix it and save, and it goes back to them.</p>`,
-      cta: { label: 'Open it in Finances', url },
+      heading: 'Paid back',
+      bodyHtml: `<p style="margin:0">${esc(actorName)} paid you back for <strong>${esc(what)}</strong> from the band fund.</p>`,
+      cta: { label: 'See your expenses', url },
       boardName: ctx.boardName,
       unsubscribeUrl: ctx.unsubscribeUrl,
     }),
-    text: `${actorName} sent ${what} back.${note ? `\n\n${note}` : ''}\n\nFix it and save, and it goes back to them: ${url}\nTurn these off: ${ctx.unsubscribeUrl}`,
+    text: `${actorName} paid you back for ${what} from the band fund.\n\nSee your expenses: ${url}\nTurn these off: ${ctx.unsubscribeUrl}`,
     push: {
-      title: `Sent back: ${what}`,
-      body: note || `${actorName} sent it back. Fix it and save to ask again.`,
+      title: `Paid back: ${what}`,
+      body: `${actorName} paid you back from the band fund.`,
     },
   };
 };
@@ -330,6 +306,6 @@ export const templates: Record<string, TemplateRenderer> = {
   'event-created': eventCreated,
   'event-moved': eventMoved,
   'reminder-due': reminderDue,
-  'expense-approval': expenseApproval,
-  'expense-decided': expenseDecided,
+  'expense-owed': expenseOwed,
+  'expense-paid-back': expensePaidBack,
 };

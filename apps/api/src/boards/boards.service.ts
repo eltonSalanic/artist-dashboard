@@ -346,8 +346,8 @@ export class BoardsService {
 
   /**
    * A leaving member's money. Their past entries stay exactly as they are, so
-   * nobody else's balance moves, and an optional final payment squares them
-   * up.
+   * the books don't move. With `payBack`, the band pays them back for every
+   * expense it still owes them, in the same step.
    */
   private async settleLeaversMoney(
     tx: Prisma.TransactionClient,
@@ -356,35 +356,45 @@ export class BoardsService {
     leaver: { userId: string; displayName: string },
     dto: RemoveMemberDto,
   ) {
-    if (dto.payout) {
-      const board = await tx.board.findUnique({
-        where: { id: boardId },
-        select: { currency: true },
-      });
-      const payout = await tx.payout.create({
-        data: {
-          boardId,
-          userId: leaver.userId,
-          amountCents: dto.payout.amountCents,
-          paidOn: new Date(`${dto.payout.paidOn}T00:00:00.000Z`),
-          note: dto.payout.note ?? '',
-          createdById: actorId,
-        },
-      });
-      await this.activity.log(tx, {
+    if (!dto.payBack) return;
+    const owed = await tx.financeEntry.findMany({
+      where: {
         boardId,
-        type: 'PAYOUT_RECORDED',
-        actorId,
-        meta: {
-          payoutId: payout.id,
-          memberName: leaver.displayName,
-          toBand: dto.payout.amountCents < 0,
-          amount: formatMoney(
-            Math.abs(dto.payout.amountCents),
-            board?.currency ?? 'USD',
-          ),
-        },
-      });
-    }
+        kind: 'EXPENSE',
+        state: 'SETTLED',
+        handledById: leaver.userId,
+        paidBackAt: null,
+      },
+      select: { id: true, amountCents: true },
+    });
+    if (owed.length === 0) return;
+    const ids = owed.map((e) => e.id);
+    await tx.financeEntry.updateMany({
+      where: { id: { in: ids } },
+      data: { paidBackAt: new Date(), paidBackById: actorId },
+    });
+    // The admins' "owed" reminders about these are settled now.
+    await tx.mentionNotification.deleteMany({
+      where: { entryId: { in: ids }, kind: 'PAYBACK' },
+    });
+    const board = await tx.board.findUnique({
+      where: { id: boardId },
+      select: { currency: true },
+    });
+    await this.activity.log(tx, {
+      boardId,
+      type: 'EXPENSE_PAID_BACK',
+      actorId,
+      meta: {
+        entryIds: ids,
+        memberId: leaver.userId,
+        memberName: leaver.displayName,
+        label: owed.length === 1 ? '' : `${owed.length} expenses`,
+        amount: formatMoney(
+          owed.reduce((sum, e) => sum + e.amountCents, 0),
+          board?.currency ?? 'USD',
+        ),
+      },
+    });
   }
 }

@@ -1,7 +1,8 @@
 /**
  * Finance test band: a separate board with five real logins and a few months
- * of realistic money, for trying the finances feature by hand (approvals,
- * payouts, sending an expense back, removing a member, CSV export).
+ * of realistic money, for trying the finances feature by hand (paying members
+ * back, undoing it, the member overview, search, removing a member, CSV
+ * export).
  *
  *   npm run db:seed:finances -w apps/api
  *
@@ -46,28 +47,28 @@ const PEOPLE = {
     email: 'casey@bandwall.test',
     displayName: 'Casey Morgan',
     role: 'ADMIN',
-    note: 'Second admin (guitar), for two-admin tests like approving at once.',
+    note: 'Second admin (guitar), for two-admin tests like paying back at once.',
   },
   jamie: {
     id: 'f1a10000-0000-4000-8000-000000000003',
     email: 'jamie@bandwall.test',
     displayName: 'Jamie Torres',
     role: 'USER',
-    note: 'Member (drums). Has the $50 van tire waiting for approval.',
+    note: 'Member (drums). Owed for a van tire and drum heads.',
   },
   avery: {
     id: 'f1a10000-0000-4000-8000-000000000004',
     email: 'avery@bandwall.test',
     displayName: 'Avery Brooks',
     role: 'USER',
-    note: 'Member (bass). Fronted the motel, partly paid back.',
+    note: 'Member (bass). Paid back for the motel, still owed for a dinner.',
   },
   quinn: {
     id: 'f1a10000-0000-4000-8000-000000000005',
     email: 'quinn@bandwall.test',
     displayName: 'Quinn Ellis',
     role: 'USER',
-    note: 'Member (keys). Holds merch cash; try removing them.',
+    note: 'Member (keys). Owed for a keyboard stand; try removing them.',
   },
 } as const;
 type Person = keyof typeof PEOPLE;
@@ -228,14 +229,13 @@ async function main() {
     description: string;
     counterparty?: string;
     event?: { id: string };
-    /** Whose own money it went through. Omitted: the band account. */
+    /** Expenses: who paid out of pocket. Omitted: the band account. */
     handledBy?: Person;
     by?: Person;
-    state?: 'EXPECTED' | 'PENDING' | 'SETTLED' | 'REJECTED' | 'VOID';
-    approvedBy?: Person;
+    state?: 'EXPECTED' | 'SETTLED' | 'VOID';
+    /** The admin who paid the member back, and how many days later. */
+    paidBack?: { by: Person; after: number };
     note?: string;
-    /** REJECTED only: what the admin wrote when sending it back. */
-    decisionNote?: string;
   };
   const ledger: Line[] = [
     // ── About 2½ months ago: teaser show and recording ───────────────────
@@ -271,9 +271,8 @@ async function main() {
       on: -75,
       description: 'Merch table',
       event: echo,
-      handledBy: 'quinn',
       by: 'quinn',
-      approvedBy: 'riley',
+      note: 'Cash. Quinn deposited it two days later.',
     },
     {
       kind: 'EXPENSE',
@@ -319,6 +318,7 @@ async function main() {
       counterparty: 'Meta',
       handledBy: 'casey',
       by: 'casey',
+      paidBack: { by: 'riley', after: 8 },
     },
     {
       kind: 'INCOME',
@@ -346,6 +346,7 @@ async function main() {
       event: bottom,
       handledBy: 'casey',
       by: 'casey',
+      paidBack: { by: 'riley', after: 4 },
     },
     {
       kind: 'EXPENSE',
@@ -356,7 +357,7 @@ async function main() {
       event: bottom,
       handledBy: 'avery',
       by: 'avery',
-      approvedBy: 'riley',
+      paidBack: { by: 'riley', after: 7 },
     },
     {
       kind: 'INCOME',
@@ -374,9 +375,8 @@ async function main() {
       on: -46,
       description: 'Merch table',
       event: sacramento,
-      handledBy: 'quinn',
       by: 'quinn',
-      approvedBy: 'casey',
+      note: 'Cash and Venmo. Quinn has the cash until rehearsal.',
     },
     {
       kind: 'EXPENSE',
@@ -436,9 +436,19 @@ async function main() {
       amountCents: 6_400,
       on: -14,
       description: 'Keyboard stand and cables',
+      counterparty: 'Guitar Center',
       handledBy: 'quinn',
       by: 'quinn',
-      approvedBy: 'casey',
+    },
+    {
+      kind: 'EXPENSE',
+      category: 'MARKETING',
+      amountCents: 4_500,
+      on: -20,
+      description: 'Residency posters',
+      counterparty: 'FedEx Office',
+      handledBy: 'riley',
+      paidBack: { by: 'casey', after: 2 },
     },
     {
       kind: 'INCOME',
@@ -459,7 +469,7 @@ async function main() {
       event: parkside,
       state: 'EXPECTED',
     },
-    // The tire on the way there, waiting for an admin.
+    // The tire on the way there: the band owes Jamie for it.
     {
       kind: 'EXPENSE',
       category: 'TRAVEL',
@@ -467,9 +477,9 @@ async function main() {
       on: -5,
       description: 'Van tire on the way to the show',
       event: parkside,
+      counterparty: 'Daly City Tire',
       handledBy: 'jamie',
       by: 'jamie',
-      state: 'PENDING',
       note: 'Blew out on 280, had to buy one at the shop in Daly City.',
     },
     {
@@ -478,22 +488,20 @@ async function main() {
       amountCents: 3_299,
       on: -2,
       description: 'Drumsticks and heads',
+      counterparty: 'Guitar Center',
       handledBy: 'jamie',
       by: 'jamie',
-      state: 'PENDING',
     },
-    // Sent back by Riley: Avery's to fix (log in as avery to see the note).
     {
       kind: 'EXPENSE',
       category: 'OTHER_EXPENSE',
       amountCents: 6_480,
       on: -4,
       description: 'Dinner before load-in',
+      counterparty: 'Tacos El Gordo',
       handledBy: 'avery',
       by: 'avery',
-      state: 'REJECTED',
-      decisionNote:
-        'Was this just you two, or the whole band? Add who ate and I’ll approve it.',
+      note: 'Whole band before load-in.',
     },
 
     // ── Coming up ────────────────────────────────────────────────────────
@@ -528,41 +536,58 @@ async function main() {
         eventId: line.event?.id ?? null,
         handledById: P(line.handledBy),
         createdById: P(by),
-        approvedById: P(line.approvedBy),
-        approvedAt: line.approvedBy ? days(Math.min(line.on, 0) + 1) : null,
-        decisionNote: line.decisionNote ?? '',
+        paidBackById: P(line.paidBack?.by),
+        paidBackAt: line.paidBack
+          ? days(Math.min(line.on, 0) + line.paidBack.after)
+          : null,
         createdAt: created,
       },
     });
-    // The inbox rows the live app would have written: admins asked to
-    // approve, the member told what was decided.
-    const headline = `${entry.description} · ${formatMoney(entry.amountCents, 'USD')}`;
-    if (line.state === 'PENDING') {
+    // The inbox rows the live app would have written: admins reminded that
+    // the band owes a member, the member told when they were paid back.
+    const label = entry.description;
+    const amount = formatMoney(entry.amountCents, 'USD');
+    if (line.handledBy && line.kind === 'EXPENSE' && !line.paidBack) {
       await prisma.mentionNotification.createMany({
         data: (['riley', 'casey'] as Person[])
-          .filter((admin) => admin !== by)
+          .filter((admin) => admin !== by && admin !== line.handledBy)
           .map((admin) => ({
             boardId: BOARD_ID,
             userId: PEOPLE[admin].id,
-            kind: 'APPROVAL' as const,
+            kind: 'PAYBACK' as const,
             entryId: entry.id,
-            actorName: PEOPLE[by].displayName,
-            taskTitle: headline,
+            actorName: PEOPLE[line.handledBy!].displayName,
+            taskTitle: `${label} · ${amount}`,
             excerpt: entry.note,
             createdAt: created,
           })),
       });
-    } else if (line.state === 'REJECTED') {
+    } else if (line.handledBy && line.paidBack) {
+      const paidAt = days(Math.min(line.on, 0) + line.paidBack.after);
+      const admin = PEOPLE[line.paidBack.by].displayName;
       await prisma.mentionNotification.create({
         data: {
           boardId: BOARD_ID,
-          userId: PEOPLE[by].id,
-          kind: 'DECISION',
+          userId: PEOPLE[line.handledBy].id,
+          kind: 'PAID_BACK',
           entryId: entry.id,
-          actorName: PEOPLE.riley.displayName,
-          taskTitle: `Sent back: ${headline}`,
-          excerpt: line.decisionNote ?? '',
-          createdAt: days(Math.min(line.on, 0) + 1),
+          actorName: admin,
+          taskTitle: `Paid back: ${label} · ${amount}`,
+          excerpt: `${admin} paid you back from the band fund.`,
+          createdAt: paidAt,
+        },
+      });
+      feed.push({
+        boardId: BOARD_ID,
+        type: 'EXPENSE_PAID_BACK',
+        actorId: P(line.paidBack.by)!,
+        createdAt: paidAt,
+        meta: {
+          entryIds: [entry.id],
+          memberId: P(line.handledBy),
+          memberName: PEOPLE[line.handledBy].displayName,
+          label,
+          amount,
         },
       });
     }
@@ -583,43 +608,6 @@ async function main() {
     }
   }
 
-  // Money that changed hands outside the app. Positive: the band paid them.
-  // Negative: they handed money to the band.
-  const payouts: { who: Person; cents: number; on: number; note: string }[] = [
-    {
-      who: 'quinn',
-      cents: -31_000,
-      on: -73,
-      note: 'Echo merch cash, deposited',
-    },
-    { who: 'avery', cents: 10_000, on: -40, note: 'Motel, part one (Venmo)' },
-    { who: 'casey', cents: 8_600, on: -44, note: 'Gas back' },
-  ];
-  for (const p of payouts) {
-    const created = await prisma.payout.create({
-      data: {
-        boardId: BOARD_ID,
-        userId: PEOPLE[p.who].id,
-        amountCents: p.cents,
-        paidOn: day(p.on),
-        note: p.note,
-        createdById: PEOPLE.riley.id,
-        createdAt: days(p.on),
-      },
-    });
-    feed.push({
-      boardId: BOARD_ID,
-      type: 'PAYOUT_RECORDED',
-      actorId: PEOPLE.riley.id,
-      createdAt: days(p.on),
-      meta: {
-        payoutId: created.id,
-        memberName: PEOPLE[p.who].displayName,
-        toBand: p.cents < 0,
-        amount: formatMoney(Math.abs(p.cents), 'USD'),
-      },
-    });
-  }
   await prisma.activity.createMany({ data: feed });
 
   console.log('Built "Velvet Static". Every login uses the same password:');

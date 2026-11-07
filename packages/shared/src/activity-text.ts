@@ -59,10 +59,10 @@ export function activityText(item: ActivityRow): string {
       return `settled the money for “${str(m.eventTitle, 'a show')}”`;
     case 'SHOW_STATUS_CHANGED':
       return `moved “${str(m.eventTitle, 'a show')}” from ${str(m.fromStatus)} to ${str(m.toStatus)}`;
-    case 'PAYOUT_RECORDED':
-      return `recorded a payment ${
-        m.toBand ? 'from' : 'to'
-      } ${str(m.memberName, 'a member')}${m.amount ? ` of ${str(m.amount)}` : ''}`;
+    case 'EXPENSE_PAID_BACK':
+      return `paid ${str(m.memberName, 'a member')} back${
+        m.amount ? ` ${str(m.amount)}` : ''
+      }${m.label ? ` for “${str(m.label)}”` : ''}`;
     default:
       // A row written by a newer build than this one. Saying something vague is
       // better than an empty line or a crash.

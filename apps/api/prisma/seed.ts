@@ -140,7 +140,6 @@ async function main() {
     await prisma.customWidgetContent.deleteMany({ where: { boardId } });
     // Entries take their receipts with them.
     await prisma.financeEntry.deleteMany({ where: { boardId } });
-    await prisma.payout.deleteMany({ where: { boardId } });
 
     // Give the board a clear demo identity and add the synthetic bandmates as
     // members (so they're valid assignees). The real owner keeps their role.
@@ -692,7 +691,10 @@ async function main() {
     description: string;
     counterparty?: string;
     eventId?: string;
+    /** Expenses only: who paid out of pocket. */
     handledById?: string;
+    /** Days after `on` that the band paid them back. */
+    paidBackAfter?: number;
     expected?: boolean;
   }[] = [
     {
@@ -711,7 +713,6 @@ async function main() {
       on: -20,
       description: 'Merch table',
       eventId: showWarmup.id,
-      handledById: BAND.mia.id,
     },
     {
       kind: 'EXPENSE',
@@ -721,6 +722,7 @@ async function main() {
       description: 'Van gas',
       eventId: showWarmup.id,
       handledById: BAND.diego.id,
+      paidBackAfter: 17,
     },
     {
       kind: 'EXPENSE',
@@ -787,21 +789,15 @@ async function main() {
         counterparty: line.counterparty ?? null,
         eventId: line.eventId ?? null,
         handledById: line.handledById ?? null,
+        paidBackAt:
+          line.paidBackAfter !== undefined
+            ? day(line.on + line.paidBackAfter)
+            : null,
+        paidBackById: line.paidBackAfter !== undefined ? owner.id : null,
         createdById: owner.id,
       },
     });
   }
-  await prisma.payout.create({
-    data: {
-      boardId,
-      userId: BAND.diego.id,
-      amountCents: 6_240,
-      paidOn: day(-3),
-      note: 'Gas money back, Venmo',
-      createdById: owner.id,
-    },
-  });
-
   const counts = await prisma.$transaction([
     prisma.task.count({ where: { boardId: boardId } }),
     prisma.goal.count({ where: { boardId: boardId } }),

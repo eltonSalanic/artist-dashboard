@@ -38,9 +38,9 @@ export const NOTIFICATION_CATEGORY_COPY: Record<
     description: 'When a reminder the band set comes due.',
   },
   APPROVALS: {
-    label: 'Approvals',
+    label: 'Paybacks',
     description:
-      'When a bandmate’s expense needs your approval, or yours is approved or sent back.',
+      'When a bandmate paid for something out of pocket, or the band pays you back.',
   },
 };
 
