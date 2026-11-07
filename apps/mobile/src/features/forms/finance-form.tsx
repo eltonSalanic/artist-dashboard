@@ -286,7 +286,7 @@ function FinanceFields({
             <PosterText variant="paragraph" color={colors.foreground}>
               {payback === 'owed'
                 ? `${capital(memberName(entry.handledById))} paid for this out of pocket. The band owes ${entry.handledById === myId ? 'you' : 'them'} ${formatMoney(entry.amountCents, currency)}.`
-                : `Paid back to ${memberName(entry.handledById)}${entry.paidBackAt ? ` on ${shortDate(entry.paidBackAt)}` : ''}${
+                : `Paid back to ${memberName(entry.handledById)}${entry.paidBackAt ? paidWhen(entry.paidBackAt) : ''}${
                     entry.paidBackById
                       ? ` by ${entry.paidBackById === myId ? 'you' : memberName(entry.paidBackById)}`
                       : ''
@@ -527,4 +527,10 @@ function VoidEntryButton({
       }
     />
   );
+}
+
+/** " today", " yesterday" or " on 3 Nov", to follow "Paid back to …". */
+function paidWhen(iso: string): string {
+  const day = shortDate(iso);
+  return day === 'Today' || day === 'Yesterday' ? ` ${day.toLowerCase()}` : ` on ${day}`;
 }
