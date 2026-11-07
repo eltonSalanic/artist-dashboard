@@ -1,25 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { Ban, Check, Undo2 } from "lucide-react";
+import { Ban, HandCoins, Undo2 } from "lucide-react";
 import {
+  canEditEntry,
   categoriesFor,
   formatMoney,
-  isLockedFor,
   parseMoneyToCents,
+  paybackStatus,
   type FinanceEntryDto,
   type FinanceKind,
   type FinanceMemberRef,
 } from "@artist/shared";
 import {
-  useApproveFinanceEntry,
   useCreateFinanceEntry,
   useEvents,
+  usePayBackFinanceEntry,
   usePermissions,
+  useUndoPayBackFinanceEntry,
   useUpdateFinanceEntry,
-  useRejectFinanceEntry,
   useVoidFinanceEntry,
 } from "@artist/api-client";
+import { PaybackBadge } from "./payback-badge";
 import { useMe } from "@/lib/use-me";
 import { TaskAttachments } from "@/features/comments/task-attachments";
 import { Button } from "@/components/ui/button";
@@ -109,11 +111,8 @@ function EntryForm({
   const create = useCreateFinanceEntry(boardId);
   const update = useUpdateFinanceEntry(boardId);
   const voidEntry = useVoidFinanceEntry(boardId);
-  const approve = useApproveFinanceEntry(boardId);
-  const reject = useRejectFinanceEntry(boardId);
-  // Sending back is a two-step: the button opens a note field in the footer.
-  const [rejecting, setRejecting] = useState(false);
-  const [rejectNote, setRejectNote] = useState("");
+  const payBack = usePayBackFinanceEntry(boardId);
+  const undoPayBack = useUndoPayBackFinanceEntry(boardId);
 
   // Once a new entry is saved the form edits it, receipts and all.
   const [saved, setSaved] = useState<FinanceEntryDto | undefined>(entry);
@@ -135,13 +134,11 @@ function EntryForm({
   const [expected, setExpected] = useState(entry?.state === "EXPECTED");
 
   const manages = can("finance.manage");
+  // Admins, or the member who paid; nobody once it's paid back.
   const editable =
     !saved ||
-    (saved.state !== "VOID" &&
-      (manages || saved.createdById === myId) &&
-      !isLockedFor(saved, manages));
-  const awaitsApproval = saved?.state === "PENDING";
-  const sentBack = saved?.state === "REJECTED";
+    (saved.state !== "VOID" && canEditEntry(saved, myId, manages));
+  const payback = saved ? paybackStatus(saved) : null;
   const cents = parseMoneyToCents(amount);
   const valid = cents !== null && cents > 0 && /^\d{4}-\d{2}-\d{2}$/.test(occurredOn);
   const pending = create.isPending || update.isPending;
@@ -164,7 +161,9 @@ function EntryForm({
       note: note.trim(),
       counterparty: counterparty.trim() || null,
       eventId: eventId === NONE ? null : eventId,
-      handledById: handledById === NONE ? null : handledById,
+      // Only an expense can be owed back; income goes to the band.
+      handledById:
+        kind === "EXPENSE" && handledById !== NONE ? handledById : null,
       state: expected ? ("EXPECTED" as const) : ("SETTLED" as const),
     };
     if (saved) {
@@ -213,23 +212,16 @@ function EntryForm({
         </DialogTitle>
         <DialogDescription>
           {justCreated
-            ? awaitsApproval
-              ? `${formatMoney(saved.amountCents, currency)} is waiting for an admin to approve it. A receipt helps.`
-              : `${formatMoney(saved.amountCents, currency)} is in the books. Add a receipt if you have one.`
+            ? `${formatMoney(saved.amountCents, currency)} is in the books. Add a receipt if you have one.`
             : saved?.state === "VOID"
               ? "This entry was voided. It stays in the history but no longer counts."
-              : awaitsApproval
-                ? manages
-                  ? "Paid out of a member's pocket. Approve it and the band owes them this back, or send it back with a note."
-                  : "Waiting for an admin to approve it. Until then it doesn't count toward what you're owed."
-                : sentBack
-                  ? manages
-                    ? "Sent back. It doesn't count; approve it if you've changed your mind."
-                    : "An admin sent this back. It doesn't count right now — fix it and save to ask again."
-                : saved && isLockedFor(saved, manages)
-                  ? "An admin approved this, so only an admin can change it now."
+              : payback === "owed"
+                ? "Paid out of a member's pocket. The band owes it back to them until an admin pays them back."
+                : payback === "paid"
+                  ? "Paid back from the band fund. It's locked; an admin can undo the payback to change it."
                   : "If it came out of someone's pocket, pick them, and the band owes them it back."}
         </DialogDescription>
+        {saved && <PaybackBadge entry={saved} className="self-start" />}
       </DialogHeader>
 
       {!justCreated && (
@@ -335,11 +327,9 @@ function EntryForm({
             </Field>
           </div>
 
-          {manages ? (
+          {kind === "INCOME" ? null : manages ? (
             <Field>
-              <FieldLabel htmlFor="entry-handled">
-                {kind === "INCOME" ? "Who has the money" : "Who paid"}
-              </FieldLabel>
+              <FieldLabel htmlFor="entry-handled">Who paid</FieldLabel>
               <OptionSelect
                 id="entry-handled"
                 value={handledById}
@@ -355,9 +345,7 @@ function EntryForm({
                   setHandledById(checked === true ? myId : NONE)
                 }
               />
-              {kind === "INCOME"
-                ? "I'm holding this cash for the band"
-                : "I paid for this myself (an admin approves it before it counts)"}
+              I paid for this myself (the band owes it back to me)
             </label>
           )}
 
@@ -385,29 +373,8 @@ function EntryForm({
         </>
       )}
 
-      {sentBack && saved && saved.decisionNote !== "" && (
-        <blockquote className="rounded-md border-l-2 border-destructive bg-muted px-3 py-2 text-sm">
-          “{saved.decisionNote}”
-        </blockquote>
-      )}
-
-      {rejecting && saved && (
-        <Field>
-          <FieldLabel htmlFor="entry-reject-note">Note to them</FieldLabel>
-          <Textarea
-            id="entry-reject-note"
-            autoFocus
-            rows={3}
-            maxLength={500}
-            placeholder="What should they fix? “Add the receipt”, “Was this the band’s?”…"
-            value={rejectNote}
-            onChange={(e) => setRejectNote(e.target.value)}
-          />
-        </Field>
-      )}
-
       <DialogFooter className="items-center">
-        {saved && !justCreated && editable && !rejecting && (
+        {saved && !justCreated && editable && (
           <Button
             type="button"
             variant="ghost"
@@ -419,33 +386,26 @@ function EntryForm({
             Void
           </Button>
         )}
-        {saved && !justCreated && awaitsApproval && manages && (
-          <Button
-            type="button"
-            variant={rejecting ? "default" : "outline"}
-            disabled={reject.isPending}
-            onClick={() =>
-              rejecting
-                ? reject.mutate(
-                    { entryId: saved.id, note: rejectNote.trim() },
-                    { onSuccess: onClose },
-                  )
-                : setRejecting(true)
-            }
-          >
-            <Undo2 data-icon="inline-start" />
-            Send back
-          </Button>
-        )}
-        {saved && !justCreated && (awaitsApproval || sentBack) && manages && !rejecting && (
+        {saved && !justCreated && manages && payback === "owed" && (
           <Button
             type="button"
             variant="outline"
-            disabled={approve.isPending}
-            onClick={() => approve.mutate(saved.id, { onSuccess: onClose })}
+            disabled={payBack.isPending}
+            onClick={() => payBack.mutate(saved.id, { onSuccess: onClose })}
           >
-            <Check data-icon="inline-start" />
-            Approve
+            <HandCoins data-icon="inline-start" />
+            Pay back
+          </Button>
+        )}
+        {saved && !justCreated && manages && payback === "paid" && (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={undoPayBack.isPending}
+            onClick={() => undoPayBack.mutate(saved.id, { onSuccess: onClose })}
+          >
+            <Undo2 data-icon="inline-start" />
+            Undo pay back
           </Button>
         )}
         {justCreated ? (

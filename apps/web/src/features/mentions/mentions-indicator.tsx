@@ -84,7 +84,7 @@ export function MentionsIndicator({ boardId }: { boardId: string }) {
                       <span className="font-medium">{item.actorName}</span> mentioned
                       you in <span className="font-medium">{item.taskTitle}</span>
                     </>
-                  ) : item.kind === "APPROVAL" ? (
+                  ) : item.kind === "PAYBACK" ? (
                     <>
                       <span className="font-medium">{item.actorName}</span> paid{" "}
                       <span className="font-medium">{item.taskTitle}</span>
@@ -94,8 +94,8 @@ export function MentionsIndicator({ boardId }: { boardId: string }) {
                   )}
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
-                  {item.kind === "APPROVAL"
-                    ? [item.excerpt, "Waiting for your approval"].filter(Boolean).join(" · ")
+                  {item.kind === "PAYBACK"
+                    ? [item.excerpt, "Owed back from the band fund"].filter(Boolean).join(" · ")
                     : item.excerpt}
                 </p>
                 <p className="text-[11px] text-muted-foreground">

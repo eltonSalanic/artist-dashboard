@@ -32,7 +32,7 @@ const icons: Record<ActivityType, ComponentType<{ className?: string }>> = {
   COMMENT_ADDED: MessageSquare,
   FINANCE_ENTRY_ADDED: Wallet,
   SHOW_SETTLED: HandCoins,
-  PAYOUT_RECORDED: HandCoins,
+  EXPENSE_PAID_BACK: HandCoins,
   SHOW_STATUS_CHANGED: RefreshCw,
 };
 

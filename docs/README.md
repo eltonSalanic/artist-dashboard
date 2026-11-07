@@ -39,6 +39,6 @@ for build conventions and skills read [CLAUDE.md](../CLAUDE.md). Those describe
 | Comments & attachments — markdown, mentions, the signed-URL upload flow | Not yet written |
 | Archive — the two-tier archive/delete model and its cascade rules | Not yet written |
 | Board appearance — palettes and per-widget colour slots | Not yet written |
-| [Finances](finances.md) — ledger, approvals, payouts, removing a member, USD only | Built on web and phone; approvals, the removal prompt and the phone's payouts/CSV/reports on `feat/finance-improvements` |
+| [Finances](finances.md) — ledger, paying members back, member overview, search, removing a member, USD only | Built on web and phone; paybacks, the member overview and All entries on `feat/finance-improvements` |
 | Show statuses — per-band show steps, categories, cancelled filtering | Not yet written; see the [plan](plans/show-statuses.md) |
 | Links on items — named web links on tasks, events, goals and reminders | Not yet written |

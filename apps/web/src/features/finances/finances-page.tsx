@@ -10,6 +10,8 @@ import {
   Wallet,
 } from "lucide-react";
 import {
+  activeFinanceFilterCount,
+  BAND_ACCOUNT,
   DEFAULT_FINANCE_FILTERS,
   FINANCE_CATEGORIES,
   FINANCE_SORTS,
@@ -24,25 +26,16 @@ import {
   type FinanceSummaryDto,
 } from "@artist/shared";
 import {
-  useApproveFinanceEntry,
   useFinanceEntries,
   useFinanceSummary,
+  usePayBackFinanceEntry,
   usePermissions,
-  useRejectFinanceEntry,
 } from "@artist/api-client";
+import { PaybackBadge } from "./payback-badge";
 import { useMe } from "@/lib/use-me";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { relativeTime } from "@/features/comments/comment-bits";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -125,10 +118,8 @@ function Finances({ boardId }: { boardId: string }) {
   const members = data?.members ?? [];
   const rows = entries.data ?? [];
   const filteredRows = filterFinanceEntries(rows, filters);
-  const hasFilters = Object.entries(filters).some(
-    ([key, value]) =>
-      value !== DEFAULT_FINANCE_FILTERS[key as keyof typeof filters],
-  );
+  const hasFilters =
+    activeFinanceFilterCount(filters) > 0 || filters.query.trim() !== "";
 
   const exportCsv = () => {
     const name = memberNamer(members);
@@ -213,17 +204,9 @@ function Finances({ boardId }: { boardId: string }) {
         </div>
       )}
 
-      {data && data.pending.length > 0 && (
-        <PendingApprovals
+      {data && data.owed.length > 0 && (
+        <OwedBack
           boardId={boardId}
-          data={data}
-          canApprove={can("finance.manage")}
-          onOpen={setEditing}
-        />
-      )}
-
-      {data && data.sentBack.length > 0 && (
-        <SentBack
           data={data}
           manages={can("finance.manage")}
           onOpen={setEditing}
@@ -272,7 +255,17 @@ function Finances({ boardId }: { boardId: string }) {
 
       {tab === "ledger" && (
         <div className="flex flex-col gap-3">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <Field>
+            <FieldLabel htmlFor="finance-search">Search</FieldLabel>
+            <Input
+              id="finance-search"
+              type="search"
+              placeholder="What it was for, a note, who was paid"
+              value={filters.query}
+              onChange={(e) => setFilters({ ...filters, query: e.target.value })}
+            />
+          </Field>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
             <Field>
               <FieldLabel htmlFor="finance-kind">Type</FieldLabel>
               <OptionSelect
@@ -287,14 +280,19 @@ function Finances({ boardId }: { boardId: string }) {
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="finance-member">Handled by</FieldLabel>
+              <FieldLabel htmlFor="finance-member">Who paid</FieldLabel>
               <OptionSelect
                 id="finance-member"
-                value={filters.member}
-                onChange={(member) => setFilters({ ...filters, member })}
+                value={filters.members[0] ?? "all"}
+                onChange={(member) =>
+                  setFilters({
+                    ...filters,
+                    members: member === "all" ? [] : [member],
+                  })
+                }
                 options={[
-                  { value: "all", label: "All members" },
-                  { value: "band", label: "Band account" },
+                  { value: "all", label: "Anyone" },
+                  { value: BAND_ACCOUNT, label: "Band account" },
                   ...members.map((m) => ({
                     value: m.id,
                     label: m.displayName,
@@ -330,9 +328,25 @@ function Finances({ boardId }: { boardId: string }) {
                   { value: "all", label: "All statuses" },
                   { value: "SETTLED", label: "Settled" },
                   { value: "EXPECTED", label: "Expected" },
-                  { value: "PENDING", label: "Waiting for approval" },
-                  { value: "REJECTED", label: "Sent back" },
                   ...(showVoid ? [{ value: "VOID", label: "Voided" }] : []),
+                ]}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="finance-payback">Paid back</FieldLabel>
+              <OptionSelect
+                id="finance-payback"
+                value={filters.payback}
+                onChange={(payback) =>
+                  setFilters({
+                    ...filters,
+                    payback: payback as typeof filters.payback,
+                  })
+                }
+                options={[
+                  { value: "all", label: "Any" },
+                  { value: "owed", label: "Owed back" },
+                  { value: "paid", label: "Paid back" },
                 ]}
               />
             </Field>
@@ -462,192 +476,39 @@ function Stat({
 }
 
 /**
- * Members' out-of-pocket expenses that don't count yet. Everyone sees the
- * list; admins can approve from it, or open an entry to check it or reject it.
+ * Out-of-pocket expenses the band hasn't paid back yet. Everyone sees the
+ * list; admins can pay a member back from it, or open an entry to check it.
  */
-function PendingApprovals({
+function OwedBack({
   boardId,
   data,
-  canApprove,
+  manages,
   onOpen,
 }: {
   boardId: string;
   data: FinanceSummaryDto;
-  canApprove: boolean;
+  manages: boolean;
   onOpen: (entry: FinanceEntryDto) => void;
 }) {
-  const approve = useApproveFinanceEntry(boardId);
-  const reject = useRejectFinanceEntry(boardId);
+  const payBack = usePayBackFinanceEntry(boardId);
   const name = memberNamer(data.members);
-  // The entry being sent back, while its note is written.
-  const [sendingBack, setSendingBack] = useState<FinanceEntryDto | null>(null);
-  const [note, setNote] = useState("");
-  const close = () => {
-    setSendingBack(null);
-    setNote("");
-  };
-
   return (
     <Card size="sm">
       <CardHeader>
         <CardTitle>
-          Waiting for approval
+          Owed back
           <span className="ml-2 text-muted-foreground">
-            {data.pending.length}
+            {formatMoney(data.balances.owedCents, data.currency)}
           </span>
         </CardTitle>
       </CardHeader>
       <CardContent>
         <ul className="flex flex-col divide-y text-sm">
-          {data.pending.map((entry) => {
-            // What an admin needs to decide without opening it.
-            const waited = Date.now() - new Date(entry.createdAt).getTime();
-            const stale = waited >= 7 * 24 * 60 * 60 * 1000;
-            const details = [
-              `${name(entry.handledById)} paid · ${formatDay(entry.occurredOn)}`,
-              entry.eventTitle,
-              entry.note,
-            ].filter(Boolean);
-            return (
-              <li
-                key={entry.id}
-                className="flex items-center gap-3 py-2 first:pt-0 last:pb-0"
-              >
-                <Paperclip
-                  className={cn(
-                    "size-4 shrink-0",
-                    entry.receiptCount > 0
-                      ? "text-foreground"
-                      : "text-muted-foreground/40",
-                  )}
-                  aria-label={
-                    entry.receiptCount > 0 ? "Has a receipt" : "No receipt"
-                  }
-                />
-                <button
-                  type="button"
-                  className="min-w-0 flex-1 text-left hover:underline"
-                  onClick={() => onOpen(entry)}
-                >
-                  <span className="block truncate font-medium">
-                    {entry.description || categoryLabel(entry.category)}
-                  </span>
-                  <span className="block truncate text-xs text-muted-foreground">
-                    {details.join(" · ")}
-                  </span>
-                </button>
-                <div className="flex flex-col items-end">
-                  <Amount cents={-entry.amountCents} currency={data.currency} />
-                  <span
-                    className={cn(
-                      "text-[11px]",
-                      stale ? "text-destructive" : "text-muted-foreground",
-                    )}
-                  >
-                    {stale
-                      ? `waiting ${relativeTime(entry.createdAt)}`
-                      : relativeTime(entry.createdAt)}
-                  </span>
-                </div>
-                {canApprove && (
-                  <div className="flex shrink-0 gap-1">
-                    <Button
-                      size="xs"
-                      variant="outline"
-                      disabled={approve.isPending}
-                      onClick={() => approve.mutate(entry.id)}
-                    >
-                      Approve
-                    </Button>
-                    <Button
-                      size="xs"
-                      variant="ghost"
-                      disabled={reject.isPending}
-                      onClick={() => setSendingBack(entry)}
-                    >
-                      Send back
-                    </Button>
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      </CardContent>
-
-      <Dialog
-        open={sendingBack !== null}
-        onOpenChange={(open) => !open && close()}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Send it back</DialogTitle>
-            <DialogDescription>
-              {sendingBack &&
-                `${name(sendingBack.handledById)} paid ${formatMoney(sendingBack.amountCents, data.currency)} for ${
-                  sendingBack.description || categoryLabel(sendingBack.category)
-                }. It stops counting until they fix it and save again — then it comes back to you.`}
-            </DialogDescription>
-          </DialogHeader>
-          <Field>
-            <FieldLabel htmlFor="reject-note">Note to them</FieldLabel>
-            <Textarea
-              id="reject-note"
-              autoFocus
-              rows={3}
-              maxLength={500}
-              placeholder="What should they fix? “Add the receipt”, “Was this the band’s?”…"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            />
-          </Field>
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={close}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              disabled={reject.isPending || sendingBack === null}
-              onClick={() =>
-                sendingBack &&
-                reject.mutate(
-                  { entryId: sendingBack.id, note: note.trim() },
-                  { onSuccess: close },
-                )
-              }
+          {data.owed.map((entry) => (
+            <li
+              key={entry.id}
+              className="flex items-center gap-3 py-2 first:pt-0 last:pb-0"
             >
-              Send back
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </Card>
-  );
-}
-
-/**
- * Expenses an admin sent back: the member's to fix (the server only returns
- * their own), or, for an admin, everything still out with a member.
- */
-function SentBack({
-  data,
-  manages,
-  onOpen,
-}: {
-  data: FinanceSummaryDto;
-  manages: boolean;
-  onOpen: (entry: FinanceEntryDto) => void;
-}) {
-  const name = memberNamer(data.members);
-  return (
-    <Card size="sm">
-      <CardHeader>
-        <CardTitle>Sent back</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ul className="flex flex-col gap-1 text-sm">
-          {data.sentBack.map((entry) => (
-            <li key={entry.id} className="flex items-center gap-3">
               <button
                 type="button"
                 className="min-w-0 flex-1 text-left hover:underline"
@@ -655,22 +516,23 @@ function SentBack({
               >
                 <span className="block truncate">
                   {entry.description || categoryLabel(entry.category)}
-                  {manages && (
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      {name(entry.handledById)} paid ·{" "}
-                      {formatDay(entry.occurredOn)}
-                    </span>
-                  )}
                 </span>
                 <span className="block truncate text-xs text-muted-foreground">
-                  {entry.decisionNote
-                    ? `“${entry.decisionNote}”`
-                    : manages
-                      ? "Waiting on them"
-                      : "Fix it and save to ask again"}
+                  {name(entry.handledById)} paid · {formatDay(entry.occurredOn)}
+                  {entry.note ? ` · ${entry.note}` : ""}
                 </span>
               </button>
               <Amount cents={-entry.amountCents} currency={data.currency} />
+              {manages && (
+                <Button
+                  size="xs"
+                  variant="outline"
+                  disabled={payBack.isPending}
+                  onClick={() => payBack.mutate(entry.id)}
+                >
+                  Pay back
+                </Button>
+              )}
             </li>
           ))}
         </ul>
@@ -698,7 +560,7 @@ function Ledger({
           <TableHead>What</TableHead>
           <TableHead className="hidden md:table-cell">Category</TableHead>
           <TableHead className="hidden lg:table-cell">Show</TableHead>
-          <TableHead className="hidden md:table-cell">Through</TableHead>
+          <TableHead className="hidden md:table-cell">Paid by</TableHead>
           <TableHead className="text-right">Amount</TableHead>
         </TableRow>
       </TableHeader>
@@ -726,12 +588,7 @@ function Ledger({
                 {e.state === "EXPECTED" && (
                   <Badge variant="secondary">Owed</Badge>
                 )}
-                {e.state === "PENDING" && (
-                  <Badge variant="secondary">Needs approval</Badge>
-                )}
-                {e.state === "REJECTED" && (
-                  <Badge variant="destructive">Sent back</Badge>
-                )}
+                <PaybackBadge entry={e} />
                 {e.state === "VOID" && <Badge variant="outline">Void</Badge>}
               </div>
               {e.counterparty && (
@@ -747,7 +604,11 @@ function Ledger({
               {e.eventTitle ?? ""}
             </TableCell>
             <TableCell className="hidden md:table-cell text-muted-foreground">
-              {e.handledById ? name(e.handledById) : "Band account"}
+              {e.kind === "INCOME"
+                ? ""
+                : e.handledById
+                  ? name(e.handledById)
+                  : "Band account"}
             </TableCell>
             <TableCell className="text-right">
               <Amount

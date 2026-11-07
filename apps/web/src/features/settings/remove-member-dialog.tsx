@@ -18,7 +18,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { todayISO } from "@/features/finances/finance-bits";
 
 /**
  * Removing a member, with what happens to their money. Their past entries
@@ -64,12 +63,12 @@ function RemoveMemberForm({
   const summary = useFinanceSummary(boardId, {}, seesBooks);
   const remove = useRemoveMember(boardId);
 
-  const [payOut, setPayOut] = useState(true);
+  const [payBack, setPayBack] = useState(true);
 
   const name = member.displayName;
-  const balance =
+  const owed =
     summary.data?.balances.members.find((m) => m.userId === member.userId)
-      ?.balanceCents ?? 0;
+      ?.owedCents ?? 0;
   const currency = summary.data?.currency ?? "USD";
   const loading = seesBooks && summary.isPending;
 
@@ -77,17 +76,7 @@ function RemoveMemberForm({
     remove.mutate(
       {
         userId: member.userId,
-        dto: {
-          ...(payOut && balance !== 0
-            ? {
-                payout: {
-                  amountCents: balance,
-                  paidOn: todayISO(),
-                  note: `Final payment when ${name} left the band`,
-                },
-              }
-            : {}),
-        },
+        dto: payBack && owed > 0 ? { payBack: true } : {},
       },
       { onSuccess: onClose },
     );
@@ -104,26 +93,22 @@ function RemoveMemberForm({
 
       {loading && <Skeleton className="h-24" />}
 
-      {!loading && seesBooks && balance !== 0 && (
+      {!loading && seesBooks && owed > 0 && (
         <section className="flex flex-col gap-2 rounded-lg border p-3 text-sm">
           <p className="font-medium">
-            {balance > 0
-              ? `The band owes ${name} ${formatMoney(balance, currency)}`
-              : `${name} owes the band ${formatMoney(-balance, currency)}`}
+            {`The band owes ${name} ${formatMoney(owed, currency)}`}
           </p>
           <label className="flex items-start gap-2">
             <Checkbox
-              checked={payOut}
-              onCheckedChange={(checked) => setPayOut(checked === true)}
+              checked={payBack}
+              onCheckedChange={(checked) => setPayBack(checked === true)}
               className="mt-0.5"
             />
             <span>
-              {balance > 0
-                ? "Record that we paid them now"
-                : "Record that they paid the band now"}
+              Pay it back now, from the band fund
               <span className="block text-xs text-muted-foreground">
-                Untick to leave it open. They stay in &quot;Who&apos;s
-                owed&quot; until someone records the payment.
+                Untick to leave it owed. Their expenses stay in &quot;Who&apos;s
+                owed&quot; until an admin pays them back.
               </span>
             </span>
           </label>
