@@ -95,6 +95,10 @@ export function DateField({
         })
     : emptyLabel;
 
+  // The row itself opens the picker until iOS has a value to show in its pill.
+  const opens = !(process.env.EXPO_OS === 'ios' && value);
+  const open = () => (process.env.EXPO_OS === 'ios' ? onChange(seed()) : openAndroid());
+
   return (
     <View style={{ gap: spacing.xs + 2 }}>
       {headed && (
@@ -102,20 +106,32 @@ export function DateField({
           {label}
         </FieldLabel>
       )}
-      <View
+      {/* Until there is a value (and always on Android, where the dialog is the
+          picker) the whole row is the button, not just its words. Once iOS has
+          a value, its own pill takes the taps. In a form the value sits in the
+          middle of the box, with the clear button pinned to the right. */}
+      <Pressable
         ref={ref}
-        style={{
+        disabled={!opens}
+        accessible={opens}
+        accessibilityRole={opens ? 'button' : undefined}
+        accessibilityLabel={opens ? `${label}: ${formatted}` : undefined}
+        accessibilityHint={opens ? 'Opens a date picker' : undefined}
+        onPress={open}
+        style={({ pressed }) => ({
           flexDirection: 'row',
           alignItems: 'center',
+          justifyContent: headed ? 'center' : undefined,
           gap: spacing.sm,
           minHeight: 48,
-          paddingHorizontal: spacing.md,
+          paddingHorizontal: headed && clearable && value ? spacing.md + 26 : spacing.md,
           borderRadius: posterRadius.block,
           borderCurve: 'continuous',
           backgroundColor: tokens.muted,
           borderWidth: 1.5,
           borderColor: failed ? tokens.destructive : 'transparent',
-        }}
+          opacity: pressed ? 0.75 : 1,
+        })}
       >
         {!headed && (
           <PosterText variant="rowTitle" color={tokens.foreground} style={{ flex: 1 }}>
@@ -132,22 +148,12 @@ export function DateField({
             onValueChange={(_event, date) => onChange(date)}
           />
         ) : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${label}: ${formatted}`}
-            accessibilityHint="Opens a date picker"
-            hitSlop={8}
-            onPress={() => (process.env.EXPO_OS === 'ios' ? onChange(seed()) : openAndroid())}
-          >
-            {/* Empty, the action is set a weight up so it reads as tappable
-                without borrowing the app's blue onto the poster screens. */}
-            <PosterText variant={value ? 'field' : 'rowTitle'} color={tokens.foreground}>
-              {value ? formatted : `Add ${mode === 'date' ? 'date' : 'time'}`}
-            </PosterText>
-          </Pressable>
+          // Empty, the action is set a weight up so it reads as tappable
+          // without borrowing the app's blue onto the poster screens.
+          <PosterText variant={value ? 'field' : 'rowTitle'} color={tokens.foreground}>
+            {value ? formatted : `Add ${mode === 'date' ? 'date' : 'time'}`}
+          </PosterText>
         )}
-
-        {headed && <View style={{ flex: 1 }} />}
 
         {clearable && value && (
           <Pressable
@@ -155,6 +161,7 @@ export function DateField({
             accessibilityLabel={`Clear ${label.toLowerCase()}`}
             hitSlop={10}
             onPress={() => onChange(null)}
+            style={headed ? { position: 'absolute', right: spacing.md } : undefined}
           >
             <Icon
               name={{ sf: 'xmark.circle.fill', md: 'cancel' }}
@@ -163,7 +170,7 @@ export function DateField({
             />
           </Pressable>
         )}
-      </View>
+      </Pressable>
       {failed && (
         <PosterText variant="meta" color={tokens.destructive}>
           {error}
