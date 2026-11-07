@@ -1,7 +1,7 @@
 import { Pressable, View } from 'react-native';
 import { Icon } from '@/components/icon';
 import { TextInput } from '@/components/text-input';
-import { posterInput, posterRadius, spacing, useTokens } from '@/theme';
+import { posterInput, radius, spacing, useTokens } from '@/theme';
 
 /** The search box over a ledger list: what it was for, the note, who was paid. */
 export function FinanceSearch({
@@ -21,8 +21,8 @@ export function FinanceSearch({
         alignItems: 'center',
         gap: spacing.sm,
         paddingHorizontal: spacing.md,
-        borderRadius: posterRadius.block,
-        borderCurve: 'continuous',
+        // A capsule, as a banking app's search is.
+        borderRadius: radius.full,
         backgroundColor: tokens.muted,
       }}
     >

@@ -11,26 +11,31 @@ import {
 import {
   activeFinanceFilterCount,
   DEFAULT_FINANCE_FILTERS,
+  FINANCE_COLORS,
   filterFinanceEntries,
   formatMoney,
 } from '@artist/shared';
 import { Button } from '@/components/button';
+import { Icon } from '@/components/icon';
 import { PosterText } from '@/components/poster-text';
-import { SectionCard } from '@/components/section-card';
 import { SpokeList } from '@/components/spoke-list';
-import { FinanceAmount } from '@/features/finances/finance-amount';
 import { FinanceEntryRow } from '@/features/finances/entry-row';
 import { FinanceFilters } from '@/features/finances/entry-filters';
 import { FinanceSearch } from '@/features/finances/finance-search';
-import { spacing, useTokens } from '@/theme';
+import { groupByMonth } from '@/features/finances/wallet-helpers';
+import { Avatar, ChipButton, Panel, PanelTitle } from '@/features/finances/wallet-ui';
+import { spacing, useScheme, useTokens } from '@/theme';
 
 /**
- * One member's money with the band: every expense they paid for out of their
- * own pocket, how much of that the band has paid back, and what it still owes
- * them. Admins can pay back everything at once, or one expense from its form.
+ * One member's money with the band, set out like an account statement: what
+ * they paid for the band, what's been paid back, and the balance the band
+ * still owes them, then every expense they paid for out of their own pocket,
+ * month by month. Admins can pay back everything at once, or one expense from
+ * its form.
  */
 export function FinanceMemberScreen({ boardId, userId }: { boardId: string; userId: string }) {
   const tokens = useTokens();
+  const finance = FINANCE_COLORS[useScheme()];
   const { can } = usePermissions();
   const me = useMe(true);
   const visible = can('finance.view');
@@ -56,9 +61,11 @@ export function FinanceMemberScreen({ boardId, userId }: { boardId: string; user
     (e) => e.handledById === userId && e.state === 'SETTLED',
   );
   const rows = filterFinanceEntries(theirs, filters);
+  const groups = groupByMonth(rows, filters.sort);
   const active = activeFinanceFilterCount(filters);
   const narrowed = active > 0 || filters.query.trim() !== '';
   const owedCount = theirs.filter((e) => !e.paidBackAt).length;
+  const owes = balance.owedCents > 0;
 
   const confirmPayBackAll = () =>
     Alert.alert(
@@ -94,124 +101,202 @@ export function FinanceMemberScreen({ boardId, userId }: { boardId: string; user
         }
         header={
           visible && data ? (
-            <View style={{ gap: spacing.lg, paddingBottom: spacing.sm }}>
-              <SectionCard
-                title="Overview"
-                caption="All time"
-                description={
-                  balance.owedCents > 0
-                    ? `The band owes ${you ? 'you' : memberName} ${money(balance.owedCents)}.`
-                    : balance.paidCents > 0
-                      ? `Everything ${you ? 'you' : 'they'} paid for has been paid back.`
-                      : undefined
-                }
-              >
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    flexWrap: 'wrap',
-                    gap: spacing.lg,
-                    paddingHorizontal: spacing.sm,
-                    paddingBottom: spacing.sm,
-                  }}
-                >
-                  <Stat label="PAID FOR THE BAND" cents={balance.paidCents} currency={currency} />
-                  <Stat label="PAID BACK" cents={balance.paidBackCents} currency={currency} />
-                  <Stat
-                    label="STILL OWED"
-                    cents={balance.owedCents}
-                    currency={currency}
-                    tone={balance.owedCents > 0 ? 'owed' : undefined}
-                  />
-                </View>
-                {manages && balance.owedCents > 0 && (
+            <View style={{ gap: spacing.md, paddingBottom: spacing.xs }}>
+              <Panel padded>
+                <View style={{ gap: spacing.md }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4 }}>
+                    <Avatar name={memberName} size={48} owed={owes} />
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <PosterText variant="title" color={tokens.foreground} numberOfLines={1}>
+                        {you ? `${memberName} (you)` : memberName}
+                      </PosterText>
+                      <PosterText variant="cardMeta" color={tokens.mutedForeground}>
+                        Statement · all time
+                      </PosterText>
+                    </View>
+                  </View>
+
+                  <View style={{ gap: 2 }}>
+                    <PosterText variant="label" color={tokens.mutedForeground}>
+                      {owes ? `THE BAND OWES ${you ? 'YOU' : 'THEM'}` : 'BALANCE'}
+                    </PosterText>
+                    {owes ? (
+                      <PosterText
+                        variant="figure"
+                        color={finance.negative}
+                        style={{ fontSize: 44, lineHeight: 50, letterSpacing: -1.6 }}
+                      >
+                        {money(balance.owedCents)}
+                      </PosterText>
+                    ) : (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                        <Icon
+                          name={{ sf: 'checkmark.circle.fill', md: 'check-circle' }}
+                          size={30}
+                          color={finance.positive}
+                        />
+                        <PosterText
+                          variant="figure"
+                          color={tokens.foreground}
+                          style={{ fontSize: 44, lineHeight: 50, letterSpacing: -1.6 }}
+                        >
+                          Square
+                        </PosterText>
+                      </View>
+                    )}
+                    <PosterText variant="cardMeta" color={tokens.mutedForeground}>
+                      {owes
+                        ? `${owedCount} ${owedCount === 1 ? 'expense' : 'expenses'} ${you ? 'you' : 'they'} paid for out of pocket, not paid back yet.`
+                        : balance.paidCents > 0
+                          ? `Everything ${you ? 'you' : 'they'} paid for has been paid back.`
+                          : `${you ? 'You haven’t' : 'They haven’t'} paid for anything out of pocket.`}
+                    </PosterText>
+                  </View>
+
                   <View
                     style={{
-                      paddingHorizontal: spacing.sm,
-                      paddingBottom: spacing.sm,
+                      gap: spacing.sm,
+                      paddingTop: spacing.md,
+                      borderTopWidth: 1,
+                      borderTopColor: tokens.border,
                     }}
                   >
-                    <Button
-                      title={`Pay back all ${money(balance.owedCents)}`}
-                      disabled={payBackAll.isPending}
-                      onPress={confirmPayBackAll}
+                    <StatementLine label="Paid for the band" value={money(balance.paidCents)} />
+                    <StatementLine
+                      label={you ? 'Paid back to you' : 'Paid back to them'}
+                      value={
+                        balance.paidBackCents > 0 ? `−${money(balance.paidBackCents)}` : money(0)
+                      }
+                    />
+                    <View
+                      style={{
+                        borderTopWidth: 1,
+                        borderStyle: 'dashed',
+                        borderTopColor: tokens.border,
+                      }}
+                    />
+                    <StatementLine
+                      label="Still owed"
+                      value={money(balance.owedCents)}
+                      color={owes ? finance.negative : undefined}
+                      bold
                     />
                   </View>
-                )}
-              </SectionCard>
+
+                  {manages && owes && (
+                    <View style={{ gap: spacing.xs }}>
+                      <Button
+                        title={`Pay back all ${money(balance.owedCents)}`}
+                        disabled={payBackAll.isPending}
+                        onPress={confirmPayBackAll}
+                      />
+                      <PosterText
+                        variant="cardMeta"
+                        color={tokens.mutedForeground}
+                        style={{ textAlign: 'center' }}
+                      >
+                        Comes out of the band fund. You’ll confirm first.
+                      </PosterText>
+                    </View>
+                  )}
+                </View>
+              </Panel>
 
               {theirs.length > 0 && (
-                <View style={{ gap: spacing.sm }}>
-                  <PosterText variant="label" color={tokens.mutedForeground}>
-                    ALL EXPENSES
-                  </PosterText>
+                <View style={{ gap: spacing.sm + 2 }}>
+                  <PanelTitle title="Expenses" caption={`${rows.length} of ${theirs.length}`} />
                   <FinanceSearch
                     value={filters.query}
                     onChange={(query) => setFilters({ ...filters, query })}
-                    placeholder="Search their expenses…"
+                    placeholder={you ? 'Search your expenses…' : 'Search their expenses…'}
                   />
-                  <Button
-                    title={`${filtersOpen ? 'Hide filters' : 'Filter by category or amount'}${active ? ` (${active})` : ''}`}
-                    variant="secondary"
-                    size="sm"
-                    onPress={() => setFiltersOpen(!filtersOpen)}
-                  />
-                  {filtersOpen && (
-                    <FinanceFilters
-                      filters={{ ...filters, kind: 'EXPENSE' }}
-                      onChange={setFilters}
-                      kinds={false}
+                  <View style={{ flexDirection: 'row' }}>
+                    <ChipButton
+                      label="Filter by category or amount"
+                      icon={{ sf: 'slider.horizontal.3', md: 'tune' }}
+                      active={filtersOpen}
+                      count={active}
+                      onPress={() => setFiltersOpen(!filtersOpen)}
                     />
+                  </View>
+                  {filtersOpen && (
+                    <Panel padded>
+                      <FinanceFilters
+                        filters={{ ...filters, kind: 'EXPENSE' }}
+                        onChange={setFilters}
+                        kinds={false}
+                      />
+                    </Panel>
                   )}
-                  <PosterText variant="cardMeta" color={tokens.mutedForeground}>
-                    {`${rows.length} of ${theirs.length} ${theirs.length === 1 ? 'expense' : 'expenses'}`}
-                  </PosterText>
                 </View>
               )}
             </View>
           ) : undefined
         }
       >
-        {rows.map((entry, index) => (
-          <FinanceEntryRow
-            key={entry.id}
-            entry={entry}
-            currency={currency}
-            first={index === 0}
-            name={() => memberName}
-            showPayer={false}
-            onPress={() => router.push(`/board/${boardId}/form/finance?id=${entry.id}`)}
-          />
-        ))}
+        <View style={{ gap: spacing.md }}>
+          {groups.map((group) => (
+            <View key={group.key} style={{ gap: spacing.sm }}>
+              {group.title && (
+                <PosterText
+                  variant="label"
+                  color={tokens.mutedForeground}
+                  accessibilityRole="header"
+                  style={{ paddingHorizontal: spacing.xs }}
+                >
+                  {group.title.toUpperCase()}
+                </PosterText>
+              )}
+              <Panel>
+                {group.entries.map((entry, index) => (
+                  <FinanceEntryRow
+                    key={entry.id}
+                    entry={entry}
+                    currency={currency}
+                    first={index === 0}
+                    name={() => memberName}
+                    showPayer={false}
+                    onPress={() => router.push(`/board/${boardId}/form/finance?id=${entry.id}`)}
+                  />
+                ))}
+              </Panel>
+            </View>
+          ))}
+        </View>
       </SpokeList>
     </>
   );
 }
 
-function Stat({
+/** One line of the statement: a name on the left, its amount on the right. */
+function StatementLine({
   label,
-  cents,
-  currency,
-  tone,
+  value,
+  color,
+  bold = false,
 }: {
   label: string;
-  cents: number;
-  currency: string;
-  tone?: 'owed';
+  value: string;
+  color?: string;
+  bold?: boolean;
 }) {
   const tokens = useTokens();
   return (
-    <View style={{ flexGrow: 1, flexBasis: '28%', gap: 2 }}>
-      <PosterText variant="label" color={tokens.mutedForeground}>
+    <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm }}>
+      <PosterText
+        variant={bold ? 'caption' : 'body'}
+        color={bold ? tokens.foreground : tokens.mutedForeground}
+        style={{ flex: 1 }}
+      >
         {label}
       </PosterText>
-      {tone === 'owed' ? (
-        <FinanceAmount cents={cents} currency={currency} owed />
-      ) : (
-        <PosterText variant="rowTitle" color={tokens.foreground}>
-          {formatMoney(cents, currency)}
-        </PosterText>
-      )}
+      <PosterText
+        variant={bold ? 'caption' : 'body'}
+        color={color ?? tokens.foreground}
+        style={{ fontVariant: ['tabular-nums'] }}
+      >
+        {value}
+      </PosterText>
     </View>
   );
 }

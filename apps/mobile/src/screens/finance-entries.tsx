@@ -8,19 +8,20 @@ import {
   filterFinanceEntries,
   formatMoney,
 } from '@artist/shared';
-import { Button } from '@/components/button';
 import { PosterText } from '@/components/poster-text';
 import { SpokeList } from '@/components/spoke-list';
 import { FinanceEntryRow } from '@/features/finances/entry-row';
 import { FinanceFilters } from '@/features/finances/entry-filters';
 import { FinanceSearch } from '@/features/finances/finance-search';
 import { shareFinanceCsv } from '@/features/finances/export-csv';
+import { groupByMonth } from '@/features/finances/wallet-helpers';
+import { ChipButton, Panel } from '@/features/finances/wallet-ui';
 import { spacing, useTokens } from '@/theme';
 
 /**
- * Every income and expense entry the band has logged, all time: search by
- * name, and filter by type, who paid, category, paid back and amount. Tapping
- * an entry opens its form.
+ * Every income and expense entry the band has logged, all time, as a bank
+ * statement: a search box, Filters and Export as pills under it, and the
+ * transactions in a white panel per month. Tapping one opens its form.
  */
 export function FinanceEntriesScreen({ boardId }: { boardId: string }) {
   const tokens = useTokens();
@@ -37,6 +38,7 @@ export function FinanceEntriesScreen({ boardId }: { boardId: string }) {
     members.find((m) => m.id === userId)?.displayName ?? 'Former member';
   const all = entries.data ?? [];
   const rows = filterFinanceEntries(all, filters);
+  const groups = groupByMonth(rows, filters.sort);
   const active = activeFinanceFilterCount(filters);
   const narrowed = active > 0 || filters.query.trim() !== '';
   const net = rows.reduce(
@@ -62,34 +64,28 @@ export function FinanceEntriesScreen({ boardId }: { boardId: string }) {
         visible && narrowed
           ? 'Nothing matches this search and these filters.'
           : visible
-            ? 'Log income or an expense with the + on Finances.'
+            ? 'Log income or an expense from Finances.'
             : undefined
       }
       header={
         visible && all.length > 0 ? (
-          <View style={{ gap: spacing.sm, paddingBottom: spacing.sm }}>
+          <View style={{ gap: spacing.sm + 2, paddingBottom: spacing.xs }}>
             <FinanceSearch
               value={filters.query}
               onChange={(query) => setFilters({ ...filters, query })}
             />
-            <View
-              style={{
-                flexDirection: 'row',
-                gap: spacing.sm,
-                alignItems: 'center',
-              }}
-            >
-              <Button
-                title={`${filtersOpen ? 'Hide filters' : 'Filter and sort'}${active ? ` (${active})` : ''}`}
-                variant="secondary"
-                size="sm"
+            <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
+              <ChipButton
+                label="Filters"
+                icon={{ sf: 'slider.horizontal.3', md: 'tune' }}
+                active={filtersOpen}
+                count={active}
                 onPress={() => setFiltersOpen(!filtersOpen)}
               />
               {rows.length > 0 && (
-                <Button
-                  title="Export CSV"
-                  variant="ghost"
-                  size="sm"
+                <ChipButton
+                  label="Export CSV"
+                  icon={{ sf: 'square.and.arrow.up', md: 'ios-share' }}
                   onPress={() =>
                     void shareFinanceCsv(rows, members, narrowed ? 'filtered' : 'all-time')
                   }
@@ -97,9 +93,15 @@ export function FinanceEntriesScreen({ boardId }: { boardId: string }) {
               )}
             </View>
             {filtersOpen && (
-              <FinanceFilters filters={filters} onChange={setFilters} members={members} />
+              <Panel padded>
+                <FinanceFilters filters={filters} onChange={setFilters} members={members} />
+              </Panel>
             )}
-            <PosterText variant="cardMeta" color={tokens.mutedForeground}>
+            <PosterText
+              variant="cardMeta"
+              color={tokens.mutedForeground}
+              style={{ paddingHorizontal: spacing.xs }}
+            >
               {`${rows.length} of ${all.length} ${all.length === 1 ? 'entry' : 'entries'}${
                 narrowed ? ` · net ${formatMoney(net, currency)}` : ''
               }`}
@@ -108,16 +110,34 @@ export function FinanceEntriesScreen({ boardId }: { boardId: string }) {
         ) : undefined
       }
     >
-      {rows.map((entry, index) => (
-        <FinanceEntryRow
-          key={entry.id}
-          entry={entry}
-          currency={currency}
-          first={index === 0}
-          name={name}
-          onPress={() => router.push(`/board/${boardId}/form/finance?id=${entry.id}`)}
-        />
-      ))}
+      <View style={{ gap: spacing.md }}>
+        {groups.map((group) => (
+          <View key={group.key} style={{ gap: spacing.sm }}>
+            {group.title && (
+              <PosterText
+                variant="label"
+                color={tokens.mutedForeground}
+                accessibilityRole="header"
+                style={{ paddingHorizontal: spacing.xs }}
+              >
+                {group.title.toUpperCase()}
+              </PosterText>
+            )}
+            <Panel>
+              {group.entries.map((entry, index) => (
+                <FinanceEntryRow
+                  key={entry.id}
+                  entry={entry}
+                  currency={currency}
+                  first={index === 0}
+                  name={name}
+                  onPress={() => router.push(`/board/${boardId}/form/finance?id=${entry.id}`)}
+                />
+              ))}
+            </Panel>
+          </View>
+        ))}
+      </View>
     </SpokeList>
   );
 }

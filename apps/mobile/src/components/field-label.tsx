@@ -20,6 +20,15 @@ export function FieldHeadings({ children }: { children: ReactNode }) {
   return <FieldLabelStyleContext value="heading">{children}</FieldLabelStyleContext>;
 }
 
+/**
+ * Sets every field under it back to small caps, for a form that groups its
+ * fields into cards (the finance form): there each card is the heading, and a
+ * big heading per field would shout over it.
+ */
+export function FieldCaps({ children }: { children: ReactNode }) {
+  return <FieldLabelStyleContext value="caps">{children}</FieldLabelStyleContext>;
+}
+
 export const useFieldLabelStyle = () => use(FieldLabelStyleContext);
 
 /**
