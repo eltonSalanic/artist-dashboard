@@ -22,19 +22,22 @@ const toText = (cents: number | null) => (cents === null ? '' : (cents / 100).to
  * amount range and the sort. Search lives above the list, not in here, so it's
  * always one tap away. Reset is the filter sheet's, in its header.
  *
- * `members` off hides "Who paid" (a member's own list is all theirs), and
- * `kinds` off hides the type (a member's list is all expenses).
+ * `members` off hides "Who paid" (a member's own list is all theirs),
+ * `kinds` off hides the type (a member's list is all expenses), and `payback`
+ * off hides "Paid back" (a member's page has its own switch for it).
  */
 export function FinanceFilters({
   filters,
   onChange,
   members,
   kinds = true,
+  payback = true,
 }: {
   filters: FinanceViewFilters;
   onChange: (next: FinanceViewFilters) => void;
   members?: FinanceMemberRef[];
   kinds?: boolean;
+  payback?: boolean;
 }) {
   // Typed amounts stay as typed; the filter only takes them once they parse.
   const [min, setMin] = useState(toText(filters.minCents));
@@ -89,7 +92,7 @@ export function FinanceFilters({
         options={categories.map((c) => ({ value: c.key, label: c.label }))}
         onChange={(value) => set({ category: value ?? 'all' })}
       />
-      {filters.kind !== 'INCOME' && (
+      {payback && filters.kind !== 'INCOME' && (
         <ChoiceChips<FinanceViewFilters['payback']>
           label="Paid back"
           hint="Only expenses a member paid out of pocket."

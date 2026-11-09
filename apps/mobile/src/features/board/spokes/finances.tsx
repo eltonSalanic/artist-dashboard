@@ -22,6 +22,7 @@ import { SpokeList } from '@/components/spoke-list';
 import { radius, spacing, useScheme, useShadows, useTokens } from '@/theme';
 import { shareFinanceCsv } from '../../finances/export-csv';
 import { FilterSheet } from '../../finances/filter-sheet';
+import { OwedSpotlight } from '../../finances/owed-spotlight';
 import { FinanceSearch } from '../../finances/finance-search';
 import { QuickFilters } from '../../finances/quick-filters';
 import { FinanceTimeline } from '../../finances/timeline';
@@ -38,7 +39,6 @@ import {
   Segmented,
   TxRow,
 } from '../../finances/wallet-ui';
-import { shortDate } from '../format';
 import { SpokeHeader } from '../spoke-header';
 
 type View_ = 'overview' | 'owed' | 'entries';
@@ -157,12 +157,10 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
             />
           )}
           {view === 'owed' && (
-            <Owed
+            <OwedSpotlight
               boardId={boardId}
               data={data}
               myId={myId}
-              name={name}
-              money={money}
               manages={can('finance.manage')}
             />
           )}
@@ -433,189 +431,6 @@ function OwedBanner({
         size={16}
         color={tokens.mutedForeground}
       />
-    </Pressable>
-  );
-}
-
-/**
- * Who the band owes: a card per member (tap for their statement), then every
- * expense still to pay back (tap to open it, and for admins, pay it back).
- */
-function Owed({
-  boardId,
-  data,
-  myId,
-  name,
-  money,
-  manages,
-}: {
-  boardId: string;
-  data: FinanceSummaryDto;
-  myId: string | undefined;
-  name: (userId: string) => string;
-  money: (cents: number) => string;
-  manages: boolean;
-}) {
-  const tokens = useTokens();
-  // Everyone who has paid for something, most owed first, then today's
-  // members who haven't, so any member's page is one tap away.
-  const people = data.members
-    .map((member) => ({
-      member,
-      balance: data.balances.members.find((b) => b.userId === member.id),
-    }))
-    .sort(
-      (a, b) =>
-        (b.balance?.owedCents ?? 0) - (a.balance?.owedCents ?? 0) ||
-        (b.balance?.paidCents ?? 0) - (a.balance?.paidCents ?? 0) ||
-        a.member.displayName.localeCompare(b.member.displayName),
-    );
-  const pairs: (typeof people)[] = [];
-  for (let i = 0; i < people.length; i += 2) pairs.push(people.slice(i, i + 2));
-
-  return (
-    <View style={{ gap: spacing.md }}>
-      <View style={{ gap: spacing.xs }}>
-        <PanelTitle
-          title="Who's owed"
-          caption={
-            data.balances.owedCents > 0 ? `${money(data.balances.owedCents)} in all` : 'All square'
-          }
-        />
-        <PosterText
-          variant="cardMeta"
-          color={tokens.mutedForeground}
-          style={{ paddingHorizontal: spacing.xs }}
-        >
-          A member is owed what they paid for out of their own pocket, until it’s paid back. Tap
-          anyone for their statement.
-        </PosterText>
-      </View>
-      <View style={{ gap: spacing.sm }}>
-        {pairs.map((pair) => (
-          <View key={pair[0].member.id} style={{ flexDirection: 'row', gap: spacing.sm }}>
-            {pair.map(({ member, balance }) => (
-              <MemberCard
-                key={member.id}
-                name={member.id === myId ? `${member.displayName} (you)` : member.displayName}
-                rawName={member.displayName}
-                owedCents={balance?.owedCents ?? 0}
-                paidCents={balance?.paidCents ?? 0}
-                owedCount={data.owed.filter((e) => e.handledById === member.id).length}
-                currency={data.currency}
-                onPress={() => router.push(`/board/${boardId}/finances/member/${member.id}`)}
-              />
-            ))}
-            {pair.length === 1 && <View style={{ flex: 1 }} />}
-          </View>
-        ))}
-      </View>
-
-      <View style={{ gap: spacing.xs, marginTop: spacing.sm }}>
-        <PanelTitle
-          title="To pay back"
-          caption={`${data.owed.length} ${data.owed.length === 1 ? 'expense' : 'expenses'}`}
-        />
-        {manages && data.owed.length > 0 && (
-          <PosterText
-            variant="cardMeta"
-            color={tokens.mutedForeground}
-            style={{ paddingHorizontal: spacing.xs }}
-          >
-            Open one to pay the member back from the band fund.
-          </PosterText>
-        )}
-      </View>
-      <Panel padded={data.owed.length === 0}>
-        {data.owed.length === 0 ? (
-          <PosterText variant="body" color={tokens.mutedForeground} style={{ textAlign: 'center' }}>
-            Nothing to pay back.
-          </PosterText>
-        ) : (
-          data.owed.map((entry, index) => {
-            const payer = entry.handledById ? name(entry.handledById) : 'Band';
-            return (
-              <TxRow
-                key={entry.id}
-                first={index === 0}
-                lead={<Avatar name={payer} owed />}
-                title={entry.description || categoryLabel(entry.category)}
-                meta={`${payer} paid · ${shortDate(`${entry.occurredOn}T12:00:00`)}`}
-                trailing={
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                    <Money cents={entry.amountCents} currency={data.currency} tone="owed" />
-                    <Icon
-                      name={{ sf: 'chevron.right', md: 'chevron-right' }}
-                      size={14}
-                      color={tokens.mutedForeground}
-                    />
-                  </View>
-                }
-                onPress={() => router.push(`/board/${boardId}/form/finance?id=${entry.id}`)}
-              />
-            );
-          })
-        )}
-      </Panel>
-    </View>
-  );
-}
-
-function MemberCard({
-  name,
-  rawName,
-  owedCents,
-  paidCents,
-  owedCount,
-  currency,
-  onPress,
-}: {
-  name: string;
-  rawName: string;
-  owedCents: number;
-  paidCents: number;
-  owedCount: number;
-  currency: string;
-  onPress: () => void;
-}) {
-  const tokens = useTokens();
-  const shadows = useShadows();
-  const owed = owedCents > 0;
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${name}: ${owed ? `owed ${formatMoney(owedCents, currency)}` : 'square'}`}
-      onPress={onPress}
-      style={({ pressed }) => ({
-        flex: 1,
-        gap: spacing.sm,
-        padding: spacing.md - 2,
-        borderRadius: radius.xl,
-        borderCurve: 'continuous',
-        backgroundColor: pressed ? tokens.accent : tokens.card,
-        boxShadow: shadows.card,
-      })}
-    >
-      <Avatar name={rawName} size={36} owed={owed} />
-      <View style={{ gap: 2 }}>
-        <PosterText variant="chip" color={tokens.foreground} numberOfLines={1}>
-          {name}
-        </PosterText>
-        {owed ? (
-          <Money cents={owedCents} currency={currency} tone="owed" variant="title" />
-        ) : (
-          <PosterText variant="title" color={tokens.mutedForeground}>
-            Square
-          </PosterText>
-        )}
-        <PosterText variant="meta" color={tokens.mutedForeground} numberOfLines={1}>
-          {owed
-            ? `${owedCount} ${owedCount === 1 ? 'expense' : 'expenses'} owed`
-            : paidCents > 0
-              ? 'All paid back'
-              : 'Hasn’t paid for anything'}
-        </PosterText>
-      </View>
     </Pressable>
   );
 }
