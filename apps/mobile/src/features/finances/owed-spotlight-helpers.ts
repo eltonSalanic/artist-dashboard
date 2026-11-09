@@ -6,7 +6,7 @@ import type { FinanceEntryDto, FinanceSummaryDto } from '@artist/shared';
  */
 export type OwedStanding = 'owed' | 'paidBack' | 'nothing';
 
-/** One face on the Owed tab's strip, and what the spotlight shows for them. */
+/** One face on the Owed tab's grid of faces, and what the spotlight shows for them. */
 export interface OwedPerson {
   id: string;
   name: string;
@@ -58,7 +58,7 @@ export function owedPeople(
     );
 }
 
-/** "Jamie Torres" → "Jamie": the name under a face on the strip. */
+/** "Jamie Torres" → "Jamie": the name under a face in the grid. */
 export function firstName(name: string): string {
   return name.trim().split(/\s+/)[0] || name;
 }

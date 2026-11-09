@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import {
@@ -26,7 +26,7 @@ import { categoryIcon } from './wallet-helpers';
 import { Avatar, CategoryBadge, Money, Panel, PanelTitle, TxRow } from './wallet-ui';
 
 /**
- * Who's owed, people first: a strip of faces across the top (a red ring and
+ * Who's owed, people first: a grid of faces at the top (a red ring and
  * the amount when the band owes them, a tick when they're square), and a
  * spotlight under it on whoever is picked. "Everyone" (where it opens) is the
  * band's total and every expense still to pay back, person by person; a
@@ -74,7 +74,7 @@ export function OwedSpotlight({
         </PosterText>
       </View>
 
-      <FaceStrip
+      <FaceGrid
         people={people}
         picked={person ? person.id : EVERYONE}
         onPick={setPicked}
@@ -239,8 +239,8 @@ export function SpotlightFace({
   );
 }
 
-/** The faces across the top, Everyone first. Edge to edge, scrolls sideways. */
-function FaceStrip({
+/** The faces across the top, Everyone first, four to a row, wrapping onto more rows. */
+function FaceGrid({
   people,
   picked,
   onPick,
@@ -256,16 +256,15 @@ function FaceStrip({
   currency: string;
 }) {
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
+    <View
       accessibilityRole="tablist"
       accessibilityLabel="Who to show"
-      style={{ marginHorizontal: -spacing.md }}
-      contentContainerStyle={{
-        paddingHorizontal: spacing.md - spacing.xs,
+      style={{
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        rowGap: spacing.xs,
+        marginHorizontal: -spacing.xs,
         paddingVertical: spacing.xs,
-        gap: spacing.xs,
       }}
     >
       <FaceTab
@@ -302,11 +301,11 @@ function FaceStrip({
           onPress={() => onPick(p.id)}
         />
       ))}
-    </ScrollView>
+    </View>
   );
 }
 
-/** One face on the strip. The picked one stands on a card, like a lifted tab. */
+/** One face in the grid. The picked one stands on a card, like a lifted tab. */
 function FaceTab({
   label,
   sub,
@@ -338,7 +337,7 @@ function FaceTab({
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}
       style={({ pressed }) => ({
-        width: 76,
+        width: '25%',
         alignItems: 'center',
         paddingTop: spacing.sm + 4,
         paddingBottom: spacing.sm + 2,
