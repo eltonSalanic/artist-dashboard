@@ -1,4 +1,4 @@
-import { type TextStyle, View } from 'react-native';
+import { View } from 'react-native';
 import { FINANCE_COLORS, formatMoney } from '@artist/shared';
 import { Icon, type IconName } from '@/components/icon';
 import { PosterText } from '@/components/poster-text';
@@ -47,9 +47,7 @@ export function WalletCard({
   const scheme = useScheme();
   const widget = useWidgetInk(boardId, 'FINANCES');
   // An inverted card sits in the other scheme, so it takes that scheme's
-  // greens and reds. A coloured card takes a slightly deeper green and red
-  // with a solid black drop shadow, so they stand off whatever colour the
-  // card is.
+  // greens and reds. A coloured card takes a slightly deeper green and red.
   const flipped = FINANCE_COLORS[scheme === 'light' ? 'dark' : 'light'];
   const card = widget.plain
     ? {
@@ -59,7 +57,6 @@ export function WalletCard({
         faint: `${tokens.background}1f`,
         pos: flipped.positive,
         neg: flipped.negative,
-        shadow: undefined,
       }
     : {
         bg: widget.bg,
@@ -68,7 +65,6 @@ export function WalletCard({
         faint: `${widget.ink}1f`,
         pos: '#10b981',
         neg: '#ef4444',
-        shadow: DROP_SHADOW,
       };
   const below = bandFundCents < 0;
   const money = (cents: number) => formatMoney(cents, currency);
@@ -130,7 +126,6 @@ export function WalletCard({
           icon={{ sf: 'arrow.down.left', md: 'south-west' }}
           value={incomeCents > 0 ? `+${money(incomeCents)}` : money(0)}
           color={card.pos}
-          shadow={card.shadow}
           card={card}
         />
         <Figure
@@ -138,7 +133,6 @@ export function WalletCard({
           icon={{ sf: 'arrow.up.right', md: 'north-east' }}
           value={expenseCents > 0 ? `−${money(expenseCents)}` : money(0)}
           color={card.neg}
-          shadow={card.shadow}
           card={card}
           divided
         />
@@ -149,7 +143,6 @@ export function WalletCard({
             netCents > 0 ? `+${money(netCents)}` : netCents < 0 ? `−${money(-netCents)}` : money(0)
           }
           color={netCents > 0 ? card.pos : netCents < 0 ? card.neg : card.ink}
-          shadow={netCents !== 0 ? card.shadow : undefined}
           card={card}
           divided
         />
@@ -158,19 +151,11 @@ export function WalletCard({
   );
 }
 
-/** Behind a green or red figure on a coloured card: solid black, down and to the left. */
-const DROP_SHADOW: TextStyle = {
-  textShadowColor: '#000000',
-  textShadowOffset: { width: -2, height: 2 },
-  textShadowRadius: 0,
-};
-
 function Figure({
   label,
   icon,
   value,
   color,
-  shadow,
   card,
   divided = false,
 }: {
@@ -178,8 +163,6 @@ function Figure({
   icon: IconName;
   value: string;
   color: string;
-  /** On a coloured card, the shadow behind a green or red figure so it reads. */
-  shadow?: TextStyle;
   card: { ink: string; soft: string; faint: string };
   divided?: boolean;
 }) {
@@ -204,7 +187,7 @@ function Figure({
         color={color}
         numberOfLines={1}
         adjustsFontSizeToFit
-        style={[{ fontVariant: ['tabular-nums'] }, shadow]}
+        style={{ fontVariant: ['tabular-nums'] }}
       >
         {value}
       </PosterText>
