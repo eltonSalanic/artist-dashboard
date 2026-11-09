@@ -47,7 +47,9 @@ export function WalletCard({
   const scheme = useScheme();
   const widget = useWidgetInk(boardId, 'FINANCES');
   // An inverted card sits in the other scheme, so it takes that scheme's
-  // greens and reds; a coloured card keeps everything in its own ink.
+  // greens and reds. On a coloured card no green or red reads on every
+  // colour (red on the orange card all but vanishes), so there the figures
+  // sit on a small dark chip in the bright greens and reds, with a soft shadow.
   const flipped = FINANCE_COLORS[scheme === 'light' ? 'dark' : 'light'];
   const card = widget.plain
     ? {
@@ -57,14 +59,16 @@ export function WalletCard({
         faint: `${tokens.background}1f`,
         pos: flipped.positive,
         neg: flipped.negative,
+        chip: undefined,
       }
     : {
         bg: widget.bg,
         ink: widget.ink,
         soft: widget.soft,
         faint: `${widget.ink}1f`,
-        pos: FINANCE_COLORS[scheme].positive,
-        neg: FINANCE_COLORS[scheme].negative,
+        pos: FINANCE_COLORS.dark.positive,
+        neg: FINANCE_COLORS.dark.negative,
+        chip: 'rgba(24, 22, 19, 0.88)',
       };
   const below = bandFundCents < 0;
   const money = (cents: number) => formatMoney(cents, currency);
@@ -126,6 +130,7 @@ export function WalletCard({
           icon={{ sf: 'arrow.down.left', md: 'south-west' }}
           value={incomeCents > 0 ? `+${money(incomeCents)}` : money(0)}
           color={card.pos}
+          chip={card.chip}
           card={card}
         />
         <Figure
@@ -133,6 +138,7 @@ export function WalletCard({
           icon={{ sf: 'arrow.up.right', md: 'north-east' }}
           value={expenseCents > 0 ? `−${money(expenseCents)}` : money(0)}
           color={card.neg}
+          chip={card.chip}
           card={card}
           divided
         />
@@ -143,6 +149,7 @@ export function WalletCard({
             netCents > 0 ? `+${money(netCents)}` : netCents < 0 ? `−${money(-netCents)}` : money(0)
           }
           color={netCents > 0 ? card.pos : netCents < 0 ? card.neg : card.ink}
+          chip={netCents !== 0 ? card.chip : undefined}
           card={card}
           divided
         />
@@ -156,6 +163,7 @@ function Figure({
   icon,
   value,
   color,
+  chip,
   card,
   divided = false,
 }: {
@@ -163,6 +171,8 @@ function Figure({
   icon: IconName;
   value: string;
   color: string;
+  /** On a coloured card, the dark chip a green or red figure sits on. */
+  chip?: string;
   card: { ink: string; soft: string; faint: string };
   divided?: boolean;
 }) {
@@ -182,15 +192,32 @@ function Figure({
           {label}
         </PosterText>
       </View>
-      <PosterText
-        variant="rowTitle"
-        color={color}
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        style={{ fontVariant: ['tabular-nums'] }}
+      <View
+        style={
+          chip
+            ? {
+                alignSelf: 'flex-start',
+                maxWidth: '100%',
+                paddingHorizontal: 6,
+                paddingVertical: 1,
+                borderRadius: radius.sm,
+                borderCurve: 'continuous',
+                backgroundColor: chip,
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.25)',
+              }
+            : undefined
+        }
       >
-        {value}
-      </PosterText>
+        <PosterText
+          variant="rowTitle"
+          color={color}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          style={{ fontVariant: ['tabular-nums'] }}
+        >
+          {value}
+        </PosterText>
+      </View>
     </View>
   );
 }
