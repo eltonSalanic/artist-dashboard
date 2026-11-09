@@ -1,9 +1,9 @@
-import { View } from 'react-native';
+import { type TextStyle, View } from 'react-native';
 import { FINANCE_COLORS, formatMoney } from '@artist/shared';
 import { Icon, type IconName } from '@/components/icon';
 import { PosterText } from '@/components/poster-text';
 import { useWidgetInk } from '@/features/board/spoke-header';
-import { radius, spacing, useScheme, useShadows, useTokens } from '@/theme';
+import { contrast, radius, spacing, useScheme, useShadows, useTokens } from '@/theme';
 import { Segmented, type Segment } from './wallet-ui';
 
 export type Period = 'month' | 'year' | 'all';
@@ -47,10 +47,14 @@ export function WalletCard({
   const scheme = useScheme();
   const widget = useWidgetInk(boardId, 'FINANCES');
   // An inverted card sits in the other scheme, so it takes that scheme's
-  // greens and reds. On a coloured card no green or red reads on every
-  // colour (red on the orange card all but vanishes), so there the figures
-  // sit on a small dark chip in the bright greens and reds, with a soft shadow.
+  // greens and reds. On a coloured card no one green or red reads on every
+  // colour (red on the orange card all but vanishes), so the figures follow
+  // the card's own ink: where the ink is light (a deep or saturated card),
+  // pale greens and reds with a dark shadow; where it's dark (a pale card),
+  // deep greens and reds with a soft light glow.
   const flipped = FINANCE_COLORS[scheme === 'light' ? 'dark' : 'light'];
+  const lightInk =
+    !widget.plain && contrast(widget.ink, '#000000') > contrast(widget.ink, '#ffffff');
   const card = widget.plain
     ? {
         bg: tokens.foreground,
@@ -59,16 +63,16 @@ export function WalletCard({
         faint: `${tokens.background}1f`,
         pos: flipped.positive,
         neg: flipped.negative,
-        chip: undefined,
+        shadow: undefined,
       }
     : {
         bg: widget.bg,
         ink: widget.ink,
         soft: widget.soft,
         faint: `${widget.ink}1f`,
-        pos: FINANCE_COLORS.dark.positive,
-        neg: FINANCE_COLORS.dark.negative,
-        chip: 'rgba(24, 22, 19, 0.88)',
+        pos: lightInk ? '#bbf7d0' : '#065f46',
+        neg: lightInk ? '#fecaca' : '#991b1b',
+        shadow: lightInk ? DARK_SHADOW : LIGHT_GLOW,
       };
   const below = bandFundCents < 0;
   const money = (cents: number) => formatMoney(cents, currency);
@@ -130,7 +134,7 @@ export function WalletCard({
           icon={{ sf: 'arrow.down.left', md: 'south-west' }}
           value={incomeCents > 0 ? `+${money(incomeCents)}` : money(0)}
           color={card.pos}
-          chip={card.chip}
+          shadow={card.shadow}
           card={card}
         />
         <Figure
@@ -138,7 +142,7 @@ export function WalletCard({
           icon={{ sf: 'arrow.up.right', md: 'north-east' }}
           value={expenseCents > 0 ? `−${money(expenseCents)}` : money(0)}
           color={card.neg}
-          chip={card.chip}
+          shadow={card.shadow}
           card={card}
           divided
         />
@@ -149,7 +153,7 @@ export function WalletCard({
             netCents > 0 ? `+${money(netCents)}` : netCents < 0 ? `−${money(-netCents)}` : money(0)
           }
           color={netCents > 0 ? card.pos : netCents < 0 ? card.neg : card.ink}
-          chip={netCents !== 0 ? card.chip : undefined}
+          shadow={netCents !== 0 ? card.shadow : undefined}
           card={card}
           divided
         />
@@ -158,12 +162,26 @@ export function WalletCard({
   );
 }
 
+/** Behind pale figures on a deep card. */
+const DARK_SHADOW: TextStyle = {
+  textShadowColor: 'rgba(0, 0, 0, 0.85)',
+  textShadowOffset: { width: 0, height: 1 },
+  textShadowRadius: 2,
+};
+
+/** Behind deep figures on a pale card. */
+const LIGHT_GLOW: TextStyle = {
+  textShadowColor: 'rgba(255, 255, 255, 0.8)',
+  textShadowOffset: { width: 0, height: 0 },
+  textShadowRadius: 3,
+};
+
 function Figure({
   label,
   icon,
   value,
   color,
-  chip,
+  shadow,
   card,
   divided = false,
 }: {
@@ -171,8 +189,8 @@ function Figure({
   icon: IconName;
   value: string;
   color: string;
-  /** On a coloured card, the dark chip a green or red figure sits on. */
-  chip?: string;
+  /** On a coloured card, the shadow behind a green or red figure so it reads. */
+  shadow?: TextStyle;
   card: { ink: string; soft: string; faint: string };
   divided?: boolean;
 }) {
@@ -192,32 +210,15 @@ function Figure({
           {label}
         </PosterText>
       </View>
-      <View
-        style={
-          chip
-            ? {
-                alignSelf: 'flex-start',
-                maxWidth: '100%',
-                paddingHorizontal: 6,
-                paddingVertical: 1,
-                borderRadius: radius.sm,
-                borderCurve: 'continuous',
-                backgroundColor: chip,
-                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.25)',
-              }
-            : undefined
-        }
+      <PosterText
+        variant="rowTitle"
+        color={color}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        style={[{ fontVariant: ['tabular-nums'] }, shadow]}
       >
-        <PosterText
-          variant="rowTitle"
-          color={color}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-          style={{ fontVariant: ['tabular-nums'] }}
-        >
-          {value}
-        </PosterText>
-      </View>
+        {value}
+      </PosterText>
     </View>
   );
 }
