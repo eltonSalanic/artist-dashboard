@@ -48,7 +48,10 @@ export function HubStatCard({
 }) {
   const tokens = useSlotTokens(card.slot);
   const shadows = useShadows();
-  const financeColors = MONEY_COLORS[useScheme()];
+  // On a coloured card the money takes the same deeper green and red as the
+  // Finances page's coloured band fund card; on a plain one, the page's own.
+  const scheme = useScheme();
+  const financeColors = card.slot === 'base' ? MONEY_COLORS[scheme] : MONEY_COLORS.onColor;
   const hero = card.kind === 'hero';
   const lines = tall && !card.loading ? card.lines : [];
 
@@ -167,7 +170,6 @@ export function HubStatCard({
 export function HubCardSkeleton() {
   const tokens = useSlotTokens('base');
   const shadows = useShadows();
-  const financeColors = MONEY_COLORS[useScheme()];
   return (
     <View
       style={{
