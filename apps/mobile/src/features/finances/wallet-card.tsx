@@ -47,8 +47,9 @@ export function WalletCard({
   const scheme = useScheme();
   const widget = useWidgetInk(boardId, 'FINANCES');
   // An inverted card sits in the other scheme, so it takes that scheme's
-  // greens and reds. A coloured card takes the bright ones with a solid black
-  // drop shadow, so they stand off whatever colour the card is.
+  // greens and reds. A coloured card takes a slightly deeper green and red
+  // with a solid black drop shadow, so they stand off whatever colour the
+  // card is.
   const flipped = FINANCE_COLORS[scheme === 'light' ? 'dark' : 'light'];
   const card = widget.plain
     ? {
@@ -65,8 +66,8 @@ export function WalletCard({
         ink: widget.ink,
         soft: widget.soft,
         faint: `${widget.ink}1f`,
-        pos: FINANCE_COLORS.dark.positive,
-        neg: FINANCE_COLORS.dark.negative,
+        pos: '#10b981',
+        neg: '#ef4444',
         shadow: DROP_SHADOW,
       };
   const below = bandFundCents < 0;
