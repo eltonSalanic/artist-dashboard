@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
-import { FINANCE_COLORS, formatMoney } from '@artist/shared';
+import { formatMoney } from '@artist/shared';
 import { Icon, type IconName } from '@/components/icon';
 import { PosterText, type PosterVariant } from '@/components/poster-text';
 import { radius, spacing, useScheme, useShadows, useTokens } from '@/theme';
 import { initials } from './wallet-helpers';
+import { MONEY_COLORS } from '@/theme/money-colors';
 
 /**
  * The small kit the Finances screens share, after a banking app: a segmented
@@ -110,7 +111,7 @@ export function Segmented<T extends string>({
 
 /** A small red count, as on an app icon: things waiting on someone. */
 export function CountPill({ count }: { count: number }) {
-  const red = FINANCE_COLORS[useScheme()].negative;
+  const red = MONEY_COLORS[useScheme()].negative;
   return (
     <View
       style={{
@@ -215,7 +216,7 @@ export function Avatar({
   owed?: boolean;
 }) {
   const tokens = useTokens();
-  const red = FINANCE_COLORS[useScheme()].negative;
+  const red = MONEY_COLORS[useScheme()].negative;
   return (
     <View
       accessible={false}
@@ -250,7 +251,7 @@ export function CategoryBadge({
   size?: number;
 }) {
   const tokens = useTokens();
-  const green = FINANCE_COLORS[useScheme()].positive;
+  const green = MONEY_COLORS[useScheme()].positive;
   return (
     <View
       accessible={false}
@@ -291,7 +292,7 @@ export function Money({
   color?: string;
 }) {
   const tokens = useTokens();
-  const finance = FINANCE_COLORS[useScheme()];
+  const finance = MONEY_COLORS[useScheme()];
   const amount = formatMoney(Math.abs(cents), currency);
   const text =
     tone === 'in' && cents !== 0

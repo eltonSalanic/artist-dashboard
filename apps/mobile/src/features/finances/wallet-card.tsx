@@ -1,10 +1,11 @@
 import { View } from 'react-native';
-import { FINANCE_COLORS, formatMoney } from '@artist/shared';
+import { formatMoney } from '@artist/shared';
 import { Icon, type IconName } from '@/components/icon';
 import { PosterText } from '@/components/poster-text';
 import { useWidgetInk } from '@/features/board/spoke-header';
 import { radius, spacing, useScheme, useShadows, useTokens } from '@/theme';
 import { Segmented, type Segment } from './wallet-ui';
+import { MONEY_COLORS } from '@/theme/money-colors';
 
 export type Period = 'month' | 'year' | 'all';
 
@@ -48,7 +49,7 @@ export function WalletCard({
   const widget = useWidgetInk(boardId, 'FINANCES');
   // An inverted card sits in the other scheme, so it takes that scheme's
   // greens and reds. A coloured card takes a slightly deeper green and red.
-  const flipped = FINANCE_COLORS[scheme === 'light' ? 'dark' : 'light'];
+  const flipped = MONEY_COLORS[scheme === 'light' ? 'dark' : 'light'];
   const card = widget.plain
     ? {
         bg: tokens.foreground,
@@ -63,8 +64,8 @@ export function WalletCard({
         ink: widget.ink,
         soft: widget.soft,
         faint: `${widget.ink}1f`,
-        pos: '#10b981',
-        neg: '#ef4444',
+        pos: MONEY_COLORS.onColor.positive,
+        neg: MONEY_COLORS.onColor.negative,
       };
   const below = bandFundCents < 0;
   const money = (cents: number) => formatMoney(cents, currency);

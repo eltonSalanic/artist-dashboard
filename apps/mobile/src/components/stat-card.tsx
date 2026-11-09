@@ -1,4 +1,3 @@
-import { FINANCE_COLORS } from '@artist/shared';
 import { Pressable, View } from 'react-native';
 import {
   ThemeTokensProvider,
@@ -12,6 +11,7 @@ import type { HubCard } from '@/features/board/use-hub-cards';
 import { Icon } from './icon';
 import { PosterText } from './poster-text';
 import { Skeleton } from './skeleton';
+import { MONEY_COLORS } from '@/theme/money-colors';
 
 /** How long a card is held before the hub goes into edit mode. */
 export const HOLD_TO_EDIT = 400;
@@ -48,7 +48,7 @@ export function HubStatCard({
 }) {
   const tokens = useSlotTokens(card.slot);
   const shadows = useShadows();
-  const financeColors = FINANCE_COLORS[useScheme()];
+  const financeColors = MONEY_COLORS[useScheme()];
   const hero = card.kind === 'hero';
   const lines = tall && !card.loading ? card.lines : [];
 
@@ -167,7 +167,7 @@ export function HubStatCard({
 export function HubCardSkeleton() {
   const tokens = useSlotTokens('base');
   const shadows = useShadows();
-  const financeColors = FINANCE_COLORS[useScheme()];
+  const financeColors = MONEY_COLORS[useScheme()];
   return (
     <View
       style={{

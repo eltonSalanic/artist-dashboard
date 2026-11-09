@@ -11,7 +11,6 @@ import {
 import {
   activeFinanceFilterCount,
   DEFAULT_FINANCE_FILTERS,
-  FINANCE_COLORS,
   filterFinanceEntries,
   formatMoney,
 } from '@artist/shared';
@@ -26,6 +25,7 @@ import { SpotlightFace, StatTiles } from '@/features/finances/owed-spotlight';
 import { expenseCount } from '@/features/finances/owed-spotlight-helpers';
 import { ChipButton, Panel, PanelTitle, Segmented } from '@/features/finances/wallet-ui';
 import { spacing, useScheme, useTokens } from '@/theme';
+import { MONEY_COLORS } from '@/theme/money-colors';
 
 /** Which of a member's expenses the switch over the list shows. */
 type Show = 'owed' | 'paid' | 'all';
@@ -40,7 +40,7 @@ type Show = 'owed' | 'paid' | 'all';
  */
 export function FinanceMemberScreen({ boardId, userId }: { boardId: string; userId: string }) {
   const tokens = useTokens();
-  const finance = FINANCE_COLORS[useScheme()];
+  const finance = MONEY_COLORS[useScheme()];
   const { can } = usePermissions();
   const me = useMe(true);
   const visible = can('finance.view');

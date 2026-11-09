@@ -4,7 +4,6 @@ import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import {
   categoryLabel,
-  FINANCE_COLORS,
   formatMoney,
   type FinanceEntryDto,
   type FinanceSummaryDto,
@@ -24,6 +23,7 @@ import {
 } from './owed-spotlight-helpers';
 import { categoryIcon } from './wallet-helpers';
 import { Avatar, CategoryBadge, Money, Panel, PanelTitle, TxRow } from './wallet-ui';
+import { MONEY_COLORS } from '@/theme/money-colors';
 
 /**
  * Who's owed, people first: a grid of faces at the top (a red ring and
@@ -135,7 +135,7 @@ export function SpotlightFace({
 }) {
   const tokens = useTokens();
   const scheme = useScheme();
-  const finance = FINANCE_COLORS[scheme];
+  const finance = MONEY_COLORS[scheme];
   const owed = standing === 'owed';
   const ring = Math.max(2, Math.round(size / 24));
   const inner = size - ring * 2 - Math.round(size / 16) * 2;
@@ -398,7 +398,7 @@ function EveryoneSpotlight({
   onPick: (id: string) => void;
 }) {
   const tokens = useTokens();
-  const finance = FINANCE_COLORS[useScheme()];
+  const finance = MONEY_COLORS[useScheme()];
   const owed = people.filter((p) => p.standing === 'owed');
   const paidBack = people.filter((p) => p.standing === 'paidBack');
   const nothing = people.filter((p) => p.standing === 'nothing');
@@ -542,7 +542,7 @@ function PersonSpotlight({
   manages: boolean;
 }) {
   const tokens = useTokens();
-  const finance = FINANCE_COLORS[useScheme()];
+  const finance = MONEY_COLORS[useScheme()];
   const money = (cents: number) => formatMoney(cents, currency);
   const owed = person.standing === 'owed';
   const first = firstName(person.name);
@@ -630,7 +630,7 @@ function PersonSpotlight({
 /** "Square" in big type with a green tick, for anyone the band owes nothing. */
 function SquareFigure() {
   const tokens = useTokens();
-  const finance = FINANCE_COLORS[useScheme()];
+  const finance = MONEY_COLORS[useScheme()];
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
       <Icon
@@ -665,7 +665,7 @@ export function StatTiles({
   compact?: boolean;
 }) {
   const tokens = useTokens();
-  const finance = FINANCE_COLORS[useScheme()];
+  const finance = MONEY_COLORS[useScheme()];
   const tiles = [
     { label: 'Paid for the band', cents: paidCents, color: tokens.foreground },
     {

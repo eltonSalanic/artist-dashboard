@@ -1,10 +1,11 @@
 import { View } from 'react-native';
-import { FINANCE_COLORS, type PaybackStatus } from '@artist/shared';
+import { type PaybackStatus } from '@artist/shared';
 import { Button } from '@/components/button';
 import { Icon } from '@/components/icon';
 import { PosterText } from '@/components/poster-text';
 import { radius, spacing, useScheme, useShadows, useTokens } from '@/theme';
 import { PaybackLabel } from './payback-label';
+import { MONEY_COLORS } from '@/theme/money-colors';
 
 /**
  * An out-of-pocket expense's payback, shown the way a bank shows a transfer:
@@ -39,7 +40,7 @@ export function PaybackTransfer({
 }) {
   const tokens = useTokens();
   const shadows = useShadows();
-  const finance = FINANCE_COLORS[useScheme()];
+  const finance = MONEY_COLORS[useScheme()];
   const done = status === 'paid';
 
   return (
@@ -131,7 +132,7 @@ function Step({
   line?: boolean;
 }) {
   const tokens = useTokens();
-  const green = FINANCE_COLORS[useScheme()].positive;
+  const green = MONEY_COLORS[useScheme()].positive;
   return (
     <View style={{ flexDirection: 'row', gap: spacing.sm + 4 }}>
       <View style={{ width: 22, alignItems: 'center' }}>

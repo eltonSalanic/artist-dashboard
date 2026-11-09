@@ -1,14 +1,15 @@
 import { View } from 'react-native';
-import { FINANCE_COLORS, PAYBACK_LABELS, type PaybackStatus } from '@artist/shared';
+import { PAYBACK_LABELS, type PaybackStatus } from '@artist/shared';
 import { PosterText } from '@/components/poster-text';
 import { radius, spacing, useScheme } from '@/theme';
+import { MONEY_COLORS } from '@/theme/money-colors';
 
 /**
  * "Owed back" or "Paid back" on an expense a member paid out of pocket, in the
  * ledger's own red and green so it reads at a glance in a long list.
  */
 export function PaybackLabel({ status }: { status: PaybackStatus }) {
-  const colors = FINANCE_COLORS[useScheme()];
+  const colors = MONEY_COLORS[useScheme()];
   const color = status === 'paid' ? colors.positive : colors.negative;
   return (
     <View

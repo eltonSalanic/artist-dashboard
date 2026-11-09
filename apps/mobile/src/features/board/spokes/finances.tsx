@@ -5,7 +5,6 @@ import {
   activeFinanceFilterCount,
   categoryLabel,
   DEFAULT_FINANCE_FILTERS,
-  FINANCE_COLORS,
   filterFinanceEntries,
   formatMoney,
   ledgerTotals,
@@ -40,6 +39,7 @@ import {
   TxRow,
 } from '../../finances/wallet-ui';
 import { SpokeHeader } from '../spoke-header';
+import { MONEY_COLORS } from '@/theme/money-colors';
 
 type View_ = 'overview' | 'owed' | 'entries';
 
@@ -305,7 +305,7 @@ function CategoryLine({
   currency: string;
 }) {
   const tokens = useTokens();
-  const green = FINANCE_COLORS[useScheme()].positive;
+  const green = MONEY_COLORS[useScheme()].positive;
   return (
     <View
       accessible
@@ -367,7 +367,7 @@ function OwedBanner({
 }) {
   const tokens = useTokens();
   const shadows = useShadows();
-  const finance = FINANCE_COLORS[useScheme()];
+  const finance = MONEY_COLORS[useScheme()];
   const owed = data.balances.owedCents;
   const count = data.owed.length;
   return (

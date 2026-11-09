@@ -1,6 +1,7 @@
-import { FINANCE_COLORS, formatMoney } from '@artist/shared';
+import { formatMoney } from '@artist/shared';
 import { PosterText, type PosterVariant } from '@/components/poster-text';
 import { useScheme, usePosterCanvas } from '@/theme';
+import { MONEY_COLORS } from '@/theme/money-colors';
 
 export function FinanceAmount({
   cents,
@@ -20,7 +21,7 @@ export function FinanceAmount({
   /** Set larger on a summary than in a row. */
   variant?: PosterVariant;
 }) {
-  const colors = FINANCE_COLORS[useScheme()];
+  const colors = MONEY_COLORS[useScheme()];
   const canvas = usePosterCanvas();
   return (
     <PosterText
