@@ -48,10 +48,10 @@ export function HubStatCard({
 }) {
   const tokens = useSlotTokens(card.slot);
   const shadows = useShadows();
-  // On a coloured card the money takes the same deeper green and red as the
-  // Finances page's coloured band fund card; on a plain one, the page's own.
+  // On a plain card the money is green or red; on a coloured card it takes the
+  // card's own ink (white on a deep colour, dark on a pale one), so it reads.
   const scheme = useScheme();
-  const financeColors = card.slot === 'base' ? MONEY_COLORS[scheme] : MONEY_COLORS.onColor;
+  const financeColors = card.slot === 'base' ? MONEY_COLORS[scheme] : null;
   const hero = card.kind === 'hero';
   const lines = tall && !card.loading ? card.lines : [];
 
@@ -121,7 +121,11 @@ export function HubStatCard({
           <View style={{ gap: 2 }}>
             <PosterText
               variant={hero ? 'prose' : 'stat'}
-              color={card.primaryTone ? financeColors[card.primaryTone] : tokens.foreground}
+              color={
+                card.primaryTone && financeColors
+                  ? financeColors[card.primaryTone]
+                  : tokens.foreground
+              }
               numberOfLines={hero ? (tall ? 4 : 3) : 1}
               adjustsFontSizeToFit={!hero}
               minimumFontScale={0.6}
