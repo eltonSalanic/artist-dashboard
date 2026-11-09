@@ -1,5 +1,5 @@
 import { FINANCE_COLORS, formatMoney } from '@artist/shared';
-import { PosterText } from '@/components/poster-text';
+import { PosterText, type PosterVariant } from '@/components/poster-text';
 import { useScheme, usePosterCanvas } from '@/theme';
 
 export function FinanceAmount({
@@ -7,6 +7,7 @@ export function FinanceAmount({
   currency,
   signed = false,
   owed = false,
+  variant = 'rowTitle',
 }: {
   cents: number;
   currency: string;
@@ -16,12 +17,15 @@ export function FinanceAmount({
    * next to their name would read as them owing the band.
    */
   owed?: boolean;
+  /** Set larger on a summary than in a row. */
+  variant?: PosterVariant;
 }) {
   const colors = FINANCE_COLORS[useScheme()];
   const canvas = usePosterCanvas();
   return (
     <PosterText
-      variant="rowTitle"
+      variant={variant}
+      numberOfLines={1}
       color={
         owed
           ? colors.negative

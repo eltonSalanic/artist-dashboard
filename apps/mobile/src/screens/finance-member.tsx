@@ -45,6 +45,8 @@ export function FinanceMemberScreen({ boardId, userId }: { boardId: string; user
   const payBackAll = usePayBackMember(boardId);
   const [filters, setFilters] = useState(DEFAULT_FINANCE_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // Bumped by Reset so the amount boxes, which keep their own text, start empty.
+  const [resets, setResets] = useState(0);
 
   const data = summary.data;
   const currency = data?.currency ?? 'USD';
@@ -222,10 +224,22 @@ export function FinanceMemberScreen({ boardId, userId }: { boardId: string; user
                   {filtersOpen && (
                     <Panel padded>
                       <FinanceFilters
+                        key={resets}
                         filters={{ ...filters, kind: 'EXPENSE' }}
                         onChange={setFilters}
                         kinds={false}
                       />
+                      {active > 0 && (
+                        <Button
+                          title="Reset filters"
+                          variant="ghost"
+                          size="sm"
+                          onPress={() => {
+                            setFilters({ ...DEFAULT_FINANCE_FILTERS, query: filters.query });
+                            setResets((n) => n + 1);
+                          }}
+                        />
+                      )}
                     </Panel>
                   )}
                 </View>

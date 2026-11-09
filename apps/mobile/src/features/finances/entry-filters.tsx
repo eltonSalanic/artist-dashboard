@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import {
   BAND_ACCOUNT,
-  DEFAULT_FINANCE_FILTERS,
   FINANCE_CATEGORIES,
   FINANCE_SORTS,
   parseMoneyToCents,
@@ -10,7 +9,6 @@ import {
   type FinanceSort,
   type FinanceViewFilters,
 } from '@artist/shared';
-import { Button } from '@/components/button';
 import { ChoiceChips } from '@/components/choice-chips';
 import { PickOne } from '@/components/pick-one';
 import { TextField } from '@/components/text-field';
@@ -22,7 +20,7 @@ const toText = (cents: number | null) => (cents === null ? '' : (cents / 100).to
 /**
  * Narrowing a ledger list: type, who paid, category, owed or paid back, an
  * amount range and the sort. Search lives above the list, not in here, so it's
- * always one tap away.
+ * always one tap away. Reset is the filter sheet's, in its header.
  *
  * `members` off hides "Who paid" (a member's own list is all theirs), and
  * `kinds` off hides the type (a member's list is all expenses).
@@ -134,24 +132,11 @@ export function FinanceFilters({
           />
         </View>
       </View>
-      <PickOne
+      <ChoiceChips<FinanceSort>
         label="Sort"
-        noneLabel="Newest first"
-        value={filters.sort === 'newest' ? null : filters.sort}
-        options={FINANCE_SORTS.filter((s) => s.value !== 'newest').map((s) => ({
-          ...s,
-        }))}
-        onChange={(value) => set({ sort: (value ?? 'newest') as FinanceSort })}
-      />
-      <Button
-        title="Reset filters"
-        variant="ghost"
-        size="sm"
-        onPress={() => {
-          setMin('');
-          setMax('');
-          onChange({ ...DEFAULT_FINANCE_FILTERS, query: filters.query });
-        }}
+        value={filters.sort}
+        onChange={(sort) => set({ sort })}
+        choices={FINANCE_SORTS.map((s) => ({ value: s.value, label: s.label }))}
       />
     </View>
   );

@@ -1,6 +1,5 @@
 import { View } from 'react-native';
 import { FINANCE_COLORS, formatMoney } from '@artist/shared';
-import { useBoard } from '@artist/api-client';
 import { Icon, type IconName } from '@/components/icon';
 import { PosterText } from '@/components/poster-text';
 import { useWidgetInk } from '@/features/board/spoke-header';
@@ -47,7 +46,6 @@ export function WalletCard({
   const shadows = useShadows();
   const scheme = useScheme();
   const widget = useWidgetInk(boardId, 'FINANCES');
-  const band = useBoard(boardId).data?.name;
   // An inverted card sits in the other scheme, so it takes that scheme's
   // greens and reds; a coloured card keeps everything in its own ink.
   const flipped = FINANCE_COLORS[scheme === 'light' ? 'dark' : 'light'];
@@ -65,8 +63,8 @@ export function WalletCard({
         ink: widget.ink,
         soft: widget.soft,
         faint: `${widget.ink}1f`,
-        pos: widget.ink,
-        neg: widget.ink,
+        pos: FINANCE_COLORS[scheme].positive,
+        neg: FINANCE_COLORS[scheme].negative,
       };
   const below = bandFundCents < 0;
   const money = (cents: number) => formatMoney(cents, currency);
@@ -85,49 +83,6 @@ export function WalletCard({
         boxShadow: shadows.raised,
       }}
     >
-      {/* Two soft rings in the corner, the way a bank card carries its mark. */}
-      <View
-        pointerEvents="none"
-        style={{
-          position: 'absolute',
-          width: 220,
-          height: 220,
-          right: -70,
-          top: -90,
-          borderRadius: radius.full,
-          borderWidth: 28,
-          borderColor: card.faint,
-        }}
-      />
-      <View
-        pointerEvents="none"
-        style={{
-          position: 'absolute',
-          width: 120,
-          height: 120,
-          right: 40,
-          top: -60,
-          borderRadius: radius.full,
-          backgroundColor: card.faint,
-        }}
-      />
-
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-        <Icon
-          name={{ sf: 'wallet.pass.fill', md: 'account-balance-wallet' }}
-          size={18}
-          color={card.ink}
-        />
-        <PosterText variant="label" color={card.ink} style={{ flex: 1 }}>
-          BAND FUND
-        </PosterText>
-        {band ? (
-          <PosterText variant="meta" color={card.soft} numberOfLines={1} style={{ maxWidth: 150 }}>
-            {band}
-          </PosterText>
-        ) : null}
-      </View>
-
       <View style={{ gap: spacing.xs }}>
         <PosterText
           variant="figure"
@@ -138,8 +93,8 @@ export function WalletCard({
         >
           {below ? `−${money(-bandFundCents)}` : money(bandFundCents)}
         </PosterText>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-          {below && (
+        {below && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
             <View
               style={{
                 paddingHorizontal: spacing.sm,
@@ -152,13 +107,8 @@ export function WalletCard({
                 Below zero
               </PosterText>
             </View>
-          )}
-          <PosterText variant="cardMeta" color={card.soft} style={{ flex: 1 }}>
-            {below
-              ? 'The band has spent more than it has.'
-              : 'What the band has right now, after paybacks.'}
-          </PosterText>
-        </View>
+          </View>
+        )}
       </View>
 
       <Segmented
@@ -175,14 +125,14 @@ export function WalletCard({
           label="Money in"
           icon={{ sf: 'arrow.down.left', md: 'south-west' }}
           value={incomeCents > 0 ? `+${money(incomeCents)}` : money(0)}
-          color={incomeCents > 0 ? card.pos : card.ink}
+          color={card.pos}
           card={card}
         />
         <Figure
           label="Money out"
           icon={{ sf: 'arrow.up.right', md: 'north-east' }}
           value={expenseCents > 0 ? `−${money(expenseCents)}` : money(0)}
-          color={card.ink}
+          color={card.neg}
           card={card}
           divided
         />

@@ -26,6 +26,7 @@ export function SpokeList({
   emptyBody,
   mascot,
   header,
+  pinned,
   children,
 }: {
   pending: boolean;
@@ -42,6 +43,11 @@ export function SpokeList({
   mascot?: { phrase: keyof typeof PHRASE_LETTERING };
   /** Rendered above the rows, inside the same scroll view. */
   header?: ReactNode;
+  /**
+   * Under the header, and stays at the top of the screen once it's scrolled
+   * there: a summary or a search that should never be a scroll away.
+   */
+  pinned?: ReactNode;
   children: ReactNode;
 }) {
   const tokens = useTokens();
@@ -117,8 +123,25 @@ export function SpokeList({
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={{ padding: spacing.md, gap: spacing.sm, flexGrow: 1 }}
+      // Children count by position, empty ones included: the pinned block is
+      // always the second.
+      stickyHeaderIndices={pinned ? [1] : undefined}
     >
-      {header}
+      {header ?? null}
+      {pinned ? (
+        <View
+          style={{
+            // Edge to edge and opaque, so rows scrolling under it don't show
+            // in the gutters.
+            marginHorizontal: -spacing.md,
+            paddingHorizontal: spacing.md,
+            paddingBottom: spacing.sm,
+            backgroundColor: tokens.background,
+          }}
+        >
+          {pinned}
+        </View>
+      ) : null}
       {content()}
     </ScrollView>
   );

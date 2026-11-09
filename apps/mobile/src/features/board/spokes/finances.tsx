@@ -2,10 +2,15 @@ import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { useFinanceEntries, useFinanceSummary, useMe, usePermissions } from '@artist/api-client';
 import {
+  activeFinanceFilterCount,
   categoryLabel,
+  DEFAULT_FINANCE_FILTERS,
   FINANCE_COLORS,
+  filterFinanceEntries,
   formatMoney,
+  ledgerTotals,
   monthToDate,
+  type FinanceEntryDto,
   type FinanceMemberRef,
   type FinanceSummaryDto,
 } from '@artist/shared';
@@ -15,7 +20,12 @@ import { Icon } from '@/components/icon';
 import { PosterText } from '@/components/poster-text';
 import { SpokeList } from '@/components/spoke-list';
 import { radius, spacing, useScheme, useShadows, useTokens } from '@/theme';
-import { FinanceEntryRow } from '../../finances/entry-row';
+import { shareFinanceCsv } from '../../finances/export-csv';
+import { FilterSheet } from '../../finances/filter-sheet';
+import { FinanceSearch } from '../../finances/finance-search';
+import { QuickFilters } from '../../finances/quick-filters';
+import { FinanceTimeline } from '../../finances/timeline';
+import { timelineGroups } from '../../finances/timeline-groups';
 import { WalletCard, type Period } from '../../finances/wallet-card';
 import { barShare, categoryIcon, monthLabel } from '../../finances/wallet-helpers';
 import {
@@ -31,9 +41,6 @@ import {
 import { shortDate } from '../format';
 import { SpokeHeader } from '../spoke-header';
 
-/** How many of the latest entries the Entries view shows before "See all". */
-const RECENT = 6;
-
 type View_ = 'overview' | 'owed' | 'entries';
 
 /**
@@ -41,7 +48,7 @@ type View_ = 'overview' | 'owed' | 'entries';
  * money in and out, the two things people come here to do (log an expense,
  * log income) right under it, then three short views instead of one long
  * scroll. Overview is the reports, Owed is who the band owes and for what,
- * Entries is the latest transactions with the full searchable list a tap away.
+ * Entries is every entry as a searchable, filterable timeline.
  */
 export function FinancesSpoke({ boardId }: { boardId: string }) {
   const { can } = usePermissions();
@@ -164,6 +171,8 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
               boardId={boardId}
               currency={data.currency}
               entries={entries.data ?? []}
+              members={data.members}
+              myId={myId}
               name={name}
             />
           )}
@@ -611,79 +620,106 @@ function MemberCard({
   );
 }
 
-/** The latest transactions, and the way into the full list. */
+/**
+ * Every entry the band has logged, as the timeline: search, quick filters
+ * (the rest in the filter sheet), the count with Export CSV, then one feed
+ * month by month with each month's total. Tapping an entry opens it.
+ */
 function Entries({
   boardId,
   currency,
   entries,
+  members,
+  myId,
   name,
 }: {
   boardId: string;
   currency: string;
-  entries: Parameters<typeof FinanceEntryRow>[0]['entry'][];
+  entries: FinanceEntryDto[];
+  members: FinanceMemberRef[];
+  myId: string | undefined;
   name: (userId: string) => string;
 }) {
   const tokens = useTokens();
-  const recent = entries.slice(0, RECENT);
-  const all = () => router.push(`/board/${boardId}/finances/entries`);
+  const [filters, setFilters] = useState(DEFAULT_FINANCE_FILTERS);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const rows = filterFinanceEntries(entries, filters);
+  const groups = timelineGroups(rows, filters.sort);
+  const narrowed = activeFinanceFilterCount(filters) > 0 || filters.query.trim() !== '';
+  const net = ledgerTotals(rows).netCents;
+
+  if (entries.length === 0) {
+    return (
+      <Panel padded>
+        <PosterText variant="body" color={tokens.mutedForeground} style={{ textAlign: 'center' }}>
+          Nothing logged yet.
+        </PosterText>
+      </Panel>
+    );
+  }
+
   return (
     <View style={{ gap: spacing.md }}>
-      <Pressable
-        accessibilityRole="search"
-        accessibilityLabel="Search all entries"
-        onPress={all}
-        style={({ pressed }) => ({
+      <FinanceSearch
+        value={filters.query}
+        onChange={(query) => setFilters({ ...filters, query })}
+      />
+      <QuickFilters
+        filters={filters}
+        onChange={setFilters}
+        onOpenSheet={() => setSheetOpen(true)}
+        members={members}
+        me={myId}
+      />
+      <View
+        style={{
           flexDirection: 'row',
           alignItems: 'center',
+          justifyContent: 'space-between',
           gap: spacing.sm,
-          minHeight: 46,
-          paddingHorizontal: spacing.md,
-          borderRadius: radius.full,
-          backgroundColor: tokens.muted,
-          opacity: pressed ? 0.7 : 1,
-        })}
+          paddingLeft: spacing.xs,
+        }}
       >
-        <Icon
-          name={{ sf: 'magnifyingglass', md: 'search' }}
-          size={16}
+        <PosterText
+          variant="cardMeta"
           color={tokens.mutedForeground}
-        />
-        <PosterText variant="field" color={tokens.mutedForeground} style={{ flex: 1 }}>
-          Search, filter or export
+          style={{ flex: 1 }}
+          numberOfLines={2}
+        >
+          {`${rows.length} of ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}${
+            narrowed ? ` · net ${formatMoney(net, currency)}` : ''
+          }`}
         </PosterText>
-        <Icon
-          name={{ sf: 'slider.horizontal.3', md: 'tune' }}
-          size={16}
-          color={tokens.mutedForeground}
-        />
-      </Pressable>
-
-      <PanelTitle title="Latest" caption={`${entries.length} in total`} />
-      <Panel padded={recent.length === 0}>
-        {recent.length === 0 ? (
-          <PosterText variant="body" color={tokens.mutedForeground} style={{ textAlign: 'center' }}>
-            Nothing logged yet.
-          </PosterText>
-        ) : (
-          recent.map((entry, index) => (
-            <FinanceEntryRow
-              key={entry.id}
-              entry={entry}
-              currency={currency}
-              first={index === 0}
-              name={name}
-              onPress={() => router.push(`/board/${boardId}/form/finance?id=${entry.id}`)}
-            />
-          ))
-        )}
-      </Panel>
-      {entries.length > 0 && (
         <Button
-          title={`See all ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}`}
+          title="Export CSV"
           variant="secondary"
-          onPress={all}
+          size="sm"
+          onPress={() => void shareFinanceCsv(rows, members, narrowed ? 'filtered' : 'all-time')}
+        />
+      </View>
+      {rows.length === 0 ? (
+        <Panel padded>
+          <PosterText variant="body" color={tokens.mutedForeground} style={{ textAlign: 'center' }}>
+            Nothing matches this search and these filters.
+          </PosterText>
+        </Panel>
+      ) : (
+        <FinanceTimeline
+          groups={groups}
+          currency={currency}
+          sort={filters.sort}
+          name={name}
+          onOpen={(entry) => router.push(`/board/${boardId}/form/finance?id=${entry.id}`)}
         />
       )}
+      <FilterSheet
+        visible={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        filters={filters}
+        onChange={setFilters}
+        resultCount={rows.length}
+        members={members}
+      />
     </View>
   );
 }
