@@ -3,7 +3,7 @@ import { FINANCE_COLORS, formatMoney } from '@artist/shared';
 import { Icon, type IconName } from '@/components/icon';
 import { PosterText } from '@/components/poster-text';
 import { useWidgetInk } from '@/features/board/spoke-header';
-import { contrast, radius, spacing, useScheme, useShadows, useTokens } from '@/theme';
+import { radius, spacing, useScheme, useShadows, useTokens } from '@/theme';
 import { Segmented, type Segment } from './wallet-ui';
 
 export type Period = 'month' | 'year' | 'all';
@@ -47,14 +47,9 @@ export function WalletCard({
   const scheme = useScheme();
   const widget = useWidgetInk(boardId, 'FINANCES');
   // An inverted card sits in the other scheme, so it takes that scheme's
-  // greens and reds. On a coloured card no one green or red reads on every
-  // colour (red on the orange card all but vanishes), so the figures follow
-  // the card's own ink: where the ink is light (a deep or saturated card),
-  // pale greens and reds with a dark shadow; where it's dark (a pale card),
-  // deep greens and reds with a soft light glow.
+  // greens and reds. A coloured card takes the bright ones with a solid black
+  // drop shadow, so they stand off whatever colour the card is.
   const flipped = FINANCE_COLORS[scheme === 'light' ? 'dark' : 'light'];
-  const lightInk =
-    !widget.plain && contrast(widget.ink, '#000000') > contrast(widget.ink, '#ffffff');
   const card = widget.plain
     ? {
         bg: tokens.foreground,
@@ -70,9 +65,9 @@ export function WalletCard({
         ink: widget.ink,
         soft: widget.soft,
         faint: `${widget.ink}1f`,
-        pos: lightInk ? '#bbf7d0' : '#065f46',
-        neg: lightInk ? '#fecaca' : '#991b1b',
-        shadow: lightInk ? DARK_SHADOW : LIGHT_GLOW,
+        pos: FINANCE_COLORS.dark.positive,
+        neg: FINANCE_COLORS.dark.negative,
+        shadow: DROP_SHADOW,
       };
   const below = bandFundCents < 0;
   const money = (cents: number) => formatMoney(cents, currency);
@@ -162,18 +157,11 @@ export function WalletCard({
   );
 }
 
-/** Behind pale figures on a deep card. */
-const DARK_SHADOW: TextStyle = {
-  textShadowColor: 'rgba(0, 0, 0, 0.85)',
-  textShadowOffset: { width: 0, height: 1 },
-  textShadowRadius: 2,
-};
-
-/** Behind deep figures on a pale card. */
-const LIGHT_GLOW: TextStyle = {
-  textShadowColor: 'rgba(255, 255, 255, 0.8)',
-  textShadowOffset: { width: 0, height: 0 },
-  textShadowRadius: 3,
+/** Behind a green or red figure on a coloured card: solid black, down and to the left. */
+const DROP_SHADOW: TextStyle = {
+  textShadowColor: '#000000',
+  textShadowOffset: { width: -2, height: 2 },
+  textShadowRadius: 0,
 };
 
 function Figure({
