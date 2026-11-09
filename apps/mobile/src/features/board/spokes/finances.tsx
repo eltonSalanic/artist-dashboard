@@ -47,15 +47,15 @@ type View_ = 'overview' | 'owed' | 'entries';
  * The band's money as a wallet: a card with the band fund and the period's
  * money in and out, the two things people come here to do (log an expense,
  * log income) right under it, then three short views instead of one long
- * scroll. Overview is the reports, Owed is who the band owes and for what,
- * Entries is every entry as a searchable, filterable timeline.
+ * scroll. Entries (where it opens) is every entry as a searchable, filterable
+ * timeline, Owed is who the band owes and for what, Overview is the reports.
  */
 export function FinancesSpoke({ boardId }: { boardId: string }) {
   const { can } = usePermissions();
   const me = useMe(true);
   const visible = can('finance.view');
   const [period, setPeriod] = useState<Period>('month');
-  const [view, setView] = useState<View_>('overview');
+  const [view, setView] = useState<View_>('entries');
   const range = useMemo(() => {
     const range = monthToDate();
     return period === 'all'
@@ -136,14 +136,14 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
               value={view}
               onChange={setView}
               options={[
-                { value: 'overview', label: 'Overview' },
+                { value: 'entries', label: 'Entries' },
                 {
                   value: 'owed',
                   label: 'Owed',
                   // The to-do count, as on the spoke's chip: admins pay back.
                   badge: can('finance.manage') ? data.owed.length : undefined,
                 },
-                { value: 'entries', label: 'Entries' },
+                { value: 'overview', label: 'Overview' },
               ]}
             />
           </View>
