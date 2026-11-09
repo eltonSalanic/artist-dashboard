@@ -1,7 +1,6 @@
 import { useColorScheme } from 'react-native';
 import {
   BOARD_PALETTE_COLORS,
-  SURFACE_TOKENS,
   oklchToHex,
   slotTokens,
   type BoardPalette,
@@ -9,6 +8,7 @@ import {
   type ColorTokens,
   type WidgetColor,
 } from '@artist/shared';
+import { SURFACES } from './surfaces';
 
 /**
  * Colour tokens, resolved to hex for React Native.
@@ -38,8 +38,8 @@ function toHex(tokens: ColorTokens): ThemeColors {
 
 /** The page's own tokens. Two schemes, converted once at import. */
 const surfaces: Record<ColorScheme, ThemeColors> = {
-  light: toHex(SURFACE_TOKENS.light),
-  dark: toHex(SURFACE_TOKENS.dark),
+  light: toHex(SURFACES.light),
+  dark: toHex(SURFACES.dark),
 };
 
 /**
@@ -67,9 +67,7 @@ export function cardTokens(
   const cached = slotCache.get(key);
   if (cached) return cached;
 
-  const resolved = toHex(
-    slotTokens(BOARD_PALETTE_COLORS[palette][scheme][slot], SURFACE_TOKENS[scheme]),
-  );
+  const resolved = toHex(slotTokens(BOARD_PALETTE_COLORS[palette][scheme][slot], SURFACES[scheme]));
   slotCache.set(key, resolved);
   return resolved;
 }
@@ -93,10 +91,7 @@ export function useThemeColors(): ThemeColors {
  * palettes: a widget names a slot, never a colour, and the board's palette
  * decides what that slot looks like.
  */
-export function useCardColors(
-  palette: BoardPalette,
-  slot: WidgetColor,
-): ThemeColors {
+export function useCardColors(palette: BoardPalette, slot: WidgetColor): ThemeColors {
   return cardTokens(palette, useScheme(), slot);
 }
 
@@ -121,10 +116,7 @@ export interface SlotHex {
 
 const accentCache = new Map<string, SlotHex>();
 
-export function boardAccent(
-  palette: BoardPalette,
-  scheme: ColorScheme,
-): SlotHex {
+export function boardAccent(palette: BoardPalette, scheme: ColorScheme): SlotHex {
   const key = `${palette}:${scheme}`;
   const cached = accentCache.get(key);
   if (cached) return cached;
@@ -147,9 +139,7 @@ export function paletteSwatches(palette: BoardPalette, scheme: ColorScheme): str
   if (cached) return cached;
 
   const slots = BOARD_PALETTE_COLORS[palette][scheme];
-  const resolved = (['c1', 'c2', 'c3', 'c4'] as const).map((slot) =>
-    oklchToHex(slots[slot].bg),
-  );
+  const resolved = (['c1', 'c2', 'c3', 'c4'] as const).map((slot) => oklchToHex(slots[slot].bg));
   swatchCache.set(key, resolved);
   return resolved;
 }

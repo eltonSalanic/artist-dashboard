@@ -1,12 +1,12 @@
 import {
   BOARD_PALETTE_COLORS,
-  SURFACE_TOKENS,
   oklchToHex,
   type BoardPalette,
   type ColorScheme,
   type Oklch,
   type WidgetColor,
 } from '@artist/shared';
+import { SURFACES } from './surfaces';
 
 /**
  * Colour for the "Wrapped" poster screens (the hub and the calendar).
@@ -59,12 +59,12 @@ const MAX_CHROMA = 0.24;
 const SOFT_ALPHA = 0.8;
 
 /**
- * The page is the app's own canvas (the warm cream, or charcoal in the dark),
+ * The page is the app's own canvas (the warm cream, or true black in the dark),
  * so the calendar and the widget page sit on the same ground as the widget
  * cards, and a band's uncoloured widget looks the same in both places.
  */
 export function posterCanvas(scheme: ColorScheme): PosterCanvas {
-  const page = SURFACE_TOKENS[scheme];
+  const page = SURFACES[scheme];
   return {
     background: oklchToHex(page.background),
     ink: oklchToHex(page.foreground),

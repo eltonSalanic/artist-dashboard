@@ -646,7 +646,11 @@ All three are toward native chrome, following the skill's named slop tells:
 Also deliberate: the skill's default is a palette built from platform semantic
 colours, with brand pairs only where the brand needs them. Here that exception
 is the whole surface — a warm cream canvas and five board palettes that have to
-match the browser. `systemBackground` would be a different app. The system font
+match the browser. `systemBackground` would be a different app. The one place
+the phone parts from the browser is dark mode: `apps/mobile/src/theme/surfaces.ts`
+keeps the shared light tokens but makes the dark canvas true black, with cards,
+sheets and fills as near-black lifts off it, where the web keeps its warm
+charcoal. The system font
 *is* kept, so text renders in San Francisco or Roboto rather than matching the
 web app's typeface; the native face is worth more than the match.
 
