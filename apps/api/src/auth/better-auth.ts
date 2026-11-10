@@ -5,6 +5,7 @@ import { bearer, emailOTP } from 'better-auth/plugins';
 import type { PrismaClient } from '../../generated/prisma/client';
 import { AUTH_BASE_PATH } from './auth.tokens';
 import { verifyAnyPassword } from './password';
+import { socialProviders, type SocialOptions } from './social-providers';
 
 /** A session lasts this long and slides forward while it's used. */
 const SESSION_DAYS = 30;
@@ -12,7 +13,7 @@ const SESSION_DAYS = 30;
 /** Invite codes, like Supabase's before them, last an hour and work once. */
 export const INVITE_CODE_TTL_SECONDS = 60 * 60;
 
-export interface AuthOptions {
+export interface AuthOptions extends SocialOptions {
   prisma: PrismaClient;
   secret: string;
   /** The API's public origin; Better Auth builds its own URLs from it. */
@@ -45,7 +46,13 @@ export function createAuth(options: AuthOptions) {
       expiresIn: SESSION_DAYS * 24 * 60 * 60,
       updateAge: 24 * 60 * 60,
     },
-    account: { modelName: 'authAccount' },
+    account: {
+      modelName: 'authAccount',
+      // Apple and Google have checked the email, so signing in with one of
+      // them reaches the existing account with that email, not a second one.
+      accountLinking: { enabled: true, trustedProviders: ['apple', 'google'] },
+    },
+    socialProviders: socialProviders(options),
     verification: { modelName: 'authVerification' },
     emailAndPassword: {
       enabled: true,
