@@ -1,5 +1,7 @@
 import { BoardPalettes, WidgetColors } from '@artist/shared';
-import { contrast, posterCanvas, posterSlot } from './poster-colors';
+import { oklchToHex } from '@artist/shared';
+import { bandInk, contrast, posterCanvas, posterSlot } from './poster-colors';
+import { SURFACES } from './surfaces';
 
 /**
  * The Wrapped screens write on solid colour, so legibility is a property of
@@ -17,6 +19,11 @@ describe('poster colours', () => {
     });
 
     for (const palette of BoardPalettes) {
+      it(`${palette} band ink reads on a card in ${scheme}`, () => {
+        const card = oklchToHex(SURFACES[scheme].card);
+        expect(contrast(bandInk(palette, scheme), card)).toBeGreaterThanOrEqual(4.5);
+      });
+
       for (const slot of WidgetColors) {
         it(`${palette} ${slot} in ${scheme}: ink ≥ 6, soft ≥ 4.5, accent ≥ 3`, () => {
           const block = posterSlot(palette, scheme, slot);

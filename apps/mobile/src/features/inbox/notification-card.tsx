@@ -17,7 +17,8 @@ import { inboxCardContent, inboxWhen, splitHandles } from './present';
 
 /**
  * The main line is set at reading weight, so the one bold thing in a comment
- * is the @handle: it is the reason this landed in your inbox.
+ * is the @handle, in its band's colour: it is the reason this landed in your
+ * inbox.
  */
 const LEAD = { fontFamily: face.medium } as const;
 const HANDLE = { fontFamily: face.bold } as const;
@@ -44,6 +45,7 @@ export function NotificationCard({
   namesBoards,
   accent,
   myName,
+  handleInk,
   onDismiss,
 }: {
   item: MentionNotificationDto;
@@ -52,6 +54,8 @@ export function NotificationCard({
   accent: SlotHex | undefined;
   /** The reader's display name, to find their @handle in a comment. */
   myName: string | undefined;
+  /** The band's colour as readable text, for the @handle. */
+  handleInk: string | undefined;
   onDismiss: () => void;
 }) {
   const colors = useThemeColors();
@@ -129,7 +133,12 @@ export function NotificationCard({
               {content.kind === 'Mention'
                 ? splitHandles(content.lead, myName).map((segment, i) =>
                     segment.type === 'handle' ? (
-                      <PosterText key={i} variant="prose" color={colors.foreground} style={HANDLE}>
+                      <PosterText
+                        key={i}
+                        variant="prose"
+                        color={handleInk ?? colors.foreground}
+                        style={HANDLE}
+                      >
                         {segment.value}
                       </PosterText>
                     ) : (

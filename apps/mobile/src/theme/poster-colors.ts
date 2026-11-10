@@ -100,6 +100,33 @@ export function posterSlot(
   return resolved;
 }
 
+const inkCache = new Map<string, string>();
+
+/**
+ * A band's lead colour as *text* on a card: the reader's @handle in the inbox.
+ *
+ * The palette's colours are made to be painted with, not written with: the
+ * sunset yellow on a cream card is nearly invisible. So the hue is kept and the
+ * lightness walked (down on paper, up on black) until it clears 4.5:1 against
+ * the card, which `poster-colors.spec.ts` checks for every palette and scheme.
+ */
+export function bandInk(palette: BoardPalette, scheme: ColorScheme): string {
+  const key = `${palette}:${scheme}`;
+  const cached = inkCache.get(key);
+  if (cached) return cached;
+
+  const card = oklchToHex(SURFACES[scheme].card);
+  const step = scheme === 'light' ? -0.02 : 0.02;
+  let color = vivid(BOARD_PALETTE_COLORS[palette][scheme].c1.bg);
+  let hex = oklchToHex(color);
+  while (contrast(hex, card) < 4.5 && color.l > 0.05 && color.l < 0.97) {
+    color = { ...color, l: color.l + step };
+    hex = oklchToHex(color);
+  }
+  inkCache.set(key, hex);
+  return hex;
+}
+
 function baseBlock(scheme: ColorScheme): Oklch {
   return scheme === 'light' ? { l: 0.2, c: 0.006, h: 60 } : { l: 0.27, c: 0.006, h: 70 };
 }

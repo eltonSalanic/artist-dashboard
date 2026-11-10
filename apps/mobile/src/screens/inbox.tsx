@@ -17,6 +17,7 @@ import { useBoardScope } from '@/features/boards/use-board-scope';
 import { PushPrompt } from '@/features/push/push-prompt';
 import { NotificationCard } from '@/features/inbox/notification-card';
 import {
+  bandInk,
   boardAccent,
   spacing,
   usePosterCanvas,
@@ -78,6 +79,11 @@ function Mentions({
   const accents = useMemo(
     () =>
       new Map(boards.map((board) => [board.id, boardAccent(board.palette, scheme)])),
+    [boards, scheme],
+  );
+  // The same colour, darkened or lightened until it reads as text on a card.
+  const inks = useMemo(
+    () => new Map(boards.map((board) => [board.id, bandInk(board.palette, scheme)])),
     [boards, scheme],
   );
 
@@ -178,6 +184,7 @@ function Mentions({
             namesBoards={namesBoards}
             accent={accents.get(item.boardId)}
             myName={myName}
+            handleInk={inks.get(item.boardId)}
             onDismiss={() => dismiss.mutate(item.id)}
           />
         )}

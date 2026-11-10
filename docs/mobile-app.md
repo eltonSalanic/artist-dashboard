@@ -1686,7 +1686,8 @@ not touched.
   picked from six candidates). A small caps line says the kind and who
   (MENTION · RILEY PARK, PAID BACK, OWED) with the time on the right; the
   comment is the card's main text at reading weight with only the reader's
-  @handle in bold; a footer names the band (dot and words) and the task. Money
+  @handle in bold, in the band's colour (`bandInk`, walked to 4.5:1 on the
+  card); a footer names the band (dot and words) and the task. Money
   cards set what it was for beside the amount, green when it was paid back to
   you. The 58pt count headline is gone (it sometimes drew as a dot under
   `adjustsFontSizeToFit`); a small caps "9 FOR YOU · EVERY BAND" line replaces
