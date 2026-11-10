@@ -38,7 +38,7 @@ Safety nets:
 | | API | Web | Mobile |
 |---|---|---|---|
 | Variable | `APP_ENV` | `NEXT_PUBLIC_APP_ENV` | `EXPO_PUBLIC_APP_ENV` (set per profile in `eas.json`) |
-| Logs | Dev: readable, debug and up. Staging/prod: JSON, `log` and up. `LOG_LEVEL` overrides. | Dev console only | Dev Metro only |
+| Logs | Readable coloured lines locally; JSON on Railway (`RAILWAY_PROJECT_ID` set). `LOG_FORMAT=pretty\|json` overrides. Level: debug and up in dev, `log` and up on staging/prod; `LOG_LEVEL` overrides. A bad environment at boot prints just the list of problems. | Dev console only | Dev Metro only |
 | Startup checks | `config/env.ts` refuses to boot without required vars; `WEB_URL`/`API_URL` are required outside dev | Production build fails without `NEXT_PUBLIC_API_URL` | `lib/env.ts` throws on missing vars |
 
 Every API request gets an `x-request-id` (kept from a proxy, or minted). It is returned as a header and in error bodies, and each request logs one line with method, path, status, duration, user id and request id. Emails and push tokens are masked in logs (`common/redact.ts`).

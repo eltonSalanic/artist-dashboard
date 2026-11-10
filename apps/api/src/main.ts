@@ -1,34 +1,12 @@
 // Must stay first: error reporting hooks Node before the app loads.
 import './instrument';
 
-import { ConsoleLogger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NextFunction, Request, Response } from 'express';
 import { toNodeHandler } from 'better-auth/node';
-import { parseAppEnv } from '@artist/shared';
 import { AppModule } from './app.module';
 import { AUTH_BASE_PATH, BETTER_AUTH, type Auth } from './auth/auth.tokens';
-import { logLevelsFrom, type LogLevelSetting } from './config/env';
-
-/**
- * Dev: coloured, human-readable, debug and up. Staging and production: one
- * JSON object per line at "log" and up, which Railway's log viewer can filter
- * by field (requestId, userId, status). LOG_LEVEL overrides either default,
- * e.g. LOG_LEVEL=debug on staging while chasing something.
- */
-function createLogger(): ConsoleLogger {
-  const deployed = parseAppEnv(process.env.APP_ENV) !== 'development';
-  const level = (process.env.LOG_LEVEL ||
-    (deployed ? 'log' : 'debug')) as LogLevelSetting;
-  return new ConsoleLogger({
-    json: deployed,
-    colors: !deployed,
-    // One line per entry in dev too, so request lines don't sprawl.
-    breakLength: Infinity,
-    compact: true,
-    logLevels: logLevelsFrom(level),
-  });
-}
+import { createLogger } from './config/logger';
 
 async function bootstrap() {
   // Resend's webhook signature covers the exact bytes received, and

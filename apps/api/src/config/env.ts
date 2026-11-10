@@ -18,6 +18,7 @@ const base = z
   .object({
     APP_ENV: z.enum(['development', 'staging', 'production']).optional(),
     LOG_LEVEL: z.enum(LOG_LEVELS).optional(),
+    LOG_FORMAT: z.enum(['pretty', 'json']).optional(),
     DATABASE_URL: z.string().min(1),
     // Where attachments live (docs/storage.md). Supabase is the default and
     // what local dev runs on; r2 needs the four R2_* variables below.
@@ -39,6 +40,11 @@ const base = z
     REVENUECAT_SECRET_API_KEY: z.string().min(1).optional(),
   })
   .loose();
+
+/** Thrown at boot; the logger prints just its message (config/logger.ts). */
+export class InvalidEnvironmentError extends Error {
+  override name = 'InvalidEnvironmentError';
+}
 
 export function validateEnv(raw: Record<string, unknown>) {
   // `LOG_LEVEL=` in a .env file means "unset", not "the empty level".
@@ -79,7 +85,9 @@ export function validateEnv(raw: Record<string, unknown>) {
   }
 
   if (problems.length > 0) {
-    throw new Error(`Invalid environment:\n  ${problems.join('\n  ')}`);
+    throw new InvalidEnvironmentError(
+      `Invalid environment:\n  ${problems.join('\n  ')}`,
+    );
   }
   return raw;
 }
