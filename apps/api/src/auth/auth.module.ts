@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { InviteCodeMail } from '../invites/invite-code.mail';
 import { createAuth } from './better-auth';
+import { VerifyEmailMail } from './verify-email.mail';
 import { BETTER_AUTH } from './auth.tokens';
 
 /**
@@ -13,13 +14,15 @@ import { BETTER_AUTH } from './auth.tokens';
 @Module({
   providers: [
     InviteCodeMail,
+    VerifyEmailMail,
     {
       provide: BETTER_AUTH,
-      inject: [PrismaService, ConfigService, InviteCodeMail],
+      inject: [PrismaService, ConfigService, InviteCodeMail, VerifyEmailMail],
       useFactory: (
         prisma: PrismaService,
         config: ConfigService,
         inviteMail: InviteCodeMail,
+        verifyMail: VerifyEmailMail,
       ) => {
         const webUrl = config.get<string>('WEB_URL') ?? 'http://localhost:3000';
         return createAuth({
@@ -28,6 +31,7 @@ import { BETTER_AUTH } from './auth.tokens';
           baseURL: config.get<string>('API_URL') ?? 'http://localhost:3001',
           trustedOrigins: [webUrl],
           sendInviteCode: (email, code) => inviteMail.send(email, code),
+          sendVerifyEmailCode: (email, code) => verifyMail.send(email, code),
         });
       },
     },

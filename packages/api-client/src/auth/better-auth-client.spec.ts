@@ -89,6 +89,30 @@ describe("createBetterAuthClient", () => {
     await expect(auth.getSession()).resolves.toMatchObject({ userId: "u1" });
   });
 
+  it("confirms a sign-up email with its code and signs in", async () => {
+    const fetch = jest.fn().mockResolvedValue(reply(200, { status: true, token: "t", user }, "t.sig"));
+    const auth = createBetterAuthClient({ apiUrl: "http://api", store: memoryStore(), fetch });
+    await expect(auth.verifyEmailCode("a@band.com", "123456")).resolves.toEqual({ error: null });
+    expect(fetch).toHaveBeenCalledWith(
+      "http://api/api/auth/email-otp/verify-email",
+      expect.objectContaining({ body: JSON.stringify({ email: "a@band.com", otp: "123456" }) }),
+    );
+    await expect(auth.getSession()).resolves.toMatchObject({ userId: "u1" });
+  });
+
+  it("asks for a fresh sign-up code", async () => {
+    const fetch = jest.fn().mockResolvedValue(reply(200, { success: true }));
+    const auth = createBetterAuthClient({ apiUrl: "http://api", store: memoryStore(), fetch });
+    await expect(auth.resendEmailCode("a@band.com")).resolves.toEqual({ error: null });
+    expect(fetch).toHaveBeenCalledWith(
+      "http://api/api/auth/email-otp/send-verification-otp",
+      expect.objectContaining({
+        body: JSON.stringify({ email: "a@band.com", type: "email-verification" }),
+      }),
+    );
+    await expect(auth.getSession()).resolves.toBeNull();
+  });
+
   it("sets a password through the API with the session token", async () => {
     const fetch = jest.fn().mockResolvedValue(new Response(null, { status: 204 }));
     const auth = createBetterAuthClient({

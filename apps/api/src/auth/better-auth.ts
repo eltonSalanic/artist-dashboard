@@ -21,6 +21,8 @@ export interface AuthOptions {
   trustedOrigins: string[];
   /** Mails the 6-digit invite code. Called for `sign-in` codes only. */
   sendInviteCode(email: string, code: string): Promise<void>;
+  /** Mails the 6-digit code that confirms a new account's email. */
+  sendVerifyEmailCode(email: string, code: string): Promise<void>;
 }
 
 /**
@@ -31,6 +33,12 @@ export interface AuthOptions {
  *
  * Invites use the email-code plugin: `InviteMailer` asks for a `sign-in` code,
  * and signing in with it creates the account if there isn't one yet.
+ *
+ * A new email + password account must confirm its email before it gets a
+ * session. Sign-up mails an `email-verification` code (the plugin stands in
+ * for Better Auth's link email), signing in unconfirmed mails a fresh one and
+ * answers EMAIL_NOT_VERIFIED, and entering the code signs the person in.
+ * Invited accounts are already confirmed: the invite code proved the address.
  */
 export function createAuth(options: AuthOptions) {
   return betterAuth({
@@ -51,7 +59,13 @@ export function createAuth(options: AuthOptions) {
       enabled: true,
       minPasswordLength: 8,
       autoSignIn: true,
+      requireEmailVerification: true,
       password: { verify: verifyAnyPassword },
+    },
+    emailVerification: {
+      sendOnSignUp: true,
+      sendOnSignIn: true,
+      autoSignInAfterVerification: true,
     },
     advanced: {
       // AuthUser.id doubles as User.id, which is a Postgres uuid.
@@ -63,8 +77,12 @@ export function createAuth(options: AuthOptions) {
         otpLength: 6,
         expiresIn: INVITE_CODE_TTL_SECONDS,
         allowedAttempts: 3,
+        overrideDefaultEmailVerification: true,
         async sendVerificationOTP({ email, otp, type }) {
           if (type === 'sign-in') await options.sendInviteCode(email, otp);
+          if (type === 'email-verification') {
+            await options.sendVerifyEmailCode(email, otp);
+          }
         },
       }),
     ],

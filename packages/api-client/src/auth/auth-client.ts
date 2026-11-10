@@ -50,6 +50,13 @@ export interface AuthClient {
   /** Signs in with the 6-digit code from an invite email. */
   verifyInviteCode(email: string, code: string): Promise<AuthResult>;
   /**
+   * Confirms a new account's email with the 6-digit code mailed at sign-up,
+   * and signs the person in.
+   */
+  verifyEmailCode(email: string, code: string): Promise<AuthResult>;
+  /** Mails a fresh sign-up code, for "Send a new code". */
+  resendEmailCode(email: string): Promise<AuthResult>;
+  /**
    * Background token refresh. Phones pause it while the app is in the
    * background, because the OS suspends timers there; browsers never call it.
    */

@@ -21,6 +21,7 @@ export {
 export {
   INLINE_ERROR,
   MESSAGES,
+  AUTH_CODE_ERRORS,
   authErrorMessage,
   type AuthErrorLike,
   isNotFound,

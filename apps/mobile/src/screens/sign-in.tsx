@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { apiFetch, authErrorMessage, notify } from '@artist/api-client';
+import { AUTH_CODE_ERRORS, apiFetch, authErrorMessage, notify } from '@artist/api-client';
 import { Button } from '@/components/button';
 import { MascotLockup } from '@/components/mascot';
 import { PosterText } from '@/components/poster-text';
@@ -14,7 +14,7 @@ import { setOnboardingIntent } from '@/features/onboarding/onboarding-state';
 import { StepProgress } from '@/features/onboarding/step-progress';
 import { spacing, usePosterCanvas } from '@/theme';
 
-type Mode = 'signin' | 'signup' | 'invite';
+type Mode = 'signin' | 'signup' | 'invite' | 'verify';
 
 /** Web's rule for the password an invited bandmate sets. */
 const MIN_PASSWORD = 8;
@@ -32,7 +32,13 @@ const COPY: Record<Mode, { title: string; lead?: string; submit: string }> = {
     lead: 'Use the email the invite went to and the 6-digit code in it, then choose a password.',
     submit: 'Join',
   },
+  // The lead names the address, so it is filled in where the screen renders.
+  verify: { title: 'Check Your Email.', submit: 'Confirm' },
 };
+
+/** Said for a wrong, used or expired sign-up code (the shared wording is about invites). */
+const VERIFY_CODE_FAILED =
+  "That code doesn't work: check it against the email, or send a new one. Codes expire after an hour.";
 
 /**
  * Email + password, matching `apps/web/src/features/auth/login-page.tsx`.
@@ -46,6 +52,10 @@ const COPY: Record<Mode, { title: string; lead?: string; submit: string }> = {
  *
  * Reached from the welcome screen, which picks the mode: "Start a band" is
  * step 1 of 3 and asks for your name, "I've got an invite" takes the code.
+ *
+ * A new account confirms its email before it gets in: sign-up mails a 6-digit
+ * code and this screen turns into "Check your email", asking for it. Signing
+ * in to an account that never confirmed mails a fresh code and lands there too.
  *
  * Opens with the Band Wall logo, the phone's mascot leaning on the b and wall,
  * over the greeting set huge, so the first screen is already in the poster face.
@@ -65,6 +75,8 @@ export function SignInScreen() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Which door led to "Check your email": a new account keeps its step 1 of 3.
+  const [verifyFrom, setVerifyFrom] = useState<'signup' | 'signin'>('signup');
 
   const submit = async () => {
     setPending(true);
@@ -78,6 +90,10 @@ export function SignInScreen() {
         await join();
         return;
       }
+      if (mode === 'verify') {
+        await confirmEmail();
+        return;
+      }
 
       // Set before the session lands, which swaps the stack: the band step
       // reads it to show it's step 2 of 3.
@@ -87,6 +103,11 @@ export function SignInScreen() {
           ? await auth.signIn(email, password)
           : await auth.signUp(email, password, name.trim());
 
+      if (result.error?.code === 'EMAIL_NOT_VERIFIED') {
+        // The server has just mailed a fresh code; ask for it.
+        startVerify('signin');
+        return;
+      }
       if (result.error) {
         setOnboardingIntent(null);
         // The draft stays put so a typo in the password costs one field, not two.
@@ -101,14 +122,52 @@ export function SignInScreen() {
         return;
       }
       // Sign-up came back without a session, so the account still needs
-      // its email confirmed.
+      // its email confirmed: the code is on its way.
       if ('needsConfirmation' in result && result.needsConfirmation) {
-        setNotice('Check your email to confirm your account, then sign in.');
-        setMode('signin');
+        startVerify('signup');
       }
       // On success the root layout swaps the stack — no navigation needed here.
     } catch (thrown) {
       setError(authErrorMessage({ message: String(thrown), status: 0 }));
+    } finally {
+      setPending(false);
+    }
+  };
+
+  const startVerify = (from: 'signup' | 'signin') => {
+    setVerifyFrom(from);
+    setCode('');
+    setMode('verify');
+  };
+
+  /**
+   * Confirm the email with its code, which signs the person in and swaps the
+   * stack. The onboarding intent set at sign-up is still in place, so a new
+   * account goes on to step 2.
+   */
+  const confirmEmail = async () => {
+    const verified = await auth.verifyEmailCode(email.trim(), code.trim());
+    if (verified.error) {
+      setError(
+        verified.error.code && AUTH_CODE_ERRORS.includes(verified.error.code)
+          ? VERIFY_CODE_FAILED
+          : authErrorMessage(verified.error, "Couldn't confirm your email. Try again."),
+      );
+    }
+  };
+
+  const resend = async () => {
+    setPending(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const sent = await auth.resendEmailCode(email.trim());
+      if (sent.error) {
+        setError(authErrorMessage(sent.error, "Couldn't send a new code. Try again."));
+      } else {
+        setNotice('New code sent. It can take a minute to arrive.');
+        setCode('');
+      }
     } finally {
       setPending(false);
     }
@@ -144,14 +203,24 @@ export function SignInScreen() {
   };
 
   const canSubmit =
-    email.trim() !== '' &&
-    !pending &&
-    (mode === 'signin' || name.trim() !== '') &&
-    (mode === 'invite'
-      ? /^\d{6}$/.test(code.trim()) && password.length >= MIN_PASSWORD
-      : password !== '');
-  const copy = COPY[mode];
+    mode === 'verify'
+      ? !pending && /^\d{6}$/.test(code.trim())
+      : email.trim() !== '' &&
+        !pending &&
+        (mode === 'signin' || name.trim() !== '') &&
+        (mode === 'invite'
+          ? /^\d{6}$/.test(code.trim()) && password.length >= MIN_PASSWORD
+          : password !== '');
+  const copy =
+    mode === 'verify'
+      ? {
+          ...COPY.verify,
+          lead: `We sent a 6-digit code to ${email.trim()}. Enter it to finish.`,
+        }
+      : COPY[mode];
   const switchTo = (next: Mode) => {
+    // Leaving "Check your email" for sign in drops the sign-up's step 2.
+    if (mode === 'verify' || next === 'signin') setOnboardingIntent(null);
     setMode(next);
     setError(null);
     setNotice(null);
@@ -177,7 +246,9 @@ export function SignInScreen() {
         keyboardDismissMode="interactive"
       >
         <View style={styles.form}>
-          {mode === 'signup' && <StepProgress step={1} of={3} />}
+          {(mode === 'signup' || (mode === 'verify' && verifyFrom === 'signup')) && (
+            <StepProgress step={1} of={3} />
+          )}
           {/* The logo: the phone's mascot leaning on the app icon's b and wall, so
               the screen echoes the icon that opened it. */}
           <MascotLockup lockup="leaningMark" width={LOCKUP_WIDTH} style={{ alignSelf: 'center' }} />
@@ -207,22 +278,43 @@ export function SignInScreen() {
             />
           )}
 
-          <TextField
-            label="Email"
-            value={email}
-            onChangeText={setEmail}
-            editable={!pending}
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoComplete="email"
-            keyboardType="email-address"
-            textContentType="emailAddress"
-            placeholder="you@band.com"
-            // No Done bar on this form: Return closes these keyboards, and the
-            // bar reloaded the keyboard on each letter, which shook the centred
-            // form (see `TextInput`).
-            doneBar={false}
-          />
+          {mode !== 'verify' && (
+            <TextField
+              label="Email"
+              value={email}
+              onChangeText={setEmail}
+              editable={!pending}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="email"
+              keyboardType="email-address"
+              textContentType="emailAddress"
+              placeholder="you@band.com"
+              // No Done bar on this form: Return closes these keyboards, and the
+              // bar reloaded the keyboard on each letter, which shook the centred
+              // form (see `TextInput`).
+              doneBar={false}
+            />
+          )}
+
+          {mode === 'verify' && (
+            <TextField
+              label="Code"
+              value={code}
+              onChangeText={(text) => setCode(text.replace(/\D/g, '').slice(0, 6))}
+              editable={!pending}
+              keyboardType="number-pad"
+              doneBar={false}
+              returnKeyType="done"
+              // iOS offers the code from Mail above the keyboard.
+              textContentType="oneTimeCode"
+              autoComplete="one-time-code"
+              placeholder="123456"
+              maxLength={6}
+              autoFocus
+              error={error}
+            />
+          )}
 
           {mode === 'invite' && (
             <TextField
@@ -260,28 +352,30 @@ export function SignInScreen() {
             />
           )}
 
-          <TextField
-            label={mode === 'invite' ? 'Choose a password' : 'Password'}
-            placeholder={mode === 'invite' ? `At least ${MIN_PASSWORD} characters` : undefined}
-            value={password}
-            onChangeText={setPassword}
-            editable={!pending}
-            secureTextEntry
-            autoCapitalize="none"
-            // A plain password field in every mode. `newPassword` made iOS lay its
-            // yellow strong-password overlay over the field on Create account,
-            // which kept only the first typed letter and then stuck when you
-            // switched back to Sign in. With no associated domain a generated
-            // password could not reach the web sign-in anyway.
-            autoComplete="current-password"
-            textContentType="password"
-            doneBar={false}
-            returnKeyType="go"
-            onSubmitEditing={() => {
-              if (canSubmit) void submit();
-            }}
-            error={mode === 'invite' ? null : error}
-          />
+          {mode !== 'verify' && (
+            <TextField
+              label={mode === 'invite' ? 'Choose a password' : 'Password'}
+              placeholder={mode === 'invite' ? `At least ${MIN_PASSWORD} characters` : undefined}
+              value={password}
+              onChangeText={setPassword}
+              editable={!pending}
+              secureTextEntry
+              autoCapitalize="none"
+              // A plain password field in every mode. `newPassword` made iOS lay its
+              // yellow strong-password overlay over the field on Create account,
+              // which kept only the first typed letter and then stuck when you
+              // switched back to Sign in. With no associated domain a generated
+              // password could not reach the web sign-in anyway.
+              autoComplete="current-password"
+              textContentType="password"
+              doneBar={false}
+              returnKeyType="go"
+              onSubmitEditing={() => {
+                if (canSubmit) void submit();
+              }}
+              error={mode === 'invite' ? null : error}
+            />
+          )}
 
           {notice !== null && (
             <ThemedText variant="footnote" tone="muted" style={styles.centred}>
@@ -297,14 +391,33 @@ export function SignInScreen() {
             style={styles.submit}
           />
 
+          {mode === 'verify' && (
+            <Pressable
+              accessibilityRole="button"
+              disabled={pending}
+              onPress={() => void resend()}
+              style={styles.link}
+            >
+              <ThemedText variant="subhead" tone="accent">
+                Send a new code
+              </ThemedText>
+            </Pressable>
+          )}
+
           <Pressable
             accessibilityRole="button"
             disabled={pending}
-            onPress={() => switchTo(mode === 'signin' ? 'signup' : 'signin')}
-            style={styles.link}
+            onPress={() =>
+              switchTo(mode === 'verify' ? verifyFrom : mode === 'signin' ? 'signup' : 'signin')
+            }
+            style={mode === 'verify' ? styles.inviteLink : styles.link}
           >
             <ThemedText variant="subhead" tone="accent">
-              {mode === 'signin' ? 'New here? Start a band' : 'Already have an account? Sign in'}
+              {mode === 'verify'
+                ? 'Use a different email'
+                : mode === 'signin'
+                  ? 'New here? Start a band'
+                  : 'Already have an account? Sign in'}
             </ThemedText>
           </Pressable>
 

@@ -177,6 +177,15 @@ export function createBetterAuthClient(
     verifyInviteCode: (email, code) =>
       signInWith("/sign-in/email-otp", { email, otp: code }),
 
+    verifyEmailCode: (email, code) =>
+      signInWith("/email-otp/verify-email", { email, otp: code }),
+
+    resendEmailCode: (email) =>
+      signInWith("/email-otp/send-verification-otp", {
+        email,
+        type: "email-verification",
+      }),
+
     startAutoRefresh() {},
     stopAutoRefresh() {},
   };

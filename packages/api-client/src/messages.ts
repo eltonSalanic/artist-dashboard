@@ -127,6 +127,9 @@ export function isUnexpectedError(error: unknown): boolean {
   return !(error instanceof Error && error.name === "AbortError");
 }
 
+/** Codes that mean a 6-digit email code was wrong, used or expired. */
+export const AUTH_CODE_ERRORS = ["INVALID_OTP", "OTP_EXPIRED", "TOO_MANY_ATTEMPTS"];
+
 /**
  * Auth failures, worded for people. Every `AuthClient` reports failures in
  * this shape; the codes below are Better Auth's, the provider in use.
@@ -147,7 +150,7 @@ const AUTH_MESSAGES: Record<string, string> = {
   INVALID_EMAIL_OR_PASSWORD: "That email and password don't match. Try again.",
   INVALID_EMAIL: "Enter a valid email address.",
   EMAIL_NOT_VERIFIED:
-    "Confirm your email first. Check your inbox for the link.",
+    "Confirm your email first. We've sent a new code to your inbox.",
   USER_ALREADY_EXISTS: ACCOUNT_EXISTS,
   USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL: ACCOUNT_EXISTS,
   PASSWORD_TOO_SHORT: "Choose a stronger password: at least 8 characters.",
