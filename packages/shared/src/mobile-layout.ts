@@ -154,23 +154,87 @@ export function stretchLoneCards(placements: MobilePlacement[]): MobilePlacement
   });
 }
 
+/** Where one card lands when `items` is packed, or undefined if it is not shown. */
+function cellOf(items: MobileLayoutItem[], widgetType: CardWidgetType) {
+  return packMobileGrid(items).placements.find((p) => p.widgetType === widgetType);
+}
+
 /**
  * Move a card to where another one is in the order. Dragging forward lands
  * after the card you dropped on, dragging back lands before it, which is how
  * a dragged card reads as taking that card's place. Hidden cards keep their
  * spot in the list, so showing one again puts it back where it was.
+ *
+ * Dragging a small card forward onto a full-width one can leave it exactly
+ * where it was: the hole it leaves is the first free spot, so the packer
+ * flows it straight back in and the wide card never moves down. Then the
+ * card goes in just before the one dropped on, and the next card that can
+ * fill the hole it left moves up into it, so the dragged card takes the wide
+ * card's row and the wide card goes under.
  */
 export function moveCard(
   items: MobileLayoutItem[],
   widgetType: CardWidgetType,
   onto: CardWidgetType,
 ): MobileLayoutItem[] {
+  if (widgetType === onto) return items;
+  const known = new Set(items.map((item) => item.widgetType));
+  if (!known.has(widgetType) || !known.has(onto)) return items;
+  return moveInOrder(inReadingOrder(items), widgetType, onto);
+}
+
+/**
+ * The list reordered to match how the grid reads, top to bottom then left to
+ * right, without moving any card on screen. The packer lets a later small
+ * card fill a hole beside an earlier one (a card after a full-width one can
+ * sit above it), so the saved order and what you see can disagree; a move
+ * made on the saved order then lands somewhere other than where it looks like
+ * it should, such as beside the card above instead of in a full-width card's
+ * row. Hidden cards keep their places in the list.
+ */
+function inReadingOrder(items: MobileLayoutItem[]): MobileLayoutItem[] {
+  const { placements } = packMobileGrid(items);
+  const byType = new Map(items.map((item) => [item.widgetType, item]));
+  const shown = [...placements]
+    .sort((a, b) => a.row - b.row || a.col - b.col)
+    .map((p) => byType.get(p.widgetType)!);
+  let next = 0;
+  const ordered = items.map((item) => (item.hidden ? item : shown[next++]));
+  // Tall cards can pack differently in the new order; keep the old one then.
+  const same = (a: MobilePlacement[], b: MobilePlacement[]) =>
+    a.length === b.length &&
+    a.every((p) => {
+      const q = b.find((other) => other.widgetType === p.widgetType);
+      return q !== undefined && q.row === p.row && q.col === p.col;
+    });
+  return same(placements, packMobileGrid(ordered).placements) ? ordered : items;
+}
+
+function moveInOrder(
+  items: MobileLayoutItem[],
+  widgetType: CardWidgetType,
+  onto: CardWidgetType,
+): MobileLayoutItem[] {
   const from = items.findIndex((item) => item.widgetType === widgetType);
   const to = items.findIndex((item) => item.widgetType === onto);
-  if (from === -1 || to === -1 || from === to) return items;
   const next = [...items];
   const [moved] = next.splice(from, 1);
   next.splice(to, 0, moved);
+  if (to < from) return next;
+
+  const was = cellOf(items, widgetType);
+  const now = cellOf(next, widgetType);
+  if (!was || !now || was.row !== now.row || was.col !== now.col) return next;
+
+  for (let i = to + 1; i < items.length; i++) {
+    const filler = items[i];
+    if (filler.hidden) continue;
+    const order = items.filter((_, j) => j !== from && j !== i);
+    order.splice(order.indexOf(items[to]), 0, moved);
+    order.splice(from, 0, filler);
+    const landed = cellOf(order, widgetType);
+    if (landed && (landed.row !== was.row || landed.col !== was.col)) return order;
+  }
   return next;
 }
 

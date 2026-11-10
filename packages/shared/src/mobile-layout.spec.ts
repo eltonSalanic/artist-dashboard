@@ -198,6 +198,44 @@ describe('moveCard', () => {
     expect(moved[1]).toEqual(card('REMINDERS', 1, 1, true));
   });
 
+  it('dragged forward onto a full-width card, pushes that card down', () => {
+    // Goals | Rehearsals, then To-Do's across the row, then My Tasks | Shows.
+    const board = [
+      card('GOALS'),
+      card('NEXT_REHEARSALS'),
+      card('TODOS', 2),
+      card('MY_TASKS'),
+      card('SHOWS'),
+    ];
+    const moved = moveCard(board, 'NEXT_REHEARSALS', 'TODOS');
+    expect(types(moved)).toEqual(['GOALS', 'MY_TASKS', 'NEXT_REHEARSALS', 'TODOS', 'SHOWS']);
+    const at = (type: string) => packMobileGrid(moved).placements.find((p) => p.widgetType === type);
+    expect(at('NEXT_REHEARSALS')).toMatchObject({ row: 1, col: 0 });
+    expect(at('TODOS')).toMatchObject({ row: 2, col: 0 });
+  });
+
+  it('dragged back onto a full-width card, takes its row even when the order and the grid disagree', () => {
+    // Saved order puts My Tasks after To-Do's, but it packs up beside Goals:
+    // Goals | My Tasks, then To-Do's, then Shows | Rehearsals.
+    const board = [
+      card('GOALS'),
+      card('TODOS', 2),
+      card('MY_TASKS'),
+      card('SHOWS'),
+      card('NEXT_REHEARSALS'),
+    ];
+    const moved = moveCard(board, 'NEXT_REHEARSALS', 'TODOS');
+    const at = (type: string) => packMobileGrid(moved).placements.find((p) => p.widgetType === type);
+    expect(at('MY_TASKS')).toMatchObject({ row: 0, col: 1 });
+    expect(at('NEXT_REHEARSALS')).toMatchObject({ row: 1, col: 0 });
+    expect(at('TODOS')).toMatchObject({ row: 2, col: 0 });
+  });
+
+  it('dragged forward onto a full-width card with nothing after to fill its spot, just moves', () => {
+    const board = [card('GOALS'), card('NEXT_REHEARSALS'), card('TODOS', 2)];
+    expect(types(moveCard(board, 'NEXT_REHEARSALS', 'TODOS'))).toEqual(['GOALS', 'TODOS', 'NEXT_REHEARSALS']);
+  });
+
   it('leaves the list alone for an unknown card or a drop on itself', () => {
     expect(moveCard(items, 'GOALS', 'GOALS')).toBe(items);
     expect(moveCard(items, 'FOCUS', 'GOALS')).toBe(items);
