@@ -39,16 +39,22 @@ These are the rules the trigger table follows. New triggers should too.
 
 ## Trigger reference
 
-| # | Trigger | Recipients | Timing | Source | Implemented |
-|---|---|---|---|---|---|
-| 1 | **Mentioned in a comment** | Users named in `Comment.mentions`, minus the author | Immediate | `CommentsService.create` | ☑ |
-| 2 | **Assigned to a task** | The newly added assignee(s), minus the actor | Immediate | `TasksService.create`, `TasksService.setAssignees` (`added`) | ☑ |
-| 3 | **Unassigned from a task** | The removed assignee(s), minus the actor | Immediate | `TasksService.setAssignees` (`removed`) | ☑ |
-| 4 | **Show, rehearsal, or meeting added** | All board members, minus the actor | Immediate | `EventsService.create` | ☑ |
-| 5 | **Show, rehearsal, or meeting moved** | All board members, minus the actor | Immediate | `EventsService.update` (diff on `startsAt` / `endsAt`) | ☑ |
-| 6 | **Reminder due** | All board members | At `Reminder.remindAt` | `ReminderDueJob` (cron) | ☑ |
-| 7 | **A member paid out of pocket** (`expense-owed`) | Board admins, minus the payer and whoever logged it | Immediate, when an expense becomes owed back (logged, or edited into someone's pocket) | `FinancesService.create` / `update` (`tellAdminsOwed`) | ☑ |
-| 8 | **You were paid back** (`expense-paid-back`) | The member who paid | Immediate; one alert for a pay-back-all | `FinancesService.payBack` / `payBackMember` (`markPaidBack`) | ☑ |
+| # | Trigger | Recipients | Timing | Source | Push on the phone (title / body) | In the Inbox | Implemented |
+|---|---|---|---|---|---|---|---|
+| 1 | **Mentioned in a comment** | Users named in `Comment.mentions`, minus the author | Immediate | `CommentsService.create` | "Dana mentioned you" / On "Mix notes": the excerpt | Yes (`MENTION`) | ☑ |
+| 2 | **Assigned to a task** | The newly added assignee(s), minus the actor | Immediate | `TasksService.create`, `TasksService.setAssignees` (`added`) | "New task: Mix notes" / Dana assigned it to you. Due Mar 14. | No | ☑ |
+| 3 | **Unassigned from a task** | The removed assignee(s), minus the actor | Immediate | `TasksService.setAssignees` (`removed`) | You're off "Mix notes" / Dana took you off it. Nothing needed from you. | No | ☑ |
+| 4 | **Show, rehearsal, or meeting added** | All board members, minus the actor | Immediate | `EventsService.create` | "New show: Bowery Ballroom" / when · location | No | ☑ |
+| 5 | **Show, rehearsal, or meeting moved** | All board members, minus the actor | Immediate | `EventsService.update` (diff on `startsAt` / `endsAt`) | "Show moved: Bowery Ballroom" / Now … (was …) | No | ☑ |
+| 6 | **Reminder due** | All board members | At `Reminder.remindAt` | `ReminderDueJob` (cron) | "Reminder: Load-in" / its description, or the band's name | No | ☑ |
+| 7 | **A member paid out of pocket** (`expense-owed`) | Board admins, minus the payer and whoever logged it | Immediate, when an expense becomes owed back (logged, or edited into someone's pocket) | `FinancesService.create` / `update` (`tellAdminsOwed`) | "Sam paid $50.00" / Van tire — owed back from the band fund | Yes (`PAYBACK`) | ☑ |
+| 8 | **You were paid back** (`expense-paid-back`) | The member who paid | Immediate; one alert for a pay-back-all | `FinancesService.payBack` / `payBackMember` (`markPaidBack`) | "Paid back: Van tire ($50.00)" / Riley paid you back from the band fund. | Yes (`PAID_BACK`) | ☑ |
+
+Push wording lives in each template's `push` block in
+[`apps/api/src/notifications/templates/index.ts`](../apps/api/src/notifications/templates/index.ts);
+the examples above use sample names. "In the Inbox" means the trigger also
+writes a `MentionNotification` row of that `InboxKind`, so it shows on the phone's
+Inbox tab until dismissed. The other five reach people only by push and email.
 
 Two further triggers were specified and then deliberately dropped — see
 [Considered and dropped](#considered-and-dropped).
