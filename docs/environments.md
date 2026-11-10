@@ -9,6 +9,9 @@ Two settings decide how each app behaves, and they answer different questions.
   sends real email and real push. It is `production` on staging too, so
   staging can be tested end to end.
 
+Every variable each app reads is listed, with when it's needed, in its
+`.env.example` (`apps/api`, `apps/web`, `apps/mobile`).
+
 Checked against the code on 2026-11-10. When one of the files named below
 changes what it reads, this page changes in the same PR.
 
