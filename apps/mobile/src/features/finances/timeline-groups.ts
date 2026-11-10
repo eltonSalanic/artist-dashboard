@@ -5,11 +5,13 @@ import {
   type LedgerTotals,
 } from '@artist/shared';
 
-/** One day on the timeline: its date and what was logged on it. */
+/** One day on the timeline: its date, what was logged on it and its totals. */
 export interface TimelineDay {
   /** `YYYY-MM-DD` */
   day: string;
   entries: FinanceEntryDto[];
+  /** The shared ledger math over this day's entries, for its day header. */
+  totals: LedgerTotals;
 }
 
 /**
@@ -40,7 +42,11 @@ export function timelineGroups(
     return [
       {
         month: null,
-        days: entries.map((entry) => ({ day: entry.occurredOn, entries: [entry] })),
+        days: entries.map((entry) => ({
+          day: entry.occurredOn,
+          entries: [entry],
+          totals: ledgerTotals([entry]),
+        })),
         totals: ledgerTotals([...entries]),
         count: entries.length,
       },
@@ -56,12 +62,13 @@ export function timelineGroups(
   }
 
   return groups.map(({ month, entries: inMonth }) => {
-    const days: TimelineDay[] = [];
+    const byDay: { day: string; entries: FinanceEntryDto[] }[] = [];
     for (const entry of inMonth) {
-      const last = days[days.length - 1];
+      const last = byDay[byDay.length - 1];
       if (last && last.day === entry.occurredOn) last.entries.push(entry);
-      else days.push({ day: entry.occurredOn, entries: [entry] });
+      else byDay.push({ day: entry.occurredOn, entries: [entry] });
     }
+    const days = byDay.map((d) => ({ ...d, totals: ledgerTotals(d.entries) }));
     return { month, days, totals: ledgerTotals(inMonth), count: inMonth.length };
   });
 }
@@ -86,4 +93,10 @@ export function dayParts(day: string): { day: string; weekday: string; month: st
     weekday: date.toLocaleDateString(undefined, { weekday: 'short' }),
     month: date.toLocaleDateString(undefined, { month: 'short' }),
   };
+}
+
+/** `2026-11-05` → "Thu 5 Nov", the day header's date. */
+export function dayLabel(day: string): string {
+  const parts = dayParts(day);
+  return `${parts.weekday} ${parts.day} ${parts.month}`;
 }

@@ -1,5 +1,5 @@
 import type { FinanceEntryDto } from '@artist/shared';
-import { dayParts, entriesSince, timelineGroups } from './timeline-groups';
+import { dayLabel, dayParts, entriesSince, timelineGroups } from './timeline-groups';
 
 let n = 0;
 const entry = (
@@ -84,4 +84,23 @@ it('keeps entries on or after a day, or all of them without one', () => {
 it('reads a day on the local calendar', () => {
   expect(dayParts('2026-11-05').day).toBe('5');
   expect(dayParts('2026-11-01').day).toBe('1');
+});
+
+it('totals each day for its header, expected money apart from the net', () => {
+  const [nov] = timelineGroups([
+    entry('2026-11-19', 120000, { kind: 'INCOME', state: 'EXPECTED', category: 'SHOW_FEE' }),
+    entry('2026-11-02', 60000, { kind: 'INCOME', category: 'SHOW_FEE' }),
+    entry('2026-11-02', 5000),
+  ]);
+  expect(nov.days.map((d) => [d.day, d.totals.netCents, d.totals.expectedCents])).toEqual([
+    ['2026-11-19', 0, 120000],
+    ['2026-11-02', 55000, 0],
+  ]);
+});
+
+it('labels a day header with weekday, day and month', () => {
+  const label = dayLabel('2026-11-05');
+  expect(label).toContain('5');
+  expect(label).toMatch(/Thu/);
+  expect(label).toMatch(/Nov/);
 });

@@ -11,17 +11,24 @@ import { PosterText } from '@/components/poster-text';
 import { posterRadius, spacing, useShadows, useTokens } from '@/theme';
 import { FinanceAmount } from './finance-amount';
 import { PaybackLabel } from './payback-label';
-import { dayParts, monthLabel, type TimelineGroup } from './timeline-groups';
+import {
+  dayLabel,
+  dayParts,
+  monthLabel,
+  type TimelineDay,
+  type TimelineGroup,
+} from './timeline-groups';
 
 /** The date column's width: a two-digit day in the `title` face, with air. */
 const DATE_WIDTH = 40;
 
 /**
  * The ledger as one running feed: a header per month with what came in, what
- * went out and the net, then that month's entries as a card, newest first. A
- * day's date is printed once, beside its first entry, so a busy day reads as
- * one block. Sorted by amount, the dates jump around, so it's one group and
- * every row carries its own date.
+ * went out and the net, then that month's entries as a card, newest first,
+ * split by day: each day gets a slim header with its date and, on a day with
+ * more than one entry, that day's net, then its entries. Sorted by amount, the
+ * dates jump around, so it's one group without day headers and every row
+ * carries its own date.
  *
  * `totals` picks the month header: `net` for the band's books, `spent` for one
  * member's expenses, where "net" would only ever be a minus.
@@ -43,31 +50,43 @@ export function FinanceTimeline({
   totals?: 'net' | 'spent';
   onOpen: (entry: FinanceEntryDto) => void;
 }) {
+  const row = (entry: FinanceEntryDto, dated: boolean, rule: 'none' | 'full' | 'inset') => (
+    <TimelineRow
+      key={entry.id}
+      entry={entry}
+      currency={currency}
+      date={dated ? 'month' : null}
+      rule={rule}
+      name={name}
+      showPayer={showPayer}
+      plainAmount={totals === 'spent'}
+      onPress={() => onOpen(entry)}
+    />
+  );
   return (
     <View style={{ gap: spacing.lg }}>
       {groups.map((group) => (
         <View key={group.month ?? 'sorted'} style={{ gap: spacing.sm }}>
           <MonthHeader group={group} currency={currency} sort={sort} totals={totals} />
           <TimelineCard>
-            {group.days.map((day, d) => (
-              <Fragment key={`${day.day}-${d}`}>
-                {day.entries.map((entry, i) => (
-                  <TimelineRow
-                    key={entry.id}
-                    entry={entry}
-                    currency={currency}
-                    // A month header already says the month; a list sorted by
-                    // amount has none, so each date says it.
-                    date={i === 0 ? (group.month ? 'weekday' : 'month') : null}
-                    rule={d === 0 && i === 0 ? 'none' : i === 0 ? 'full' : 'inset'}
-                    name={name}
-                    showPayer={showPayer}
-                    plainAmount={totals === 'spent'}
-                    onPress={() => onOpen(entry)}
-                  />
-                ))}
-              </Fragment>
-            ))}
+            {group.month
+              ? group.days.map((day, d) => (
+                  <Fragment key={`${day.day}-${d}`}>
+                    <DayHeader
+                      day={day}
+                      currency={currency}
+                      plain={totals === 'spent'}
+                      first={d === 0}
+                    />
+                    {day.entries.map((entry, i) => row(entry, false, i === 0 ? 'none' : 'inset'))}
+                  </Fragment>
+                ))
+              : // A list sorted by amount has no day headers: each row says its date.
+                group.days.flatMap((day, d) =>
+                  day.entries.map((entry, i) =>
+                    row(entry, true, d === 0 && i === 0 ? 'none' : 'full'),
+                  ),
+                )}
           </TimelineCard>
         </View>
       ))}
@@ -163,6 +182,78 @@ function MonthHeader({
 }
 
 /**
+ * A day's slim header inside the month's card: the date on the left and, on a
+ * day with more than one entry, the day's net on the right, above the amounts
+ * under it (on a one-entry day it would only repeat that row). Expected money
+ * isn't in the net, so it's named beside it.
+ */
+function DayHeader({
+  day,
+  currency,
+  plain,
+  first,
+}: {
+  day: TimelineDay;
+  currency: string;
+  /** One member's expenses: what they paid that day, without sign or colour. */
+  plain: boolean;
+  first: boolean;
+}) {
+  const tokens = useTokens();
+  const t = day.totals;
+  const several = day.entries.length > 1;
+  const settled = day.entries.some((entry) => entry.state === 'SETTLED');
+  const expected =
+    t.expectedCents > 0 ? `${formatMoney(t.expectedCents, currency)} expected` : null;
+  const label = dayLabel(day.day);
+
+  return (
+    <View
+      accessible
+      accessibilityRole="header"
+      accessibilityLabel={[
+        label,
+        several && plain ? `${formatMoney(t.expenseCents, currency)} paid` : null,
+        several && !plain && settled ? `net ${formatMoney(t.netCents, currency)}` : null,
+        several && !plain ? expected : null,
+      ]
+        .filter(Boolean)
+        .join(', ')}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        minHeight: 24,
+        paddingHorizontal: spacing.md,
+        paddingVertical: 4,
+        // A faint band of the ink: the day's rows read as one block under it,
+        // like a list's section header.
+        backgroundColor: `${tokens.foreground}0d`,
+        borderTopWidth: first ? 0 : StyleSheet.hairlineWidth,
+        borderTopColor: tokens.border,
+      }}
+    >
+      <PosterText variant="label" color={tokens.mutedForeground} style={{ flex: 1 }}>
+        {label.toUpperCase()}
+      </PosterText>
+      {several && plain && (
+        <PosterText variant="cardMeta" color={tokens.foreground} numberOfLines={1}>
+          {formatMoney(t.expenseCents, currency)}
+        </PosterText>
+      )}
+      {several && !plain && expected && (
+        <PosterText variant="cardMeta" color={tokens.mutedForeground} numberOfLines={1}>
+          {settled ? `${expected} ·` : expected}
+        </PosterText>
+      )}
+      {several && !plain && settled && (
+        <FinanceAmount cents={t.netCents} currency={currency} signed variant="cardMeta" />
+      )}
+    </View>
+  );
+}
+
+/**
  * One entry on the timeline: the date (first of its day only), what it was
  * for, who paid and who was paid, the signed amount, and Owed back / Paid back
  * on an out-of-pocket expense. Tapping opens its form.
@@ -179,8 +270,11 @@ export function TimelineRow({
 }: {
   entry: FinanceEntryDto;
   currency: string;
-  /** What the date column shows: day and weekday, day and month, or nothing. */
-  date: 'weekday' | 'month' | null;
+  /**
+   * The date column, day and month, for a list sorted by amount; null under a
+   * day header, which already says the date.
+   */
+  date: 'month' | null;
   /** The hairline above: none for the first row, inset within a day. */
   rule: 'none' | 'full' | 'inset';
   name: (userId: string) => string;
@@ -228,18 +322,16 @@ export function TimelineRow({
         backgroundColor: pressed ? tokens.accent : undefined,
       })}
     >
-      <View style={{ width: DATE_WIDTH, alignItems: 'center', paddingTop: spacing.sm + 2 }}>
-        {date && (
-          <>
-            <PosterText variant="title" color={tokens.foreground}>
-              {parts.day}
-            </PosterText>
-            <PosterText variant="label" color={tokens.mutedForeground}>
-              {(date === 'weekday' ? parts.weekday : parts.month).toUpperCase()}
-            </PosterText>
-          </>
-        )}
-      </View>
+      {date && (
+        <View style={{ width: DATE_WIDTH, alignItems: 'center', paddingTop: spacing.sm + 2 }}>
+          <PosterText variant="title" color={tokens.foreground}>
+            {parts.day}
+          </PosterText>
+          <PosterText variant="label" color={tokens.mutedForeground}>
+            {parts.month.toUpperCase()}
+          </PosterText>
+        </View>
+      )}
       <View
         style={{
           flex: 1,
