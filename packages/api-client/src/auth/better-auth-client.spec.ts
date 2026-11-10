@@ -89,6 +89,36 @@ describe("createBetterAuthClient", () => {
     await expect(auth.getSession()).resolves.toMatchObject({ userId: "u1" });
   });
 
+  it("signs in with an Apple ID token, passing the nonce and first-time name", async () => {
+    const fetch = jest.fn().mockResolvedValue(reply(200, { token: "t", user }, "t.sig"));
+    const auth = createBetterAuthClient({ apiUrl: "http://api", store: memoryStore(), fetch });
+    await expect(
+      auth.signInWithIdToken({ provider: "apple", idToken: "jwt", nonce: "n", name: "Dez Ray Cole" }),
+    ).resolves.toEqual({ error: null });
+    expect(fetch).toHaveBeenCalledWith(
+      "http://api/api/auth/sign-in/social",
+      expect.objectContaining({
+        body: JSON.stringify({
+          provider: "apple",
+          idToken: { token: "jwt", nonce: "n", user: { name: { firstName: "Dez", lastName: "Ray Cole" } } },
+        }),
+      }),
+    );
+    await expect(auth.getSession()).resolves.toMatchObject({ userId: "u1", accessToken: "t.sig" });
+  });
+
+  it("signs in with a Google ID token alone", async () => {
+    const fetch = jest.fn().mockResolvedValue(reply(200, { token: "t", user }, "t.sig"));
+    const auth = createBetterAuthClient({ apiUrl: "http://api", store: memoryStore(), fetch });
+    await auth.signInWithIdToken({ provider: "google", idToken: "jwt" });
+    expect(fetch).toHaveBeenCalledWith(
+      "http://api/api/auth/sign-in/social",
+      expect.objectContaining({
+        body: JSON.stringify({ provider: "google", idToken: { token: "jwt" } }),
+      }),
+    );
+  });
+
   it("sets a password through the API with the session token", async () => {
     const fetch = jest.fn().mockResolvedValue(new Response(null, { status: 204 }));
     const auth = createBetterAuthClient({
