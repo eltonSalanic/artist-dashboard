@@ -1681,6 +1681,17 @@ not touched.
   is a Figtree capsule, the band filter chips (Calendar too) are Spotify chips
   like the widget pills, bar titles are Figtree, and `PosterPill` moved to
   `components/`.
+- **Inbox cards (2026-11-09):** the Inbox's rows were hard to read, so each
+  notification is now its own card (`features/inbox/notification-card.tsx`,
+  picked from six candidates). A small caps line says the kind and who
+  (MENTION · RILEY PARK, PAID BACK, OWED) with the time on the right; the
+  comment is the card's main text at reading weight with only the reader's
+  @handle in bold; a footer names the band (dot and words) and the task. Money
+  cards set what it was for beside the amount, green when it was paid back to
+  you. The 58pt count headline is gone (it sometimes drew as a dot under
+  `adjustsFontSizeToFit`); a small caps "9 FOR YOU · EVERY BAND" line replaces
+  it. `features/inbox/present.ts` takes the server's display strings apart
+  defensively and is unit-tested.
 - **Step 5, forms:** each create/edit form opens with the block the item will
   become (`FormPoster`, `features/forms/form-poster.tsx`): the kind in small
   caps ("NEW TASK", "EDIT SHOW") and the title typed straight onto a block in
