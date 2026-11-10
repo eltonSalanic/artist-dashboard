@@ -1,29 +1,25 @@
 import { useMemo } from 'react';
 import { Alert, FlatList, Pressable, RefreshControl, View } from 'react-native';
-import { Stack, router } from 'expo-router';
+import { Stack } from 'expo-router';
 import {
   useClearInbox,
   useDismissInboxItem,
   useInbox,
-  type MentionNotificationDto,
 } from '@artist/api-client';
 import type { BoardSummaryDto } from '@artist/shared';
 import { BoardFilter } from '@/components/board-filter';
-import { Icon } from '@/components/icon';
 import { ListState } from '@/components/list-state';
 import { MyMascot, PhraseLettering } from '@/components/mascot';
 import { PosterText } from '@/components/poster-text';
 import { useBoardScope } from '@/features/boards/use-board-scope';
 import { PushPrompt } from '@/features/push/push-prompt';
-import { shortAgo } from '@/features/board/format';
+import { NotificationCard } from '@/features/inbox/notification-card';
 import {
   boardAccent,
-  posterRadius,
   spacing,
   usePosterCanvas,
   useScheme,
   useThemeColors,
-  type SlotHex,
 } from '@/theme';
 import { useRefetchOnFocus } from '@/lib/refetch-on-focus';
 
@@ -36,8 +32,8 @@ import { useRefetchOnFocus } from '@/lib/refetch-on-focus';
  * activity feed does not — a feed is a log of what happened, and "N new since
  * your last visit" would need a per-device marker to mean anything.
  *
- * Set like the calendar: the count as a poster headline over the list, and an
- * empty inbox said in the same huge type as an empty month.
+ * One card per notification (`NotificationCard`) under a one-line count, and
+ * an empty inbox said in the same huge type as an empty month.
  */
 export function InboxScreen() {
   const colors = useThemeColors();
@@ -116,9 +112,8 @@ function Mentions({
           <>
             <PushPrompt />
             {items.length > 0 && (
-              <Headline
+              <Summary
                 count={items.length}
-                noun={items.every((item) => item.kind === 'MENTION') ? 'mention' : 'notification'}
                 where={filteredTo ?? (namesBoards ? 'Every band' : undefined)}
               />
             )}
@@ -159,8 +154,9 @@ function Mentions({
             </View>
           )
         }
+        ItemSeparatorComponent={CardGap}
         renderItem={({ item }) => (
-          <MentionRow
+          <NotificationCard
             item={item}
             namesBoards={namesBoards}
             accent={accents.get(item.boardId)}
@@ -198,152 +194,29 @@ function Mentions({
   );
 }
 
-/** "3 mentions", set as the calendar sets its month, with where in small caps. */
-function Headline({
-  count,
-  noun,
-  where,
-}: {
-  count: number;
-  /** "mention" when that is all there is; "notification" once paybacks mix in. */
-  noun: string;
-  where: string | undefined;
-}) {
+/**
+ * "9 FOR YOU · EVERY BAND": the count and the scope in one small caps line.
+ * The cards are the screen now, so the count is a caption over them rather
+ * than a headline taller than a card.
+ */
+function Summary({ count, where }: { count: number; where: string | undefined }) {
   const canvas = usePosterCanvas();
   return (
-    <View
-      accessible
+    <PosterText
+      variant="label"
+      color={canvas.soft}
       accessibilityRole="header"
-      style={{ paddingBottom: spacing.md }}
+      numberOfLines={1}
+      style={{ paddingBottom: CARD_GAP }}
     >
-      <PosterText variant="label" color={canvas.soft}>
-        {where === undefined ? 'FOR YOU' : `FOR YOU · ${where.toUpperCase()}`}
-      </PosterText>
-      <PosterText
-        variant="figure"
-        color={canvas.ink}
-        numberOfLines={1}
-        // "12 mentions" at full size is wider than a small phone.
-        adjustsFontSizeToFit
-        minimumFontScale={0.5}
-      >
-        {`${count} ${noun}${count === 1 ? '' : 's'}`}
-      </PosterText>
-    </View>
+      {where === undefined ? `${count} FOR YOU` : `${count} FOR YOU · ${where.toUpperCase()}`}
+    </PosterText>
   );
 }
 
-/**
- * One mention: who, in which task, and what they said.
- *
- * The tile carries the person's initial in their band's colour, so under
- * "All" the band reads at a glance — and the band is also named in words, so
- * the colour never says it alone. The excerpt gets its own lines, set like
- * the comment it came from: it is usually the reason to open the task.
- */
-function MentionRow({
-  item,
-  namesBoards,
-  accent,
-  onDismiss,
-}: {
-  item: MentionNotificationDto;
-  namesBoards: boolean;
-  accent: SlotHex | undefined;
-  onDismiss: () => void;
-}) {
-  const colors = useThemeColors();
-
-  const meta = [namesBoards ? item.boardName : null, shortAgo(item.createdAt)]
-    .filter((part): part is string => part != null && part !== '')
-    .join(' · ');
-  // The sentence, not just the task: "Dana mentioned you in Mix notes" is
-  // what the notification said, and the row should read the same way. For
-  // money the server already wrote the headline ("Paid back: Tire · $50.00").
-  const title =
-    item.kind === 'MENTION'
-      ? `${item.actorName} mentioned you in “${item.taskTitle}”`
-      : item.kind === 'PAYBACK'
-        ? `${item.actorName} paid ${item.taskTitle}`
-        : item.taskTitle;
-  const detail =
-    item.kind === 'PAYBACK'
-      ? [item.excerpt, 'Owed back from the band fund'].filter(Boolean).join(' · ')
-      : item.excerpt;
-  const initial = item.actorName.trim().charAt(0).toUpperCase() || '@';
-  // A payback opens its expense, where an admin pays it back. One alert for
-  // several expenses has no single entry, so it opens Finances.
-  const href =
-    item.kind === 'MENTION' && item.taskId
-      ? `/board/${item.boardId}/task/${item.taskId}`
-      : item.entryId
-        ? `/board/${item.boardId}/form/finance?id=${item.entryId}`
-        : `/board/${item.boardId}/w/FINANCES`;
-
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs }}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={[title, detail, meta].filter(Boolean).join('. ')}
-        // Opening leaves the row in place, matching web: it clears when the
-        // person clears it, so a glance at the task does not lose the reminder.
-        onPress={() => router.push(href)}
-        style={({ pressed }) => ({
-          flex: 1,
-          flexDirection: 'row',
-          alignItems: 'flex-start',
-          gap: spacing.md - 4,
-          paddingVertical: spacing.sm + 2,
-          opacity: pressed ? 0.6 : 1,
-        })}
-      >
-        <View
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 10,
-            borderCurve: 'continuous',
-            backgroundColor: accent?.bg ?? colors.muted,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <PosterText variant="title" color={accent?.fg ?? colors.foreground}>
-            {initial}
-          </PosterText>
-        </View>
-        <View style={{ flex: 1, gap: 2 }}>
-          <PosterText variant="rowTitle" color={colors.foreground} numberOfLines={2}>
-            {title}
-          </PosterText>
-          {detail !== '' && (
-            <PosterText variant="paragraph" color={colors.mutedForeground} numberOfLines={2}>
-              {detail}
-            </PosterText>
-          )}
-          <PosterText variant="cardMeta" color={colors.mutedForeground} numberOfLines={1}>
-            {meta}
-          </PosterText>
-        </View>
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={
-          item.kind === 'MENTION'
-            ? `Dismiss mention from ${item.actorName}`
-            : `Dismiss ${item.kind === 'PAYBACK' ? 'payback reminder' : 'paid back note'} from ${item.actorName}`
-        }
-        hitSlop={10}
-        onPress={onDismiss}
-        style={({ pressed }) => ({
-          opacity: pressed ? 0.4 : 1,
-          padding: spacing.xs,
-          marginTop: spacing.sm + 2,
-          borderRadius: posterRadius.chip,
-        })}
-      >
-        <Icon name={{ sf: 'xmark', md: 'close' }} size={14} color={colors.mutedForeground} />
-      </Pressable>
-    </View>
-  );
+function CardGap() {
+  return <View style={{ height: CARD_GAP }} />;
 }
+
+/** Between two cards: enough page to see each as its own thing. */
+const CARD_GAP = spacing.sm + spacing.xs;
