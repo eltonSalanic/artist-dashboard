@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Alert, FlatList, Pressable, RefreshControl, View } from 'react-native';
 import { Stack } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   useClearInbox,
   useDismissInboxItem,
@@ -64,6 +65,8 @@ function Mentions({
 }) {
   const colors = useThemeColors();
   const scheme = useScheme();
+  // Inside the tab, the bottom safe-area inset is the tab bar's height.
+  const covered = useSafeAreaInsets().bottom;
   const inbox = useInbox(boardId);
   // Only to find the reader's own @handle in a comment, which is set bold.
   const myName = useMe(true).data?.user.displayName;
@@ -110,7 +113,18 @@ function Mentions({
       <FlatList
         data={items}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl, flexGrow: 1 }}
+        // The list runs on under the floating tab bar, and it is not the
+        // screen's first scroll view (the band filter is), so iOS only allowed
+        // for the bar mid-drag: a last card that just reached the bar sprang
+        // back under it. Like the calendar, iOS's inset is switched off and the
+        // list's end is padded by the bar's height instead, so it rests where
+        // it is left.
+        contentInsetAdjustmentBehavior="never"
+        contentContainerStyle={{
+          padding: spacing.md,
+          paddingBottom: spacing.xxl + covered,
+          flexGrow: 1,
+        }}
         ListHeaderComponent={
           <>
             <PushPrompt />
