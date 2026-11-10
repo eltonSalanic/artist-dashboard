@@ -40,12 +40,24 @@ export function WidgetSpokeScreen({
   const [index, setIndex] = useState(initial);
   const listRef = useRef<FlatList<WidgetType>>(null);
 
+  // The page a tapped pill is sliding to. On the way there the pager passes
+  // every page in between, and each one reports itself visible: following
+  // those lit up each middle pill in turn before the one you tapped. Until the
+  // slide lands, only the target counts. A finger on the pager cancels it.
+  const jumpingTo = useRef<number | null>(null);
+
   const onViewable = useCallback(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     const first = viewableItems[0]?.index;
-    if (typeof first === 'number') setIndex(first);
+    if (typeof first !== 'number') return;
+    if (jumpingTo.current !== null) {
+      if (first !== jumpingTo.current) return;
+      jumpingTo.current = null;
+    }
+    setIndex(first);
   }, []);
 
   const goTo = (next: number) => {
+    jumpingTo.current = next;
     setIndex(next);
     listRef.current?.scrollToIndex({ index: next, animated: true });
   };
@@ -73,6 +85,12 @@ export function WidgetSpokeScreen({
           index: i,
         })}
         onViewableItemsChanged={onViewable}
+        onScrollBeginDrag={() => {
+          jumpingTo.current = null;
+        }}
+        onMomentumScrollEnd={() => {
+          jumpingTo.current = null;
+        }}
         viewabilityConfig={{ itemVisiblePercentThreshold: 60 }}
         renderItem={({ item }) => {
           const Spoke = SPOKES[item];
