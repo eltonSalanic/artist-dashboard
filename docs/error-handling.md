@@ -34,6 +34,7 @@ Safety nets:
 ## Environments
 
 `APP_ENV` (`development` | `staging` | `production`) is separate from `NODE_ENV`, because staging runs with `NODE_ENV=production` so real mail and push work.
+The full list of what each setting changes is in [environments.md](environments.md).
 
 | | API | Web | Mobile |
 |---|---|---|---|
