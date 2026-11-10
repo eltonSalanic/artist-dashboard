@@ -12,6 +12,7 @@ import { MascotSetting } from '@/features/mascot/mascot-setting';
 import { PushSetting } from '@/features/push/push-prompt';
 import { forgetThisDevice } from '@/features/push/push';
 import { auth } from '@/lib/auth';
+import { forgetGoogleAccount } from '@/features/auth/social-sign-in';
 import { feedbackAvailable, showFeedback } from '@/lib/sentry';
 import {
   boardAccent,
@@ -168,7 +169,7 @@ export function YouScreen() {
           // token it is — otherwise the next person to sign in on this
           // phone would be buzzed for this account until they did.
           void forgetThisDevice()
-            .then(() => auth.signOut())
+            .then(() => Promise.all([auth.signOut(), forgetGoogleAccount()]))
             .finally(() => setSigningOut(false));
         }}
       />

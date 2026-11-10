@@ -62,4 +62,11 @@ export const env = {
     (process.env.EXPO_OS === 'ios'
       ? process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY
       : process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY) || null,
+  /**
+   * Google sign-in's OAuth client IDs (docs/sign-in.md). The Web one is what
+   * Android asks Google for a token for; iOS also needs its own. Unset hides
+   * the Google button.
+   */
+  googleWebClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || null,
+  googleIosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || null,
 } as const;
