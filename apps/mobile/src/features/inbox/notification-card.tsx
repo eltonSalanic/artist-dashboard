@@ -12,7 +12,15 @@ import {
   type SlotHex,
 } from '@/theme';
 import { MONEY_COLORS } from '@/theme/money-colors';
-import { inboxCardContent, inboxWhen } from './present';
+import { face } from '@/theme/poster';
+import { inboxCardContent, inboxWhen, splitHandles } from './present';
+
+/**
+ * The main line is set at reading weight, so the one bold thing in a comment
+ * is the @handle: it is the reason this landed in your inbox.
+ */
+const LEAD = { fontFamily: face.medium } as const;
+const HANDLE = { fontFamily: face.bold } as const;
 
 /** The dismiss button's box, and how far it sits from the card's corner. */
 const DISMISS = 28;
@@ -35,12 +43,15 @@ export function NotificationCard({
   item,
   namesBoards,
   accent,
+  myName,
   onDismiss,
 }: {
   item: MentionNotificationDto;
   /** The account has more than one band, so each card says which. */
   namesBoards: boolean;
   accent: SlotHex | undefined;
+  /** The reader's display name, to find their @handle in a comment. */
+  myName: string | undefined;
   onDismiss: () => void;
 }) {
   const colors = useThemeColors();
@@ -114,8 +125,18 @@ export function NotificationCard({
 
         <View style={{ gap: spacing.xs }}>
           {content.amount === null ? (
-            <PosterText variant="prose" color={colors.foreground} numberOfLines={3}>
-              {content.lead}
+            <PosterText variant="prose" color={colors.foreground} numberOfLines={3} style={LEAD}>
+              {content.kind === 'Mention'
+                ? splitHandles(content.lead, myName).map((segment, i) =>
+                    segment.type === 'handle' ? (
+                      <PosterText key={i} variant="prose" color={colors.foreground} style={HANDLE}>
+                        {segment.value}
+                      </PosterText>
+                    ) : (
+                      segment.value
+                    ),
+                  )
+                : content.lead}
             </PosterText>
           ) : (
             // Baseline, so a label that wraps keeps the amount on its first line.
@@ -124,7 +145,7 @@ export function NotificationCard({
                 variant="prose"
                 color={colors.foreground}
                 numberOfLines={2}
-                style={{ flex: 1, minWidth: 0 }}
+                style={[LEAD, { flex: 1, minWidth: 0 }]}
               >
                 {content.lead}
               </PosterText>

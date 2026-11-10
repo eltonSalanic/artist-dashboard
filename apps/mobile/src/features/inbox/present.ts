@@ -98,3 +98,35 @@ export function inboxCardContent(item: MentionNotificationDto): InboxCardContent
 export function inboxWhen(iso: string, now = new Date()): string {
   return now.getTime() - new Date(iso).getTime() < 7 * DAY ? shortAgo(iso, now) : shortDate(iso, now);
 }
+
+export interface LeadSegment {
+  type: 'text' | 'handle';
+  value: string;
+}
+
+/**
+ * A comment cut into plain text and "@Name" handles, so the card can set the
+ * handle alone in bold.
+ *
+ * The inbox has no member list to match against (it spans bands), so it looks
+ * for the one name it knows was mentioned: the reader's own. Without it, the
+ * fallback takes a single word after the @, which under-marks "@Quinn Ellis"
+ * as "@Quinn" but never marks words the person did not write as a name.
+ */
+export function splitHandles(text: string, myName: string | undefined): LeadSegment[] {
+  const name = myName?.trim();
+  const pattern = name
+    ? new RegExp(`@${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'gi')
+    : /@[\w.'-]+/g;
+
+  const segments: LeadSegment[] = [];
+  let from = 0;
+  for (const match of text.matchAll(pattern)) {
+    const at = match.index ?? 0;
+    if (at > from) segments.push({ type: 'text', value: text.slice(from, at) });
+    segments.push({ type: 'handle', value: match[0] });
+    from = at + match[0].length;
+  }
+  if (from < text.length) segments.push({ type: 'text', value: text.slice(from) });
+  return segments;
+}

@@ -5,6 +5,7 @@ import {
   useClearInbox,
   useDismissInboxItem,
   useInbox,
+  useMe,
 } from '@artist/api-client';
 import type { BoardSummaryDto } from '@artist/shared';
 import { BoardFilter } from '@/components/board-filter';
@@ -64,6 +65,8 @@ function Mentions({
   const colors = useThemeColors();
   const scheme = useScheme();
   const inbox = useInbox(boardId);
+  // Only to find the reader's own @handle in a comment, which is set bold.
+  const myName = useMe(true).data?.user.displayName;
   const dismiss = useDismissInboxItem();
   const clear = useClearInbox(boardId);
 
@@ -160,6 +163,7 @@ function Mentions({
             item={item}
             namesBoards={namesBoards}
             accent={accents.get(item.boardId)}
+            myName={myName}
             onDismiss={() => dismiss.mutate(item.id)}
           />
         )}

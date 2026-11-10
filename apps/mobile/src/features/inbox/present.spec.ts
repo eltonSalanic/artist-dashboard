@@ -1,5 +1,5 @@
 import type { MentionNotificationDto } from '@artist/api-client';
-import { inboxCardContent, inboxWhen, splitAmount } from './present';
+import { inboxCardContent, inboxWhen, splitAmount, splitHandles } from './present';
 
 const base: MentionNotificationDto = {
   id: 'n1',
@@ -91,5 +91,36 @@ describe('inboxWhen', () => {
     // The date's word order is the device's, so only what it must hold.
     expect(inboxWhen(ago(9), now)).toMatch(/\b5\b/);
     expect(inboxWhen(ago(9), now)).not.toContain('ago');
+  });
+});
+
+describe('splitHandles', () => {
+  it("marks the reader's full name", () => {
+    expect(splitHandles('@Quinn Ellis can you confirm?', 'Quinn Ellis')).toEqual([
+      { type: 'handle', value: '@Quinn Ellis' },
+      { type: 'text', value: ' can you confirm?' },
+    ]);
+  });
+
+  it('marks one word when the name is unknown', () => {
+    expect(splitHandles('Ask @Quinn Ellis first', undefined)).toEqual([
+      { type: 'text', value: 'Ask ' },
+      { type: 'handle', value: '@Quinn' },
+      { type: 'text', value: ' Ellis first' },
+    ]);
+  });
+
+  it('survives a name with pattern characters in it', () => {
+    expect(splitHandles('hi @J. (Jay) there', 'J. (Jay)')).toEqual([
+      { type: 'text', value: 'hi ' },
+      { type: 'handle', value: '@J. (Jay)' },
+      { type: 'text', value: ' there' },
+    ]);
+  });
+
+  it('returns plain text untouched', () => {
+    expect(splitHandles('No handle here.', 'Quinn Ellis')).toEqual([
+      { type: 'text', value: 'No handle here.' },
+    ]);
   });
 });
