@@ -344,8 +344,26 @@ notification. The code route is public (the phone needs it), so
 `InviteCodeMail` only mails addresses with a pending invite; a request for
 anyone else sends nothing. Someone whose account email is already verified
 gets no email: their pending invite is matched by email the next time they
-sign in. An account whose email isn't verified (a password sign-up) does get
-the code, because `/me/bootstrap` only accepts invites for a verified email,
+sign in. An account whose email isn't verified (a password sign-up that never
+entered its [sign-up code](#sign-up-codes)) does get the code, because `/me/bootstrap` only accepts invites for a verified email,
 and signing in with the code is what verifies it. Better Auth then drops any
 password or session the account had from before, so whoever signed up with
 someone else's address loses it.
+
+## Sign-up codes
+
+A password sign-up has to confirm its email before it gets a session
+(`requireEmailVerification` in `apps/api/src/auth/better-auth.ts`). Better
+Auth's email-code plugin stands in for its link email and asks for an
+`email-verification` code on sign-up, on signing in unconfirmed, and on "Send
+a new code" (`POST /api/auth/email-otp/send-verification-otp`). `VerifyEmailMail`
+(`apps/api/src/auth/verify-email.mail.ts`) mails it through the same
+`MailTransport`: subject "<code> is your Band Wall code", the code and nothing
+else. Entering it (`POST /api/auth/email-otp/verify-email`) marks the email
+verified and signs the person in. Codes last an hour, allow three wrong tries
+and work once, like invite codes.
+
+Like invites, these skip the notification machinery. The resend route is
+public, so `VerifyEmailMail` only mails an account that exists and isn't
+verified yet; anyone else gets nothing. Invited accounts never see this step:
+signing in with an invite code already verifies the email.
