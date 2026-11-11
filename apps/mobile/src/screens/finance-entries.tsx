@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 import { router } from 'expo-router';
-import { useFinanceEntries, useFinanceSummary, useMe, usePermissions } from '@artist/api-client';
+import { useFinanceEntries, useFinanceSummary, useMe } from '@artist/api-client';
 import {
   activeFinanceFilterCount,
   DEFAULT_FINANCE_FILTERS,
@@ -28,10 +28,8 @@ import { spacing, useTokens } from '@/theme';
  */
 export function FinanceEntriesScreen({ boardId }: { boardId: string }) {
   const tokens = useTokens();
-  const { can } = usePermissions();
   const me = useMe(true);
-  const visible = can('finance.view');
-  const summary = useFinanceSummary(boardId, {}, visible);
+  const summary = useFinanceSummary(boardId);
   const entries = useFinanceEntries(boardId);
   const [filters, setFilters] = useState(DEFAULT_FINANCE_FILTERS);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -49,26 +47,24 @@ export function FinanceEntriesScreen({ boardId }: { boardId: string }) {
   return (
     <>
       <SpokeList
-        pending={visible && (summary.isPending || entries.isPending)}
+        pending={summary.isPending || entries.isPending}
         error={summary.error ?? entries.error}
         onRetry={() => {
           void summary.refetch();
           void entries.refetch();
         }}
-        empty={!visible || rows.length === 0}
+        empty={rows.length === 0}
         emptyIcon={{ sf: 'dollarsign.circle', md: 'account-balance-wallet' }}
         emptyTitle={
-          !visible ? 'Only admins see the books' : narrowed ? 'No matches' : 'Nothing logged yet'
+          narrowed ? 'No matches' : 'Nothing logged yet'
         }
         emptyBody={
-          visible && narrowed
+          narrowed
             ? 'Nothing matches this search and these filters.'
-            : visible
-              ? 'Log income or an expense with the + on Finances.'
-              : undefined
+            : 'Log what the band earns and spends from Finances. If you pay out of your own pocket, the band owes you until an admin pays you back.'
         }
         pinned={
-          visible && all.length > 0 ? (
+          all.length > 0 ? (
             <View style={{ gap: spacing.sm, paddingTop: spacing.xs }}>
               <FinanceSearch
                 value={filters.query}

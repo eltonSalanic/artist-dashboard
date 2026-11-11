@@ -22,10 +22,13 @@ export function SectionCard({
   title,
   caption,
   description,
+  action,
   danger = false,
   children,
 }: {
   title: string;
+  /** At the title's right edge: the one control for the whole group, such as an (i). */
+  action?: ReactNode;
   /** Small caps under the title: a count, a state. */
   caption?: string | null;
   description?: string;
@@ -51,9 +54,12 @@ export function SectionCard({
       }}
     >
       <View style={{ paddingHorizontal: spacing.sm, paddingTop: spacing.xs, paddingBottom: spacing.sm, gap: 2 }}>
-        <ThemedText variant="title" accessibilityRole="header">
-          {title}
-        </ThemedText>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <ThemedText variant="title" accessibilityRole="header" style={{ flex: 1 }}>
+            {title}
+          </ThemedText>
+          {action}
+        </View>
         {caption != null && caption !== '' && (
           <PosterText variant="label" color={tokens.mutedForeground} style={{ marginTop: spacing.xs }}>
             {caption.toUpperCase()}

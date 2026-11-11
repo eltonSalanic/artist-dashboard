@@ -9,12 +9,20 @@ import {
   useTask,
   useUpdateTask,
 } from '@artist/api-client';
+import { orList } from '@artist/shared';
 import { Icon } from '@/components/icon';
 import { PosterText } from '@/components/poster-text';
 import { Dot } from '@/components/row';
 import { Skeleton } from '@/components/skeleton';
 import { face, posterRadius, spacing, usePosterCanvas } from '@/theme';
 import { sheetBackground } from '@/lib/liquid-glass';
+import { useAdminNames } from '@/features/help/use-admin-names';
+
+/** " Ask Sam.": the task's own people first, the admins when it has none. */
+function askWho(assignees: string[], admins: string[]): string {
+  const names = (assignees.length > 0 ? assignees : admins).slice(0, 3);
+  return names.length > 0 ? ` Ask ${orList(names)}.` : '';
+}
 
 /**
  * Pick a task's status. A sheet rather than a picker wheel or a menu: statuses
@@ -47,6 +55,7 @@ export function StatusSheet({
   const canChangeStatus = useCanChangeStatus();
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
+  const admins = useAdminNames(boardId);
 
   const statuses = board.data?.statuses ?? [];
   const current = task.data?.statusId;
@@ -126,7 +135,10 @@ export function StatusSheet({
         [0, 1, 2].map((i) => <Skeleton key={i} width="100%" height={48} />)
       ) : !allowed ? (
         <PosterText variant="paragraph" color={canvas.soft} style={{ paddingHorizontal: spacing.xs }}>
-          Only the people assigned to this task, or a band admin, can change its status.
+          {`Only the people assigned to this task, or an admin, can change its status.${askWho(
+            (task.data?.assignees ?? []).map((person) => person.displayName),
+            admins,
+          )}`}
         </PosterText>
       ) : (
         statuses.map((status) => {

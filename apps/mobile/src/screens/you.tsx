@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { toUserMessage, useMe } from '@artist/api-client';
+import { ROLE_LABELS } from '@artist/shared';
 import { Button } from '@/components/button';
 import { Icon } from '@/components/icon';
 import { PosterText } from '@/components/poster-text';
@@ -117,7 +118,7 @@ export function YouScreen() {
               Link's slot drops a style function, and with it the block's fill. */}
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`${board.name}, ${board.role.toLowerCase()}. Change band`}
+            accessibilityLabel={`${board.name}, ${ROLE_LABELS[board.role].toLowerCase()}. Change band`}
             onPress={() => router.push('/boards')}
             style={({ pressed }) => ({
               flexDirection: 'row',
@@ -135,9 +136,10 @@ export function YouScreen() {
                 {board.name}
               </PosterText>
               <PosterText variant="label" color={accent.fg}>
+                {/* "Member", as the help calls it, not the stored USER. */}
                 {boards.length > 1
-                  ? `${board.role} · ${boards.length} BANDS · TAP TO SWITCH`
-                  : board.role}
+                  ? `${ROLE_LABELS[board.role].toUpperCase()} · ${boards.length} BANDS · TAP TO SWITCH`
+                  : ROLE_LABELS[board.role].toUpperCase()}
               </PosterText>
             </View>
             <Icon name={{ sf: 'chevron.down', md: 'expand-more' }} size={14} color={accent.fg} />
@@ -151,6 +153,33 @@ export function YouScreen() {
 
       <Section title="MASCOT">
         <MascotSetting />
+      </Section>
+
+      <Section title="HELP">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityHint="Roles, the books, show statuses and the wall, explained"
+          onPress={() => router.push('/help')}
+          style={({ pressed }) => ({
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.md - 4,
+            minHeight: 52,
+            paddingVertical: spacing.sm,
+            opacity: pressed ? 0.6 : 1,
+          })}
+        >
+          <Icon name={{ sf: 'questionmark.circle', md: 'help-outline' }} size={22} color={canvas.ink} />
+          <View style={{ flex: 1, gap: 2 }}>
+            <PosterText variant="rowTitle" color={canvas.ink}>
+              How Band Wall works
+            </PosterText>
+            <PosterText variant="cardMeta" color={canvas.soft}>
+              Who can do what, how the books work, and the rest
+            </PosterText>
+          </View>
+          <Icon name={{ sf: 'chevron.right', md: 'chevron-right' }} size={13} color={canvas.soft} />
+        </Pressable>
       </Section>
 
       {/* Sentry's feedback form, linked to the errors just before it. Only

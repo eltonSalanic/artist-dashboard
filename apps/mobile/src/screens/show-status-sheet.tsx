@@ -9,13 +9,20 @@ import {
   useEvent,
   usePermissions,
 } from '@artist/api-client';
-import { cancelledShowMoneyNotice } from '@artist/shared';
+import { cancelledShowMoneyNotice, type ShowStatusCategory } from '@artist/shared';
 import { Icon } from '@/components/icon';
 import { PosterText } from '@/components/poster-text';
 import { Dot } from '@/components/row';
 import { Skeleton } from '@/components/skeleton';
 import { face, posterRadius, spacing, usePosterCanvas } from '@/theme';
 import { sheetBackground } from '@/lib/liquid-glass';
+
+/** One plain line per kind of status, under its name in the list. */
+const CATEGORY_MEANING: Record<ShowStatusCategory, string> = {
+  HOLD: 'Pencilled in, not promised yet',
+  BOOKED: 'It’s on. Counts as a booked show',
+  CANCELLED: 'Off. Struck through and left out of counts',
+};
 
 /**
  * Pick a show's status: the task status sheet's twin, over the board's show
@@ -125,13 +132,20 @@ export function ShowStatusSheet({
               })}
             >
               <Dot color={status.color} size={14} />
-              <PosterText
-                variant="rowTitle"
-                color={canvas.ink}
-                style={[{ flex: 1 }, selected && { fontFamily: face.heavy }]}
-              >
-                {status.name}
-              </PosterText>
+              <View style={{ flex: 1, gap: 1 }}>
+                <PosterText
+                  variant="rowTitle"
+                  color={canvas.ink}
+                  style={selected && { fontFamily: face.heavy }}
+                >
+                  {status.name}
+                </PosterText>
+                {/* What picking it does, since a band names its own statuses
+                    and "hold" is trade talk. */}
+                <PosterText variant="cardMeta" color={canvas.soft}>
+                  {CATEGORY_MEANING[status.category]}
+                </PosterText>
+              </View>
               <View style={{ width: 22, alignItems: 'center' }}>
                 {pendingId === status.id ? (
                   <ActivityIndicator size="small" color={canvas.ink} />

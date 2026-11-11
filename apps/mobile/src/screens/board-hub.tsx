@@ -29,6 +29,7 @@ import {
 import {
   WIDGET_META,
   resolveBoardTheme,
+  type BoardRole,
   type BoardTheme,
   type MobileLayoutItem,
 } from '@artist/shared';
@@ -45,6 +46,8 @@ import { useHubCards } from '@/features/board/use-hub-cards';
 import { ConfirmHeader } from '@/features/forms/form-screen';
 import { useRefetchOnFocus } from '@/lib/refetch-on-focus';
 import { SetupChecklist } from '@/features/board/setup-checklist';
+import { RoleCard } from '@/features/help/role-card';
+import { useRoleIntro } from '@/features/help/role-intro';
 import { takeOnboardingIntent } from '@/features/onboarding/onboarding-state';
 import { StartBandScreen } from '@/screens/start-band';
 import { SubscriptionGate } from '@/features/billing/subscription-gate';
@@ -92,7 +95,13 @@ export function BoardHubScreen() {
   // Keyed by board, so an edit in progress never carries over to another band.
   if (board !== null) {
     return (
-      <BoardHub key={board.id} boardId={board.id} name={board.name} isOwner={board.isOwner} />
+      <BoardHub
+        key={board.id}
+        boardId={board.id}
+        name={board.name}
+        isOwner={board.isOwner}
+        role={board.role}
+      />
     );
   }
 
@@ -137,10 +146,12 @@ function BoardHub({
   boardId,
   name,
   isOwner,
+  role,
 }: {
   boardId: string;
   name: string;
   isOwner: boolean;
+  role: BoardRole;
 }) {
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
@@ -180,6 +191,10 @@ function BoardHub({
   }, [hub.loading, hub.items]);
 
   useOnHubEditRequest(startEditing);
+
+  // Everyone but the owner (who gets the setup card) is told once, per band,
+  // what their role lets them do.
+  const roleIntro = useRoleIntro(boardId, role);
 
   // Just joined with an invite code: welcome them to the band, once.
   useEffect(() => {
@@ -318,6 +333,12 @@ function BoardHub({
           {isOwner && !editing && (
             <Animated.View layout={SLIDE}>
               <SetupChecklist boardId={boardId} />
+            </Animated.View>
+          )}
+
+          {!isOwner && !editing && roleIntro.visible && (
+            <Animated.View layout={SLIDE} exiting={VANISH}>
+              <RoleCard boardId={boardId} role={role} onDismiss={roleIntro.dismiss} />
             </Animated.View>
           )}
 

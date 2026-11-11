@@ -108,6 +108,30 @@ export function SetupChecklist({ boardId }: { boardId: string }) {
           )}
         </Pressable>
       ))}
+      {/* The owner's way to the rules, where a member gets the role card. */}
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.push('/help')}
+        style={({ pressed }) => [
+          styles.row,
+          styles.help,
+          { borderTopColor: colors.border, opacity: pressed ? 0.6 : 1 },
+        ]}
+      >
+        <Icon
+          name={{ sf: 'info.circle', md: 'info-outline' }}
+          size={15}
+          color={colors.mutedForeground}
+        />
+        <ThemedText variant="footnote" tone="muted" style={{ flex: 1 }}>
+          Roles, the books and the rest: how Band Wall works
+        </ThemedText>
+        <Icon
+          name={{ sf: 'chevron.right', md: 'chevron-right' }}
+          size={11}
+          color={colors.mutedForeground}
+        />
+      </Pressable>
     </View>
   );
 }
@@ -127,6 +151,7 @@ const styles = StyleSheet.create({
     paddingBottom: 2,
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 32 },
+  help: { marginTop: spacing.xs, paddingTop: spacing.xs, borderTopWidth: StyleSheet.hairlineWidth },
   tick: {
     width: 16,
     height: 16,

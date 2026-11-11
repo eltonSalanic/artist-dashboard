@@ -1,6 +1,7 @@
 import { View } from 'react-native';
 import { formatMoney } from '@artist/shared';
 import { Icon, type IconName } from '@/components/icon';
+import { InfoButton } from '@/components/info-button';
 import { PosterText } from '@/components/poster-text';
 import { useWidgetInk } from '@/features/board/spoke-header';
 import { radius, spacing, useScheme, useShadows, useTokens } from '@/theme';
@@ -72,8 +73,6 @@ export function WalletCard({
 
   return (
     <View
-      accessible
-      accessibilityLabel={`Band fund ${money(bandFundCents)}. ${PERIODS.find((p) => p.value === period)?.label}: in ${money(incomeCents)}, out ${money(expenseCents)}, net ${money(netCents)}.`}
       style={{
         backgroundColor: card.bg,
         borderRadius: radius.xl + 4,
@@ -84,8 +83,17 @@ export function WalletCard({
         boxShadow: shadows.raised,
       }}
     >
+      {/* The number is named, with the (i) for how the books work, since
+          "band fund" is the one word here nobody arrives knowing. */}
       <View style={{ gap: spacing.xs }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2 }}>
+          <PosterText variant="label" color={card.soft} accessible={false}>
+            BAND FUND
+          </PosterText>
+          <InfoButton topic="books" color={card.soft} size={15} />
+        </View>
         <PosterText
+          accessibilityLabel={`Band fund ${below ? 'minus ' : ''}${money(Math.abs(bandFundCents))}`}
           variant="figure"
           color={card.ink}
           numberOfLines={1}
@@ -121,7 +129,11 @@ export function WalletCard({
         ink={{ track: card.faint, thumb: card.ink, label: card.soft, activeLabel: card.bg }}
       />
 
-      <View style={{ flexDirection: 'row' }}>
+      <View
+        accessible
+        accessibilityLabel={`${PERIODS.find((p) => p.value === period)?.label}: in ${money(incomeCents)}, out ${money(expenseCents)}, net ${money(netCents)}.`}
+        style={{ flexDirection: 'row' }}
+      >
         <Figure
           label="Money in"
           icon={{ sf: 'arrow.down.left', md: 'south-west' }}

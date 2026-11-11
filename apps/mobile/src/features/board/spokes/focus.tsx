@@ -1,5 +1,5 @@
 import { View } from 'react-native';
-import { useFocus } from '@artist/api-client';
+import { useFocus, usePermissions } from '@artist/api-client';
 import { FocusPeriods } from '@artist/shared';
 import { PosterText } from '@/components/poster-text';
 import { SpokeList } from '@/components/spoke-list';
@@ -10,6 +10,7 @@ import { SpokeHeader } from '../spoke-header';
  *  an unset period is a prompt, and hiding it hides the prompt. */
 export function FocusSpoke({ boardId }: { boardId: string }) {
   const canvas = usePosterCanvas();
+  const { can } = usePermissions();
   const focus = useFocus(boardId);
   const byPeriod = new Map((focus.data ?? []).map((pin) => [pin.period, pin.text]));
   const set = FocusPeriods.filter((period) => byPeriod.get(period)?.trim()).length;
@@ -31,6 +32,14 @@ export function FocusSpoke({ boardId }: { boardId: string }) {
       }
     >
       <View style={{ gap: spacing.lg }}>
+        {/* "Focus" doesn't say what it is; one line does, while any is unset. */}
+        {!focus.isPending && set < FocusPeriods.length && (
+          <PosterText variant="paragraph" color={canvas.soft}>
+            {can('focus.manage')
+              ? 'One line each for what this week, this month and this year are about, so the whole band pulls the same way. Tap Edit to set them.'
+              : 'One line each for what this week, this month and this year are about. An admin sets them for the band.'}
+          </PosterText>
+        )}
         {FocusPeriods.map((period) => {
           const text = byPeriod.get(period)?.trim();
           return (

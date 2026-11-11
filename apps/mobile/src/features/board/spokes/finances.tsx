@@ -53,7 +53,6 @@ type View_ = 'overview' | 'owed' | 'entries';
 export function FinancesSpoke({ boardId }: { boardId: string }) {
   const { can } = usePermissions();
   const me = useMe(true);
-  const visible = can('finance.view');
   const [period, setPeriod] = useState<Period>('month');
   const [view, setView] = useState<View_>('entries');
   const range = useMemo(() => {
@@ -66,7 +65,7 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
   }, [period]);
   const periodLabel =
     period === 'month' ? 'this month' : period === 'year' ? 'this year' : 'all time';
-  const summary = useFinanceSummary(boardId, range, visible);
+  const summary = useFinanceSummary(boardId, range);
   const entries = useFinanceEntries(boardId);
   const data = summary.data;
   const money = (cents: number) => formatMoney(cents, data?.currency ?? 'USD');
@@ -78,15 +77,17 @@ export function FinancesSpoke({ boardId }: { boardId: string }) {
 
   return (
     <SpokeList
-      pending={visible && (summary.isPending || entries.isPending)}
+      pending={summary.isPending || entries.isPending}
       error={summary.error ?? entries.error}
       onRetry={() => {
         void summary.refetch();
         void entries.refetch();
       }}
-      empty={!visible}
+      // Never empty as a whole: a band with nothing logged still gets its card,
+      // and the Entries tab says what to do.
+      empty={false}
       emptyIcon={{ sf: 'dollarsign.circle', md: 'account-balance-wallet' }}
-      emptyTitle="Only admins see the books"
+      emptyTitle="Nothing logged yet"
       header={
         <SpokeHeader
           boardId={boardId}
@@ -466,9 +467,19 @@ function Entries({
   if (entries.length === 0) {
     return (
       <Panel padded>
-        <PosterText variant="body" color={tokens.mutedForeground} style={{ textAlign: 'center' }}>
-          Nothing logged yet.
-        </PosterText>
+        <View style={{ gap: spacing.xs }}>
+          <PosterText variant="rowTitle" color={tokens.foreground} style={{ textAlign: 'center' }}>
+            Nothing logged yet
+          </PosterText>
+          <PosterText
+            variant="paragraph"
+            color={tokens.mutedForeground}
+            style={{ textAlign: 'center' }}
+          >
+            Log what the band earns and spends. If you pay for something out of your own pocket,
+            the band owes you until an admin pays you back.
+          </PosterText>
+        </View>
       </Panel>
     );
   }
