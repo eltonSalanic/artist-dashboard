@@ -43,9 +43,8 @@ export function FinanceMemberScreen({ boardId, userId }: { boardId: string; user
   const finance = MONEY_COLORS[useScheme()];
   const { can } = usePermissions();
   const me = useMe(true);
-  const visible = can('finance.view');
   const manages = can('finance.manage');
-  const summary = useFinanceSummary(boardId, {}, visible);
+  const summary = useFinanceSummary(boardId);
   const entries = useFinanceEntries(boardId, { kind: 'EXPENSE' });
   const payBackAll = usePayBackMember(boardId);
   const [filters, setFilters] = useState(DEFAULT_FINANCE_FILTERS);
@@ -81,7 +80,7 @@ export function FinanceMemberScreen({ boardId, userId }: { boardId: string; user
   const confirmPayBackAll = () =>
     Alert.alert(
       `Pay ${memberName} back ${money(balance.owedCents)}?`,
-      `That's ${owedCount} ${owedCount === 1 ? 'expense' : 'expenses'}, out of the band fund. Each one locks once it's paid back; you can undo any of them from the expense.`,
+      `That's ${owedCount} ${owedCount === 1 ? 'expense' : 'expenses'} ${memberName} will be paid back for. This records that the band paid them back. It doesn't send any money. You can undo this anytime.`,
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Pay back', onPress: () => payBackAll.mutate(userId) },
@@ -92,18 +91,16 @@ export function FinanceMemberScreen({ boardId, userId }: { boardId: string; user
     <>
       <Stack.Screen options={{ title: you ? `${memberName} (you)` : memberName }} />
       <SpokeList
-        pending={visible && (summary.isPending || entries.isPending)}
+        pending={summary.isPending || entries.isPending}
         error={summary.error ?? entries.error}
         onRetry={() => {
           void summary.refetch();
           void entries.refetch();
         }}
-        empty={!visible || rows.length === 0}
+        empty={rows.length === 0}
         emptyIcon={{ sf: 'dollarsign.circle', md: 'account-balance-wallet' }}
         emptyTitle={
-          !visible
-            ? 'Only admins see the books'
-            : theirs.length === 0
+          theirs.length === 0
               ? 'No expenses paid yet'
               : narrowed
                 ? 'No matches'
@@ -112,9 +109,7 @@ export function FinanceMemberScreen({ boardId, userId }: { boardId: string; user
                   : 'Nothing paid back yet'
         }
         emptyBody={
-          !visible
-            ? undefined
-            : theirs.length === 0
+          theirs.length === 0
               ? `When ${you ? 'you pay' : `${memberName} pays`} for something out of pocket, it shows up here.`
               : narrowed
                 ? `None of ${you ? 'your' : 'their'} expenses match this search and these filters.`
@@ -123,7 +118,7 @@ export function FinanceMemberScreen({ boardId, userId }: { boardId: string; user
                   : `Once an admin pays ${them} back, it shows up here.`
         }
         header={
-          visible && data ? (
+          data ? (
             <View style={{ gap: spacing.lg, paddingBottom: spacing.xs }}>
               <View style={{ alignItems: 'center', gap: spacing.sm, paddingTop: spacing.sm }}>
                 <SpotlightFace
@@ -194,7 +189,7 @@ export function FinanceMemberScreen({ boardId, userId }: { boardId: string; user
                     color={tokens.mutedForeground}
                     style={{ textAlign: 'center' }}
                   >
-                    Comes out of the band fund. You’ll confirm first.
+                    Records it against the band fund. No money is sent. You’ll confirm first.
                   </PosterText>
                 </View>
               )}

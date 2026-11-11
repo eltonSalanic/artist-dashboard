@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useHeaderHeight } from 'expo-router/react-navigation';
 import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
 import { useCreateBoard, useMySubscription } from '@artist/api-client';
+import { ROLE_LABELS } from '@artist/shared';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TextInput } from '@/components/text-input';
 import { Icon } from '@/components/icon';
@@ -67,7 +68,7 @@ export function BoardSwitcherSheet() {
           <Pressable
             key={candidate.id}
             accessibilityRole="button"
-            accessibilityLabel={`${candidate.name}, ${candidate.role.toLowerCase()}`}
+            accessibilityLabel={`${candidate.name}, ${ROLE_LABELS[candidate.role].toLowerCase()}`}
             accessibilityState={{ selected: current }}
             onPress={() => {
               select(candidate.id);

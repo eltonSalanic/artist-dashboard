@@ -9,6 +9,7 @@ import { PosterText } from '@/components/poster-text';
 import { TextField } from '@/components/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { auth } from '@/lib/auth';
+import { SocialButtons } from '@/features/auth/social-buttons';
 import { reportError } from '@/lib/report-error';
 import { setOnboardingIntent } from '@/features/onboarding/onboarding-state';
 import { StepProgress } from '@/features/onboarding/step-progress';
@@ -41,7 +42,9 @@ const VERIFY_CODE_FAILED =
   "That code doesn't work: check it against the email, or send a new one. Codes expire after an hour.";
 
 /**
- * Email + password, matching `apps/web/src/features/auth/login-page.tsx`.
+ * Email + password, matching `apps/web/src/features/auth/login-page.tsx`,
+ * with Sign in with Apple and Continue with Google under it on the phone
+ * (`SocialButtons`, docs/sign-in.md).
  *
  * Deliberately not magic links: password sign-in is the only way in. The one
  * email link the product sends is the API's *invite*, whose link opens the
@@ -402,6 +405,26 @@ export function SignInScreen() {
                 Send a new code
               </ThemedText>
             </Pressable>
+          )}
+
+          {(mode === 'signin' || mode === 'signup') && (
+            <SocialButtons
+              disabled={pending}
+              onStart={() => {
+                setPending(true);
+                setError(null);
+                setNotice(null);
+                // Same as the email sign-up: the band step says it's step 2 of 3.
+                if (mode === 'signup') setOnboardingIntent('signup');
+              }}
+              onEnd={(message, cancelled) => {
+                setPending(false);
+                if (message !== null || cancelled) {
+                  setOnboardingIntent(null);
+                  setError(message);
+                }
+              }}
+            />
           )}
 
           <Pressable

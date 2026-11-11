@@ -12,7 +12,11 @@ const copy: Record<
   EventType,
   { empty: string; body: string; phrase: 'noGigsYet' | 'noRehearsals' | 'noMeetings' }
 > = {
-  SHOW: { empty: 'No shows booked', body: 'Upcoming shows appear here.', phrase: 'noGigsYet' },
+  SHOW: {
+    empty: 'No shows booked',
+    body: 'Upcoming shows appear here, each with a status: a hold is a possible upcoming date, confirmed is all ready to go.',
+    phrase: 'noGigsYet',
+  },
   REHEARSAL: { empty: 'No rehearsals booked', body: 'Upcoming rehearsals appear here.', phrase: 'noRehearsals' },
   MEETING: { empty: 'No meetings booked', body: 'Upcoming meetings appear here.', phrase: 'noMeetings' },
 };

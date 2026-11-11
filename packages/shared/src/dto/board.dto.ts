@@ -71,3 +71,10 @@ export type DeleteBoardDto = z.infer<typeof deleteBoardSchema>;
 
 export const transferBoardSchema = z.object({ userId: z.uuid() });
 export type TransferBoardDto = z.infer<typeof transferBoardSchema>;
+
+/**
+ * Changing a member's role after they've joined. Admins do it; nobody changes
+ * their own, and the owner is always an admin (the API checks both).
+ */
+export const updateMemberRoleSchema = z.object({ role: z.enum(['ADMIN', 'USER']) });
+export type UpdateMemberRoleDto = z.infer<typeof updateMemberRoleSchema>;

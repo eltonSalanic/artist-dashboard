@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { RemoveMemberDto } from "@artist/shared";
+import type { BoardRole, RemoveMemberDto } from "@artist/shared";
 import { apiFetch, notify } from "../client";
 import { toUserMessage } from "../messages";
 
@@ -33,5 +33,22 @@ export function useRemoveMember(boardId: string) {
     },
     onError: (error) =>
       notify.error(toUserMessage(error, "Remove failed")),
+  });
+}
+
+/** Make a member an admin, or an admin a member. Admins only; never yourself or the owner. */
+export function useUpdateMemberRole(boardId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: BoardRole }) =>
+      apiFetch<{ userId: string; role: BoardRole }>(
+        `/boards/${boardId}/members/${userId}`,
+        { method: "PATCH", body: { role } },
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["board", boardId] });
+    },
+    onError: (error) =>
+      notify.error(toUserMessage(error, "Couldn’t change their role")),
   });
 }

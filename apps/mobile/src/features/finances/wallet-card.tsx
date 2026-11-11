@@ -1,6 +1,7 @@
 import { View } from 'react-native';
 import { formatMoney } from '@artist/shared';
 import { Icon, type IconName } from '@/components/icon';
+import { InfoButton } from '@/components/info-button';
 import { PosterText } from '@/components/poster-text';
 import { useWidgetInk } from '@/features/board/spoke-header';
 import { radius, spacing, useScheme, useShadows, useTokens } from '@/theme';
@@ -72,8 +73,6 @@ export function WalletCard({
 
   return (
     <View
-      accessible
-      accessibilityLabel={`Band fund ${money(bandFundCents)}. ${PERIODS.find((p) => p.value === period)?.label}: in ${money(incomeCents)}, out ${money(expenseCents)}, net ${money(netCents)}.`}
       style={{
         backgroundColor: card.bg,
         borderRadius: radius.xl + 4,
@@ -84,16 +83,23 @@ export function WalletCard({
         boxShadow: shadows.raised,
       }}
     >
+      {/* The band fund, with the (i) beside it for how finances work. A row
+          rather than an overlay, so a long amount shrinks instead of running
+          under the icon. */}
       <View style={{ gap: spacing.xs }}>
-        <PosterText
-          variant="figure"
-          color={card.ink}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-          style={{ fontSize: 46, lineHeight: 52, letterSpacing: -1.8 }}
-        >
-          {below ? `−${money(-bandFundCents)}` : money(bandFundCents)}
-        </PosterText>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <PosterText
+            accessibilityLabel={`Band fund ${below ? 'minus ' : ''}${money(Math.abs(bandFundCents))}`}
+            variant="figure"
+            color={card.ink}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            style={{ flex: 1, fontSize: 46, lineHeight: 52, letterSpacing: -1.8 }}
+          >
+            {below ? `−${money(-bandFundCents)}` : money(bandFundCents)}
+          </PosterText>
+          <InfoButton topic="finances" color={card.soft} size={18} />
+        </View>
         {below && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
             <View
@@ -121,7 +127,11 @@ export function WalletCard({
         ink={{ track: card.faint, thumb: card.ink, label: card.soft, activeLabel: card.bg }}
       />
 
-      <View style={{ flexDirection: 'row' }}>
+      <View
+        accessible
+        accessibilityLabel={`${PERIODS.find((p) => p.value === period)?.label}: in ${money(incomeCents)}, out ${money(expenseCents)}, net ${money(netCents)}.`}
+        style={{ flexDirection: 'row' }}
+      >
         <Figure
           label="Money in"
           icon={{ sf: 'arrow.down.left', md: 'south-west' }}

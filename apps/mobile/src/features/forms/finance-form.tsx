@@ -334,7 +334,7 @@ function FinanceFields({
                     disabled: payBack.isPending || dirty,
                     hint: dirty
                       ? 'Save your changes first.'
-                      : 'Comes out of the band fund. You can undo it.',
+                      : 'Records that the band paid them, out of the band fund. No money is sent, and you can undo it.',
                     onPress: () => payBack.mutate(entry.id),
                   }
                 : manages && payback === 'paid'

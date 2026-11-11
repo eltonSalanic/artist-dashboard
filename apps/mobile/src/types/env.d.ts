@@ -25,5 +25,7 @@ declare const process: {
     /** RevenueCat public SDK keys (docs/billing.md); unset hides subscription buying. */
     readonly EXPO_PUBLIC_REVENUECAT_IOS_KEY?: string;
     readonly EXPO_PUBLIC_REVENUECAT_ANDROID_KEY?: string;
+    readonly EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID?: string;
+    readonly EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID?: string;
   };
 };

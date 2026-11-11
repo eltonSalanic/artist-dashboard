@@ -14,6 +14,8 @@ import {
   NOTIFICATION_CATEGORY_COPY,
   NotificationCategories,
   resolveBoardTheme,
+  ROLE_LABELS,
+  ROLE_ONE_LINERS,
   ShowStatusCategories,
   type BoardRole,
   type RemoveMemberDto,
@@ -30,6 +32,7 @@ import {
   useDeleteStatus,
   useFinanceSummary,
   useShowStatuses,
+  useUpdateMemberRole,
   useUpdateShowStatus,
   useInvites,
   useMe,
@@ -50,6 +53,8 @@ import { Badge } from '@/components/badge';
 import { BUTTON_HEIGHT, Button } from '@/components/button';
 import { ChoiceChips } from '@/components/choice-chips';
 import { Icon } from '@/components/icon';
+import { InfoButton } from '@/components/info-button';
+import { PosterText } from '@/components/poster-text';
 import { Dot, Row } from '@/components/row';
 import { SectionCard } from '@/components/section-card';
 import { Skeleton } from '@/components/skeleton';
@@ -171,6 +176,7 @@ function MembersSection({ boardId }: { boardId: string }) {
   const me = useMe(true);
   const board = useBoard(boardId);
   const remove = useRemoveMember(boardId);
+  const changeRole = useUpdateMemberRole(boardId);
   const { can } = usePermissions();
   const summary = useFinanceSummary(boardId, {}, can('finance.view'));
   const members = board.data?.members ?? [];
@@ -211,10 +217,33 @@ function MembersSection({ boardId }: { boardId: string }) {
     );
   };
 
+  /**
+   * Tapping someone's role offers the other one, and says what it changes
+   * before it does. Never for yourself or the owner: the API refuses both.
+   */
+  const confirmRole = (userId: string, name: string, current: BoardRole) => {
+    const next: BoardRole = current === 'ADMIN' ? 'USER' : 'ADMIN';
+    Alert.alert(
+      next === 'ADMIN' ? `Make ${name} an admin?` : `Make ${name} a member?`,
+      next === 'ADMIN'
+        ? 'They’ll be able to add and edit anything, invite and remove people, and pay members back.'
+        : 'They’ll still see everything, move their own tasks along and log what they spend, but won’t be able to edit the band’s plans, invite people or pay members back.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: next === 'ADMIN' ? 'Make admin' : 'Make member',
+          onPress: () => changeRole.mutate({ userId, role: next }),
+        },
+      ],
+    );
+  };
+
   return (
     <SectionCard
       title="Members"
       caption={members.length > 0 ? `${members.length} in the band` : null}
+      description="Tap someone’s role to change it."
+      action={<InfoButton topic="roles" />}
     >
       {board.isPending && <Skeleton width="100%" height={96} />}
       {members.map((member, index) => (
@@ -225,7 +254,19 @@ function MembersSection({ boardId }: { boardId: string }) {
           meta={member.email}
           trailing={
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-              <Badge label={member.role === 'ADMIN' ? 'Admin' : 'Member'} />
+              {member.userId === board.data?.ownerId ? (
+                <Badge label="Owner" variant="solid" />
+              ) : member.userId === me.data?.user.id ? (
+                <Badge label={ROLE_LABELS[member.role]} />
+              ) : (
+                <RoleButton
+                  role={member.role}
+                  name={member.displayName}
+                  busy={changeRole.isPending && changeRole.variables?.userId === member.userId}
+                  disabled={changeRole.isPending}
+                  onPress={() => confirmRole(member.userId, member.displayName, member.role)}
+                />
+              )}
               {/* You cannot remove yourself here — that is leaving, not admin.
                   Nor the owner: only they can hand the band over. */}
               {member.userId !== me.data?.user.id &&
@@ -252,9 +293,55 @@ function MembersSection({ boardId }: { boardId: string }) {
   );
 }
 
+/**
+ * A member's role as a capsule that opens the change: the badge it replaces,
+ * with a chevron so it reads as something to tap.
+ */
+function RoleButton({
+  role,
+  name,
+  busy,
+  disabled,
+  onPress,
+}: {
+  role: BoardRole;
+  name: string;
+  busy: boolean;
+  disabled: boolean;
+  onPress: () => void;
+}) {
+  const colors = useThemeColors();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${name} is ${role === 'ADMIN' ? 'an admin' : 'a member'}. Change role`}
+      accessibilityState={{ busy, disabled }}
+      hitSlop={10}
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        backgroundColor: colors.muted,
+        borderRadius: radius.full,
+        paddingLeft: spacing.sm,
+        paddingRight: spacing.sm - 2,
+        paddingVertical: 4,
+        opacity: pressed || busy ? 0.5 : 1,
+      })}
+    >
+      <PosterText variant="meta" color={colors.foreground}>
+        {ROLE_LABELS[role]}
+      </PosterText>
+      <Icon name={{ sf: 'chevron.down', md: 'expand-more' }} size={9} color={colors.mutedForeground} />
+    </Pressable>
+  );
+}
+
 const ROLE_CHOICES: { value: BoardRole; label: string }[] = [
-  { value: 'USER', label: 'Member' },
-  { value: 'ADMIN', label: 'Admin' },
+  { value: 'USER', label: ROLE_LABELS.USER },
+  { value: 'ADMIN', label: ROLE_LABELS.ADMIN },
 ];
 
 function InviteSection({ boardId }: { boardId: string }) {
@@ -304,6 +391,13 @@ function InviteSection({ boardId }: { boardId: string }) {
         onSubmitEditing={() => plausible && submit()}
       />
       <ChoiceChips label="Role" choices={ROLE_CHOICES} value={role} onChange={setRole} />
+      {/* What the picked role means, and the (i) for the whole comparison. */}
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
+        <ThemedText variant="footnote" tone="muted" style={{ flex: 1 }}>
+          {`${ROLE_ONE_LINERS[role]} You can change it later under Members.`}
+        </ThemedText>
+        <InfoButton topic="roles" />
+      </View>
       <Button
         title="Send invite"
         loading={send.isPending}
@@ -322,7 +416,7 @@ function InviteSection({ boardId }: { boardId: string }) {
               key={invite.id}
               first={index === 0}
               title={invite.email}
-              meta={invite.role === 'ADMIN' ? 'Admin' : 'Member'}
+              meta={ROLE_LABELS[invite.role]}
               trailing={
                 <Pressable
                   accessibilityRole="button"

@@ -2,6 +2,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBoardSubscription } from '@artist/api-client';
+import { roleIntro } from '@artist/shared';
 import { MASCOT_WIDTH, MyMascot, PhraseLettering } from '@/components/mascot';
 import { PosterText } from '@/components/poster-text';
 import { useSelectedBoard } from '@/features/board/selected-board';
@@ -18,6 +19,9 @@ export function WelcomeInScreen() {
   const { board } = useSelectedBoard();
   const owner = useBoardSubscription(board?.id).data?.ownerName;
   const block = posterSlot(board?.palette ?? 'playful', scheme, 'c1');
+  // What they can do here, said once while they're paying attention. The
+  // hub's card says it again with the links.
+  const intro = board ? roleIntro(board.role, false) : null;
 
   return (
     <ScrollView
@@ -42,6 +46,11 @@ export function WelcomeInScreen() {
               ? `${owner}'s subscription covers the whole band`
               : "Your band owner's subscription covers the whole band"}
           </PosterText>
+          {intro && (
+            <PosterText variant="paragraph" color={block.ink} style={[styles.centred, styles.role]}>
+              {`${intro.title}. ${intro.body}`}
+            </PosterText>
+          )}
         </View>
       </View>
       <InkButton
@@ -60,4 +69,5 @@ const styles = StyleSheet.create({
   middle: { flex: 1, justifyContent: 'center', gap: spacing.sm, paddingBottom: spacing.xxl },
   mascot: { alignSelf: 'center', alignItems: 'center', gap: spacing.md },
   centred: { textAlign: 'center' },
+  role: { paddingTop: spacing.sm, opacity: 0.85 },
 });

@@ -32,6 +32,11 @@ import { BETTER_AUTH } from './auth.tokens';
           trustedOrigins: [webUrl],
           sendInviteCode: (email, code) => inviteMail.send(email, code),
           sendVerifyEmailCode: (email, code) => verifyMail.send(email, code),
+          apple: {
+            bundleId: config.get<string>('APPLE_BUNDLE_ID') ?? 'com.bandwall.app',
+            serviceId: config.get<string>('APPLE_SERVICE_ID') || undefined,
+          },
+          google: { clientIds: splitList(config.get<string>('GOOGLE_CLIENT_IDS')) },
         });
       },
     },
@@ -39,3 +44,11 @@ import { BETTER_AUTH } from './auth.tokens';
   exports: [BETTER_AUTH],
 })
 export class AuthModule {}
+
+/** A comma-separated env var as a list, blanks dropped. */
+function splitList(value: string | undefined): string[] {
+  return (value ?? '')
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+}

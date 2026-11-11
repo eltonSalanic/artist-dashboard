@@ -27,7 +27,7 @@ describe('package barrel', () => {
       // Lifted from apps/web when the phone gained uploads.
       'useAttachments', 'useUploadAttachment', 'useDeleteAttachment',
       // Lifted from web's settings page when the phone gained one.
-      'useRemoveMember', 'useInvites', 'useSendInvite', 'useRevokeInvite',
+      'useRemoveMember', 'useUpdateMemberRole', 'useInvites', 'useSendInvite', 'useRevokeInvite',
       'useStatuses', 'useCreateStatus', 'useUpdateStatus', 'useDeleteStatus',
       'useNotificationPreferences', 'useSaveNotificationPreference',
       // The phone's own arrangement (P12b).

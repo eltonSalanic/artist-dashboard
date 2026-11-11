@@ -9,7 +9,7 @@ import {
   useEvent,
   usePermissions,
 } from '@artist/api-client';
-import { cancelledShowMoneyNotice } from '@artist/shared';
+import { cancelledShowMoneyNotice, showStatusLine } from '@artist/shared';
 import { Icon } from '@/components/icon';
 import { PosterText } from '@/components/poster-text';
 import { Dot } from '@/components/row';
@@ -125,13 +125,20 @@ export function ShowStatusSheet({
               })}
             >
               <Dot color={status.color} size={14} />
-              <PosterText
-                variant="rowTitle"
-                color={canvas.ink}
-                style={[{ flex: 1 }, selected && { fontFamily: face.heavy }]}
-              >
-                {status.name}
-              </PosterText>
+              <View style={{ flex: 1, gap: 1 }}>
+                <PosterText
+                  variant="rowTitle"
+                  color={canvas.ink}
+                  style={selected && { fontFamily: face.heavy }}
+                >
+                  {status.name}
+                </PosterText>
+                {/* What picking it does, since a band names its own statuses
+                    and "hold" is trade talk. */}
+                <PosterText variant="cardMeta" color={canvas.soft}>
+                  {showStatusLine(status)}
+                </PosterText>
+              </View>
               <View style={{ width: 22, alignItems: 'center' }}>
                 {pendingId === status.id ? (
                   <ActivityIndicator size="small" color={canvas.ink} />

@@ -4,6 +4,7 @@ import type {
   AuthResult,
   AuthSession,
   SignUpResult,
+  SocialCredential,
 } from "./auth-client";
 
 /**
@@ -186,7 +187,23 @@ export function createBetterAuthClient(
         type: "email-verification",
       }),
 
+    signInWithIdToken: ({ provider, idToken, nonce, name }: SocialCredential) =>
+      signInWith("/sign-in/social", {
+        provider,
+        idToken: {
+          token: idToken,
+          ...(nonce ? { nonce } : {}),
+          ...(name ? { user: { name: splitName(name) } } : {}),
+        },
+      }),
+
     startAutoRefresh() {},
     stopAutoRefresh() {},
   };
+}
+
+/** Better Auth takes the name from the native sheet as first and last. */
+function splitName(name: string): { firstName: string; lastName?: string } {
+  const [firstName, ...rest] = name.trim().split(/\s+/);
+  return rest.length ? { firstName, lastName: rest.join(" ") } : { firstName };
 }

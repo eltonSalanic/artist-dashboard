@@ -20,6 +20,19 @@ export type AuthFailure = AuthErrorLike;
 
 export type AuthResult = { error: AuthFailure | null };
 
+/** What the native Apple or Google sign-in sheet hands back. */
+export interface SocialCredential {
+  provider: "apple" | "google";
+  idToken: string;
+  /** The raw nonce whose hash went into the request (Apple). */
+  nonce?: string;
+  /**
+   * Apple sends the person's name only the first time they sign in, and
+   * never in the token, so it is passed along here.
+   */
+  name?: string;
+}
+
 export type SignUpResult = AuthResult & {
   /**
    * True when the account exists but has no session yet, because the
@@ -56,6 +69,12 @@ export interface AuthClient {
   verifyEmailCode(email: string, code: string): Promise<AuthResult>;
   /** Mails a fresh sign-up code, for "Send a new code". */
   resendEmailCode(email: string): Promise<AuthResult>;
+  /**
+   * Signs in with an ID token from the phone's native Apple or Google sheet.
+   * The first time creates the account; an existing account with the same
+   * email is signed into instead of a second one being made.
+   */
+  signInWithIdToken(credential: SocialCredential): Promise<AuthResult>;
   /**
    * Background token refresh. Phones pause it while the app is in the
    * background, because the OS suspends timers there; browsers never call it.

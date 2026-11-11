@@ -134,6 +134,22 @@ export default function TabStackLayout({ segment }: { segment: string }) {
           presentation: 'modal',
         }}
       />
+      <Stack.Screen name="help/index" options={{ title: 'How Band Wall works' }} />
+      <Stack.Screen
+        name="help/[topic]"
+        options={{
+          // One help topic over whatever asked for it. It opens two thirds
+          // up and pulls to full height, since some topics run long.
+          presentation: 'formSheet',
+          sheetGrabberVisible: true,
+          sheetAllowedDetents: [0.66, 1],
+          // The one sheet that scrolls, so it draws its own title above the
+          // scroll view (HelpSheet says why) instead of a bar over it.
+          ...glassSheet,
+          title: 'How it works',
+          headerShown: false,
+        }}
+      />
       <Stack.Screen
         name="board-menu"
         options={{
