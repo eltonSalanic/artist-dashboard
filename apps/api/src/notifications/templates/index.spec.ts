@@ -77,7 +77,7 @@ describe('push copy', () => {
       startsAt: '2026-11-02T03:00:00.000Z',
       previousStartsAt: '2026-11-01T03:00:00.000Z',
     });
-    expect(push?.title).toBe('Rehearsal moved: Full run');
+    expect(push?.title).toBe('Full run was moved');
     expect(push?.body).toMatch(/^Now .+ \(was .+\)$/);
   });
 

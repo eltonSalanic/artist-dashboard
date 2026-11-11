@@ -1,6 +1,6 @@
 # Notifications
 
-> **Status:** email and push shipped. All six triggers below are live on both
+> **Status:** email and push shipped. All eight triggers below are live on both
 > channels, as are preferences, unsubscribe, and bounce/complaint suppression.
 > Push reaches any phone that signed in to the Band Wall development build and
 > allowed notifications (P13 in [docs/mobile-app.md](mobile-app.md)). Two
@@ -42,13 +42,13 @@ These are the rules the trigger table follows. New triggers should too.
 | # | Trigger | Recipients | Timing | Source | Push on the phone (title / body) | In the Inbox | Implemented |
 |---|---|---|---|---|---|---|---|
 | 1 | **Mentioned in a comment** | Users named in `Comment.mentions`, minus the author | Immediate | `CommentsService.create` | "Dana mentioned you" / On "Mix notes": the excerpt | Yes (`MENTION`) | ☑ |
-| 2 | **Assigned to a task** | The newly added assignee(s), minus the actor | Immediate | `TasksService.create`, `TasksService.setAssignees` (`added`) | "New task: Mix notes" / Dana assigned it to you. Due Mar 14. | No | ☑ |
-| 3 | **Unassigned from a task** | The removed assignee(s), minus the actor | Immediate | `TasksService.setAssignees` (`removed`) | You're off "Mix notes" / Dana took you off it. Nothing needed from you. | No | ☑ |
+| 2 | **Assigned to a task** | The newly added assignee(s), minus the actor | Immediate | `TasksService.create`, `TasksService.setAssignees` (`added`) | "New task: Mix notes" / Dana assigned it to you. Due Fri, Mar 14. | No | ☑ |
+| 3 | **Unassigned from a task** | The removed assignee(s), minus the actor | Immediate | `TasksService.setAssignees` (`removed`) | "You're unassigned from Mix notes" / Dana took you off it. Nothing needed from you. | No | ☑ |
 | 4 | **Show, rehearsal, or meeting added** | All board members, minus the actor | Immediate | `EventsService.create` | "New show: Bowery Ballroom" / when · location | No | ☑ |
-| 5 | **Show, rehearsal, or meeting moved** | All board members, minus the actor | Immediate | `EventsService.update` (diff on `startsAt` / `endsAt`) | "Show moved: Bowery Ballroom" / Now … (was …) | No | ☑ |
-| 6 | **Reminder due** | All board members | At `Reminder.remindAt` | `ReminderDueJob` (cron) | "Reminder: Load-in" / its description, or the band's name | No | ☑ |
-| 7 | **A member paid out of pocket** (`expense-owed`) | Board admins, minus the payer and whoever logged it | Immediate, when an expense becomes owed back (logged, or edited into someone's pocket) | `FinancesService.create` / `update` (`tellAdminsOwed`) | "Sam paid $50.00" / Van tire — owed back from the band fund | Yes (`PAYBACK`) | ☑ |
-| 8 | **You were paid back** (`expense-paid-back`) | The member who paid | Immediate; one alert for a pay-back-all | `FinancesService.payBack` / `payBackMember` (`markPaidBack`) | "Paid back: Van tire ($50.00)" / Riley paid you back from the band fund. | Yes (`PAID_BACK`) | ☑ |
+| 5 | **Show, rehearsal, or meeting moved** | All board members, minus the actor | Immediate | `EventsService.update` (diff on `startsAt` / `endsAt`) | "Bowery Ballroom was moved" / Now … (was …) | No | ☑ |
+| 6 | **Reminder due** | All board members | At `Reminder.remindAt` | `ReminderDueJob` (cron) | "Reminder: Load-in" / its first note, or the band's name | No | ☑ |
+| 7 | **A member paid out of pocket** (`expense-owed`) | Board admins, minus the payer and whoever logged it | Immediate, when an expense becomes owed back (logged, or edited into someone's pocket) | `FinancesService.create` / `update` (`tellAdminsOwed`) | "Sam paid $50.00" / Paid for Van tire. | Yes (`PAYBACK`) | ☑ |
+| 8 | **You were paid back** (`expense-paid-back`) | The member who paid | Immediate; one alert for a pay-back-all | `FinancesService.payBack` / `payBackMember` (`markPaidBack`) | "You were paid back: Van tire ($50.00)" / Riley paid you back from the band fund. | Yes (`PAID_BACK`) | ☑ |
 
 Push wording lives in each template's `push` block in
 [`apps/api/src/notifications/templates/index.ts`](../apps/api/src/notifications/templates/index.ts);
@@ -104,7 +104,7 @@ The reminder's own state is read **at queue time**, not at send time: `done` and
 `archivedAt` are part of the job's `where`, and nothing re-reads the row before
 the mail goes out. Completing a reminder in the seconds between the two loops
 still sends — and after a failed send backs off, that gap can stretch to hours.
-The dispatcher is deliberately template-agnostic (one drain loop serves all six
+The dispatcher is deliberately template-agnostic (one drain loop serves all eight
 triggers, knowing nothing about reminders), so closing this would mean giving
 templates a freshness hook. Not worth the concept for one trigger and a window
 this small; revisit if a second clock-driven trigger ever needs it.
@@ -203,7 +203,8 @@ or its permissions revoked. A sweep over `lastSeenAt` would only catch installs
 that stopped being opened without being uninstalled, and those still accept
 pushes.
 
-A push carries `boardId`, `template`, and the entity id (`taskId` / `eventId`)
+A push carries `boardId`, `template`, and the entity id (`taskId` / `eventId` /
+`entryId`)
 from the delivery's payload, so a tap opens the thing the notification is about
 rather than the board root. The ids are **whitelisted, not spread** — the
 payload is a template's render snapshot and also holds comment excerpts and task

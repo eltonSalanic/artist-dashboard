@@ -142,7 +142,7 @@ const taskUnassigned: TemplateRenderer = (payload, ctx) => {
     }),
     text: `${actorName} took you off "${taskTitle}". Nothing needed from you.\n\nSee it: ${url}\nTurn these off: ${ctx.unsubscribeUrl}`,
     push: {
-      title: `You're off "${taskTitle}"`,
+      title: `You're unassigned from ${taskTitle}`,
       body: `${actorName} took you off it. Nothing needed from you.`,
     },
   };
@@ -198,7 +198,7 @@ const eventMoved: TemplateRenderer = (payload, ctx) => {
     }),
     text: `${title} moved.\n\nNow: ${now}\nWas: ${was}\n\nDetails: ${url}\nTurn these off: ${ctx.unsubscribeUrl}`,
     push: {
-      title: `${noun} moved: ${title}`,
+      title: `${title} was moved`,
       body: `Now ${now} (was ${was})`,
     },
   };
@@ -268,7 +268,7 @@ const expenseOwed: TemplateRenderer = (payload, ctx) => {
     text: `${actorName} paid ${amount} for ${label} out of pocket.${detail ? `\n${detail}` : ''}\n\nWhen the band pays them back, tap Pay back on the expense: ${url}\nTurn these off: ${ctx.unsubscribeUrl}`,
     push: {
       title: `${actorName} paid ${amount}`,
-      body: `${label} — owed back from the band fund`,
+      body: `Paid for ${label}.`,
     },
   };
 };
@@ -292,7 +292,7 @@ const expensePaidBack: TemplateRenderer = (payload, ctx) => {
     }),
     text: `${actorName} paid you back for ${what} from the band fund.\n\nSee your expenses: ${url}\nTurn these off: ${ctx.unsubscribeUrl}`,
     push: {
-      title: `Paid back: ${what}`,
+      title: `You were paid back: ${what}`,
       body: `${actorName} paid you back from the band fund.`,
     },
   };
