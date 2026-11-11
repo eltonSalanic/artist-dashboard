@@ -93,7 +93,7 @@ export function SocialButtons({ disabled, onStart, onEnd }: Props) {
 }
 
 // Google's multicolour "G", which its branding rules ask for on the button.
-const googleLogo = require('../../../assets/images/google-g.svg');
+const googleLogo = require('../../../assets/images/google-g.png');
 
 const styles = StyleSheet.create({
   googleLogo: { width: 18, height: 18 },
