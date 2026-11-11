@@ -1,5 +1,6 @@
 export * from './enums';
 export * from './permissions';
+export * from './help';
 export * from './layout';
 export * from './mobile-layout';
 export * from './theme';
