@@ -45,6 +45,10 @@ The code is in `apps/mobile/src/features/onboarding/wall-intro/`: `timeline.ts` 
 
 **I've got an invite** opens `/sign-in?mode=invite`: email, the 6-digit code from the invite email, your name, a password. Verifying signs them in; the password and name (`PATCH /me`) are saved straight after. The hub then shows `/welcome-in` once: "You're In <Band>." in the band's colour, and that the owner's subscription covers them. On the web, invites still arrive through the email link and `/auth/callback`.
 
+## After the first run
+
+What a new person still has to be told (their role, how the books work) is in [in-app-help.md](in-app-help.md): the "You're In" screen says what a member can do, the hub shows a one-time "How this band works" card to everyone but the owner, and the owner's "Get set up" card has a row through to the help page.
+
 ## Not built
 
 - The trial reminder on day 25 that the design page promised.
