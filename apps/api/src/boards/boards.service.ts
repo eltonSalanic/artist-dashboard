@@ -20,6 +20,7 @@ import {
   type OwnershipBlock,
   type RemoveMemberDto,
   type UpdateBoardDto,
+  type BoardRole,
 } from '@artist/shared';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -138,7 +139,12 @@ export class BoardsService {
       include: {
         statuses: { orderBy: { sortOrder: 'asc' } },
         showStatuses: { orderBy: { sortOrder: 'asc' } },
-        memberships: { include: { user: true }, orderBy: { createdAt: 'asc' } },
+        // `id` breaks ties between people who joined at the same moment,
+        // which otherwise swapped places when one of them changed role.
+        memberships: {
+          include: { user: true },
+          orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        },
       },
     });
     if (!board) throw new NotFoundException('Board not found');
@@ -269,6 +275,40 @@ export class BoardsService {
       throw new ForbiddenException('Only the band’s owner can do that.');
     }
     return board;
+  }
+
+  /**
+   * Makes a member an admin, or an admin a member. Any admin can; nobody
+   * changes their own role (the last admin can't lock the band out of its
+   * settings that way), and the owner stays an admin, since the band runs on
+   * their subscription.
+   */
+  async updateMemberRole(
+    boardId: string,
+    actorId: string,
+    userId: string,
+    role: BoardRole,
+  ) {
+    if (userId === actorId) {
+      throw new BadRequestException('You can’t change your own role.');
+    }
+
+    const membership = await this.prisma.membership.findFirst({
+      where: { boardId, userId },
+      include: { board: { select: { ownerId: true } } },
+    });
+    if (!membership) throw new NotFoundException('Member not found');
+    if (membership.board.ownerId === userId) {
+      throw new ForbiddenException('The band’s owner is always an admin.');
+    }
+
+    if (membership.role !== role) {
+      await this.prisma.membership.update({
+        where: { id: membership.id },
+        data: { role },
+      });
+    }
+    return { userId, role };
   }
 
   /**

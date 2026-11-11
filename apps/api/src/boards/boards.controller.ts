@@ -15,12 +15,14 @@ import {
   removeMemberSchema,
   transferBoardSchema,
   updateBoardSchema,
+  updateMemberRoleSchema,
   type BoardThemeDto,
   type CreateBoardDto,
   type DeleteBoardDto,
   type RemoveMemberDto,
   type TransferBoardDto,
   type UpdateBoardDto,
+  type UpdateMemberRoleDto,
 } from '@artist/shared';
 import { CurrentUser, type AuthUser } from '../auth/current-user.decorator';
 import { BoardRoles } from '../common/board-roles.decorator';
@@ -100,6 +102,19 @@ export class BoardsController {
     @Body(new ZodValidationPipe(transferBoardSchema)) dto: TransferBoardDto,
   ) {
     return this.boards.transfer(id, user.userId, dto.userId);
+  }
+
+  /** Make a member an admin, or an admin a member. */
+  @Patch(':id/members/:userId')
+  @BoardRoles('ADMIN')
+  updateMemberRole(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+    @CurrentUser() user: AuthUser,
+    @Body(new ZodValidationPipe(updateMemberRoleSchema))
+    dto: UpdateMemberRoleDto,
+  ) {
+    return this.boards.updateMemberRole(id, user.userId, userId, dto.role);
   }
 
   @Delete(':id/members/:userId')

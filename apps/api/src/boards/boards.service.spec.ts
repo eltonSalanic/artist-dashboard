@@ -159,6 +159,68 @@ describe('BoardsService.removeMember', () => {
   });
 });
 
+describe('BoardsService.updateMemberRole', () => {
+  const prisma = {
+    membership: { findFirst: jest.fn(), update: jest.fn() },
+  };
+  const service = new BoardsService(
+    prisma as unknown as PrismaService,
+    new ActivityService(prisma as unknown as PrismaService),
+    billingOff,
+    storageStub,
+  );
+  const sam = { id: 'm2', role: 'USER', board: { ownerId: 'owner' } };
+
+  beforeEach(() => jest.clearAllMocks());
+
+  it('makes a member an admin', async () => {
+    prisma.membership.findFirst.mockResolvedValue(sam);
+    const result = await service.updateMemberRole('b1', 'admin', 'u2', 'ADMIN');
+    expect(prisma.membership.update).toHaveBeenCalledWith({
+      where: { id: 'm2' },
+      data: { role: 'ADMIN' },
+    });
+    expect(result).toEqual({ userId: 'u2', role: 'ADMIN' });
+  });
+
+  it('makes an admin a member', async () => {
+    prisma.membership.findFirst.mockResolvedValue({ ...sam, role: 'ADMIN' });
+    await service.updateMemberRole('b1', 'admin', 'u2', 'USER');
+    expect(prisma.membership.update).toHaveBeenCalledWith({
+      where: { id: 'm2' },
+      data: { role: 'USER' },
+    });
+  });
+
+  it('leaves the row alone when the role is already that', async () => {
+    prisma.membership.findFirst.mockResolvedValue(sam);
+    await service.updateMemberRole('b1', 'admin', 'u2', 'USER');
+    expect(prisma.membership.update).not.toHaveBeenCalled();
+  });
+
+  it('refuses to change your own role', async () => {
+    await expect(
+      service.updateMemberRole('b1', 'u1', 'u1', 'USER'),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.membership.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('refuses to demote the owner', async () => {
+    prisma.membership.findFirst.mockResolvedValue({ ...sam, role: 'ADMIN' });
+    await expect(
+      service.updateMemberRole('b1', 'admin', 'owner', 'USER'),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.membership.update).not.toHaveBeenCalled();
+  });
+
+  it('404s for someone who is not in the band', async () => {
+    prisma.membership.findFirst.mockResolvedValue(null);
+    await expect(
+      service.updateMemberRole('b1', 'admin', 'ghost', 'ADMIN'),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
 describe('BoardsService board theme', () => {
   const prisma = {
     board: { findUnique: jest.fn(), update: jest.fn() },
