@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, useColorScheme, View } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import { Image } from 'expo-image';
 import { authErrorMessage } from '@artist/api-client';
 import { Button, BUTTON_HEIGHT } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
@@ -82,6 +83,7 @@ export function SocialButtons({ disabled, onStart, onEnd }: Props) {
         <Button
           title="Continue with Google"
           variant="secondary"
+          icon={<Image source={googleLogo} style={styles.googleLogo} accessible={false} />}
           disabled={disabled}
           onPress={() => void run(signInWithGoogle, "Couldn't sign in with Google. Try again.")}
         />
@@ -90,7 +92,11 @@ export function SocialButtons({ disabled, onStart, onEnd }: Props) {
   );
 }
 
+// Google's multicolour "G", which its branding rules ask for on the button.
+const googleLogo = require('../../../assets/images/google-g.svg');
+
 const styles = StyleSheet.create({
+  googleLogo: { width: 18, height: 18 },
   root: { gap: spacing.sm },
   or: { textAlign: 'center' },
   apple: { height: BUTTON_HEIGHT, width: '100%' },

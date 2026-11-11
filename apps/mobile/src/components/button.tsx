@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -33,8 +34,11 @@ export function Button({
   disabled = false,
   onPress,
   style,
+  icon,
 }: {
   title: string;
+  /** Drawn before the label, e.g. a provider's logo. */
+  icon?: ReactNode;
   variant?: ButtonVariant;
   size?: ButtonSize;
   loading?: boolean;
@@ -74,6 +78,8 @@ export function Button({
           borderCurve: 'continuous',
           borderWidth: variant === 'destructive' ? 1 : 0,
           borderColor: tokens.border,
+          flexDirection: 'row',
+          gap: spacing.sm,
           alignItems: 'center',
           justifyContent: 'center',
           // 44pt is the smallest comfortable touch target.
@@ -87,9 +93,12 @@ export function Button({
       {loading ? (
         <ActivityIndicator color={label} />
       ) : (
-        <PosterText variant="caption" color={label}>
-          {title}
-        </PosterText>
+        <>
+          {icon}
+          <PosterText variant="caption" color={label}>
+            {title}
+          </PosterText>
+        </>
       )}
     </Pressable>
   );
