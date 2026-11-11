@@ -36,7 +36,7 @@ export function FormGate({
   const admins = useAdminNames(boardId);
 
   const message = !allowed
-    ? adminOnlyMessage(`change ${/^[aeiou]/.test(what) ? 'an' : 'a'} ${what}`, admins)
+    ? adminOnlyMessage(`add or change ${/^[aeiou]/.test(what) ? 'an' : 'a'} ${what}`, admins)
     : !pending && missing
       ? `This ${what} may have been deleted, or belongs to another band.`
       : null;

@@ -11,7 +11,7 @@ All of it lives in [packages/shared/src/help.ts](../packages/shared/src/help.ts)
 - `HELP_TOPICS` — five topics (`roles`, `books`, `shows`, `wall`, `bands`), each a title, a one-line summary and sections of a heading, a paragraph or a short list.
 - The **role lists are built from `can()`**. Each line names the `Action` behind it, and whether it lands under "Everyone in the band can" or "Only admins can" is decided by `can('USER', action)`. Change the permission map and the help follows; `help.spec.ts` checks it.
 - `roleIntro(role, isOwner)` — the title and sentence someone is told about their place in a band.
-- `adminOnlyMessage(doing, adminNames)` — "Only admins can change a show. Ask Riley or Casey."
+- `adminOnlyMessage(doing, adminNames)` — "Only admins can add or change a show. Ask Riley or Casey."
 - `ROLE_LABELS`, `ROLE_ONE_LINERS` — "Member" / "Admin" and one line on each.
 
 ## Where it shows (phone)
@@ -32,7 +32,7 @@ The You tab's band card says "Member" or "Admin" (`ROLE_LABELS`), the words the 
 
 ## Copy that explains instead of blocking
 
-- A form a member can't use says **who to ask**: "Only admins can change a show. Ask Riley or Casey." (`FormGate`). The task status sheet names the task's assignees, or the admins when it has none.
+- A form a member can't use says **who to ask**: "Only admins can add or change a show. Ask Riley or Casey." (`FormGate`). The task status sheet names the task's assignees, or the admins when it has none.
 - **Show status sheet**: each status has a line under its name for what picking it does (pencilled in / counts as booked / left out of counts), since bands rename their statuses and "hold" is trade talk.
 - **Empty states**: Finances says what to log and that out-of-pocket spending is owed back; Focus says what it's for while any period is unset; Shows mentions holds.
 - **Paying back** says, on the button's hint and in the confirm, that it records the payment and sends no money.
