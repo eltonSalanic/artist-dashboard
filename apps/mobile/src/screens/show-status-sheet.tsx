@@ -9,20 +9,13 @@ import {
   useEvent,
   usePermissions,
 } from '@artist/api-client';
-import { cancelledShowMoneyNotice, type ShowStatusCategory } from '@artist/shared';
+import { cancelledShowMoneyNotice, showStatusLine } from '@artist/shared';
 import { Icon } from '@/components/icon';
 import { PosterText } from '@/components/poster-text';
 import { Dot } from '@/components/row';
 import { Skeleton } from '@/components/skeleton';
 import { face, posterRadius, spacing, usePosterCanvas } from '@/theme';
 import { sheetBackground } from '@/lib/liquid-glass';
-
-/** One plain line per kind of status, under its name in the list. */
-const CATEGORY_MEANING: Record<ShowStatusCategory, string> = {
-  HOLD: 'Pencilled in, not promised yet',
-  BOOKED: 'It’s on. Counts as a booked show',
-  CANCELLED: 'Off. Struck through and left out of counts',
-};
 
 /**
  * Pick a show's status: the task status sheet's twin, over the board's show
@@ -143,7 +136,7 @@ export function ShowStatusSheet({
                 {/* What picking it does, since a band names its own statuses
                     and "hold" is trade talk. */}
                 <PosterText variant="cardMeta" color={canvas.soft}>
-                  {CATEGORY_MEANING[status.category]}
+                  {showStatusLine(status)}
                 </PosterText>
               </View>
               <View style={{ width: 22, alignItems: 'center' }}>

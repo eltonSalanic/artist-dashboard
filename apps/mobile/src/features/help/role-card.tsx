@@ -9,7 +9,7 @@ import { useAdminNames } from './use-admin-names';
 /**
  * A small card at the top of the hub the first time someone opens a band they
  * don't own: what their role lets them do, who the admins are, and the way to
- * the two things worth reading (who can do what, how the books work). Set as
+ * the two things worth reading (who can do what, how finances work). Set as
  * the owner's "Get set up" card is, and closed for good with its X.
  *
  * Shown for the role, so someone made an admin later sees the admin version
@@ -31,8 +31,8 @@ export function RoleCard({
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={styles.header}>
-        <ThemedText variant="caption" tone="muted">
-          HOW THIS BAND WORKS
+        <ThemedText variant="headline" accessibilityRole="header" style={{ flex: 1 }}>
+          {intro.title}
         </ThemedText>
         <Pressable
           accessibilityRole="button"
@@ -43,10 +43,7 @@ export function RoleCard({
           <Icon name={{ sf: 'xmark', md: 'close' }} size={12} color={colors.mutedForeground} />
         </Pressable>
       </View>
-      <View style={{ gap: 2 }}>
-        <ThemedText variant="headline" accessibilityRole="header">
-          {intro.title}
-        </ThemedText>
+      <View>
         <ThemedText variant="footnote" tone="muted">
           {intro.body}
           {role === 'USER' && admins.length > 0
@@ -59,7 +56,7 @@ export function RoleCard({
           title={role === 'USER' ? 'What can admins do?' : 'Who can do what'}
           onPress={() => router.push('/help/roles')}
         />
-        <CardLink title="How the books work" onPress={() => router.push('/help/books')} />
+        <CardLink title="How finances work" onPress={() => router.push('/help/finances')} />
       </View>
     </View>
   );

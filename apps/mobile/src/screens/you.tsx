@@ -158,7 +158,7 @@ export function YouScreen() {
       <Section title="HELP">
         <Pressable
           accessibilityRole="button"
-          accessibilityHint="Roles, the books, show statuses and the wall, explained"
+          accessibilityHint="Roles, finances, show statuses and the wall, explained"
           onPress={() => router.push('/help')}
           style={({ pressed }) => ({
             flexDirection: 'row',
@@ -175,7 +175,7 @@ export function YouScreen() {
               How Band Wall works
             </PosterText>
             <PosterText variant="cardMeta" color={canvas.soft}>
-              Who can do what, how the books work, and the rest
+              Who can do what, how finances work, and the rest
             </PosterText>
           </View>
           <Icon name={{ sf: 'chevron.right', md: 'chevron-right' }} size={13} color={canvas.soft} />

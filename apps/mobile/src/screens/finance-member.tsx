@@ -80,7 +80,7 @@ export function FinanceMemberScreen({ boardId, userId }: { boardId: string; user
   const confirmPayBackAll = () =>
     Alert.alert(
       `Pay ${memberName} back ${money(balance.owedCents)}?`,
-      `That's ${owedCount} ${owedCount === 1 ? 'expense' : 'expenses'}, out of the band fund. This records that the band paid them; it doesn't send any money. Each one locks once it's paid back; you can undo any of them from the expense.`,
+      `That's ${owedCount} ${owedCount === 1 ? 'expense' : 'expenses'} ${memberName} will be paid back for. This records that the band paid them back. It doesn't send any money. You can undo this anytime.`,
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Pay back', onPress: () => payBackAll.mutate(userId) },

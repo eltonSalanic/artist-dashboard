@@ -1,9 +1,9 @@
-import type { BoardRole } from './enums';
+import type { BoardRole, ShowStatusCategory } from './enums';
 import { can, type Action } from './permissions';
 
 /**
  * The words the apps use to explain Band Wall's rules: who can do what, how
- * the books work, what the less obvious words mean. Kept here, beside the
+ * finances work, what the less obvious words mean. Kept here, beside the
  * permission map, so an explanation can't say one thing while `can()` does
  * another: the role lists below are built from `can()`, not written twice.
  */
@@ -19,7 +19,7 @@ interface Ability {
  * lands under "everyone" or "admins only" is decided by `can('USER', action)`.
  */
 const ABILITIES: readonly Ability[] = [
-  { action: 'task.view', label: 'See everything on the wall: tasks, shows, goals and the books' },
+  { action: 'task.view', label: 'See everything on the wall: tasks, shows, goals and finances' },
   { action: 'task.changeStatus', label: 'Move a task along when it’s assigned to you' },
   { action: 'task.createSubtask', label: 'Add subtasks' },
   { action: 'task.comment', label: 'Comment and mention bandmates' },
@@ -108,7 +108,28 @@ export function adminOnlyMessage(doing: string, adminNames: readonly string[] = 
   return `Only admins can ${doing}. Ask ${who}.`;
 }
 
-export const HelpTopicIds = ['roles', 'books', 'shows', 'wall', 'bands'] as const;
+/**
+ * One line under a show status's name in the status sheet. The four a band
+ * starts with have their own; a status a band added falls back to its kind.
+ */
+const SHOW_STATUS_LINES: Record<string, string> = {
+  hold: 'Possible upcoming date',
+  'details pending': 'Confirmed, waiting for details',
+  confirmed: 'All ready to go',
+  cancelled: 'Show no longer goes on',
+};
+
+const SHOW_CATEGORY_LINES: Record<ShowStatusCategory, string> = {
+  HOLD: 'Possible upcoming date',
+  BOOKED: 'Confirmed',
+  CANCELLED: 'Show no longer goes on',
+};
+
+export function showStatusLine(status: { name: string; category: ShowStatusCategory }): string {
+  return SHOW_STATUS_LINES[status.name.trim().toLowerCase()] ?? SHOW_CATEGORY_LINES[status.category];
+}
+
+export const HelpTopicIds = ['roles', 'finances', 'shows', 'wall', 'bands'] as const;
 export type HelpTopicId = (typeof HelpTopicIds)[number];
 
 export interface HelpSection {
@@ -146,30 +167,34 @@ export const HELP_TOPICS: Record<HelpTopicId, HelpTopic> = {
       },
     ],
   },
-  books: {
-    id: 'books',
-    title: 'How the books work',
+  finances: {
+    id: 'finances',
+    title: 'How finances work',
     summary: 'The band fund, who paid, and paying people back.',
     sections: [
       {
         heading: 'Band Wall keeps track. It doesn’t move money',
-        body: 'Nothing here sends or charges anything. You pay each other however you already do, then record it here so everyone sees the same numbers.',
+        body: 'Nothing here sends or charges anything. You pay each other however you already do, then log it here so everyone sees the same numbers.',
       },
       {
         heading: 'The band fund',
-        body: 'The big number is the band’s own money: income, minus what the band account paid for, minus what’s been paid back to members. It can go below zero.',
+        body: 'The big number on Finances is the band’s own money: income in hand, minus what the band account paid for, minus what’s been paid back to members. It can go below zero.',
       },
       {
         heading: 'Who paid',
-        body: 'Every expense says who paid. “Band account” means the band’s money covered it. A person’s name means they paid out of their own pocket, and the band owes it back to them.',
+        body: 'Every expense says who paid. “Band account” means the band’s money covered it. A person’s name means they paid out of their own pocket, so the band owes it back to them.',
       },
       {
         heading: 'Owed back, then Paid back',
-        body: 'An out-of-pocket expense is Owed back until an admin pays the person and taps Pay back. Then it’s Paid back, and it locks so it can’t drift from what was paid. An admin can undo a payback to change it.',
+        body: 'An out-of-pocket expense is Owed back until an admin pays the person and taps Pay back. Then it’s Paid back and locks, so it can’t drift from what was paid. An admin can undo a payback to change it.',
       },
       {
         heading: 'Money you’re still waiting on',
-        body: 'Log a fee that’s been promised as income marked Still owed. It doesn’t count in the band fund until you edit it to In hand.',
+        body: 'Log a promised fee as income marked Still owed. It doesn’t count in the band fund until you change it to In hand.',
+      },
+      {
+        heading: 'Who can change what',
+        body: 'Anyone can log income, and expenses they paid or the band account paid. You can edit or remove your own out-of-pocket expenses and band-account entries you logged. Admins can change any entry and are the only ones who pay people back.',
       },
       {
         heading: 'No splitting',
@@ -191,10 +216,10 @@ export const HELP_TOPICS: Record<HelpTopicId, HelpTopic> = {
       },
       {
         points: [
-          'Hold: the date is pencilled in, not promised yet',
-          'Details pending: it’s on, but the load-in, set time or fee isn’t settled',
-          'Confirmed: booked',
-          'Cancelled: struck through and left out of counts',
+          'Hold: possible upcoming date',
+          'Details pending: confirmed, waiting for details',
+          'Confirmed: all ready to go',
+          'Cancelled: show no longer goes on',
         ],
       },
       { body: 'Once a booked show’s date has passed, it reads as Played on its own.' },
@@ -213,7 +238,7 @@ export const HELP_TOPICS: Record<HelpTopicId, HelpTopic> = {
           'Goals: things to reach this year, this month or today, ticked off when done',
           'Reminders: dated nudges the whole band sees',
           'Shows, Rehearsals, Meetings: what’s coming up',
-          'Finances: the band’s books',
+          'Finances: the band’s money in and out',
           'Activity: everything that’s changed lately',
           'Notes: one shared page for set lists and anything else',
         ],

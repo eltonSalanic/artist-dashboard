@@ -8,6 +8,7 @@ import {
   adminOnlyMessage,
   orList,
   roleIntro,
+  showStatusLine,
 } from './help';
 
 describe('help copy', () => {
@@ -37,6 +38,18 @@ describe('help copy', () => {
         expect(section.body ?? section.points).toBeDefined();
       }
     }
+  });
+
+  it('describes each show status, by name first and kind second', () => {
+    expect(showStatusLine({ name: 'Hold', category: 'HOLD' })).toBe('Possible upcoming date');
+    expect(showStatusLine({ name: 'Details pending', category: 'BOOKED' })).toBe(
+      'Confirmed, waiting for details',
+    );
+    expect(showStatusLine({ name: 'Confirmed', category: 'BOOKED' })).toBe('All ready to go');
+    expect(showStatusLine({ name: 'Cancelled', category: 'CANCELLED' })).toBe(
+      'Show no longer goes on',
+    );
+    expect(showStatusLine({ name: 'Advanced', category: 'BOOKED' })).toBe('Confirmed');
   });
 
   it('introduces each role', () => {

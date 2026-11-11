@@ -124,7 +124,7 @@ export function SetupChecklist({ boardId }: { boardId: string }) {
           color={colors.mutedForeground}
         />
         <ThemedText variant="footnote" tone="muted" style={{ flex: 1 }}>
-          Roles, the books and the rest: how Band Wall works
+          Roles, finances and the rest: how Band Wall works
         </ThemedText>
         <Icon
           name={{ sf: 'chevron.right', md: 'chevron-right' }}

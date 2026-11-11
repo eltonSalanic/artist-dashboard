@@ -14,7 +14,7 @@ const copy: Record<
 > = {
   SHOW: {
     empty: 'No shows booked',
-    body: 'Upcoming shows appear here, each with a status: a hold is a date that’s pencilled in, confirmed is booked.',
+    body: 'Upcoming shows appear here, each with a status: a hold is a possible upcoming date, confirmed is all ready to go.',
     phrase: 'noGigsYet',
   },
   REHEARSAL: { empty: 'No rehearsals booked', body: 'Upcoming rehearsals appear here.', phrase: 'noRehearsals' },

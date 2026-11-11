@@ -2,13 +2,13 @@
 
 **Status:** built on the phone (2026-11-11). The web has the role-change API and the shared copy but no help UI yet.
 
-Most of Band Wall explains itself. What doesn't are the *rules*: who can do what, how the books work, and a few words that mean something specific here. Those are explained where they bite, not in a tutorial: a one-time card on the hub, three (i) sheets, a help page, and empty and blocked states that say why and who to ask. There is no carousel and there are no coach marks (the hub is user-arranged, so anything pointing at a card would point at the wrong place).
+Most of Band Wall explains itself. What doesn't are the *rules*: who can do what, how finances work, and a few words that mean something specific here. Those are explained where they bite, not in a tutorial: a one-time card on the hub, three (i) sheets, a help page, and empty and blocked states that say why and who to ask. There is no carousel and there are no coach marks (the hub is user-arranged, so anything pointing at a card would point at the wrong place).
 
 ## One source for the words
 
 All of it lives in [packages/shared/src/help.ts](../packages/shared/src/help.ts), next to the permission map:
 
-- `HELP_TOPICS` — five topics (`roles`, `books`, `shows`, `wall`, `bands`), each a title, a one-line summary and sections of a heading, a paragraph or a short list.
+- `HELP_TOPICS` — five topics (`roles`, `finances`, `shows`, `wall`, `bands`), each a title, a one-line summary and sections of a heading, a paragraph or a short list.
 - The **role lists are built from `can()`**. Each line names the `Action` behind it, and whether it lands under "Everyone in the band can" or "Only admins can" is decided by `can('USER', action)`. Change the permission map and the help follows; `help.spec.ts` checks it.
 - `roleIntro(role, isOwner)` — the title and sentence someone is told about their place in a band.
 - `adminOnlyMessage(doing, adminNames)` — "Only admins can add or change a show. Ask Riley or Casey."
@@ -18,12 +18,12 @@ All of it lives in [packages/shared/src/help.ts](../packages/shared/src/help.ts)
 
 | What | Where | Who sees it |
 |---|---|---|
-| **"How this band works" card** | Top of the hub | Everyone but the owner, once per band and role on that phone, until closed. A member reads what they can do and who the admins are; an admin reads what admins can do. Someone made an admin later sees the admin card once. Links to the roles and books sheets. |
+| **Role card** | Top of the hub | Everyone but the owner, once per band and role on that phone, until closed. A member reads what they can do and who the admins are; an admin reads what admins can do. Someone made an admin later sees the admin card once. Its title is the role itself ("You're a member"), with an X to close it. Links to the roles and finances sheets. |
 | A help row on the **"Get set up" card** | Hub | The owner (who gets that card instead) |
 | A role line on **"You're In"** | After joining with a code | New members |
 | **(i) next to Role** | Settings → Invite someone, with one line on the picked role | Admins |
 | **(i) on Members** | Settings → Members | Admins |
-| **(i) on the band fund** | Finances card, which now names the number "BAND FUND" | Everyone |
+| **(i) beside the band fund** | Finances card, next to the big number; opens "How finances work" | Everyone |
 | **How Band Wall works** | You tab → Help: every topic on one page, opening with your role in the band you're looking at | Everyone |
 
 The (i) opens `/help/:topic`, a native sheet (two thirds high, pulls to full). It is the one sheet that scrolls, so it hides the sheet's bar and draws its "How it works" title itself, as the first of two siblings before the scroll view: with the bar, text scrolled up ran through its title, and react-native-screens sizes a sheet's scroll view to the whole sheet unless a header view sits right before it. The page is `/help`. Screens: `screens/help-sheet.tsx`, `screens/help.tsx`; pieces in `features/help/`.
@@ -33,9 +33,9 @@ The You tab's band card says "Member" or "Admin" (`ROLE_LABELS`), the words the 
 ## Copy that explains instead of blocking
 
 - A form a member can't use says **who to ask**: "Only admins can add or change a show. Ask Riley or Casey." (`FormGate`). The task status sheet names the task's assignees, or the admins when it has none.
-- **Show status sheet**: each status has a line under its name for what picking it does (pencilled in / counts as booked / left out of counts), since bands rename their statuses and "hold" is trade talk.
+- **Show status sheet**: each status has a line under its name: Hold "Possible upcoming date", Details pending "Confirmed, waiting for details", Confirmed "All ready to go", Cancelled "Show no longer goes on". A status a band added gets its kind's line (`showStatusLine()` in `help.ts`).
 - **Empty states**: Finances says what to log and that out-of-pocket spending is owed back; Focus says what it's for while any period is unset; Shows mentions holds.
-- **Paying back** says, on the button's hint and in the confirm, that it records the payment and sends no money.
+- **Paying back** says, on the button's hint and in the confirm, that it records the payment and sends no money. Pay back all reads: "That's 2 expenses Jamie will be paid back for. This records that the band paid them back. It doesn't send any money. You can undo this anytime."
 - "Only admins see the books" is gone: members have been able to see the books since `finance.view` opened to everyone, so the line could never show and contradicted the rules.
 
 ## Changing a role

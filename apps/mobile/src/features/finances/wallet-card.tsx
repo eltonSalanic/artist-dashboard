@@ -83,25 +83,23 @@ export function WalletCard({
         boxShadow: shadows.raised,
       }}
     >
-      {/* The number is named, with the (i) for how the books work, since
-          "band fund" is the one word here nobody arrives knowing. */}
+      {/* The band fund, with the (i) beside it for how finances work. A row
+          rather than an overlay, so a long amount shrinks instead of running
+          under the icon. */}
       <View style={{ gap: spacing.xs }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2 }}>
-          <PosterText variant="label" color={card.soft} accessible={false}>
-            BAND FUND
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <PosterText
+            accessibilityLabel={`Band fund ${below ? 'minus ' : ''}${money(Math.abs(bandFundCents))}`}
+            variant="figure"
+            color={card.ink}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            style={{ flex: 1, fontSize: 46, lineHeight: 52, letterSpacing: -1.8 }}
+          >
+            {below ? `−${money(-bandFundCents)}` : money(bandFundCents)}
           </PosterText>
-          <InfoButton topic="books" color={card.soft} size={15} />
+          <InfoButton topic="finances" color={card.soft} size={18} />
         </View>
-        <PosterText
-          accessibilityLabel={`Band fund ${below ? 'minus ' : ''}${money(Math.abs(bandFundCents))}`}
-          variant="figure"
-          color={card.ink}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-          style={{ fontSize: 46, lineHeight: 52, letterSpacing: -1.8 }}
-        >
-          {below ? `−${money(-bandFundCents)}` : money(bandFundCents)}
-        </PosterText>
         {below && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
             <View
