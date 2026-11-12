@@ -16,7 +16,8 @@ import { env } from '@/lib/env';
  * session. Nobody is sent to a web page.
  *
  * Resolves `null` when the person closed the sheet: that is not an error, so
- * the screen shows nothing.
+ * the screen shows nothing. Rejects when the phone's own sheet fails, which
+ * the buttons show as "Couldn't sign in with …", never as a connection error.
  */
 export type SocialOutcome = AuthResult | null;
 
@@ -51,7 +52,8 @@ export async function signInWithApple(): Promise<SocialOutcome> {
     throw thrown;
   }
   if (!credential.identityToken) {
-    return { error: { message: 'Apple did not return a sign-in token.', status: 0 } };
+    // Thrown, not returned: a status-0 result would read as "Can't reach Band Wall".
+    throw new Error('Apple did not return a sign-in token.');
   }
   // Only the first sign-in carries the name, and never inside the token.
   const name = [credential.fullName?.givenName, credential.fullName?.familyName]
@@ -86,7 +88,7 @@ export async function signInWithGoogle(): Promise<SocialOutcome> {
     if (!isSuccessResponse(response)) return null;
     const { idToken } = response.data;
     if (!idToken) {
-      return { error: { message: 'Google did not return a sign-in token.', status: 0 } };
+      throw new Error('Google did not return a sign-in token.');
     }
     return auth.signInWithIdToken({ provider: 'google', idToken });
   } catch (thrown) {

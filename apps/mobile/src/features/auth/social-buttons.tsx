@@ -5,6 +5,7 @@ import { Image } from 'expo-image';
 import { authErrorMessage } from '@artist/api-client';
 import { Button, BUTTON_HEIGHT } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
+import { reportError } from '@/lib/report-error';
 import { spacing } from '@/theme';
 import {
   appleAvailable,
@@ -53,7 +54,11 @@ export function SocialButtons({ disabled, onStart, onEnd }: Props) {
       const result = await start();
       onEnd(result?.error ? authErrorMessage(result.error, fallback) : null, result === null);
     } catch (thrown) {
-      onEnd(authErrorMessage({ message: String(thrown), status: 0 }, fallback), false);
+      // Thrown by Apple's or Google's own sheet (no Apple Account on the
+      // phone, Play Services missing, …), not by our API: the band can be
+      // reached fine, so say the sign-in failed rather than "Can't reach".
+      reportError(thrown, { where: 'social sign-in' });
+      onEnd(fallback, false);
     }
   };
 

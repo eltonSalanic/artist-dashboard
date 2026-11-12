@@ -30,6 +30,10 @@ Decisions:
   (`accountLinking.trustedProviders`): signing in with one reaches the existing
   account with that email instead of making a second one. Their emails arrive
   verified, so they skip any email-code step.
+- **Closing or failing the sheet.** Closing it shows nothing. If the sheet
+  itself fails (no Apple Account on the phone, Google Play Services missing),
+  the screen says "Couldn't sign in with Apple/Google. Try again." and reports
+  the error; only the API being unreachable says "Can't reach Band Wall".
 - **Signing out** also forgets the Google account picked, so the next Google
   sign-in shows the account picker again.
 - **Android** shows Google only. Apple on Android or the web needs a Services ID
