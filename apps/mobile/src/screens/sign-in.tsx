@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState, type RefObject } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,8 +7,10 @@ import { Button } from '@/components/button';
 import { MascotLockup } from '@/components/mascot';
 import { PosterText } from '@/components/poster-text';
 import { TextField } from '@/components/text-field';
+import type { TextInput } from '@/components/text-input';
 import { ThemedText } from '@/components/themed-text';
 import { auth } from '@/lib/auth';
+import { joinName, NAME_MAX } from '@/features/auth/full-name';
 import { SocialButtons } from '@/features/auth/social-buttons';
 import { reportError } from '@/lib/report-error';
 import { setOnboardingIntent } from '@/features/onboarding/onboarding-state';
@@ -54,7 +56,7 @@ const VERIFY_CODE_FAILED =
  * phone without ever opening the web.
  *
  * Reached from the welcome screen, which picks the mode: "Start a band" is
- * step 1 of 3 and asks for your name, "I've got an invite" takes the code.
+ * step 1 of 3 and asks for your first and last name, "I've got an invite" takes the code.
  *
  * A new account confirms its email before it gets in: sign-up mails a 6-digit
  * code and this screen turns into "Check your email", asking for it. Signing
@@ -71,7 +73,13 @@ export function SignInScreen() {
   const [mode, setMode] = useState<Mode>(
     params.mode === 'signup' || params.mode === 'invite' ? params.mode : 'signin',
   );
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const name = joinName(firstName, lastName);
+  // Next on First name goes to Last name, and from there to the field after.
+  const lastNameField = useRef<TextInput>(null);
+  const emailField = useRef<TextInput>(null);
+  const passwordField = useRef<TextInput>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
@@ -104,7 +112,7 @@ export function SignInScreen() {
       const result =
         mode === 'signin'
           ? await auth.signIn(email, password)
-          : await auth.signUp(email, password, name.trim());
+          : await auth.signUp(email, password, name);
 
       if (result.error?.code === 'EMAIL_NOT_VERIFIED') {
         // The server has just mailed a fresh code; ask for it.
@@ -200,7 +208,7 @@ export function SignInScreen() {
     }
     // The invite made the account, named after the email; this puts their own
     // name on it. Not worth interrupting a join for: it can be fixed later.
-    await apiFetch('/me', { method: 'PATCH', body: { displayName: name.trim() } }).catch(
+    await apiFetch('/me', { method: 'PATCH', body: { displayName: name } }).catch(
       (error: unknown) => reportError(error, { where: 'signIn.saveName' }),
     );
   };
@@ -210,7 +218,7 @@ export function SignInScreen() {
       ? !pending && /^\d{6}$/.test(code.trim())
       : email.trim() !== '' &&
         !pending &&
-        (mode === 'signin' || name.trim() !== '') &&
+        (mode === 'signin' || firstName.trim() !== '') &&
         (mode === 'invite'
           ? /^\d{6}$/.test(code.trim()) && password.length >= MIN_PASSWORD
           : password !== '');
@@ -267,22 +275,21 @@ export function SignInScreen() {
           </View>
 
           {mode === 'signup' && (
-            <TextField
-              label="Your name"
-              value={name}
-              onChangeText={setName}
+            <NameFields
+              first={firstName}
+              last={lastName}
+              onChangeFirst={setFirstName}
+              onChangeLast={setLastName}
               editable={!pending}
-              autoCapitalize="words"
-              autoComplete="name"
-              textContentType="name"
-              placeholder="Jess Ortega"
-              maxLength={60}
-              doneBar={false}
+              lastRef={lastNameField}
+              onLastSubmit={() => emailField.current?.focus()}
+              placeholders={['Jess', 'Ortega']}
             />
           )}
 
           {mode !== 'verify' && (
             <TextField
+              ref={emailField}
               label="Email"
               value={email}
               onChangeText={setEmail}
@@ -341,22 +348,20 @@ export function SignInScreen() {
           )}
 
           {mode === 'invite' && (
-            <TextField
-              label="Your name"
-              value={name}
-              onChangeText={setName}
+            <NameFields
+              first={firstName}
+              last={lastName}
+              onChangeFirst={setFirstName}
+              onChangeLast={setLastName}
               editable={!pending}
-              autoCapitalize="words"
-              autoComplete="name"
-              textContentType="name"
-              placeholder="What your bandmates call you"
-              maxLength={60}
-              doneBar={false}
+              lastRef={lastNameField}
+              onLastSubmit={() => passwordField.current?.focus()}
             />
           )}
 
           {mode !== 'verify' && (
             <TextField
+              ref={passwordField}
               label={mode === 'invite' ? 'Choose a password' : 'Password'}
               placeholder={mode === 'invite' ? `At least ${MIN_PASSWORD} characters` : undefined}
               value={password}
@@ -476,6 +481,75 @@ export function SignInScreen() {
   );
 }
 
+/**
+ * First and last name side by side, two equal fields on one row. The account
+ * keeps one name, so the screen joins them (`joinName`). Only the first name is
+ * needed: someone who goes by one name leaves Last name empty. Next moves from
+ * First name to Last name, and Last name's Next to whatever field follows.
+ */
+function NameFields({
+  first,
+  last,
+  onChangeFirst,
+  onChangeLast,
+  editable,
+  lastRef,
+  onLastSubmit,
+  placeholders,
+}: {
+  first: string;
+  last: string;
+  onChangeFirst: (text: string) => void;
+  onChangeLast: (text: string) => void;
+  editable: boolean;
+  lastRef: RefObject<TextInput | null>;
+  onLastSubmit: () => void;
+  placeholders?: [string, string];
+}) {
+  return (
+    <View style={styles.nameRow}>
+      <View style={styles.nameField}>
+        <TextField
+          label="First name"
+          value={first}
+          onChangeText={onChangeFirst}
+          editable={editable}
+          autoCapitalize="words"
+          autoComplete="given-name"
+          textContentType="givenName"
+          placeholder={placeholders?.[0]}
+          maxLength={FIRST_NAME_MAX}
+          returnKeyType="next"
+          submitBehavior="submit"
+          onSubmitEditing={() => lastRef.current?.focus()}
+          doneBar={false}
+        />
+      </View>
+      <View style={styles.nameField}>
+        <TextField
+          ref={lastRef}
+          label="Last name"
+          value={last}
+          onChangeText={onChangeLast}
+          editable={editable}
+          autoCapitalize="words"
+          autoComplete="family-name"
+          textContentType="familyName"
+          placeholder={placeholders?.[1]}
+          maxLength={NAME_MAX - FIRST_NAME_MAX - 1}
+          returnKeyType="next"
+          submitBehavior="submit"
+          onSubmitEditing={onLastSubmit}
+          doneBar={false}
+        />
+      </View>
+    </View>
+  );
+}
+
+/** Half the account name's 60, leaving the rest and the space for the last name. */
+const FIRST_NAME_MAX = 30;
+
 /** The b-and-wall lockup, at a size that leaves the form room above the keyboard. */
 const LOCKUP_WIDTH = 200;
 
@@ -485,6 +559,8 @@ const styles = StyleSheet.create({
   form: { padding: spacing.lg, gap: spacing.md },
   masthead: { gap: spacing.xs, marginBottom: spacing.sm },
   centred: { textAlign: 'center' },
+  nameRow: { flexDirection: 'row', gap: spacing.sm },
+  nameField: { flex: 1 },
   submit: { marginTop: spacing.sm },
   link: { alignItems: 'center', paddingVertical: spacing.sm },
   inviteLink: { alignItems: 'center', paddingBottom: spacing.sm },

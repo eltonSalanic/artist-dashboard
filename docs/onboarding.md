@@ -9,7 +9,7 @@ Two kinds of new person arrive: someone **starting a band**, who pays, and someo
 | Step | Phone | Web |
 |---|---|---|
 | Welcome | `/welcome`, the first screen when signed out: [a looping preview](#the-welcome-preview-phone) above **Create A Band Wall**, **I've got an invite** and "Already in? Sign in" | The landing page; its Create account buttons go to `/login?mode=signup` |
-| 1 of 3 · You | `/sign-in?mode=signup`: your name, email, password | `/login?mode=signup`: the same three fields |
+| 1 of 3 · You | `/sign-in?mode=signup`: first and last name side by side, email, password | `/login?mode=signup`: your name, email, password |
 | 1 of 3 · Check your email | "Check Your Email.": the 6-digit code mailed at sign-up (iOS offers it from Mail), with Send a new code and Use a different email | "Check your email": the same code field and buttons |
 | 2 of 3 · Your band | "Name Your Band.": the name, a colour (one of the band palettes), and the band's block drawn as you type | The same, as a page with the preview on the right |
 | 3 of 3 · Open it | RevenueCat's paywall (`presentPaywall`) | RevenueCat's paywall, or our two plan buttons if the offering has none |
@@ -20,7 +20,7 @@ Two kinds of new person arrive: someone **starting a band**, who pays, and someo
 - **Already subscribed, or billing off:** Continue creates the band straight away.
 - **"2 of 3"** shows only straight after signing up. Anyone else in no band (someone who left every band) sees the same screen without the step count.
 - **The email is confirmed before anything else.** Sign-up gives no session until the 6-digit code is entered; the code signs the person in and the flow carries on at step 2. Codes last an hour, allow three wrong tries and work once. Signing in to an account that never confirmed mails a fresh code and opens the same step. Accounts made before this (2026-11-10) were marked confirmed by the migration `confirm_existing_emails`. See [Sign-up codes](notifications.md#sign-up-codes).
-- **Your name** goes to Better Auth at sign-up, and `POST /me/bootstrap` starts the user's display name from it (it used to be the start of the email). `PATCH /me` with `{ displayName }` changes it later.
+- **Your name** goes to Better Auth at sign-up, and `POST /me/bootstrap` starts the user's display name from it (it used to be the start of the email). `PATCH /me` with `{ displayName }` changes it later. On the phone it is two fields side by side, First name and Last name, joined with a space into the one name the account keeps; only the first is needed, for someone who goes by one name. The web still asks for one name.
 - **The setup card** is the owner's only. Each row ticks itself from the band's data: invited (another member or a pending invite), a show (any event), a task. "Invite your bandmates" opens Settings already at the invite section (`/board/:id/settings?section=invite` on the phone, `/settings#invite` on the web, which also puts the cursor in the email field). It hides when all three are done or when the owner closes it (remembered per band on that device).
 - Creating a second band from the band switcher is unchanged: `/subscribe` on the phone, the Create a band dialog on the web.
 
@@ -45,7 +45,7 @@ The code is in `apps/mobile/src/features/onboarding/wall-intro/`: `timeline.ts` 
 
 ## Joining with an invite (phone)
 
-**I've got an invite** opens `/sign-in?mode=invite`: email, the 6-digit code from the invite email, your name, a password. Verifying signs them in; the password and name (`PATCH /me`) are saved straight after. The hub then shows `/welcome-in` once: "You're In <Band>." in the band's colour, and that the owner's subscription covers them. On the web, invites still arrive through the email link and `/auth/callback`.
+**I've got an invite** opens `/sign-in?mode=invite`: email, the 6-digit code from the invite email, first and last name (the same pair as sign-up), a password. Verifying signs them in; the password and name (`PATCH /me`) are saved straight after. The hub then shows `/welcome-in` once: "You're In <Band>." in the band's colour, and that the owner's subscription covers them. On the web, invites still arrive through the email link and `/auth/callback`.
 
 ## After the first run
 
