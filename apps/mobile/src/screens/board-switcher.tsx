@@ -91,7 +91,9 @@ export function BoardSwitcherSheet() {
                 {candidate.name}
               </PosterText>
               <PosterText variant="label" color={accent.fg}>
-                {current ? `${candidate.role} · SHOWING` : candidate.role}
+                {current
+                  ? `${ROLE_LABELS[candidate.role].toUpperCase()} · SHOWING`
+                  : ROLE_LABELS[candidate.role].toUpperCase()}
               </PosterText>
             </View>
             {/* A ring for the others, so the row's right edge is the same

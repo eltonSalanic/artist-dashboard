@@ -28,7 +28,7 @@ All of it lives in [packages/shared/src/help.ts](../packages/shared/src/help.ts)
 
 The (i) opens `/help/:topic`, a native sheet (two thirds high, pulls to full). It is the one sheet that scrolls, so it hides the sheet's bar and draws its "How it works" title itself, as the first of two siblings before the scroll view: with the bar, text scrolled up ran through its title, and react-native-screens sizes a sheet's scroll view to the whole sheet unless a header view sits right before it. The page is `/help`. Screens: `screens/help-sheet.tsx`, `screens/help.tsx`; pieces in `features/help/`.
 
-The You tab's band card says "Member" or "Admin" (`ROLE_LABELS`), the words the help uses, rather than the stored `USER` / `ADMIN`.
+The You tab's band card and the band switcher say "Member" or "Admin" (`ROLE_LABELS`), the words the help uses, rather than the stored `USER` / `ADMIN`.
 
 ## Copy that explains instead of blocking
 
