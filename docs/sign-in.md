@@ -40,6 +40,10 @@ Decisions:
   and key; not built.
 - The App Store requires Sign in with Apple in any app that offers Google
   sign-in, which is why the two ship together.
+- **Deleting the account** (You → Delete account, [account-deletion.md](account-deletion.md))
+  removes the linked Apple and Google accounts with it. Apple also expects us
+  to revoke the person's Apple tokens then; that isn't built yet, as it needs
+  the Sign in with Apple `.p8` key.
 
 ## Setup
 
