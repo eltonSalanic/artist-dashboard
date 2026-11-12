@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Inject,
@@ -20,11 +21,13 @@ import { toHeaders } from '../auth/session-auth.guard';
 import type { AuthedRequest } from '../common/authed-request';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { UsersService } from './users.service';
+import { AccountDeletionService } from './account-deletion.service';
 
 @Controller('me')
 export class UsersController {
   constructor(
     private readonly users: UsersService,
+    private readonly deletion: AccountDeletionService,
     @Inject(BETTER_AUTH) private readonly auth: Auth,
   ) {}
 
@@ -46,6 +49,17 @@ export class UsersController {
     @Body(new ZodValidationPipe(updateProfileSchema)) dto: UpdateProfileDto,
   ): Promise<void> {
     await this.users.updateProfile(user, dto);
+  }
+
+  /**
+   * Deletes your account for good. A 409 `OWNS_SHARED_BANDS` lists the bands
+   * you own with other people in them, to hand over or delete first. Not a
+   * band route, so a locked band never stands in the way.
+   */
+  @Delete()
+  @HttpCode(204)
+  async deleteAccount(@CurrentUser() user: AuthUser): Promise<void> {
+    await this.deletion.deleteAccount(user);
   }
 
   /**

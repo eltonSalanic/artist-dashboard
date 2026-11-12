@@ -37,6 +37,11 @@ export class ApiError extends Error {
   get requestId(): string | undefined {
     return this.body.requestId;
   }
+
+  /** The bands an `OWNS_SHARED_BANDS` 409 names. */
+  get boards(): { id: string; name: string }[] {
+    return this.body.boards ?? [];
+  }
 }
 
 /**
@@ -186,6 +191,15 @@ function readErrorBody(data: Record<string, unknown>): Partial<ApiErrorBody> {
         i !== null &&
         typeof (i as ApiErrorIssue).message === 'string' &&
         typeof (i as ApiErrorIssue).path === 'string',
+    );
+  }
+  if (Array.isArray(data.boards)) {
+    body.boards = data.boards.filter(
+      (b): b is { id: string; name: string } =>
+        typeof b === 'object' &&
+        b !== null &&
+        typeof (b as { id?: unknown }).id === 'string' &&
+        typeof (b as { name?: unknown }).name === 'string',
     );
   }
   return body;

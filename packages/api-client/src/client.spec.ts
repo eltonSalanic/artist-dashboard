@@ -125,6 +125,26 @@ describe('api client', () => {
     expect((error as ApiError).requestId).toBe('req-1');
   });
 
+  it('keeps the bands an OWNS_SHARED_BANDS conflict names', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 409,
+      statusText: '',
+      json: async () => ({
+        message: 'Hand over or delete the bands you share',
+        code: 'OWNS_SHARED_BANDS',
+        boards: [{ id: 'b1', name: 'Neon Harbor' }, { id: 7 }],
+      }),
+    });
+    const error = await apiFetch('/me', { method: 'DELETE' }).catch(
+      (e: unknown) => e,
+    );
+    expect((error as ApiError).code).toBe('OWNS_SHARED_BANDS');
+    expect((error as ApiError).boards).toEqual([
+      { id: 'b1', name: 'Neon Harbor' },
+    ]);
+  });
+
   // HTTP/2 and React Native leave statusText empty.
   it('never produces an empty message', async () => {
     fetchMock.mockResolvedValue({

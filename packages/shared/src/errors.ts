@@ -24,6 +24,8 @@ export type ApiErrorCode =
   | 'SUBSCRIPTION_REQUIRED'
   /** 409: a subscription covers one band, and this person already owns one. */
   | 'BAND_LIMIT_REACHED'
+  /** 409: deleting an account that owns a band other people are in. */
+  | 'OWNS_SHARED_BANDS'
   | 'INTERNAL';
 
 export interface ApiErrorBody {
@@ -34,6 +36,11 @@ export interface ApiErrorBody {
   issues?: ApiErrorIssue[];
   /** Echoes the request's x-request-id so a user report can be found in the logs. */
   requestId?: string;
+  /**
+   * On an `OWNS_SHARED_BANDS` 409 from `DELETE /me`: the bands to hand over or
+   * delete before the account can go.
+   */
+  boards?: { id: string; name: string }[];
 }
 
 /** Deployment tier. Distinct from NODE_ENV, which staging also sets to "production". */

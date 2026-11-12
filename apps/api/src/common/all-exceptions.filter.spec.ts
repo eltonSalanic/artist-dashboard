@@ -41,6 +41,21 @@ describe('toErrorBody', () => {
     });
   });
 
+  it('passes on the bands a shared-band conflict names', () => {
+    const body = toErrorBody(
+      new ConflictException({
+        message: 'Hand over first',
+        code: 'OWNS_SHARED_BANDS',
+        boards: [{ id: 'b1', name: 'Neon Harbor' }],
+      }),
+    );
+    expect(body).toMatchObject({
+      statusCode: 409,
+      code: 'OWNS_SHARED_BANDS',
+      boards: [{ id: 'b1', name: 'Neon Harbor' }],
+    });
+  });
+
   it('maps Prisma unique and not-found errors without leaking their text', () => {
     expect(toErrorBody(prismaError('P2002'))).toMatchObject({
       statusCode: 409,

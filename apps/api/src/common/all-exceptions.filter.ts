@@ -61,7 +61,7 @@ export function toErrorBody(exception: unknown): ApiErrorBody {
     const status = exception.getStatus();
     const res = exception.getResponse();
     if (typeof res === 'string') return { statusCode: status, message: res };
-    const { message, code, issues } = res as Partial<ApiErrorBody> & {
+    const { message, code, issues, boards } = res as Partial<ApiErrorBody> & {
       message?: string | string[];
     };
     return {
@@ -71,6 +71,7 @@ export function toErrorBody(exception: unknown): ApiErrorBody {
         : (message ?? exception.message),
       ...(code ? { code } : {}),
       ...(issues ? { issues } : {}),
+      ...(Array.isArray(boards) ? { boards } : {}),
     };
   }
 
