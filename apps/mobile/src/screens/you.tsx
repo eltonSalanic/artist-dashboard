@@ -22,6 +22,7 @@ import {
   usePosterCanvas,
   useScheme,
   useShadows,
+  useTokens,
 } from '@/theme';
 
 const centred = { textAlign: 'center' } as const;
@@ -42,6 +43,7 @@ export function YouScreen() {
   const canvas = usePosterCanvas();
   const shadows = useShadows();
   const scheme = useScheme();
+  const tokens = useTokens();
   const me = useMe(true);
   const { board, boards } = useSelectedBoard();
   const [signingOut, setSigningOut] = useState(false);
@@ -202,6 +204,26 @@ export function YouScreen() {
             .finally(() => setSigningOut(false));
         }}
       />
+
+      {/* Quiet on purpose: under the way out, and it opens a screen that says
+          what goes before anything does. */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityHint="Says what's deleted and asks you to confirm"
+        onPress={() => router.push('/delete-account')}
+        hitSlop={8}
+        style={({ pressed }) => ({
+          alignSelf: 'center',
+          minHeight: 44,
+          justifyContent: 'center',
+          paddingHorizontal: spacing.md,
+          opacity: pressed ? 0.6 : 1,
+        })}
+      >
+        <PosterText variant="cardMeta" color={tokens.destructive}>
+          Delete account
+        </PosterText>
+      </Pressable>
     </ScrollView>
   );
 }

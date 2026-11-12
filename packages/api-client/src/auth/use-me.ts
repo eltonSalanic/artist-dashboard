@@ -46,3 +46,17 @@ export function useCreateBoard() {
       notify.error(toUserMessage(error, "Couldn't create the band")),
   });
 }
+
+/**
+ * Deletes the signed-in account for good (`DELETE /me`). Errors are left to
+ * the screen: an `OWNS_SHARED_BANDS` 409 carries the bands to hand over first
+ * (`ApiError.boards`), which it lists rather than reporting as a toast.
+ *
+ * The session dies with the account, so on success the caller signs out
+ * locally (`auth.signOut()`); nothing here clears the query cache for it.
+ */
+export function useDeleteAccount() {
+  return useMutation({
+    mutationFn: () => apiFetch<void>("/me", { method: "DELETE" }),
+  });
+}

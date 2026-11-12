@@ -107,6 +107,19 @@ export async function registerThisDevice(): Promise<void> {
   await AsyncStorage.setItem(TOKEN_KEY, token);
 }
 
+/**
+ * Forgets this phone's push token without asking the API: for an account that
+ * was just deleted, whose device rows went with it and whose session no longer
+ * works. The next sign-in registers the token afresh.
+ */
+export async function forgetThisDeviceLocally(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(TOKEN_KEY);
+  } catch (error) {
+    reportError(error, { where: 'forgetThisDeviceLocally' });
+  }
+}
+
 /** How long sign-out waits on the API before leaving anyway. */
 const UNREGISTER_TIMEOUT_MS = 3_000;
 

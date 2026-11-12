@@ -135,6 +135,7 @@ export default function TabStackLayout({ segment }: { segment: string }) {
         }}
       />
       <Stack.Screen name="help/index" options={{ title: 'How Band Wall works' }} />
+      <Stack.Screen name="delete-account" options={{ title: 'Delete account' }} />
       <Stack.Screen
         name="help/[topic]"
         options={{
