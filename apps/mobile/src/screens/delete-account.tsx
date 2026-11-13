@@ -23,9 +23,10 @@ const CONFIRM_WORD = 'DELETE';
 
 /** Where each store lets you cancel a subscription. We can't cancel it for you. */
 const STORE_SUBSCRIPTIONS = {
-  APP_STORE: { name: 'App Store', url: 'https://apps.apple.com/account/subscriptions' },
+  APP_STORE: { name: 'App Store', inSentence: 'the App Store', url: 'https://apps.apple.com/account/subscriptions' },
   PLAY_STORE: {
     name: 'Google Play',
+    inSentence: 'Google Play',
     url: 'https://play.google.com/store/account/subscriptions?package=com.bandwall.app',
   },
 } as const;
@@ -127,7 +128,7 @@ export function DeleteAccountScreen() {
       {store && (
         <Section title="YOUR SUBSCRIPTION">
           <PosterText variant="body" color={canvas.soft}>
-            {`It renews through ${store.name}, and deleting your account doesn't stop it. Cancel it in ${store.name} first.`}
+            {`It renews through ${store.inSentence}, and deleting your account doesn’t stop it. Cancel it in ${store.inSentence} first.`}
           </PosterText>
           <Button
             title={`Manage in ${store.name}`}
@@ -146,7 +147,6 @@ export function DeleteAccountScreen() {
           autoCorrect={false}
           autoComplete="off"
           returnKeyType="done"
-          placeholder={CONFIRM_WORD}
         />
         <Button
           title="Delete account"
