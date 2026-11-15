@@ -2,7 +2,7 @@
 // the session source that every hook below reaches for.
 import '@/lib/api-client-setup';
 // Next, so a crash during the first render is reported.
-import { withSentry } from '@/lib/sentry';
+import { registerNavigation, withSentry } from '@/lib/sentry';
 
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
@@ -13,6 +13,7 @@ import {
   QueryClientProvider,
   focusManager,
 } from '@tanstack/react-query';
+import { useNavigationContainerRef } from 'expo-router';
 import { Stack } from 'expo-router/stack';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
@@ -59,6 +60,12 @@ function RootLayout() {
   // launch: the text falls back to the system face.
   const [fontsLoaded, fontError] = useFonts(POSTER_FONTS);
   const loading = sessionLoading || (!fontsLoaded && fontError === null);
+  const navigationRef = useNavigationContainerRef();
+
+  useEffect(() => {
+    // Screen names for Sentry's traces and breadcrumbs.
+    registerNavigation(navigationRef);
+  }, [navigationRef]);
 
   useEffect(() => {
     // The auth client refreshes the access token on a timer, and the OS

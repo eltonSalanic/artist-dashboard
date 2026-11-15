@@ -20,16 +20,22 @@ const dsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
 
 type SentryModule = typeof import('@sentry/react-native');
 let sentry: SentryModule | null = null;
+let navigation: ReturnType<SentryModule['reactNavigationIntegration']> | null = null;
 
 if (dsn) {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const Sentry = require('@sentry/react-native') as SentryModule;
   sentry = Sentry;
+  // Names traces and breadcrumbs after the screen instead of a generic route
+  // change. Full paths, because every tab has its own stack and they would
+  // otherwise all be called `index`. Fed by `registerNavigation` below.
+  navigation = Sentry.reactNavigationIntegration({ useFullPathsForNavigationRoutes: true });
   Sentry.init({
     dsn,
     environment: env.appEnv,
     integrations: [
       Sentry.reactNativeTracingIntegration(),
+      navigation,
       // Masked by default: a replay shows layout and taps, not band data.
       Sentry.mobileReplayIntegration({
         maskAllText: true,
@@ -78,6 +84,14 @@ export function withSentry(
   Root: ComponentType<Record<string, unknown>>,
 ): ComponentType<Record<string, unknown>> {
   return sentry ? sentry.wrap(Root) : Root;
+}
+
+/**
+ * Hands expo-router's navigation container to Sentry, so screen changes show
+ * up by name. Call once from the root layout; a no-op when Sentry is off.
+ */
+export function registerNavigation(ref: unknown): void {
+  navigation?.registerNavigationContainer(ref);
 }
 
 /** Opens Sentry's "Report a problem" form, linked to recent errors. */

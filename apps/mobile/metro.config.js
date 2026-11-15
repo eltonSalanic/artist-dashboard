@@ -14,13 +14,18 @@
 // it. Turning off the walk-up makes a nested dependency unresolvable, which
 // shows up as "Unable to resolve module" for a package that is plainly
 // installed. The setting belongs to pnpm-style isolated installs.
-const { getDefaultConfig } = require('expo/metro-config');
+//
+// `getSentryExpoConfig` is Expo's default config plus Sentry's serializer,
+// which stamps each bundle with a debug ID. Sentry matches an uploaded source
+// map to a crash by that ID, so stack traces from EAS builds and EAS Update
+// bundles show our .tsx files instead of the minified bundle.
+const { getSentryExpoConfig } = require('@sentry/react-native/metro');
 const path = require('node:path');
 
 const projectRoot = __dirname;
 const workspaceRoot = path.resolve(projectRoot, '../..');
 
-const config = getDefaultConfig(projectRoot);
+const config = getSentryExpoConfig(projectRoot);
 
 config.watchFolders = [workspaceRoot];
 config.resolver.nodeModulesPaths = [
