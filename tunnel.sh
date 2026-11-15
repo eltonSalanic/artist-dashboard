@@ -178,7 +178,7 @@ echo "Starting Expo (log: $LOG_DIR/expo.log)…"
   export EXPO_PUBLIC_API_URL="$API_URL"
   export EXPO_PUBLIC_SUPABASE_URL="$SUPABASE_URL"
   export EXPO_PACKAGER_PROXY_URL="$METRO_URL"
-  exec npx expo start --clear --port "$METRO_PORT"
+  APP_VARIANT="${APP_VARIANT:-development}" exec npx expo start --clear --port "$METRO_PORT"
 ) >"$LOG_DIR/expo.log" 2>&1 </dev/null &
 pids+=($!)
 wait_for 120 "Expo" curl -sf "http://127.0.0.1:$METRO_PORT/status" -o /dev/null
