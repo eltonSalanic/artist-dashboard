@@ -137,4 +137,9 @@ leave `NODE_ENV` alone. Mail still goes to Mailpit.
 **Set up staging.** `APP_ENV=staging`, `NODE_ENV=production`, `WEB_URL`,
 `API_URL`, and staging's own Resend key and sending domain. Build the web app
 with `NEXT_PUBLIC_APP_ENV=staging`; the phone's `preview` profile already says
-`staging`. See [release-workflow.md](release-workflow.md).
+`staging`. The staging API runs this way on Railway today, at
+`https://staging-api.bandwall.app` (its Railway environment is named
+"production", but `APP_ENV` is what counts). The phone's other variables
+(`EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SENTRY_DSN`)
+come from the EAS `preview` environment, not `eas.json`. See
+[release-workflow.md](release-workflow.md).

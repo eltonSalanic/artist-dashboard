@@ -1,8 +1,9 @@
 # Release workflow: dev, staging and beta
 
-> **Status:** guide written ahead of the setup (Oct 2026). The three EAS build
-> profiles exist and tag their environment; staging and prod hosting, EAS
-> Update, store submission and the beta groups are not set up yet. See
+> **Status:** staging API live at `https://staging-api.bandwall.app` and the
+> `preview` build installs on a registered iPhone and in the Simulator
+> (2026-11-16). Prod hosting, the staging web app, EAS Update, store
+> submission and the beta groups are not set up yet. See
 > [What exists and what's left](#what-exists-and-whats-left).
 
 How a change gets from this Mac to the bands using Band Wall, once friends are
@@ -34,12 +35,40 @@ separate install with its own purpose:
 | Profile | Built with | Talks to | How it gets to a phone |
 |---|---|---|---|
 | `development` | `npm run mobile:ios` (on this Mac) | Metro + local API on your Mac | Installed over USB; `mobile:tunnel:cf` when on a hotspot |
-| `preview` | `eas build --profile preview` | Staging API | TestFlight **internal** group (you only) |
+| `preview` | `eas build --profile preview` | Staging API | Ad hoc: registered phones only, installed from the build page or `devicectl` (TestFlight internal later) |
+| `preview-simulator` | `eas build --profile preview-simulator` | Staging API | The same app built for the iOS Simulator |
 | `production` | `eas build --profile production` then `eas submit` | Prod API | TestFlight **external** group + Google Play closed test |
 
 **Test staging with the `preview` build, not the dev client.** The dev client
 loads JS from Metro, so it can't tell you whether the real, bundled app works.
 The point of staging is to run the same kind of build your testers get.
+
+### The `preview` build today
+
+- **Ad hoc.** `preview` uses `distribution: internal`, so it only installs on
+  iPhones registered with `eas device:create` (open the link it gives on the
+  phone). The registered list is baked into each build, so a phone added later
+  needs a new build. The signing credentials (distribution certificate, shared
+  with the team's other apps, and the ad hoc profile) are on EAS now, so
+  `--non-interactive` builds work.
+- **Same app as prod.** It shares `com.bandwall.app` and the name "Band Wall".
+  It installs beside the dev client ("Band Wall (Dev)", `com.bandwall.app.dev`)
+  but would replace a TestFlight or App Store copy.
+- **Simulator.** An ad hoc build can't run in the Simulator, so
+  `preview-simulator` (`extends: preview`, `ios.simulator: true`) builds the
+  same app for it.
+- **Installing.**
+  - Phone: open the build's expo.dev page on the iPhone, or download the
+    `.ipa` and run `xcrun devicectl device install app --device <id> <file>.ipa`
+    (`xcrun devicectl list devices` gives the id; Wi-Fi works once the phone is
+    paired, no cable needed).
+  - Simulator: `eas build:run --platform ios --profile preview-simulator --latest`,
+    or untar the build and `xcrun simctl install booted <BandWall.app>`.
+    `eas build:run` needs macOS to let the terminal control System Events
+    (Privacy & Security → Automation).
+- **Checking a build end to end.** The You tab has **Send test error** in dev
+  and preview builds (not production). Its event should reach Sentry tagged
+  with the build's environment and a readable stack trace.
 
 ## Distributing to testers
 
@@ -140,7 +169,7 @@ Update can be rolled back but a dropped column can't.
 
 ## What exists and what's left
 
-Checked against the repo on 2026-10-29.
+Checked against the repo and the hosted services on 2026-11-16.
 
 **Already in place**
 
@@ -155,12 +184,46 @@ Checked against the repo on 2026-10-29.
 - `APP_ENV` on the API and `NEXT_PUBLIC_APP_ENV` on web already distinguish
   staging from prod, and staging runs with `NODE_ENV=production` so mail and
   push are real.
+- **The staging API is live** at `https://staging-api.bandwall.app` (a CNAME to
+  Railway). Railway project "charismatic-integrity" has one service, the API.
+  Its Railway environment is named "production" but it is staging:
+  `APP_ENV=staging`, `NODE_ENV=production`. `API_URL` must match the custom
+  domain, because Better Auth builds its links from it.
+  - Build: `npm ci --include=dev && cd apps/api && npx prisma generate && npm run build`
+  - Pre-deploy: `cd apps/api && npx prisma migrate deploy`
+  - Start: `cd apps/api && npm run start:prod` (`node --enable-source-maps`)
+  - Deploys are started by hand ("Deploy latest commit" in the Railway
+    dashboard). Auto-deploy from GitHub is off.
+- **Domains.** Planned: `api.bandwall.app` and `bandwall.app` for prod,
+  `staging-api.bandwall.app` and `staging.bandwall.app` for staging. Each
+  environment gets its own database and its own `BETTER_AUTH_SECRET`, so a
+  staging session can never pass on prod.
+- **EAS environment variables.** Variables live in EAS environments named after
+  the profiles (`development`, `preview`, `production`). `preview` has
+  `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_SUPABASE_URL` and
+  `EXPO_PUBLIC_SENTRY_DSN`; `SENTRY_AUTH_TOKEN` is a secret in all three. Add
+  or change one with `eas env:set` (`env:create` is deprecated in eas-cli 27).
+  `EXPO_PUBLIC_*` values are inlined, so a change needs a new build.
+- **Sentry source maps.**
+  - Phone: uploaded during EAS builds by the `@sentry/react-native` plugin
+    (checked: a preview build's test error had a readable trace).
+  - API: nothing to upload. The source maps point at absolute `src/` paths
+    and Sentry reads the code from the container.
+  - Web: the build uploads maps with `apps/web/scripts/sentry-sourcemaps.mjs`
+    when `SENTRY_AUTH_TOKEN` is set, then deletes them so they're never served.
 
 **Still to set up**
 
-- **Staging and prod hosting.** No API, web or database is deployed yet. The
-  candidates and costs are in the hosting cost report; this guide assumes two
-  of each (staging and prod).
+- **Prod hosting and the staging web app.** Staging has its API and
+  database. There is no prod API, no prod database and no web deploy yet (no
+  Vercel project). Until the staging web app is up, the staging API's
+  `WEB_URL` isn't `https://staging.bandwall.app`, so browser requests from it
+  get "Invalid origin".
+- **RevenueCat and Google keys for `preview`.** Neither is set in the EAS
+  `preview` environment, so buying and Google sign-in are hidden in the
+  `preview` build. `BILLING_ENFORCED` is off on staging, so creating a band
+  skips the paywall. Turning billing on follows
+  [billing.md → Deploying it](billing.md#deploying-it).
 - **Lock the database's Data API.** Nothing reads Supabase's Data API (the
   API talks to Postgres directly), so for each hosted project: in
   Settings → Data API, remove `public` from the exposed schemas (or turn the
@@ -173,19 +236,16 @@ Checked against the repo on 2026-10-29.
   checkout embeds Stripe, so buy a sandbox plan on staging with the browser
   console open and add any host a "violates the following Content Security
   Policy directive" error names.
-- **API URLs for EAS builds.** `preview` and `production` don't set
-  `EXPO_PUBLIC_API_URL`, and `.env` is gitignored so EAS cloud builds don't
-  see it. Outside a dev build there's no Metro address to fall back on, so
-  `lib/env.ts` would throw at launch. Set it per profile, in `eas.json` `env`
-  or as EAS environment variables (`preview` → staging, `production` → prod),
-  along with `EXPO_PUBLIC_SENTRY_DSN`.
+- **API URLs for the `production` build.** `production` has no
+  `EXPO_PUBLIC_API_URL` or `EXPO_PUBLIC_SUPABASE_URL` yet (there's no prod API
+  to point at), and without them `lib/env.ts` throws at launch. Set them in
+  the EAS `production` environment once prod is up.
 - **EAS Update.** `expo-updates` isn't installed. `npx expo install
   expo-updates` then `eas update:configure` adds the updates URL and a
   `runtimeVersion` policy; then give each profile a `channel` (`development`,
   `staging`, `production`).
-- **`preview` can't go to TestFlight as it is.** It uses `distribution:
-  internal` (ad hoc), which installs only on devices registered with
-  `eas device:create`. For TestFlight it needs store distribution, and while it
+- **`preview` can't go to TestFlight as it is.** It is ad hoc (see
+  [The `preview` build today](#the-preview-build-today)). For TestFlight it needs store distribution, and while it
   shares the prod bundle ID it also needs `autoIncrement`, or its build
   numbers will collide with prod's.
 - **Store submission.** `submit.production` is empty. iOS needs the App Store
