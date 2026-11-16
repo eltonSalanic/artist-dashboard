@@ -12,7 +12,10 @@
       "bundleIdentifier": "com.bandwall.app",
       "appleTeamId": "242S9Y93M9",
       "supportsTablet": false,
-      "usesAppleSignIn": true
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.bandwall.app",
