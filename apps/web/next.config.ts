@@ -3,6 +3,9 @@ import { securityHeaders } from "./security-headers";
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@artist/shared", "@artist/api-client"],
+  // Browser source maps for Sentry. scripts/sentry-sourcemaps.mjs uploads them
+  // after the build and deletes them, so they are never served.
+  productionBrowserSourceMaps: true,
   async headers() {
     return [
       {
