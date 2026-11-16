@@ -101,3 +101,22 @@ export function showFeedback(): void {
 
 /** Whether there is anywhere to send feedback to. */
 export const feedbackAvailable = sentry !== null;
+
+/**
+ * Sends one handled error, to check a build end to end: it should land in
+ * Sentry under this build's environment, with a stack trace naming
+ * src/lib/sentry.ts and src/screens/you.tsx. Never offered in production.
+ */
+export const testErrorAvailable = sentry !== null && env.appEnv !== 'production';
+
+export function sendTestError(): void {
+  try {
+    throwTestError();
+  } catch (error) {
+    sentry?.captureException(error);
+  }
+}
+
+function throwTestError(): never {
+  throw new Error(`Sentry test error from the ${env.appEnv} app`);
+}

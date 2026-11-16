@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { toUserMessage, useMe } from '@artist/api-client';
 import { ROLE_LABELS } from '@artist/shared';
@@ -14,7 +14,7 @@ import { PushSetting } from '@/features/push/push-prompt';
 import { forgetThisDevice } from '@/features/push/push';
 import { auth } from '@/lib/auth';
 import { forgetGoogleAccount } from '@/features/auth/social-sign-in';
-import { feedbackAvailable, showFeedback } from '@/lib/sentry';
+import { feedbackAvailable, sendTestError, showFeedback, testErrorAvailable } from '@/lib/sentry';
 import {
   boardAccent,
   posterRadius,
@@ -188,6 +188,18 @@ export function YouScreen() {
           shown when reporting is on, so there's always somewhere it goes. */}
       {feedbackAvailable && (
         <Button title="Report a problem" variant="secondary" onPress={showFeedback} />
+      )}
+
+      {/* Checks a dev or preview build reports with a readable stack trace. */}
+      {testErrorAvailable && (
+        <Button
+          title="Send test error"
+          variant="secondary"
+          onPress={() => {
+            sendTestError();
+            Alert.alert('Test error sent', 'It should show up in Sentry within a minute.');
+          }}
+        />
       )}
 
       <Button
