@@ -8,7 +8,6 @@ import {
   View,
 } from 'react-native';
 import { router } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   useCreateBoard,
   useMe,
@@ -49,7 +48,6 @@ import { concentric, posterRadius, posterSlot, spacing, usePosterCanvas, useSche
 export function StartBandScreen() {
   const canvas = usePosterCanvas();
   const scheme = useScheme();
-  const insets = useSafeAreaInsets();
   const me = useMe(true);
   const userId = me.data?.user.id ?? '';
   const { select } = useSelectedBoard();
@@ -155,9 +153,12 @@ export function StartBandScreen() {
     >
       <ScrollView
         keyboardShouldPersistTaps="handled"
+        // Clears the status bar and the floating tab bar, so the last line can
+        // scroll into view instead of springing back under the tabs.
+        contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top + spacing.lg, paddingBottom: spacing.xxl + spacing.xl },
+          { paddingTop: spacing.lg, paddingBottom: spacing.xxl + spacing.xl },
         ]}
       >
         {signingUp && <StepProgress step={2} of={3} />}
